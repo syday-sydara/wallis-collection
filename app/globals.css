@@ -58,19 +58,21 @@
 
 @utility underline-grow {
   position: relative;
-}
 
-@utility underline-grow::after {
-  content: "";
-  position: absolute;
-  width: 0;
-  height: 2px;
-  bottom: -2px;
-  left: 0;
-  background-color: currentColor;
-  transition: width 0.3s ease;
-}
+  /* Use nesting for pseudo-elements */
+  &::after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: -2px;
+    left: 0;
+    background-color: currentColor;
+    transition: width 0.3s var(--ease-smooth);
+  }
 
-@utility underline-grow:hover::after {
-  width: 100%;
+  /* Use nesting for hover states */
+  &:hover::after {
+    width: 100%;
+  }
 }
