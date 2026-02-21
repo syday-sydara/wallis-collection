@@ -5,11 +5,13 @@ import Footer from "@/components/layout/footer";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
+    // Removed "bg-white text-gray-900" as they are now handled by @layer base in CSS
     <html lang="en" className="antialiased">
       <body>
         <div className="min-h-screen flex flex-col">
           <Header />
-          <main className="flex-1 py-10">
+          {/* Removed mx-auto because 'container' utility now handles centering */}
+          <main className="flex-1 container py-10">
             {children}
           </main>
           <Footer />

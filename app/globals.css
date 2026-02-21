@@ -1,37 +1,39 @@
 @import "tailwindcss";
 
+/* ----------------------- */
+/* Theme Configuration     */
+/* ----------------------- */
 @theme {
-  /* Brand Colors */
   --color-primary: #272B36;
   --color-accent: #a08a81;
   --color-bg: #ffffff;
   --color-neutral: #b7b8bb;
   --color-secondary: #595d66;
-
-  /* Status Colors */
   --color-status-success: #4CAF50;
   --color-status-warning: #A08A81;
   --color-status-danger: #C94F4F;
 
-  /* Typography */
   --font-heading: "Playfair Display", serif;
   --font-body: "Inter", sans-serif;
 
-  /* Design Tokens */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
-  
+
   --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.04);
   --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.06);
 
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  --animate-duration-400: 400ms;
+  --duration-400: 400ms;
 }
 
+/* ----------------------- */
+/* Base Styles             */
+/* ----------------------- */
 @layer base {
-  html, body {
+  html,
+  body {
     height: 100%;
     background-color: var(--color-bg);
     color: var(--color-primary);
@@ -39,29 +41,36 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
 }
 
-/* Fixed Container Utility */
-@utility container {
-  margin-inline: auto;
-  padding-inline: 1.5rem;
-  width: 100%;
-}
+/* ----------------------- */
+/* Custom Utilities        */
+/* ----------------------- */
 
-/* Custom Effects */
 @utility underline-grow {
   position: relative;
-  &::after {
-    content: "";
-    position: absolute;
-    width: 0;
-    height: 2px;
-    bottom: -2px;
-    left: 0;
-    background-color: currentColor;
-    transition: width 0.3s var(--ease-smooth);
-  }
-  &:hover::after {
-    width: 100%;
-  }
+}
+
+@utility underline-grow::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background-color: currentColor;
+  transition: width 0.3s ease;
+}
+
+@utility underline-grow:hover::after {
+  width: 100%;
 }
