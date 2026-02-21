@@ -1,12 +1,9 @@
-// Prisma 7 schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -29,11 +26,13 @@ model Product {
   category    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  items       OrderItem[]
 }
 
 model Order {
   id             String      @id @default(cuid())
   userId         String?
+  user           User?       @relation(fields: [userId], references: [id])
   email          String
   phone          String?
   status         OrderStatus @default(PENDING)
@@ -45,13 +44,18 @@ model Order {
   currency       String      @default("NGN")
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
+
   items          OrderItem[]
 }
 
 model OrderItem {
   id         String   @id @default(cuid())
   orderId    String
+  order      Order    @relation(fields: [orderId], references: [id])
+
   productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+
   quantity   Int
   priceCents Int
 }

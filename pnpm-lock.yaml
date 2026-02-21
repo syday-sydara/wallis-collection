@@ -20,9 +20,6 @@ importers:
       paystack:
         specifier: ^2.0.1
         version: 2.0.1
-      prisma:
-        specifier: ^7.4.0
-        version: 7.4.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -66,6 +63,9 @@ importers:
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
+      prisma:
+        specifier: ^7.4.0
+        version: 7.4.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       tailwindcss:
         specifier: ^4
         version: 4.1.18
