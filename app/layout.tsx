@@ -4,13 +4,15 @@ import Footer from "@/components/layout/footer";
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className="bg-neutral-950 text-neutral-50 antialiased">
+    <html lang="en" className="bg-bg text-primary antialiased">
+      <body>
         <div className="min-h-screen flex flex-col">
           <Header />
-          <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
+
+          <main className="flex-1 container py-10">
             {children}
           </main>
+
           <Footer />
         </div>
       </body>

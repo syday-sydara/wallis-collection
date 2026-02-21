@@ -2,17 +2,20 @@ import Link from "next/link";
 
 export default function Header() {
   return (
-    <header className="border-b border-neutral-800">
-      <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-        <Link href="/" className="text-xl font-semibold tracking-tight">
-          MyStore
+    <header className="border-b border-neutral bg-bg/50 backdrop-blur">
+      <div className="container py-4 flex items-center justify-between">
+        <Link
+          href="/"
+          className="text-xl font-semibold tracking-tight text-primary hover:opacity-80 transition"
+        >
+          Wallis
         </Link>
 
-        <nav className="flex items-center gap-6 text-sm text-neutral-300">
-          <Link href="/products" className="hover:text-white transition-colors">
+        <nav className="flex items-center gap-6 text-sm text-neutral">
+          <Link href="/products" className="hover:text-primary transition-colors">
             Products
           </Link>
-          <Link href="/cart" className="hover:text-white transition-colors">
+          <Link href="/cart" className="hover:text-primary transition-colors">
             Cart
           </Link>
         </nav>
