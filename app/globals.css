@@ -1,35 +1,120 @@
+/* File: globals.css */
+
+/* Tailwind base import */
 @import "tailwindcss";
 
+/* ----------------------- */
+/* CSS Variables (Light-only) */
+/* ----------------------- */
 :root {
-  /* Base Brand */
-  --primary: 39 43 54;        /* #272B36 */
-  --accent: 160 138 129;      /* #A08A81 */
-  --background: 215 215 214;  /* #D7D7D6 */
-  --neutral: 183 184 187;     /* #B7B8BB */
-  --secondary: 89 93 102;     /* #595D66 */
-
-  /* Semantic */
-  --surface: 255 255 255;
-  --border: 229 229 229;
+  --color-primary: #272B36;   /* Dark Gray/Anthracite */
+  --color-accent: #a08a81;    /* Warm Beige */
+  --color-bg: #ffffff;        /* White Background */
+  --color-neutral: #b7b8bb;   /* Light Gray */
+  --color-secondary: #595d66; /* Medium Gray */
 }
 
-.dark {
-  --primary: 229 229 229;
-  --accent: 199 183 176;
-  --background: 28 28 28;
-  --neutral: 58 58 58;
-  --secondary: 138 143 153;
-
-  --surface: 38 38 38;
-  --border: 60 60 60;
-}
-
-html,
-body {
+/* ----------------------- */
+/* Base Styles */
+/* ----------------------- */
+html, body {
   height: 100%;
-  background: rgb(var(--background));
-  color: rgb(var(--primary));
-  font-family: system-ui, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-primary);
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+ul, ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* ----------------------- */
+/* Container & Layout Helpers */
+/* ----------------------- */
+.container {
+  max-width: 1280px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ----------------------- */
+/* Typography Helpers */
+/* ----------------------- */
+.font-heading {
+  font-family: 'Playfair Display', serif;
+}
+
+.font-body {
+  font-family: 'Inter', sans-serif;
+}
+
+.text-xs { font-size: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
+.text-base { font-size: 1rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-3xl { font-size: 1.875rem; }
+
+/* ----------------------- */
+/* Spacing Utilities */
+/* ----------------------- */
+.py-10 { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+.py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+.p-8 { padding: 2rem; }
+
+/* ----------------------- */
+/* Hover Underline Animation */
+/* ----------------------- */
+.underline-grow {
+  position: relative;
+}
+
+.underline-grow::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background-color: currentColor; /* matches text color */
+  transition: width 0.3s ease;
+}
+
+.underline-grow:hover::after {
+  width: 100%;
+}
+
+/* ----------------------- */
+/* Smooth Transitions */
+/* ----------------------- */
+.transition-colors {
+  transition-property: color, background-color, border-color;
+}
+
+.transition-opacity {
+  transition-property: opacity;
+}
+
+.ease-smooth {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.duration-400 {
+  transition-duration: 400ms;
 }
