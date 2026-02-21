@@ -1,43 +1,72 @@
 // File: components/ui/ProductCard.tsx
+"use client";
+
 import Link from "next/link";
+import Image from "next/image";
+import { useState } from "react";
 
 type Product = {
   id: string;
   name: string;
   slug: string;
   priceCents: number;
-  images: string[]; // array of image URLs
+  stock: number;
+  images: any;
+  category?: string | null;
 };
 
-interface ProductCardProps {
-  product: Product;
-}
+export default function ProductCard({ product }: { product: Product }) {
+  const [loading, setLoading] = useState(false);
 
-export default function ProductCard({ product }: ProductCardProps) {
-  const price = (product.priceCents / 100).toFixed(2);
+  const price = new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+  }).format(product.priceCents / 100);
+
+  const image = Array.isArray(product.images) ? product.images[0] : null;
+
+  const stockStatus = product.stock === 0
+    ? { label: "Out of stock", color: "bg-status-danger/10 text-status-danger" }
+    : product.stock < 5
+    ? { label: "Low stock", color: "bg-status-warning/10 text-status-warning" }
+    : { label: "In stock", color: "bg-status-success/10 text-status-success" };
 
   return (
-    <Link
-      href={`/products/${product.slug}`}
-      className="group relative block overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-lg transition-shadow duration-400 ease-smooth"
-    >
-      <div className="h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
-        {product.images?.[0] ? (
-          <img
-            src={product.images[0]}
+    <div className="group relative bg-bg border border-neutral/20 rounded-xl overflow-hidden shadow-soft hover:shadow-card transition-all duration-400">
+      <Link href={`/products/${product.slug}`} className="block relative h-64 bg-neutral/5 overflow-hidden">
+        {image ? (
+          <Image
+            src={image}
             alt={product.name}
-            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-400 ease-smooth"
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <span className="text-gray-400 text-sm">No Image</span>
+          <div className="flex items-center justify-center h-full text-neutral text-sm">No Image</div>
         )}
+      </Link>
+
+      <div className="p-4 space-y-3">
+        <div>
+          <h3 className="text-sm font-medium text-primary line-clamp-1">{product.name}</h3>
+          <p className="text-lg font-semibold text-secondary">{price}</p>
+        </div>
+
+        <span className={`inline-block text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-md ${stockStatus.color}`}>
+          {stockStatus.label}
+        </span>
+
+        <button
+          disabled={product.stock === 0 || loading}
+          onClick={() => {
+            setLoading(true);
+            setTimeout(() => setLoading(false), 800);
+          }}
+          className="w-full bg-primary text-bg text-sm py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {loading ? "Adding..." : "Add to Cart"}
+        </button>
       </div>
-      <div className="p-4 space-y-1">
-        <h3 className="text-sm font-medium text-gray-900 group-hover:text-primary transition-colors duration-400 ease-smooth">
-          {product.name}
-        </h3>
-        <p className="text-sm font-semibold text-gray-700">${price}</p>
-      </div>
-    </Link>
+    </div>
   );
 }
