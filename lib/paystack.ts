@@ -1,1 +1,1 @@
-// Paystack SDK wrapper
+// Paystack wrapper

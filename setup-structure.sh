@@ -1,10 +1,14 @@
 #!/bin/bash
 
-echo "🚀 Setting up project structure..."
+echo "🚀 Setting up project structure (Prisma 7 compatible)..."
 
-# Create app directories (quoted to allow parentheses)
+###############################################
+# APP ROUTER STRUCTURE
+###############################################
+
 mkdir -p "app/(public)"
 mkdir -p "app/(public)/products"
+mkdir -p "app/(public)/products/[slug]"
 mkdir -p "app/(public)/cart"
 mkdir -p "app/(public)/checkout"
 mkdir -p "app/(public)/orders"
@@ -21,6 +25,10 @@ mkdir -p "app/(admin)/refunds"
 mkdir -p "app/(admin)/fraud"
 mkdir -p "app/(admin)/inventory"
 
+###############################################
+# API ROUTES
+###############################################
+
 mkdir -p "app/api/paystack/initialize"
 mkdir -p "app/api/paystack/webhook"
 
@@ -31,21 +39,31 @@ mkdir -p "app/api/orders/lookup"
 mkdir -p "app/api/refunds/request"
 mkdir -p "app/api/push/subscribe"
 
-# Components
+###############################################
+# COMPONENTS
+###############################################
+
 mkdir -p components/ui
 mkdir -p components/checkout
 mkdir -p components/payments
 mkdir -p components/admin
 
-# Lib
+###############################################
+# LIB FOLDERS
+###############################################
+
 mkdir -p lib/fraud
 
-# Create placeholder files
+###############################################
+# PLACEHOLDER PAGES
+###############################################
+
 echo "export default function Page() { return <div>Home</div> }" > "app/(public)/page.tsx"
 echo "export default function Page() { return <div>Products</div> }" > "app/(public)/products/page.tsx"
+echo "export default function Page() { return <div>Product Detail</div> }" > "app/(public)/products/[slug]/page.tsx"
 echo "export default function Page() { return <div>Cart</div> }" > "app/(public)/cart/page.tsx"
 echo "export default function Page() { return <div>Checkout</div> }" > "app/(public)/checkout/page.tsx"
-echo "export default function Page() { return <div>Orders</div> }" > "app/(public)/orders/page.tsx"
+echo "export default function Page() { return <div>Your Orders</div> }" > "app/(public)/orders/page.tsx"
 
 echo "export default function Page() { return <div>Login</div> }" > "app/(auth)/login/page.tsx"
 echo "export default function Page() { return <div>Register</div> }" > "app/(auth)/register/page.tsx"
@@ -59,7 +77,10 @@ echo "export default function Page() { return <div>Refund Center</div> }" > "app
 echo "export default function Page() { return <div>Fraud Center</div> }" > "app/(admin)/fraud/page.tsx"
 echo "export default function Page() { return <div>Inventory</div> }" > "app/(admin)/inventory/page.tsx"
 
-# API placeholders
+###############################################
+# API ROUTE PLACEHOLDERS
+###############################################
+
 echo "export async function POST() { return Response.json({ ok: true }) }" > "app/api/paystack/initialize/route.ts"
 echo "export async function POST() { return Response.json({ ok: true }) }" > "app/api/paystack/webhook/route.ts"
 
@@ -70,15 +91,116 @@ echo "export async function POST() { return Response.json({ ok: true }) }" > "ap
 echo "export async function POST() { return Response.json({ ok: true }) }" > "app/api/refunds/request/route.ts"
 echo "export async function POST() { return Response.json({ ok: true }) }" > "app/api/push/subscribe/route.ts"
 
-# Lib placeholders
-echo "// Prisma client" > lib/db.ts
+###############################################
+# LIB PLACEHOLDERS
+###############################################
+
+echo "// Prisma client (Prisma 7)" > lib/db.ts
 echo "// Auth config" > lib/auth.ts
-echo "// Paystack SDK wrapper" > lib/paystack.ts
-echo "// Monnify API wrapper" > lib/monnify.ts
+echo "// Paystack wrapper" > lib/paystack.ts
+echo "// Monnify wrapper" > lib/monnify.ts
 echo "// Notifications" > lib/notifications.ts
 echo "// Inventory logic" > lib/inventory.ts
 echo "// Fraud rules" > lib/fraud/rules.ts
 echo "// AI fraud model" > lib/fraud/ai.ts
 echo "// Fraud score combiner" > lib/fraud/compute.ts
 
-echo "🎉 Project structure created successfully!"
+###############################################
+# PRISMA 7 SCHEMA TEMPLATE
+###############################################
+
+cat << 'EOF' > prisma/schema.prisma
+// Prisma 7 schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  phone     String?
+  password  String?
+  orders    Order[]
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  priceCents  Int
+  stock       Int      @default(0)
+  images      Json
+  category    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  userId         String?
+  email          String
+  phone          String?
+  status         OrderStatus @default(PENDING)
+  paymentMethod  String
+  providerRef    String?
+  trackingStatus String      @default("Processing")
+  trackingSteps  Json?
+  totalCents     Int
+  currency       String      @default("NGN")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  items          OrderItem[]
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  productId  String
+  quantity   Int
+  priceCents Int
+}
+
+model RefundRequest {
+  id        String   @id @default(cuid())
+  orderId   String
+  reason    String
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FraudSignal {
+  id        String   @id @default(cuid())
+  orderId   String
+  score     Int
+  details   Json?
+  createdAt DateTime @default(now())
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String?
+  endpoint  String
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+EOF
+
+echo "🎉 Prisma 7 project structure created successfully!"

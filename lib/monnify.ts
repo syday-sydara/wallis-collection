@@ -1,1 +1,1 @@
-// Monnify API wrapper
+// Monnify wrapper
