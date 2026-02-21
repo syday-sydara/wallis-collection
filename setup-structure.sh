@@ -1,24 +1,28 @@
 #!/bin/bash
 
-echo "🚀 Setting up project structure (Prisma 7 compatible)..."
+echo "🚀 Setting up project structure (Prisma 7 compatible, no route conflicts)..."
 
 ###############################################
-# APP ROUTER STRUCTURE
+# APP ROUTER STRUCTURE (FIXED)
 ###############################################
 
+# Public-facing pages
 mkdir -p "app/(public)"
 mkdir -p "app/(public)/products"
 mkdir -p "app/(public)/products/[slug]"
 mkdir -p "app/(public)/cart"
 mkdir -p "app/(public)/checkout"
-mkdir -p "app/(public)/orders"
+mkdir -p "app/(public)/track-order"   # renamed from /orders to avoid conflict
 
+# Auth routes
 mkdir -p "app/(auth)/login"
 mkdir -p "app/(auth)/register"
 
+# Customer dashboard
 mkdir -p "app/(customer)/account"
-mkdir -p "app/(customer)/orders"
+mkdir -p "app/(customer)/account/orders"   # moved from /orders to avoid conflict
 
+# Admin dashboard
 mkdir -p "app/(admin)/dashboard"
 mkdir -p "app/(admin)/orders"
 mkdir -p "app/(admin)/refunds"
@@ -63,13 +67,13 @@ echo "export default function Page() { return <div>Products</div> }" > "app/(pub
 echo "export default function Page() { return <div>Product Detail</div> }" > "app/(public)/products/[slug]/page.tsx"
 echo "export default function Page() { return <div>Cart</div> }" > "app/(public)/cart/page.tsx"
 echo "export default function Page() { return <div>Checkout</div> }" > "app/(public)/checkout/page.tsx"
-echo "export default function Page() { return <div>Your Orders</div> }" > "app/(public)/orders/page.tsx"
+echo "export default function Page() { return <div>Track Order</div> }" > "app/(public)/track-order/page.tsx"
 
 echo "export default function Page() { return <div>Login</div> }" > "app/(auth)/login/page.tsx"
 echo "export default function Page() { return <div>Register</div> }" > "app/(auth)/register/page.tsx"
 
 echo "export default function Page() { return <div>Account</div> }" > "app/(customer)/account/page.tsx"
-echo "export default function Page() { return <div>Customer Orders</div> }" > "app/(customer)/orders/page.tsx"
+echo "export default function Page() { return <div>Customer Orders</div> }" > "app/(customer)/account/orders/page.tsx"
 
 echo "export default function Page() { return <div>Admin Dashboard</div> }" > "app/(admin)/dashboard/page.tsx"
 echo "export default function Page() { return <div>Admin Orders</div> }" > "app/(admin)/orders/page.tsx"
@@ -203,4 +207,4 @@ enum OrderStatus {
 }
 EOF
 
-echo "🎉 Prisma 7 project structure created successfully!"
+echo "🎉 Project structure created successfully — no route conflicts!"

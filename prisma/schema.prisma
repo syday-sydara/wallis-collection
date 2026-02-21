@@ -1,65 +1,57 @@
+// Prisma 7 schema
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String             @id @default(cuid())
-  email     String             @unique
+  id        String   @id @default(cuid())
+  email     String   @unique
   phone     String?
   password  String?
-  orders    Order[]            @relation("UserOrders")
-  pushSubs  PushSubscription[] @relation("UserPushSubs")
-  createdAt DateTime           @default(now())
+  orders    Order[]
+  createdAt DateTime @default(now())
 }
 
 model Product {
-  id          String       @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
-  slug        String       @unique
+  slug        String   @unique
   description String?
   priceCents  Int
-  stock       Int          @default(0)
+  stock       Int      @default(0)
   images      Json
   category    String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  orderItems  OrderItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Order {
-  id             String          @id @default(cuid())
+  id             String      @id @default(cuid())
   userId         String?
-  user           User?           @relation("UserOrders", fields: [userId], references: [id])
   email          String
   phone          String?
-  status         OrderStatus     @default(PENDING)
+  status         OrderStatus @default(PENDING)
   paymentMethod  String
   providerRef    String?
-  trackingStatus String          @default("Processing")
+  trackingStatus String      @default("Processing")
   trackingSteps  Json?
   totalCents     Int
-  currency       String          @default("NGN")
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-
-  items          OrderItem[]     @relation("OrderItems")
-  refunds        RefundRequest[] @relation("OrderRefunds")
-  fraudSignals   FraudSignal[]   @relation("OrderFraudSignals")
+  currency       String      @default("NGN")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  items          OrderItem[]
 }
 
 model OrderItem {
   id         String   @id @default(cuid())
   orderId    String
-  order      Order    @relation("OrderItems", fields: [orderId], references: [id])
-
   productId  String
-  product    Product  @relation(fields: [productId], references: [id])
-
   quantity   Int
   priceCents Int
 }
@@ -67,7 +59,6 @@ model OrderItem {
 model RefundRequest {
   id        String   @id @default(cuid())
   orderId   String
-  order     Order    @relation("OrderRefunds", fields: [orderId], references: [id])
   reason    String
   status    String   @default("PENDING")
   createdAt DateTime @default(now())
@@ -77,7 +68,6 @@ model RefundRequest {
 model FraudSignal {
   id        String   @id @default(cuid())
   orderId   String
-  order     Order    @relation("OrderFraudSignals", fields: [orderId], references: [id])
   score     Int
   details   Json?
   createdAt DateTime @default(now())
@@ -86,7 +76,6 @@ model FraudSignal {
 model PushSubscription {
   id        String   @id @default(cuid())
   userId    String?
-  user      User?    @relation("UserPushSubs", fields: [userId], references: [id])
   endpoint  String
   p256dh    String
   auth      String
