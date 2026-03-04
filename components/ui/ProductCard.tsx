@@ -1,14 +1,13 @@
-// File: components/ui/ProductCard.tsx
 "use client";
 import Link from "next/link";
-import Image from "next/image"; // Optimization fix
+import Image from "next/image";
 import { useState } from "react";
-
-// ... types remain the same
+import type { Product } from "@/lib/types";
+import { formatPrice } from "@/lib/formatters";
 
 export default function ProductCard({ product }: { product: Product }) {
   const [loading, setLoading] = useState(false);
-  const price = new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(product.priceCents / 100);
+  const price = formatPrice(product.priceCents);
   const image = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
 
   // Use your new status color variables from the CSS theme
@@ -38,8 +37,18 @@ export default function ProductCard({ product }: { product: Product }) {
 
         <button
           disabled={product.stock === 0 || loading}
-          onClick={() => { setLoading(true); setTimeout(() => setLoading(false), 800); }}
-          className="w-full bg-primary text-bg text-sm py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+          onClick={async () => {
+            try {
+              setLoading(true);
+              // TODO: Implement actual add to cart API call
+              // const response = await fetch('/api/cart/add', { ... })
+              setTimeout(() => setLoading(false), 800);
+            } catch (err) {
+              setLoading(false);
+              console.error("Failed to add to cart", err);
+            }
+          }}
+          className="w-full bg-primary text-bg text-sm py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 font-medium"
         >
           {loading ? "Adding..." : "Add to Cart"}
         </button>

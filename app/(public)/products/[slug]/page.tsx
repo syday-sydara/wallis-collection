@@ -3,6 +3,11 @@ import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import ProductGallery from "@/components/ui/ProductGallery";
 import AddToCartSection from "@/components/ui/AddToCartSection";
+import ProductCard from "@/components/ui/ProductCard";
+import { formatPrice } from "@/lib/formatters";
+import type { Product } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: { slug: string };
@@ -23,10 +28,7 @@ export default async function ProductDetailPage({ params }: Props) {
     take: 4,
   });
 
-  const price = new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-  }).format(product.priceCents / 100);
+  const price = formatPrice(product.priceCents);
 
   return (
     <div className="container py-16 space-y-20">
@@ -63,17 +65,13 @@ export default async function ProductDetailPage({ params }: Props) {
       {/* Related Products */}
       {relatedProducts.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold mb-6 text-primary">
+          <h2 className="text-xl font-semibold mb-8 text-primary">
             Related Products
           </h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
             {relatedProducts.map((p) => (
-              <div key={p.id} className="border rounded-lg p-4">
-                <a href={`/products/${p.slug}`}>
-                  {p.name}
-                </a>
-              </div>
+              <ProductCard key={p.id} product={p as Product} />
             ))}
           </div>
         </div>

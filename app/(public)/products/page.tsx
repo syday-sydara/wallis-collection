@@ -1,6 +1,9 @@
 // File: app/(public)/products/page.tsx
 import { prisma } from "@/lib/db";
 import ProductCard from "@/components/ui/ProductCard";
+import type { Product } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
 
 export default async function ProductsPage() {
   const products = await prisma.product.findMany({
