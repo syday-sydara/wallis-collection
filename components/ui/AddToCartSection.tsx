@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Product } from "@/lib/types";
-import { useToast } from "@/components/ui/toast"; // Imported your toast hook
+import { useToast } from "@/components/ui/toast";
 
 export default function AddToCartSection({ product }: { product: Product }) {
   const toast = useToast();
@@ -22,7 +22,8 @@ export default function AddToCartSection({ product }: { product: Product }) {
 
       toast.show("Successfully added to cart!", "success");
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to add to cart";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to add to cart";
       setError(errorMessage);
       toast.show(errorMessage, "error");
     } finally {
@@ -31,9 +32,10 @@ export default function AddToCartSection({ product }: { product: Product }) {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Stock Status - Fixed Tailwind Colors */}
-      <div className="text-sm font-medium">
+    <div className="space-y-6">
+
+      {/* Stock Status */}
+      <div className="label">
         {outOfStock ? (
           <span className="text-danger">Out of stock</span>
         ) : (
@@ -46,7 +48,7 @@ export default function AddToCartSection({ product }: { product: Product }) {
       {/* Quantity Selector */}
       {!outOfStock && (
         <div className="flex items-center gap-4">
-          <label htmlFor="qty" className="text-sm">
+          <label htmlFor="qty" className="label text-primary">
             Quantity
           </label>
 
@@ -57,14 +59,19 @@ export default function AddToCartSection({ product }: { product: Product }) {
             max={product.stock}
             value={qty}
             onChange={(e) => setQty(Number(e.target.value))}
-            className="w-20 border border-neutral/40 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+            className="
+              w-20 px-3 py-2 rounded-md border border-neutral/40 
+              text-sm tracking-wide
+              focus:outline-none focus:ring-2 focus:ring-primary/40 
+              transition-all
+            "
           />
         </div>
       )}
 
-      {/* Error Message - Fixed Tailwind Colors */}
+      {/* Error Message */}
       {error && (
-        <div className="text-sm text-danger bg-danger/10 rounded-lg p-3">
+        <div className="text-sm text-danger bg-danger/10 rounded-lg p-3 leading-relaxed">
           {error}
         </div>
       )}
@@ -73,7 +80,12 @@ export default function AddToCartSection({ product }: { product: Product }) {
       <button
         disabled={outOfStock || loading}
         onClick={handleAddToCart}
-        className="w-full bg-primary text-bg py-3 rounded-xl hover:opacity-90 transition disabled:opacity-50 font-medium"
+        className="
+          w-full bg-primary text-bg py-3 rounded-xl 
+          font-medium tracking-wide
+          hover:opacity-90 transition-opacity 
+          disabled:opacity-50
+        "
       >
         {loading ? "Adding..." : "Add to Cart"}
       </button>

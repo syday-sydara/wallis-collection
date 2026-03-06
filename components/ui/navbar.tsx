@@ -18,28 +18,29 @@ export function Navbar() {
   const isActive = (href: string) => pathname.startsWith(href);
 
   return (
-    <header className="border-b border-border bg-background/70 backdrop-blur-md sticky top-0 z-50">
+    <header className="border-b border-neutral/20 bg-bg/80 backdrop-blur-md sticky top-0 z-50">
       <div className="container flex items-center justify-between py-4">
 
         {/* Logo */}
         <Link
           href="/"
-          className="text-2xl font-heading text-primary tracking-tight hover:opacity-80 transition-opacity duration-400 ease-smooth"
+          className="heading-3 tracking-tight text-primary hover:opacity-80 transition-opacity"
         >
           Wallis Executive Wax
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-body">
+        <nav className="hidden md:flex items-center gap-10">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-1 transition-colors duration-400 ease-smooth
+              className={`
+                label underline-grow flex items-center gap-2 transition-colors
                 ${
                   isActive(item.href)
-                    ? "text-primary font-medium"
-                    : "text-neutral hover:text-primary"
+                    ? "text-primary font-semibold"
+                    : "text-secondary hover:text-primary"
                 }
               `}
             >
@@ -51,7 +52,7 @@ export function Navbar() {
 
         {/* Mobile Menu Toggle */}
         <button
-          className="md:hidden text-neutral hover:text-accent transition-colors duration-400 ease-smooth"
+          className="md:hidden text-primary hover:text-accent transition-colors"
           onClick={() => setIsOpen(!isOpen)}
           aria-expanded={isOpen}
           aria-label="Toggle menu"
@@ -62,21 +63,23 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 ease-smooth ${
-          isOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
-        }`}
+        className={`
+          md:hidden overflow-hidden transition-all duration-300 ease-smooth
+          ${isOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"}
+        `}
       >
-        <nav className="flex flex-col items-center gap-4 py-4 text-sm font-body bg-background border-t border-border">
+        <nav className="flex flex-col items-center gap-5 py-5 bg-bg border-t border-neutral/20">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-1 transition-colors duration-400 ease-smooth
+              className={`
+                label flex items-center gap-2 transition-colors
                 ${
                   isActive(item.href)
-                    ? "text-primary font-medium"
-                    : "text-neutral hover:text-primary"
+                    ? "text-primary font-semibold"
+                    : "text-secondary hover:text-primary"
                 }
               `}
             >

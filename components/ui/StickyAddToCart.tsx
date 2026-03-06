@@ -32,20 +32,20 @@ export default function StickyAddToCart({ product }: { product: Product }) {
   };
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-bg border-t border-border shadow-card p-4 z-50">
-      <div className="flex items-center justify-between gap-4">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-bg border-t border-neutral/20 shadow-card p-4 z-50">
+      <div className="flex items-center justify-between gap-5">
 
         {/* Price */}
         <div className="flex flex-col">
-          <span className="text-xs text-neutral">Total</span>
-          <span className="text-lg font-semibold text-primary">
+          <span className="label text-neutral">Total</span>
+          <span className="text-lg font-semibold text-primary tracking-tight">
             {price}
           </span>
         </div>
 
         {/* Quantity Stepper */}
         {!outOfStock && (
-          <div className="flex items-center border border-neutral/40 rounded-lg overflow-hidden">
+          <div className="flex items-center border border-neutral/40 rounded-lg overflow-hidden bg-bg">
             <button
               onClick={decrease}
               className="px-3 py-2 text-primary hover:bg-neutral/10 transition"
@@ -63,7 +63,11 @@ export default function StickyAddToCart({ product }: { product: Product }) {
                   Math.min(product.stock, Math.max(1, Number(e.target.value)))
                 )
               }
-              className="w-12 text-center py-2 border-l border-r border-neutral/20 focus:outline-none"
+              className="
+                w-12 text-center py-2 text-sm 
+                border-l border-r border-neutral/20 
+                focus:outline-none
+              "
             />
 
             <button
@@ -79,7 +83,11 @@ export default function StickyAddToCart({ product }: { product: Product }) {
         <button
           disabled={outOfStock || loading}
           onClick={handleAdd}
-          className="flex-1 bg-primary text-bg py-3 rounded-xl text-sm font-medium hover:opacity-90 transition disabled:opacity-50"
+          className="
+            flex-1 bg-primary text-bg py-3 rounded-xl 
+            text-sm font-medium tracking-wide
+            hover:opacity-90 transition disabled:opacity-50
+          "
         >
           {loading ? "Adding..." : outOfStock ? "Out of stock" : "Add to Cart"}
         </button>
