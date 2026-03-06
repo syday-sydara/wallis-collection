@@ -17,6 +17,16 @@ type Props = {
 export default async function ProductDetailPage({ params }: Props) {
   const product = await prisma.product.findUnique({
     where: { slug: params.slug },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      priceCents: true,
+      description: true,
+      category: true,
+      images: true,
+      createdAt: true,
+    },
   });
 
   if (!product) return notFound();
@@ -26,24 +36,28 @@ export default async function ProductDetailPage({ params }: Props) {
       ? { category: product.category, NOT: { id: product.id } }
       : { NOT: { id: product.id } },
     take: 4,
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      priceCents: true,
+      image: true,
+      category: true,
+    },
   });
 
   const price = formatPrice(product.priceCents);
 
   return (
-    <div className="container py-20 space-y-24">
-
+    <div className="space-y-24 py-20">
       {/* Main Section */}
       <div className="grid md:grid-cols-2 gap-20">
         <ProductGallery images={product.images as string[]} />
 
         <div className="space-y-8">
-
           {/* Category */}
           {product.category && (
-            <span className="label text-accent">
-              {product.category}
-            </span>
+            <span className="label text-accent">{product.category}</span>
           )}
 
           {/* Product Name */}

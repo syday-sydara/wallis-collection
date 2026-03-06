@@ -1,5 +1,4 @@
 // File: app/(public)/page.tsx
-import Link from "next/link";
 import { prisma } from "@/lib/db";
 import ProductCard from "@/components/ui/ProductCard";
 import type { Product } from "@/lib/types";
@@ -10,16 +9,22 @@ export default async function HomePage() {
   const products = await prisma.product.findMany({
     orderBy: { createdAt: "desc" },
     take: 12,
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      image: true,
+      slug: true,
+      createdAt: true,
+    },
   });
 
   return (
-    <main className="container py-20">
-      {/* Page Title */}
+    <>
       <h1 className="heading-1 mb-12 text-primary tracking-tight">
         Products
       </h1>
 
-      {/* Empty State */}
       {products.length === 0 ? (
         <p className="label text-neutral">No products available yet.</p>
       ) : (
@@ -29,6 +34,6 @@ export default async function HomePage() {
           ))}
         </div>
       )}
-    </main>
+    </>
   );
 }

@@ -8,11 +8,18 @@ export const dynamic = "force-dynamic";
 export default async function ProductsPage() {
   const products = await prisma.product.findMany({
     orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      image: true,
+      slug: true,
+      createdAt: true,
+    },
   });
 
   return (
-    <div className="container py-20 space-y-14">
-
+    <div className="space-y-14 py-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="heading-1 text-primary tracking-tight">
