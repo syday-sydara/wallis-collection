@@ -2,24 +2,23 @@
 import "./globals.css";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import { ToastProvider } from "@/components/ui/toast";
 
 export const metadata = {
   title: "Wallis Collection",
-  description: "Modern e‑commerce experience built with Next.js 16",
+  description: "A curated collection of timeless fashion pieces for the modern wardrobe with Wa;llis Collection, where timeless fashion meets modern elegance.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+
+export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="antialiased scroll-smooth">
-      <body className="min-h-screen flex flex-col bg-white text-primary">
-        <Header />
-
-        {/* Main content area */}
-        <main className="flex-1 container py-10">
-          {children}
-        </main>
-
-        <Footer />
+    <html lang="en">
+      <body>
+        <ToastProvider>
+          <Header />
+          <main className="container py-10">{children}</main>
+          <Footer />
+        </ToastProvider>
       </body>
     </html>
   );
