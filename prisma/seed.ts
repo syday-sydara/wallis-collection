@@ -1,143 +1,109 @@
-import { prisma } from "@/lib/db";
+import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+
+const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Seeding database...");
 
-  // -----------------------------
-  // USERS
-  // -----------------------------
-  const password = await bcrypt.hash("password123", 10);
+  // -----------------------------------------------------
+  // 1. Create Admin User
+  // -----------------------------------------------------
+  const adminPassword = await bcrypt.hash("admin123", 10);
 
-  const customer = await prisma.user.create({
-    data: {
-      email: "customer@example.com",
-      phone: "+1234567890",
-      password,
+  const admin = await prisma.user.upsert({
+    where: { email: "admin@wallis.com" },
+    update: {},
+    create: {
+      name: "Admin User",
+      email: "admin@wallis.com",
+      password: adminPassword,
+      role: Role.ADMIN,
     },
   });
 
-  const admin = await prisma.user.create({
-    data: {
-      email: "admin@example.com",
-      phone: "+1987654321",
-      password,
+  console.log("✔ Admin user created:", admin.email);
+
+  // -----------------------------------------------------
+  // 2. Create Regular User
+  // -----------------------------------------------------
+  const userPassword = await bcrypt.hash("password123", 10);
+
+  const user = await prisma.user.upsert({
+    where: { email: "customer@wallis.com" },
+    update: {},
+    create: {
+      name: "John Customer",
+      email: "customer@wallis.com",
+      password: userPassword,
+      role: Role.USER,
     },
   });
 
-  // -----------------------------
-  // PRODUCTS
-  // -----------------------------
-  const categories = ["electronics", "gaming", "home", "fashion", "fitness"];
+  console.log("✔ Customer user created:", user.email);
 
-  const products = await Promise.all(
-    Array.from({ length: 20 }).map(async (_, i) => {
-      const name = `Product ${i + 1}`;
-      const slug = `product-${i + 1}`;
-      const category = categories[i % categories.length];
-
-      return prisma.product.create({
-        data: {
-          name,
-          slug,
-          category,
-          description: `Description for ${name}`,
-          priceNaira: Math.floor(Math.random() * 50000) + 5000, // now in naira
-          stock: Math.floor(Math.random() * 100),
-          images: [`https://picsum.photos/seed/${slug}/600/600`],
-        },
-      });
-    })
-  );
-
-  // -----------------------------
-  // ORDERS + ORDER ITEMS
-  // -----------------------------
-  const orders = await Promise.all(
-    Array.from({ length: 12 }).map(async () => {
-      const product = products[Math.floor(Math.random() * products.length)];
-
-      const quantity = Math.floor(Math.random() * 3) + 1;
-      const total = product.priceNaira * quantity;
-
-      return prisma.order.create({
-        data: {
-          userId: customer.id,
-          email: customer.email,
-          phone: customer.phone,
-          status: "PENDING",
-          paymentMethod: "monnify",
-          totalNaira: total,
-          items: {
-            create: [
-              {
-                productId: product.id,
-                quantity,
-                priceNaira: product.priceNaira,
-              },
-            ],
-          },
-        },
-        include: { items: true },
-      });
-    })
-  );
-
-  // -----------------------------
-  // REFUND REQUESTS
-  // -----------------------------
-  const refundOrders = orders.slice(0, 3);
+  // -----------------------------------------------------
+  // 3. Seed Products
+  // -----------------------------------------------------
+  const sampleProducts = [
+    {
+      name: "Classic Leather Wallet",
+      slug: "classic-leather-wallet",
+      description: "Premium handcrafted leather wallet with multiple compartments.",
+      priceNaira: 15000,
+      stock: 25,
+      category: "Accessories",
+      images: [
+        "/products/wallet1.jpg",
+        "/products/wallet2.jpg",
+      ],
+    },
+    {
+      name: "Luxury Wristwatch",
+      slug: "luxury-wristwatch",
+      description: "Elegant wristwatch with stainless steel finish.",
+      priceNaira: 85000,
+      stock: 10,
+      category: "Watches",
+      images: [
+        "/products/watch1.jpg",
+        "/products/watch2.jpg",
+      ],
+    },
+    {
+      name: "Men's Designer Shoes",
+      slug: "mens-designer-shoes",
+      description: "Comfortable and stylish designer shoes for men.",
+      priceNaira: 45000,
+      stock: 18,
+      category: "Footwear",
+      images: [
+        "/products/shoes1.jpg",
+        "/products/shoes2.jpg",
+      ],
+    },
+  ];
 
   await Promise.all(
-    refundOrders.map((order) =>
-      prisma.refundRequest.create({
-        data: {
-          orderId: order.id,
-          reason: "Item damaged on arrival",
-          status: "PENDING",
-        },
+    sampleProducts.map((product) =>
+      prisma.product.upsert({
+        where: { slug: product.slug },
+        update: {},
+        create: product,
       })
     )
   );
 
-  // -----------------------------
-  // FRAUD SIGNALS
-  // -----------------------------
-  await Promise.all(
-    orders.map((order) =>
-      prisma.fraudSignal.create({
-        data: {
-          orderId: order.id,
-          score: Math.floor(Math.random() * 100),
-          details: {
-            ip: "192.168.1.1",
-            riskFactors: ["velocity", "location_mismatch"],
-          },
-        },
-      })
-    )
-  );
-
-  // -----------------------------
-  // PUSH SUBSCRIPTIONS
-  // -----------------------------
-  await prisma.pushSubscription.create({
-    data: {
-      userId: customer.id,
-      endpoint: "https://example.com/push/123",
-      p256dh: "fake_p256dh_key",
-      auth: "fake_auth_key",
-    },
-  });
-
-  console.log("🌱 Seed complete!");
+  console.log(`✔ Products seeded: ${sampleProducts.length}`);
 }
 
 main()
-  .catch((err) => {
-    console.error("❌ Seed error:", err);
-    process.exit(1);
-  })
-  .finally(async () => {
+  .then(async () => {
+    console.log("🌱 Database seeding completed.");
     await prisma.$disconnect();
+  })
+  .catch(async (err) => {
+    console.error("❌ Seeding error:", err);
+    await prisma.$disconnect();
+    process.exit(1);
   });
