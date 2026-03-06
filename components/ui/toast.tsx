@@ -6,6 +6,7 @@ import {
   useState,
   ReactNode,
   useCallback,
+  useRef,
 } from "react";
 import { FiCheckCircle, FiAlertCircle } from "react-icons/fi";
 
@@ -93,10 +94,8 @@ function SwipeToast({
     if (!el) return;
 
     if (Math.abs(currentX.current) > 120) {
-      // Swipe far enough → dismiss
       onDismiss(toast.id);
     } else {
-      // Snap back
       el.style.transition = "transform 0.2s ease, opacity 0.2s ease";
       el.style.transform = "translateX(0)";
       el.style.opacity = "1";
@@ -132,4 +131,16 @@ function SwipeToast({
       {toast.message}
     </div>
   );
+}
+
+/* ----------------------------- */
+/* useToast Hook (Required!)     */
+/* ----------------------------- */
+
+export function useToast() {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error("useToast must be used within a ToastProvider");
+  }
+  return context;
 }
