@@ -27,16 +27,16 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-border bg-bg mt-20">
-      <div className="container py-12 flex flex-col lg:flex-row lg:justify-between gap-10">
+    <footer className="border-t border-neutral/20 bg-bg mt-20">
+      <div className="container py-14 flex flex-col lg:flex-row lg:justify-between gap-12">
 
         {/* Brand + Social */}
-        <div className="flex flex-col items-center lg:items-start gap-4">
-          <h2 className="font-heading text-lg text-primary">
+        <div className="flex flex-col items-center lg:items-start gap-5">
+          <h2 className="heading-3 text-primary tracking-tight">
             Wallis Executive Wax
           </h2>
 
-          <div className="flex gap-4">
+          <div className="flex gap-5">
             {SOCIAL_LINKS.map(({ icon: Icon, label, href, ariaLabel }) => (
               <a
                 key={label}
@@ -47,12 +47,12 @@ export default function Footer() {
                 title={label}
                 className="text-secondary hover:text-primary transition-colors duration-400 ease-smooth"
               >
-                <Icon size={20} />
+                <Icon size={22} />
               </a>
             ))}
           </div>
 
-          <p className="text-xs text-neutral font-body">
+          <p className="label text-neutral">
             Crafted with care in every detail.
           </p>
         </div>
@@ -60,8 +60,8 @@ export default function Footer() {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-border">
-        <div className="container py-4 text-sm text-neutral text-center">
+      <div className="border-t border-neutral/20">
+        <div className="container py-5 text-xs text-neutral text-center tracking-wide">
           © {currentYear} Wallis Executive Wax. All rights reserved.
         </div>
       </div>

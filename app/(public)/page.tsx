@@ -13,13 +13,17 @@ export default async function HomePage() {
   });
 
   return (
-    <main className="container py-16">
-      <h1 className="text-3xl font-semibold mb-10">Products</h1>
+    <main className="container py-20">
+      {/* Page Title */}
+      <h1 className="heading-1 mb-12 text-primary tracking-tight">
+        Products
+      </h1>
 
+      {/* Empty State */}
       {products.length === 0 ? (
-        <p className="text-neutral">No products available yet.</p>
+        <p className="label text-neutral">No products available yet.</p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8">
           {products.map((product) => (
             <ProductCard key={product.id} product={product as Product} />
           ))}

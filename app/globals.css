@@ -16,8 +16,8 @@
   --color-danger: #C94F4F;
 
   /* Typography */
-  --font-heading: "Playfair Display", serif;
-  --font-body: "Inter", sans-serif;
+  --font-heading: "Space Grotesk", sans-serif;
+  --font-body: "Space Grotesk", sans-serif;
 
   /* Radii */
   --radius-sm: 8px;
@@ -56,6 +56,43 @@
   button {
     cursor: pointer;
   }
+}
+
+/* ----------------------- */
+/* Typography Utilities    */
+/* ----------------------- */
+@utility heading-display {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 3.5rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+@utility heading-1 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 2.5rem;
+  line-height: 1.15;
+}
+
+@utility heading-2 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 2rem;
+}
+
+@utility heading-3 {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: 1.5rem;
+}
+
+@utility label {
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-secondary);
 }
 
 /* ----------------------- */

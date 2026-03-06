@@ -23,18 +23,18 @@ export default function Header() {
         {/* Logo */}
         <Link
           href="/"
-          className="text-2xl font-heading text-primary tracking-tight hover:opacity-80 transition-opacity"
+          className="heading-3 tracking-tight text-primary hover:opacity-80 transition-opacity"
         >
           Wallis Executive Wax
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
+        <nav className="hidden md:flex items-center gap-10">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`underline-grow flex items-center gap-2 transition-colors
+              className={`label underline-grow flex items-center gap-2 transition-colors
                 ${
                   isActive(item.href)
                     ? "text-primary font-semibold"
@@ -61,17 +61,17 @@ export default function Header() {
 
       {/* Mobile Drawer */}
       <div
-        className={`fixed inset-y-0 right-0 w-64 bg-bg shadow-xl transform ${
+        className={`fixed inset-y-0 right-0 w-64 bg-bg shadow-card transform ${
           isOpen ? "translate-x-0" : "translate-x-full"
         } transition-transform duration-400 ease-smooth z-50 md:hidden`}
       >
-        <nav className="flex flex-col p-8 gap-6 text-lg font-medium">
+        <nav className="flex flex-col p-8 gap-6">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-2 transition-colors
+              className={`label flex items-center gap-3 transition-colors
                 ${
                   isActive(item.href)
                     ? "text-primary font-semibold"
