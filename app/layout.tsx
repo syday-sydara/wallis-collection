@@ -23,15 +23,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${spaceGrotesk.className} antialiased`}>
         <ToastProvider>
           <Header />
-          <main>
+
+          <main className="min-h-screen">
             <div className="container mx-auto px-4 md:px-8 py-10">
               {children}
             </div>
           </main>
+
           <Footer />
         </ToastProvider>
       </body>
