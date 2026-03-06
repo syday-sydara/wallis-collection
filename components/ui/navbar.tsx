@@ -15,12 +15,12 @@ export function Navbar() {
     { label: "Cart", href: "/cart", icon: <FiShoppingCart size={18} /> },
   ];
 
-  const isActive = (href: string) => pathname.startsWith(href);
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <header className="border-b border-neutral/20 bg-bg/80 backdrop-blur-md sticky top-0 z-50">
       <div className="container flex items-center justify-between py-4">
-
         {/* Logo */}
         <Link
           href="/"
@@ -30,7 +30,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-10">
+        <nav className="hidden md:flex items-center gap-10" role="navigation">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -55,6 +55,7 @@ export function Navbar() {
           className="md:hidden text-primary hover:text-accent transition-colors"
           onClick={() => setIsOpen(!isOpen)}
           aria-expanded={isOpen}
+          aria-controls="mobile-menu"
           aria-label="Toggle menu"
         >
           {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
@@ -63,12 +64,16 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       <div
+        id="mobile-menu"
         className={`
           md:hidden overflow-hidden transition-all duration-300 ease-smooth
           ${isOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"}
         `}
       >
-        <nav className="flex flex-col items-center gap-5 py-5 bg-bg border-t border-neutral/20">
+        <nav
+          className="flex flex-col items-center gap-5 py-5 bg-bg border-t border-neutral/20"
+          role="navigation"
+        >
           {navItems.map((item) => (
             <Link
               key={item.href}

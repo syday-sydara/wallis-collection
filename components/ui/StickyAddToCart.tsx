@@ -11,7 +11,7 @@ export default function StickyAddToCart({ product }: { product: Product }) {
   const [loading, setLoading] = useState(false);
 
   const outOfStock = product.stock === 0;
-  const price = formatPrice(product.priceCents);
+  const price = formatPrice(product.priceNaira); // ✅ Correct field
 
   const increase = () => setQty((q) => Math.min(q + 1, product.stock));
   const decrease = () => setQty((q) => Math.max(q - 1, 1));
@@ -64,8 +64,8 @@ export default function StickyAddToCart({ product }: { product: Product }) {
                 )
               }
               className="
-                w-12 text-center py-2 text-sm 
-                border-l border-r border-neutral/20 
+                w-12 text-center py-2 text-sm
+                border-l border-r border-neutral/20
                 focus:outline-none
               "
             />
@@ -84,7 +84,7 @@ export default function StickyAddToCart({ product }: { product: Product }) {
           disabled={outOfStock || loading}
           onClick={handleAdd}
           className="
-            flex-1 bg-primary text-bg py-3 rounded-xl 
+            flex-1 bg-primary text-bg py-3 rounded-xl
             text-sm font-medium tracking-wide
             hover:opacity-90 transition disabled:opacity-50
           "

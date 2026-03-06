@@ -64,34 +64,39 @@ function SwipeToast({
   toast: Toast;
   onDismiss: (id: number) => void;
 }) {
-  let startX = 0;
-  let currentX = 0;
-  let isDragging = false;
+  const startX = useRef(0);
+  const currentX = useRef(0);
+  const isDragging = useRef(false);
+  const toastRef = useRef<HTMLDivElement | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    startX = e.touches[0].clientX;
-    isDragging = true;
+    startX.current = e.touches[0].clientX;
+    isDragging.current = true;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    currentX = e.touches[0].clientX - startX;
+    if (!isDragging.current) return;
 
-    // Move toast horizontally
-    const el = e.currentTarget;
-    el.style.transform = `translateX(${currentX}px)`;
-    el.style.opacity = `${1 - Math.abs(currentX) / 200}`;
+    currentX.current = e.touches[0].clientX - startX.current;
+
+    const el = toastRef.current;
+    if (!el) return;
+
+    el.style.transform = `translateX(${currentX.current}px)`;
+    el.style.opacity = `${1 - Math.abs(currentX.current) / 200}`;
   };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    isDragging = false;
+  const handleTouchEnd = () => {
+    isDragging.current = false;
 
-    if (Math.abs(currentX) > 120) {
-      // Dismiss if swiped far enough
+    const el = toastRef.current;
+    if (!el) return;
+
+    if (Math.abs(currentX.current) > 120) {
+      // Swipe far enough → dismiss
       onDismiss(toast.id);
     } else {
       // Snap back
-      const el = e.currentTarget;
       el.style.transition = "transform 0.2s ease, opacity 0.2s ease";
       el.style.transform = "translateX(0)";
       el.style.opacity = "1";
@@ -100,13 +105,15 @@ function SwipeToast({
         el.style.transition = "";
       }, 200);
     }
+
+    currentX.current = 0;
   };
 
-  const Icon =
-    toast.type === "success" ? FiCheckCircle : FiAlertCircle;
+  const Icon = toast.type === "success" ? FiCheckCircle : FiAlertCircle;
 
   return (
     <div
+      ref={toastRef}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -125,12 +132,4 @@ function SwipeToast({
       {toast.message}
     </div>
   );
-}
-
-export function useToast() {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error("useToast must be used within a ToastProvider");
-  }
-  return context;
 }
