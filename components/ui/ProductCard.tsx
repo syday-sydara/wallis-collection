@@ -15,21 +15,21 @@ export default function ProductCard({ product }: { product: Product }) {
       ? product.images[0]
       : null;
 
-  // Stock status using your theme tokens
+  // Fixed: Removed "status-" prefix to match your globals.css @theme
   const stockStatus =
     product.stock === 0
       ? {
           label: "Out of stock",
-          color: "bg-status-danger/10 text-status-danger",
+          color: "bg-danger/10 text-danger",
         }
       : product.stock < 5
       ? {
           label: "Low stock",
-          color: "bg-status-warning/10 text-status-warning",
+          color: "bg-warning/10 text-warning",
         }
       : {
           label: "In stock",
-          color: "bg-status-success/10 text-status-success",
+          color: "bg-success/10 text-success",
         };
 
   return (
@@ -44,6 +44,7 @@ export default function ProductCard({ product }: { product: Product }) {
             src={image}
             alt={product.name}
             fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (

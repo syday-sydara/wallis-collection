@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import type { Product } from "@/lib/types";
+import { useToast } from "@/components/ui/toast"; // Imported your toast hook
 
 export default function AddToCartSection({ product }: { product: Product }) {
+  const toast = useToast();
   const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,11 +20,11 @@ export default function AddToCartSection({ product }: { product: Product }) {
       // TODO: Replace with real API call
       await new Promise((res) => setTimeout(res, 1000));
 
-      // TODO: Trigger toast notification
+      toast.show("Successfully added to cart!", "success");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to add to cart"
-      );
+      const errorMessage = err instanceof Error ? err.message : "Failed to add to cart";
+      setError(errorMessage);
+      toast.show(errorMessage, "error");
     } finally {
       setLoading(false);
     }
@@ -30,12 +32,12 @@ export default function AddToCartSection({ product }: { product: Product }) {
 
   return (
     <div className="space-y-4">
-      {/* Stock Status */}
+      {/* Stock Status - Fixed Tailwind Colors */}
       <div className="text-sm font-medium">
         {outOfStock ? (
-          <span className="text-status-danger">Out of stock</span>
+          <span className="text-danger">Out of stock</span>
         ) : (
-          <span className="text-status-success">
+          <span className="text-success">
             In stock ({product.stock} available)
           </span>
         )}
@@ -60,9 +62,9 @@ export default function AddToCartSection({ product }: { product: Product }) {
         </div>
       )}
 
-      {/* Error Message */}
+      {/* Error Message - Fixed Tailwind Colors */}
       {error && (
-        <div className="text-sm text-status-danger bg-status-danger/10 rounded-lg p-3">
+        <div className="text-sm text-danger bg-danger/10 rounded-lg p-3">
           {error}
         </div>
       )}
