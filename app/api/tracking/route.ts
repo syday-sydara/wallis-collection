@@ -13,11 +13,11 @@ export async function POST(req: Request) {
       return Response.json({ error: "Order not found" }, { status: 404 });
     }
 
-    const { trackingNumber, courier } = order;
+    const { trackingNumber, courier, trackingUrl } = order;
 
     if (!trackingNumber || !courier) {
       return Response.json({
-        error: "This order does not have tracking information yet",
+        error: "Tracking not available yet",
       });
     }
 
@@ -28,9 +28,7 @@ export async function POST(req: Request) {
         trackingData = await fetch(
           `https://api.giglogistics.com/api/v1/tracking/${trackingNumber}`,
           {
-            headers: {
-              "API-KEY": process.env.GIGL_API_KEY!,
-            },
+            headers: { "API-KEY": process.env.GIGL_API_KEY! },
           }
         ).then((r) => r.json());
         break;
@@ -57,11 +55,23 @@ export async function POST(req: Request) {
         ).then((r) => r.json());
         break;
 
+      case "ACE":
+        trackingData = await fetch(
+          `https://api.ace.ng/v1/track/${trackingNumber}`,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.ACE_API_KEY}`,
+            },
+          }
+        ).then((r) => r.json());
+        break;
+
       default:
         // Fallback for couriers with no API
         return Response.json({
           manual: true,
-          trackingUrl: order.trackingUrl,
+          courier,
+          trackingUrl,
           message: "Tracking available on courier website",
         });
     }
