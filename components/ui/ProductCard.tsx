@@ -15,7 +15,6 @@ export default function ProductCard({ product }: { product: Product }) {
       ? product.images[0]
       : null;
 
-  // Fixed: Removed "status-" prefix to match your globals.css @theme
   const stockStatus =
     product.stock === 0
       ? {
@@ -56,30 +55,35 @@ export default function ProductCard({ product }: { product: Product }) {
 
       {/* Content */}
       <div className="p-4 space-y-3">
-        <h3 className="text-sm font-medium text-primary line-clamp-1">
+        {/* Product Name */}
+        <h3 className="heading-3 text-primary text-base line-clamp-1">
           {product.name}
         </h3>
 
-        <p className="text-lg font-semibold text-secondary">{price}</p>
+        {/* Price */}
+        <p className="text-lg font-semibold text-secondary tracking-tight">
+          {price}
+        </p>
 
+        {/* Stock Status */}
         <span
-          className={`inline-block text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-md ${stockStatus.color}`}
+          className={`label inline-block px-2 py-1 rounded-md ${stockStatus.color}`}
         >
           {stockStatus.label}
         </span>
 
+        {/* Add to Cart */}
         <button
           disabled={product.stock === 0 || loading}
           onClick={async () => {
             try {
               setLoading(true);
-              // TODO: Replace with real cart API call
               await new Promise((res) => setTimeout(res, 800));
             } finally {
               setLoading(false);
             }
           }}
-          className="w-full bg-primary text-bg text-sm py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 font-medium"
+          className="w-full bg-primary text-bg text-sm py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 font-medium tracking-wide"
         >
           {loading ? "Adding..." : "Add to Cart"}
         </button>

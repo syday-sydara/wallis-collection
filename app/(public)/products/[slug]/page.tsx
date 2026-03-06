@@ -31,28 +31,34 @@ export default async function ProductDetailPage({ params }: Props) {
   const price = formatPrice(product.priceCents);
 
   return (
-    <div className="container py-16 space-y-20">
+    <div className="container py-20 space-y-24">
+
       {/* Main Section */}
-      <div className="grid md:grid-cols-2 gap-16">
+      <div className="grid md:grid-cols-2 gap-20">
         <ProductGallery images={product.images as string[]} />
 
-        <div className="space-y-6">
+        <div className="space-y-8">
+
+          {/* Category */}
           {product.category && (
-            <span className="text-sm text-accent uppercase tracking-wide">
+            <span className="label text-accent">
               {product.category}
             </span>
           )}
 
-          <h1 className="text-3xl font-heading text-primary">
+          {/* Product Name */}
+          <h1 className="heading-1 text-primary tracking-tight">
             {product.name}
           </h1>
 
-          <p className="text-2xl font-semibold text-secondary">
+          {/* Price */}
+          <p className="text-2xl font-semibold text-secondary tracking-tight">
             {price}
           </p>
 
+          {/* Description */}
           {product.description && (
-            <p className="text-neutral leading-relaxed">
+            <p className="text-neutral leading-relaxed text-base">
               {product.description}
             </p>
           )}
@@ -66,12 +72,12 @@ export default async function ProductDetailPage({ params }: Props) {
 
       {/* Related Products */}
       {relatedProducts.length > 0 && (
-        <div>
-          <h2 className="text-xl font-semibold mb-8 text-primary">
+        <div className="space-y-10">
+          <h2 className="heading-2 text-primary tracking-tight">
             Related Products
           </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-10">
             {relatedProducts.map((p) => (
               <ProductCard key={p.id} product={p as Product} />
             ))}

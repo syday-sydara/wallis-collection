@@ -12,21 +12,21 @@ export default function ProductGallery({ images }: { images: string[] }) {
   const [active, setActive] = useState(safeImages[0]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Main Image */}
-      <div className="relative aspect-square bg-neutral/20 rounded-xl overflow-hidden">
+      <div className="relative aspect-square bg-neutral/10 rounded-xl overflow-hidden shadow-soft">
         <Image
           src={active}
           alt="Product image"
           fill
           priority
-          className="object-cover"
+          className="object-cover transition-transform duration-500"
           sizes="(max-width: 768px) 100vw, 50vw"
         />
       </div>
 
       {/* Thumbnails */}
-      <div className="flex gap-3">
+      <div className="flex gap-4">
         {safeImages.map((img) => {
           const isActive = active === img;
 
@@ -37,7 +37,11 @@ export default function ProductGallery({ images }: { images: string[] }) {
               aria-label="Select product image"
               className={`
                 relative w-20 h-20 rounded-lg overflow-hidden border transition-all duration-300
-                ${isActive ? "border-primary ring-2 ring-primary/30" : "border-neutral hover:border-primary/60"}
+                ${
+                  isActive
+                    ? "border-primary ring-2 ring-primary/30"
+                    : "border-neutral/40 hover:border-primary/60"
+                }
               `}
             >
               <Image
@@ -45,7 +49,7 @@ export default function ProductGallery({ images }: { images: string[] }) {
                 alt="Product thumbnail"
                 fill
                 className={`object-cover transition-transform duration-300 ${
-                  isActive ? "scale-105" : "group-hover:scale-105"
+                  isActive ? "scale-105" : "hover:scale-105"
                 }`}
                 sizes="80px"
               />
