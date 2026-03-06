@@ -11,6 +11,12 @@ async function getMonnifyToken() {
   });
 
   const data = await res.json();
+
+  if (!data.requestSuccessful) {
+    console.error("Monnify auth failed:", data);
+    throw new Error("Failed to authenticate with Monnify");
+  }
+
   return data.responseBody.accessToken;
 }
 
@@ -42,5 +48,6 @@ export async function POST(req: Request) {
   );
 
   const data = await res.json();
+
   return Response.json(data);
 }
