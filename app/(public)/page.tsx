@@ -1,6 +1,18 @@
+// File: app/(public)/page.tsx
 import Link from "next/link";
+import { prisma } from "@/lib/db";
+import ProductCard from "@/components/ui/ProductCard";
+import type { Product } from "@/lib/types";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  // Fetch latest 8 products (or filter by featured flag if you add one later)
+  const products = await prisma.product.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 8,
+  });
+
   return (
     <div className="space-y-32">
       {/* Hero Section */}
@@ -33,26 +45,15 @@ export default function HomePage() {
           Featured products
         </h2>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Link
-              key={i}
-              href="/products/product-slug"
-              className="group relative block overflow-hidden rounded-xl border border-neutral/40 bg-white shadow-sm hover:shadow-lg transition-shadow duration-400 ease-smooth"
-            >
-              <div className="h-48 bg-neutral/10 flex items-center justify-center">
-                <span className="text-neutral text-sm">Product {i + 1}</span>
-              </div>
-
-              <div className="p-4 space-y-1">
-                <h3 className="text-sm font-medium text-primary group-hover:text-accent transition-colors duration-400 ease-smooth">
-                  Product Name
-                </h3>
-                <p className="text-sm font-semibold text-secondary">$99.99</p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        {products.length === 0 ? (
+          <p className="text-neutral">No products available yet.</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product as Product} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

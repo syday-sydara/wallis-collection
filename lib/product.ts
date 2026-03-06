@@ -1,8 +1,9 @@
+// types/products.ts
 export type Product = {
   id: string;
   slug: string;
   name: string;
-  price: number;
+  priceNaira: number; // integer, in naira
   image: string;
   description: string;
   tags?: string[];
@@ -10,21 +11,21 @@ export type Product = {
 
 export const products: Product[] = [
   {
-    id: '1',
-    slug: 'minimal-sneaker',
-    name: 'Minimal Sneaker',
-    price: 129,
-    image: '/images/sneaker-1.jpg',
-    description: 'A clean, minimal sneaker for everyday wear.',
-    tags: ['shoes', 'minimal'],
+    id: "1",
+    slug: "premium-body-wax",
+    name: "Premium Body Wax",
+    priceNaira: 129, // ₦129
+    image: "/images/wax-1.jpg",
+    description: "A smooth, long-lasting premium wax ideal for body grooming and skincare.",
+    tags: ["wax", "skincare", "grooming"],
   },
-  // more products...
+  // ...
 ];
 
-export function getAllProducts() {
+export function getAllProducts(): Product[] {
   return products;
 }
 
-export function getProductBySlug(slug: string) {
+export function getProductBySlug(slug: string): Product | undefined {
   return products.find((p) => p.slug === slug);
 }

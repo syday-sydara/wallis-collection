@@ -11,26 +11,28 @@ export default async function ProductsPage() {
   });
 
   return (
-    <div className="container mx-auto py-16 space-y-12">
+    <div className="container py-16 space-y-12">
       
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold text-gray-900">
+        <h1 className="text-3xl font-heading font-semibold text-primary">
           All Products
         </h1>
 
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-neutral">
           {products.length} items
         </span>
       </div>
 
+      {/* Empty State */}
       {products.length === 0 ? (
-        <div className="text-center py-24 text-gray-500">
+        <div className="text-center py-24 text-neutral">
           No products available yet.
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product as Product} />
           ))}
         </div>
       )}
