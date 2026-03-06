@@ -21,10 +21,11 @@ export default async function ProductDetailPage({ params }: Props) {
       id: true,
       name: true,
       slug: true,
-      priceCents: true,
+      priceNaira: true,
       description: true,
       category: true,
       images: true,
+      stock: true,
       createdAt: true,
     },
   });
@@ -40,13 +41,14 @@ export default async function ProductDetailPage({ params }: Props) {
       id: true,
       name: true,
       slug: true,
-      priceCents: true,
-      image: true,
+      priceNaira: true,
+      images: true,
       category: true,
+      stock: true,
     },
   });
 
-  const price = formatPrice(product.priceCents);
+  const price = formatPrice(product.priceNaira);
 
   return (
     <div className="space-y-24 py-20">

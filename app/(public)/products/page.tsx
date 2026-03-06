@@ -11,9 +11,11 @@ export default async function ProductsPage() {
     select: {
       id: true,
       name: true,
-      price: true,
-      image: true,
       slug: true,
+      priceNaira: true,
+      images: true,
+      category: true,
+      stock: true,
       createdAt: true,
     },
   });

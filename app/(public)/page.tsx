@@ -12,10 +12,12 @@ export default async function HomePage() {
     select: {
       id: true,
       name: true,
-      price: true,
-      image: true,
       slug: true,
+      priceNaira: true,
+      images: true,
+      category: true,
       createdAt: true,
+      stock: true,
     },
   });
 

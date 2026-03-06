@@ -9,12 +9,16 @@ import { formatPrice } from "@/lib/formatters";
 export default function ProductCard({ product }: { product: Product }) {
   const [loading, setLoading] = useState(false);
 
-  const price = formatPrice(product.priceCents);
+  // Correct price field
+  const price = formatPrice(product.priceNaira);
+
+  // Extract first image safely
   const image =
     Array.isArray(product.images) && product.images.length > 0
       ? product.images[0]
       : null;
 
+  // Stock badge logic
   const stockStatus =
     product.stock === 0
       ? {
