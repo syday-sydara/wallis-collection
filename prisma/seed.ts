@@ -42,7 +42,7 @@ async function main() {
           slug,
           category,
           description: `Description for ${name}`,
-          priceCents: Math.floor(Math.random() * 50000) + 5000,
+          priceNaira: Math.floor(Math.random() * 50000) + 5000, // now in naira
           stock: Math.floor(Math.random() * 100),
           images: [`https://picsum.photos/seed/${slug}/600/600`],
         },
@@ -58,7 +58,7 @@ async function main() {
       const product = products[Math.floor(Math.random() * products.length)];
 
       const quantity = Math.floor(Math.random() * 3) + 1;
-      const total = product.priceCents * quantity;
+      const total = product.priceNaira * quantity;
 
       return prisma.order.create({
         data: {
@@ -66,14 +66,14 @@ async function main() {
           email: customer.email,
           phone: customer.phone,
           status: "PENDING",
-          paymentMethod: "paystack",
-          totalCents: total,
+          paymentMethod: "monnify",
+          totalNaira: total,
           items: {
             create: [
               {
                 productId: product.id,
                 quantity,
-                priceCents: product.priceCents,
+                priceNaira: product.priceNaira,
               },
             ],
           },

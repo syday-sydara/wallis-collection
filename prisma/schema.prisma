@@ -70,7 +70,7 @@ model Product {
   name        String
   slug        String  @unique
   description String?
-  priceCents  Int
+  priceNaira  Int
   stock       Int     @default(0)
   images      Json
   category    String?
@@ -104,7 +104,7 @@ model Order {
   trackingStatus String      @default("Processing")
   trackingSteps  Json?
 
-  totalCents Int
+  totalNaira Int
   currency   String @default("NGN")
 
   items          OrderItem[]
@@ -133,7 +133,7 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   quantity   Int
-  priceCents Int
+  priceNaira Int
 
   @@index([orderId])
   @@index([productId])
