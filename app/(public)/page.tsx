@@ -1,7 +1,6 @@
-// File: app/(public)/page.tsx
 import Link from "next/link";
 
-export default async function HomePage() {
+export default function HomePage() {
   return (
     <div className="space-y-32">
       {/* Hero Section */}
@@ -11,7 +10,7 @@ export default async function HomePage() {
             Modern. Minimal. Effortless shopping.
           </h1>
 
-          <p className="text-gray-600 text-lg md:text-xl">
+          <p className="text-secondary text-lg md:text-xl">
             A clean single‑store experience built with Next.js 16 + Tailwind CSS.
           </p>
 
@@ -23,8 +22,8 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="h-96 rounded-3xl bg-gray-200 border border-gray-300 flex items-center justify-center">
-          <span className="text-gray-500 text-sm">Hero image</span>
+        <div className="h-96 rounded-3xl bg-neutral/20 border border-neutral/40 flex items-center justify-center">
+          <span className="text-neutral text-sm">Hero image</span>
         </div>
       </section>
 
@@ -34,22 +33,22 @@ export default async function HomePage() {
           Featured products
         </h2>
 
-        {/* Placeholder Products */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
             <Link
               key={i}
               href="/products/product-slug"
-              className="group relative block overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-lg transition-shadow duration-400 ease-smooth"
+              className="group relative block overflow-hidden rounded-xl border border-neutral/40 bg-white shadow-sm hover:shadow-lg transition-shadow duration-400 ease-smooth"
             >
-              <div className="h-48 bg-gray-100 flex items-center justify-center">
-                <span className="text-gray-400 text-sm">Product {i + 1}</span>
+              <div className="h-48 bg-neutral/10 flex items-center justify-center">
+                <span className="text-neutral text-sm">Product {i + 1}</span>
               </div>
+
               <div className="p-4 space-y-1">
-                <h3 className="text-sm font-medium text-gray-900 group-hover:text-primary transition-colors duration-400 ease-smooth">
+                <h3 className="text-sm font-medium text-primary group-hover:text-accent transition-colors duration-400 ease-smooth">
                   Product Name
                 </h3>
-                <p className="text-sm font-semibold text-gray-700">$99.99</p>
+                <p className="text-sm font-semibold text-secondary">$99.99</p>
               </div>
             </Link>
           ))}
