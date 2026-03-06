@@ -2,67 +2,30 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useCart } from "@/components/cart/cart-context";
 import { formatPrice } from "@/lib/formatters";
-
-type CartItem = {
-  id: string;
-  name: string;
-  priceCents: number;
-  quantity: number;
-  image: string | null;
-};
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import QuantityStepper from "@/components/ui/QuantityStepper";
+import CheckoutProgress from "@/components/checkout/CheckoutProgress";
 
 export default function CartPage() {
-  // TEMPORARY MOCK DATA — replace with real cart state later
-  const [items, setItems] = useState<CartItem[]>([
-    {
-      id: "1",
-      name: "Executive Wax Jacket",
-      priceCents: 12900,
-      quantity: 1,
-      image: "/placeholder.png",
-    },
-    {
-      id: "2",
-      name: "Heritage Leather Bag",
-      priceCents: 18900,
-      quantity: 2,
-      image: "/placeholder.png",
-    },
-  ]);
-
-  const updateQty = (id: string, qty: number) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, quantity: Math.max(1, qty) } : item
-      )
-    );
-  };
-
-  const removeItem = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.priceCents * item.quantity,
-    0
-  );
+  const { items, updateQty, removeItem, subtotal } = useCart();
 
   return (
     <div className="container py-20 space-y-16">
+
+      {/* Progress Indicator */}
+      <CheckoutProgress step={1} />
 
       {/* Page Title */}
       <h1 className="heading-1 text-primary tracking-tight">Your Cart</h1>
 
       {/* Empty State */}
       {items.length === 0 && (
-        <div className="py-24 text-center">
+        <div className="py-24 text-center animate-in fade-in slide-in-from-bottom-4">
           <p className="label text-neutral mb-6">Your cart is empty.</p>
-          <Link
-            href="/products"
-            className="underline-grow text-primary label"
-          >
+          <Link href="/products" className="underline-grow text-primary label">
             Continue Shopping
           </Link>
         </div>
@@ -96,7 +59,7 @@ export default function CartPage() {
                       {item.name}
                     </h3>
                     <p className="text-secondary font-semibold mt-1">
-                      {formatPrice(item.priceCents)}
+                      {formatPrice(item.priceCents / 100)}
                     </p>
                   </div>
 
@@ -104,35 +67,10 @@ export default function CartPage() {
                   <div className="flex items-center justify-between mt-4">
 
                     {/* Quantity Stepper */}
-                    <div className="flex items-center border border-neutral/40 rounded-lg overflow-hidden">
-                      <button
-                        onClick={() =>
-                          updateQty(item.id, item.quantity - 1)
-                        }
-                        className="px-3 py-2 text-primary hover:bg-neutral/10 transition"
-                      >
-                        –
-                      </button>
-
-                      <input
-                        type="number"
-                        min={1}
-                        value={item.quantity}
-                        onChange={(e) =>
-                          updateQty(item.id, Number(e.target.value))
-                        }
-                        className="w-12 text-center py-2 text-sm border-l border-r border-neutral/20 focus:outline-none"
-                      />
-
-                      <button
-                        onClick={() =>
-                          updateQty(item.id, item.quantity + 1)
-                        }
-                        className="px-3 py-2 text-primary hover:bg-neutral/10 transition"
-                      >
-                        +
-                      </button>
-                    </div>
+                    <QuantityStepper
+                      value={item.quantity}
+                      onChange={(qty) => updateQty(item.id, qty)}
+                    />
 
                     {/* Remove */}
                     <button
@@ -148,14 +86,14 @@ export default function CartPage() {
           </div>
 
           {/* Summary */}
-          <div className="border border-neutral/20 rounded-xl p-6 shadow-soft space-y-6 h-fit">
+          <Card className="space-y-6 h-fit">
             <h2 className="heading-3 text-primary">Order Summary</h2>
 
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-neutral">Subtotal</span>
                 <span className="text-primary font-medium">
-                  {formatPrice(subtotal)}
+                  {formatPrice(subtotal / 100)}
                 </span>
               </div>
 
@@ -167,15 +105,15 @@ export default function CartPage() {
               <div className="flex justify-between pt-3 border-t border-neutral/20">
                 <span className="label text-primary">Total</span>
                 <span className="text-xl font-semibold text-primary">
-                  {formatPrice(subtotal)}
+                  {formatPrice(subtotal / 100)}
                 </span>
               </div>
             </div>
 
-            <button className="w-full bg-primary text-bg py-3 rounded-xl text-sm font-medium tracking-wide hover:opacity-90 transition">
+            <Button className="w-full" variant="primary">
               Proceed to Checkout
-            </button>
-          </div>
+            </Button>
+          </Card>
         </div>
       )}
     </div>

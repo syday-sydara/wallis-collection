@@ -3,6 +3,7 @@ import "./globals.css";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { ToastProvider } from "@/components/ui/toast";
+import { CartProvider } from "@/components/cart/cart-context";
 import { Space_Grotesk } from "next/font/google";
 
 const spaceGrotesk = Space_Grotesk({
@@ -25,17 +26,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${spaceGrotesk.className} antialiased`}>
-        <ToastProvider>
-          <Header />
+        <CartProvider>
+          <ToastProvider>
+            <Header />
 
-          <main className="min-h-screen">
-            <div className="container mx-auto px-4 md:px-8 py-10">
-              {children}
-            </div>
-          </main>
+            <main className="min-h-screen">
+              <div className="container mx-auto px-4 md:px-8 py-10">
+                {children}
+              </div>
+            </main>
 
-          <Footer />
-        </ToastProvider>
+            <Footer />
+          </ToastProvider>
+        </CartProvider>
       </body>
     </html>
   );
