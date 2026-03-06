@@ -6,19 +6,19 @@ const SOCIAL_LINKS = [
   {
     icon: FaInstagram,
     label: "Instagram",
-    href: "https://instagram.com", // TODO: Update with actual business Instagram URL
+    href: "https://instagram.com",
     ariaLabel: "Visit our Instagram",
   },
   {
     icon: FaFacebookF,
     label: "Facebook",
-    href: "https://facebook.com", // TODO: Update with actual business Facebook URL
+    href: "https://facebook.com",
     ariaLabel: "Visit our Facebook",
   },
   {
     icon: FaPinterestP,
     label: "Pinterest",
-    href: "https://pinterest.com", // TODO: Update with actual business Pinterest URL
+    href: "https://pinterest.com",
     ariaLabel: "Visit our Pinterest",
   },
 ];
@@ -27,12 +27,14 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-gray-200 bg-white mt-16">
-      <div className="container mx-auto py-12 flex flex-col lg:flex-row lg:justify-between gap-8">
+    <footer className="border-t border-border bg-bg mt-20">
+      <div className="container py-12 flex flex-col lg:flex-row lg:justify-between gap-10">
 
-        {/* Left: Brand & Social */}
+        {/* Brand + Social */}
         <div className="flex flex-col items-center lg:items-start gap-4">
-          <h2 className="font-heading text-lg text-gray-900">Wallis Executive Wax</h2>
+          <h2 className="font-heading text-lg text-primary">
+            Wallis Executive Wax
+          </h2>
 
           <div className="flex gap-4">
             {SOCIAL_LINKS.map(({ icon: Icon, label, href, ariaLabel }) => (
@@ -41,22 +43,25 @@ export default function Footer() {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-700 hover:text-gray-900 transition-colors duration-400 ease-smooth"
                 aria-label={ariaLabel}
                 title={label}
+                className="text-secondary hover:text-primary transition-colors duration-400 ease-smooth"
               >
                 <Icon size={20} />
               </a>
             ))}
           </div>
 
-          <p className="text-xs text-gray-500 font-body">Crafted with care in every detail.</p>
+          <p className="text-xs text-neutral font-body">
+            Crafted with care in every detail.
+          </p>
         </div>
 
       </div>
 
-      <div className="border-t border-gray-200 mt-8">
-        <div className="container mx-auto py-4 text-sm text-gray-500 text-center">
+      {/* Bottom Bar */}
+      <div className="border-t border-border">
+        <div className="container py-4 text-sm text-neutral text-center">
           © {currentYear} Wallis Executive Wax. All rights reserved.
         </div>
       </div>
