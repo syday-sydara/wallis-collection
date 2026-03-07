@@ -7,10 +7,12 @@ import {
   useEffect,
   ReactNode,
 } from "react";
+import { useUI } from "@/components/ui/ui-context";
 
 export interface CartItem {
   id: string;
   name: string;
+  slug: string;
   priceCents: number;
   quantity: number;
   image: string | null;
@@ -28,6 +30,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { openCart } = useUI();
   const [items, setItems] = useState<CartItem[]>([]);
 
   // Load from localStorage
@@ -44,6 +47,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const add = (item: CartItem) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.id === item.id);
+
+      openCart(); // auto-open drawer
+
       if (existing) {
         return prev.map((i) =>
           i.id === item.id
@@ -51,6 +57,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             : i
         );
       }
+
       return [...prev, item];
     });
   };
