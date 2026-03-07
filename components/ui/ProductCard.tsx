@@ -3,22 +3,21 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { useCart } from "@/components/cart/cart-context";
 import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/formatters";
 
 export default function ProductCard({ product }: { product: Product }) {
+  const { add } = useCart();
   const [loading, setLoading] = useState(false);
 
-  // Correct price field
   const price = formatPrice(product.priceNaira);
 
-  // Extract first image safely
   const image =
     Array.isArray(product.images) && product.images.length > 0
       ? product.images[0]
       : null;
 
-  // Stock badge logic
   const stockStatus =
     product.stock === 0
       ? {
@@ -37,7 +36,6 @@ export default function ProductCard({ product }: { product: Product }) {
 
   return (
     <div className="group relative bg-bg border border-neutral/20 rounded-xl overflow-hidden shadow-soft hover:shadow-card transition-all duration-400">
-      {/* Image */}
       <Link
         href={`/products/${product.slug}`}
         className="block relative h-64 bg-neutral/10 overflow-hidden"
@@ -57,35 +55,34 @@ export default function ProductCard({ product }: { product: Product }) {
         )}
       </Link>
 
-      {/* Content */}
       <div className="p-4 space-y-3">
-        {/* Product Name */}
         <h3 className="heading-3 text-primary text-base line-clamp-1">
           {product.name}
         </h3>
 
-        {/* Price */}
         <p className="text-lg font-semibold text-secondary tracking-tight">
           {price}
         </p>
 
-        {/* Stock Status */}
         <span
           className={`label inline-block px-2 py-1 rounded-md ${stockStatus.color}`}
         >
           {stockStatus.label}
         </span>
 
-        {/* Add to Cart */}
         <button
           disabled={product.stock === 0 || loading}
-          onClick={async () => {
-            try {
-              setLoading(true);
-              await new Promise((res) => setTimeout(res, 800));
-            } finally {
-              setLoading(false);
-            }
+          onClick={() => {
+            setLoading(true);
+            add({
+              id: product.id,
+              slug: product.slug,
+              name: product.name,
+              priceCents: product.priceNaira * 100,
+              quantity: 1,
+              image,
+            });
+            setTimeout(() => setLoading(false), 500);
           }}
           className="w-full bg-primary text-bg text-sm py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 font-medium tracking-wide"
         >

@@ -15,8 +15,7 @@ export default function Button({
 
   const variants = {
     primary: "bg-primary text-bg hover:opacity-90",
-    outline:
-      "border border-primary text-primary hover:bg-primary/10",
+    outline: "border border-primary text-primary hover:bg-primary/10",
     subtle: "text-secondary hover:text-primary",
   };
 
