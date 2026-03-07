@@ -3,9 +3,12 @@
 import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { useToast } from "@/components/ui/toast";
+import { useCart } from "@/components/cart/cart-context";
 
 export default function AddToCartSection({ product }: { product: Product }) {
   const toast = useToast();
+  const { add } = useCart();
+
   const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,10 +29,20 @@ export default function AddToCartSection({ product }: { product: Product }) {
         return;
       }
 
-      // Simulated API call
-      await new Promise((res) => setTimeout(res, 1000));
+      // Build CartItem shape expected by CartContext
+      const cartItem = {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        priceCents: product.priceCents,
+        quantity: qty,
+        image: product.images?.[0] ?? null,
+      };
 
-      toast.show("Successfully added to cart!", "success");
+      // Optimistic update
+      add(cartItem);
+
+      toast.show("Added to cart!", "success");
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to add to cart";
@@ -66,10 +79,7 @@ export default function AddToCartSection({ product }: { product: Product }) {
             min={1}
             max={product.stock}
             value={qty}
-            onChange={(e) => {
-              const value = clampQty(Number(e.target.value));
-              setQty(value);
-            }}
+            onChange={(e) => setQty(clampQty(Number(e.target.value)))}
             onBlur={() => setQty((v) => clampQty(v))}
             className="
               w-20 px-3 py-2 rounded-md border border-neutral/40
