@@ -110,9 +110,11 @@ export default function CartPage() {
               </div>
             </div>
 
-            <Button className="w-full" variant="primary">
-              Proceed to Checkout
-            </Button>
+            <Link href="/checkout/shipping">
+              <Button className="w-full" variant="primary">
+                Proceed to Checkout
+              </Button>
+            </Link>
           </Card>
         </div>
       )}

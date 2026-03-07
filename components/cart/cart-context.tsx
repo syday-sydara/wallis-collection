@@ -45,10 +45,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items]);
 
   const add = (item: CartItem) => {
+    // Update cart items
     setItems((prev) => {
       const existing = prev.find((i) => i.id === item.id);
-
-      openCart(); // auto-open drawer
 
       if (existing) {
         return prev.map((i) =>
@@ -60,6 +59,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       return [...prev, item];
     });
+
+    // Open cart AFTER state update (safe)
+    openCart();
   };
 
   const updateQty = (id: string, qty: number) => {

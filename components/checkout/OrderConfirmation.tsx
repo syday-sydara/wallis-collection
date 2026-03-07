@@ -1,23 +1,18 @@
+// components/checkout/OrderConfirmation.tsx
 "use client";
 
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { useCart } from "@/components/cart/cart-context";
 import { formatPrice } from "@/lib/formatters";
 import Link from "next/link";
-import { useEffect } from "react";
+import type { Order, OrderItem } from "@prisma/client";
 
 export default function OrderConfirmation({
-  orderId,
+  order,
 }: {
-  orderId: string;
+  order: Order & { items: OrderItem[] };
 }) {
-  const { items, subtotal, clear } = useCart();
-
-  // Clear cart on mount
-  useEffect(() => {
-    clear();
-  }, []);
+  const total = order.total ?? order.subtotal;
 
   return (
     <div className="space-y-12 py-20 text-center">
@@ -28,20 +23,20 @@ export default function OrderConfirmation({
       </p>
 
       <p className="text-primary font-medium">
-        Order Number: <span className="font-semibold">{orderId}</span>
+        Order Number: <span className="font-semibold">{order.id}</span>
       </p>
 
       <Card className="max-w-2xl mx-auto space-y-6">
         <h2 className="heading-3 text-primary">Order Summary</h2>
 
-        <div className="space-y-4">
-          {items.map((item) => (
+        <div className="space-y-4 text-left">
+          {order.items.map((item) => (
             <div key={item.id} className="flex justify-between">
               <span className="text-primary">
                 {item.name} × {item.quantity}
               </span>
               <span className="text-secondary font-medium">
-                {formatPrice((item.priceCents * item.quantity) / 100)}
+                {formatPrice((item.price * item.quantity) / 100)}
               </span>
             </div>
           ))}
@@ -50,7 +45,7 @@ export default function OrderConfirmation({
         <div className="pt-4 border-t border-neutral/20 flex justify-between">
           <span className="label text-primary">Total</span>
           <span className="text-xl font-semibold text-primary">
-            {formatPrice(subtotal / 100)}
+            {formatPrice(total / 100)}
           </span>
         </div>
       </Card>
