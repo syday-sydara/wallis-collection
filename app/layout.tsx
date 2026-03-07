@@ -13,7 +13,7 @@ import { Space_Grotesk } from "next/font/google";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["300","400","500","600","700"],
   display: "swap",
   variable: "--font-space-grotesk",
 });
@@ -27,11 +27,7 @@ export const metadata: Metadata = {
     "A curated collection of timeless fashion pieces for the modern wardrobe.",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={spaceGrotesk.variable} suppressHydrationWarning>
       <body className="min-h-screen bg-background text-primary-500 antialiased flex flex-col">
@@ -44,9 +40,7 @@ export default function RootLayout({
               <CartDrawer />
 
               <main className="flex-1">
-                <div className="container-xl py-10">
-                  {children}
-                </div>
+                <div className="container-xl py-10">{children}</div>
               </main>
 
               <Footer />

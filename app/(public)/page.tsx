@@ -2,10 +2,10 @@
 import prisma from "@/lib/db";
 import ProductCard from "@/components/ui/ProductCard";
 
-// Optional: cache for 60 seconds instead of force-dynamic
+// Cache products for 60 seconds
 export const revalidate = 60;
 
-// Strongly typed product shape based on Prisma query
+// Product type based on Prisma select
 type ProductCardData = {
   id: string;
   name: string;
@@ -34,20 +34,22 @@ export default async function HomePage() {
   });
 
   return (
-    <>
-      <h1 className="heading-1 mb-12 text-primary tracking-tight">
+    <section className="space-y-12">
+      <h1 className="heading-1 tracking-tight text-primary-500">
         Products
       </h1>
 
       {products.length === 0 ? (
-        <p className="label text-neutral">No products available yet.</p>
+        <p className="label text-neutral-600">
+          No products available yet.
+        </p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-4">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
       )}
-    </>
+    </section>
   );
 }

@@ -13,38 +13,17 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
 
   const price = formatPrice(product.priceNaira);
 
-  // Memoized image selection
-  const image = useMemo(() => {
-    return Array.isArray(product.images) && product.images.length > 0
-      ? product.images[0]
-      : null;
-  }, [product.images]);
+  const image = useMemo(() => (product.images?.[0] ?? null), [product.images]);
 
-  // Memoized stock status
   const stockStatus = useMemo(() => {
-    if (product.stock === 0) {
-      return {
-        label: "Out of stock",
-        color: "bg-danger/10 text-danger",
-      };
-    }
-    if (product.stock < 5) {
-      return {
-        label: "Low stock",
-        color: "bg-warning/10 text-warning",
-      };
-    }
-    return {
-      label: "In stock",
-      color: "bg-success/10 text-success",
-    };
+    if (product.stock === 0) return { label: "Out of stock", color: "bg-danger/10 text-danger" };
+    if (product.stock < 5) return { label: "Low stock", color: "bg-warning/10 text-warning" };
+    return { label: "In stock", color: "bg-success/10 text-success" };
   }, [product.stock]);
 
   const handleAddToCart = () => {
     if (product.stock === 0) return;
-
     setLoading(true);
-
     add({
       id: product.id,
       slug: product.slug,
@@ -53,66 +32,52 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
       quantity: 1,
       image,
     });
-
-    // Simulate a short UX delay
     setTimeout(() => setLoading(false), 500);
   };
 
   return (
-    <div className="group relative bg-bg border border-neutral/20 rounded-xl overflow-hidden shadow-soft hover:shadow-card transition-all duration-400">
+    <div className="group relative card overflow-hidden hover:shadow-card transition-all duration-400">
       <Link
-  href={`/products/${product.slug}`}
-  className="block relative h-64 bg-neutral/10 overflow-hidden"
-  aria-label={`View details for ${product.name}`}
->
-  {product.images.length > 0 ? (
-    <>
-      {/* Primary Image */}
-      <Image
-        src={product.images[0]}
-        alt={product.name}
-        fill
-        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        className="object-cover transition-opacity duration-500 group-hover:opacity-0"
-      />
-
-      {/* Hover Image (if available) */}
-      {product.images[1] && (
-        <Image
-          src={product.images[1]}
-          alt={`${product.name} alternate view`}
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-        />
-      )}
-    </>
-  ) : (
-    <div className="flex items-center justify-center h-full text-neutral text-sm">
-      No Image
-    </div>
-  )}
-</Link>
+        href={`/products/${product.slug}`}
+        className="block relative h-64 bg-neutral/10 overflow-hidden"
+        aria-label={`View details for ${product.name}`}
+      >
+        {product.images.length > 0 ? (
+          <>
+            <Image
+              src={product.images[0]}
+              alt={product.name}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover transition-opacity duration-500 group-hover:opacity-0"
+            />
+            {product.images[1] && (
+              <Image
+                src={product.images[1]}
+                alt={`${product.name} alternate view`}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+              />
+            )}
+          </>
+        ) : (
+          <div className="flex items-center justify-center h-full text-neutral text-sm">
+            No Image
+          </div>
+        )}
+      </Link>
 
       <div className="p-4 space-y-3">
-        <h3 className="heading-3 text-primary text-base line-clamp-1">
-          {product.name}
-        </h3>
-
-        <p className="text-lg font-semibold text-secondary tracking-tight">
-          {price}
-        </p>
-
-        <span
-          className={`label inline-block px-2 py-1 rounded-md ${stockStatus.color}`}
-        >
+        <h3 className="heading-3 text-primary-500 line-clamp-1">{product.name}</h3>
+        <p className="text-lg font-semibold text-secondary tracking-tight">{price}</p>
+        <span className={`label inline-block px-2 py-1 rounded-md ${stockStatus.color}`}>
           {stockStatus.label}
         </span>
-
         <button
           disabled={product.stock === 0 || loading}
           onClick={handleAddToCart}
-          className="w-full bg-primary text-bg text-sm py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 font-medium tracking-wide"
+          className="w-full btn btn-primary text-bg text-sm py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 font-medium tracking-wide"
         >
           {loading ? "Adding..." : "Add to Cart"}
         </button>
