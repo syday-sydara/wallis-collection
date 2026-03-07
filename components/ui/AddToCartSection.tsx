@@ -12,6 +12,10 @@ export default function AddToCartSection({ product }: { product: Product }) {
 
   const outOfStock = product.stock === 0;
 
+  const clampQty = (value: number) => {
+    return Math.max(1, Math.min(product.stock, value));
+  };
+
   const handleAddToCart = async () => {
     try {
       setLoading(true);
@@ -22,15 +26,15 @@ export default function AddToCartSection({ product }: { product: Product }) {
         return;
       }
 
-      // TODO: Replace with real API call
+      // Simulated API call
       await new Promise((res) => setTimeout(res, 1000));
 
       toast.show("Successfully added to cart!", "success");
     } catch (err) {
-      const errorMessage =
+      const message =
         err instanceof Error ? err.message : "Failed to add to cart";
-      setError(errorMessage);
-      toast.show(errorMessage, "error");
+      setError(message);
+      toast.show(message, "error");
     } finally {
       setLoading(false);
     }
@@ -62,7 +66,11 @@ export default function AddToCartSection({ product }: { product: Product }) {
             min={1}
             max={product.stock}
             value={qty}
-            onChange={(e) => setQty(Number(e.target.value))}
+            onChange={(e) => {
+              const value = clampQty(Number(e.target.value));
+              setQty(value);
+            }}
+            onBlur={() => setQty((v) => clampQty(v))}
             className="
               w-20 px-3 py-2 rounded-md border border-neutral/40
               text-sm tracking-wide
