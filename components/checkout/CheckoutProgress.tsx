@@ -1,5 +1,5 @@
 export default function CheckoutProgress({ step }: { step: number }) {
-  const steps = ["Cart", "Shipping", "Payment"];
+  const steps = ["Cart", "Shipping", "Payment", "Review"];
 
   return (
     <div className="flex items-center justify-between mb-10">
