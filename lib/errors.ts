@@ -1,108 +1,110 @@
-/**
- * Custom API error with HTTP status code
- */
+// lib/errors.ts
+import { Prisma, PrismaClientKnownRequestError } from "@prisma/client"
+import { ZodError } from "zod"
+
+/* ---------------------------------- */
+/* Typed API Response                 */
+/* ---------------------------------- */
+export type ApiResponse<T> = {
+  success: boolean
+  data?: T
+  error?: string
+  issues?: unknown
+  meta?: unknown
+}
+
+/* ---------------------------------- */
+/* Custom API Error with HTTP Status  */
+/* ---------------------------------- */
 export class ApiError extends Error {
-  status: number;
+  status: number
+  meta?: unknown
 
-  constructor(message: string, status = 400) {
-    super(message);
-    this.status = status;
+  constructor(message: string, status = 400, meta?: unknown) {
+    super(message)
+    this.status = status
+    this.meta = meta
   }
 
-  /** 400 Bad Request */
-  static badRequest(message = "Bad request") {
-    return new ApiError(message, 400);
+  static badRequest(message = "Bad request", meta?: unknown) {
+    return new ApiError(message, 400, meta)
   }
 
-  /** 401 Unauthorized */
-  static unauthorized(message = "Unauthorized") {
-    return new ApiError(message, 401);
+  static unauthorized(message = "Unauthorized", meta?: unknown) {
+    return new ApiError(message, 401, meta)
   }
 
-  /** 403 Forbidden */
-  static forbidden(message = "Forbidden") {
-    return new ApiError(message, 403);
+  static forbidden(message = "Forbidden", meta?: unknown) {
+    return new ApiError(message, 403, meta)
   }
 
-  /** 404 Not Found */
-  static notFound(message = "Not found") {
-    return new ApiError(message, 404);
+  static notFound(message = "Not found", meta?: unknown) {
+    return new ApiError(message, 404, meta)
   }
 
-  /** 409 Conflict */
-  static conflict(message = "Conflict") {
-    return new ApiError(message, 409);
+  static conflict(message = "Conflict", meta?: unknown) {
+    return new ApiError(message, 409, meta)
   }
 
-  /** 500 Internal Server Error */
-  static serverError(message = "Internal server error") {
-    return new ApiError(message, 500);
+  static serverError(message = "Internal server error", meta?: unknown) {
+    return new ApiError(message, 500, meta)
   }
 }
 
-/**
- * Centralized error logger
- * (Extendable for Sentry, Logtail, Datadog, etc.)
- */
+/* ---------------------------------- */
+/* Centralized Error Logger           */
+/* ---------------------------------- */
 export function logError(error: unknown) {
-  console.error("API Error:", error);
+  // Extendable for Sentry, Logtail, Datadog, etc.
+  console.error("[API ERROR]", error)
 }
 
-/**
- * Unified success response helper
- */
-export function handleSuccess<T>(data: T, status = 200) {
-  return Response.json({ success: true, data }, { status });
+/* ---------------------------------- */
+/* Success Response Helper            */
+/* ---------------------------------- */
+export function handleSuccess<T>(data: T, status = 200): Response {
+  const payload: ApiResponse<T> = { success: true, data }
+  return new Response(JSON.stringify(payload), { status, headers: { "Content-Type": "application/json" } })
 }
 
-/**
- * Unified error handler for API routes
- */
-export function handleError(error: unknown) {
-  // 1. Custom API errors
+/* ---------------------------------- */
+/* Unified Error Handler              */
+/* ---------------------------------- */
+export function handleError(error: unknown): Response {
+  // 1️⃣ Custom ApiError
   if (error instanceof ApiError) {
-    logError(error);
-    return Response.json(
-      { error: error.message },
-      { status: error.status }
-    );
+    logError(error)
+    return new Response(
+      JSON.stringify({ success: false, error: error.message, meta: error.meta }),
+      { status: error.status, headers: { "Content-Type": "application/json" } }
+    )
   }
 
-  // 2. Prisma errors (narrow check)
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    typeof (error as any).code === "string"
-  ) {
-    logError(error);
-    return Response.json(
-      { error: "Database error" },
-      { status: 500 }
-    );
+  // 2️⃣ Prisma Known Errors
+  if (error instanceof PrismaClientKnownRequestError) {
+    logError(error)
+    return new Response(
+      JSON.stringify({ success: false, error: "Database error", meta: error.meta }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    )
   }
 
-  // 3. Zod errors (narrow check)
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "issues" in error &&
-    Array.isArray((error as any).issues)
-  ) {
-    return Response.json(
-      {
+  // 3️⃣ Zod Validation Errors
+  if (error instanceof ZodError) {
+    return new Response(
+      JSON.stringify({
+        success: false,
         error: "Invalid input",
-        issues: (error as any).issues,
-      },
-      { status: 422 }
-    );
+        issues: error.issues,
+      }),
+      { status: 422, headers: { "Content-Type": "application/json" } }
+    )
   }
 
-  // 4. Unexpected errors
-  logError(error);
-
-  return Response.json(
-    { error: "Internal server error" },
-    { status: 500 }
-  );
+  // 4️⃣ Unknown / Unexpected Errors
+  logError(error)
+  return new Response(
+    JSON.stringify({ success: false, error: "Internal server error" }),
+    { status: 500, headers: { "Content-Type": "application/json" } }
+  )
 }
