@@ -1,4 +1,3 @@
-// File: app/(public)/products/page.tsx
 import { prisma } from "@/lib/db";
 import ProductCard from "@/components/ui/ProductCard";
 import type { Product } from "@/lib/types";
@@ -22,7 +21,6 @@ export default async function ProductsPage() {
 
   return (
     <div className="space-y-14 py-20">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="heading-1 text-primary tracking-tight">
           All Products
@@ -33,7 +31,6 @@ export default async function ProductsPage() {
         </span>
       </div>
 
-      {/* Empty State */}
       {products.length === 0 ? (
         <div className="py-24 text-center">
           <p className="label text-neutral">No products available yet.</p>

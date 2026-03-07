@@ -4,6 +4,8 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { ToastProvider } from "@/components/ui/toast";
 import { CartProvider } from "@/components/cart/cart-context";
+import { UIProvider } from "@/components/ui/ui-context";
+import CartDrawer from "@/components/cart/CartDrawer";
 import { Space_Grotesk } from "next/font/google";
 
 const spaceGrotesk = Space_Grotesk({
@@ -15,30 +17,29 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "Wallis Collection",
   description:
-    "A curated collection of timeless fashion pieces for the modern wardrobe with Wallis Collection, where timeless fashion meets modern elegance.",
+    "A curated collection of timeless fashion pieces for the modern wardrobe.",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${spaceGrotesk.className} antialiased`}>
-        <CartProvider>
-          <ToastProvider>
-            <Header />
+        <UIProvider>
+          <CartProvider>
+            <ToastProvider>
+              <Header />
+              <CartDrawer />
 
-            <main className="min-h-screen">
-              <div className="container mx-auto px-4 md:px-8 py-10">
-                {children}
-              </div>
-            </main>
+              <main className="min-h-screen">
+                <div className="container mx-auto px-4 md:px-8 py-10">
+                  {children}
+                </div>
+              </main>
 
-            <Footer />
-          </ToastProvider>
-        </CartProvider>
+              <Footer />
+            </ToastProvider>
+          </CartProvider>
+        </UIProvider>
       </body>
     </html>
   );

@@ -1,4 +1,3 @@
-// File: app/(public)/products/[slug]/page.tsx
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import ProductGallery from "@/components/ui/ProductGallery";
@@ -15,6 +14,8 @@ type Props = {
 };
 
 export default async function ProductDetailPage({ params }: Props) {
+  if (!params?.slug) return notFound();
+
   const product = await prisma.product.findUnique({
     where: { slug: params.slug },
     select: {
@@ -52,41 +53,34 @@ export default async function ProductDetailPage({ params }: Props) {
 
   return (
     <div className="space-y-24 py-20">
-      {/* Main Section */}
       <div className="grid md:grid-cols-2 gap-20">
         <ProductGallery images={product.images as string[]} />
 
         <div className="space-y-8">
-          {/* Category */}
           {product.category && (
             <span className="label text-accent">{product.category}</span>
           )}
 
-          {/* Product Name */}
           <h1 className="heading-1 text-primary tracking-tight">
             {product.name}
           </h1>
 
-          {/* Price */}
           <p className="text-2xl font-semibold text-secondary tracking-tight">
             {price}
           </p>
 
-          {/* Description */}
           {product.description && (
             <p className="text-neutral leading-relaxed text-base">
               {product.description}
             </p>
           )}
 
-          {/* Desktop Add to Cart */}
           <div className="hidden md:block">
             <AddToCartSection product={product} />
           </div>
         </div>
       </div>
 
-      {/* Related Products */}
       {relatedProducts.length > 0 && (
         <div className="space-y-10">
           <h2 className="heading-2 text-primary tracking-tight">
@@ -101,7 +95,6 @@ export default async function ProductDetailPage({ params }: Props) {
         </div>
       )}
 
-      {/* Sticky Mobile Add to Cart */}
       <StickyAddToCart product={product} />
     </div>
   );
