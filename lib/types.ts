@@ -2,18 +2,15 @@
  * Core type definitions for the application
  */
 
-export interface Product {
+export type Product = {
   id: string;
   name: string;
   slug: string;
-  priceCents: number;
-  stock: number;
+  priceNaira: number;
   images: string[];
-  category?: string;
-  description?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+  category?: string | null;
+  stock: number;
+};
 
 export interface CartItem {
   productId: string;
