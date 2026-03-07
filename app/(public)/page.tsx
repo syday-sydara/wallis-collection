@@ -1,12 +1,24 @@
 // File: app/(public)/page.tsx
-import { prisma } from "@/lib/db";
+import prisma from "@/lib/db";
 import ProductCard from "@/components/ui/ProductCard";
-import type { Product } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+// Optional: cache for 60 seconds instead of force-dynamic
+export const revalidate = 60;
+
+// Strongly typed product shape based on Prisma query
+type ProductCardData = {
+  id: string;
+  name: string;
+  slug: string;
+  priceNaira: number;
+  images: string[];
+  category: string | null;
+  createdAt: Date;
+  stock: number;
+};
 
 export default async function HomePage() {
-  const products = await prisma.product.findMany({
+  const products: ProductCardData[] = await prisma.product.findMany({
     orderBy: { createdAt: "desc" },
     take: 12,
     select: {
@@ -32,7 +44,7 @@ export default async function HomePage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product as Product} />
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       )}

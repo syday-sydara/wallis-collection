@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FiMenu, FiX, FiShoppingCart } from "react-icons/fi";
@@ -10,11 +10,15 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
 
-  const navItems = [
-    { label: "Products", href: "/products" },
-    { label: "About", href: "/about" },
-    { label: "Cart", href: "/cart", icon: <FiShoppingCart size={18} /> },
-  ];
+  // Memoized nav items to avoid re-creation on every render
+  const navItems = useMemo(
+    () => [
+      { label: "Products", href: "/products" },
+      { label: "About", href: "/about" },
+      { label: "Cart", href: "/cart", icon: <FiShoppingCart size={18} /> },
+    ],
+    []
+  );
 
   // Improved active route detection
   const isActive = (href: string) =>
@@ -27,6 +31,11 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? "hidden" : "";
+  }, [isOpen]);
+
   return (
     <header
       className={`
@@ -36,7 +45,6 @@ export default function Header() {
       `}
     >
       <div className="container flex items-center justify-between">
-
         {/* Logo */}
         <Link
           href="/"
@@ -79,8 +87,9 @@ export default function Header() {
       </div>
 
       {/* Mobile Drawer */}
-      <div
+      <aside
         id="mobile-menu"
+        aria-hidden={!isOpen}
         className={`
           fixed inset-y-0 right-0 w-64 bg-bg shadow-card transform
           ${isOpen ? "translate-x-0" : "translate-x-full"}
@@ -118,7 +127,7 @@ export default function Header() {
             </Link>
           ))}
         </nav>
-      </div>
+      </aside>
 
       {/* Backdrop */}
       {isOpen && (

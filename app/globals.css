@@ -1,15 +1,21 @@
 @import "tailwindcss";
 
-/* ----------------------- */
-/* Theme Configuration     */
-/* ----------------------- */
+/* ------------------------------------------------ */
+/* THEME TOKENS                                     */
+/* ------------------------------------------------ */
+
 @theme {
+
   /* Colors */
-  --color-primary: #272B36;
-  --color-accent: #a08a81;
-  --color-bg: #ffffff;
-  --color-neutral: #b7b8bb;
-  --color-secondary: #595d66;
+  --color-primary-500: #272B36;
+  --color-accent-500: #a08a81;
+
+  --color-background: #ffffff;
+  --color-surface: #fafafa;
+  --color-border: #e6e6e6;
+
+  --color-neutral-400: #b7b8bb;
+  --color-neutral-600: #595d66;
 
   --color-success: #4CAF50;
   --color-warning: #A08A81;
@@ -19,39 +25,42 @@
   --font-heading: "Space Grotesk", sans-serif;
   --font-body: "Space Grotesk", sans-serif;
 
-  /* Radii */
+  /* Radius */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
 
   /* Shadows */
-  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.06);
+  --shadow-soft: 0 4px 20px rgba(0,0,0,0.04);
+  --shadow-card: 0 8px 30px rgba(0,0,0,0.06);
 
   /* Motion */
-  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-smooth: cubic-bezier(0.4,0,0.2,1);
   --duration-400: 400ms;
 
-  /* Spacing Scale (optional but recommended) */
-  --spacing-xxs: 0.25rem;
+  /* Layout */
+  --container-xl: 1280px;
+
+  /* Spacing */
   --spacing-xs: 0.5rem;
   --spacing-sm: 0.75rem;
   --spacing-md: 1rem;
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
-  --spacing-2xl: 3rem;
 }
 
-/* ----------------------- */
-/* Base Styles             */
-/* ----------------------- */
+/* ------------------------------------------------ */
+/* BASE STYLES                                      */
+/* ------------------------------------------------ */
+
 @layer base {
+
   html,
   body {
     height: 100%;
-    background-color: var(--color-bg);
-    color: var(--color-primary);
+    background: var(--color-background);
+    color: var(--color-primary-500);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -64,12 +73,35 @@
 
   button {
     cursor: pointer;
+    border: none;
+    background: none;
+    font: inherit;
   }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-500);
+    outline-offset: 2px;
+  }
+
 }
 
-/* ----------------------- */
-/* Typography Utilities    */
-/* ----------------------- */
+/* ------------------------------------------------ */
+/* ANIMATIONS                                       */
+/* ------------------------------------------------ */
+
+@layer utilities {
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+}
+
+/* ------------------------------------------------ */
+/* TYPOGRAPHY UTILITIES                             */
+/* ------------------------------------------------ */
+
 @utility heading-display {
   font-family: var(--font-heading);
   font-weight: 700;
@@ -101,27 +133,105 @@
   font-size: 0.75rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: var(--color-secondary);
+  color: var(--color-neutral-600);
 }
 
-/* ----------------------- */
-/* Custom Utilities        */
-/* ----------------------- */
+/* ------------------------------------------------ */
+/* INTERACTION UTILITIES                            */
+/* ------------------------------------------------ */
+
 @utility underline-grow {
   position: relative;
+}
 
-  &::after {
-    content: "";
-    position: absolute;
-    width: 0;
-    height: 2px;
-    bottom: -2px;
-    left: 0;
-    background-color: currentColor;
-    transition: width 0.3s var(--ease-smooth);
-  }
+@utility underline-grow::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background: currentColor;
+  transition: width 0.3s var(--ease-smooth);
+}
 
-  &:hover::after {
-    width: 100%;
-  }
+@utility underline-grow:hover::after {
+  width: 100%;
+}
+
+/* ------------------------------------------------ */
+/* SKELETON LOADER                                  */
+/* ------------------------------------------------ */
+
+@utility skeleton {
+  background-image: linear-gradient(
+    90deg,
+    rgba(183,184,187,0.12),
+    rgba(183,184,187,0.24),
+    rgba(183,184,187,0.12)
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s var(--ease-smooth) infinite;
+}
+
+@utility skeleton-block {
+  border-radius: var(--radius-sm);
+  background-image: linear-gradient(
+    90deg,
+    rgba(183,184,187,0.12),
+    rgba(183,184,187,0.24),
+    rgba(183,184,187,0.12)
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s var(--ease-smooth) infinite;
+}
+
+/* ------------------------------------------------ */
+/* COMPONENT UTILITIES                              */
+/* ------------------------------------------------ */
+
+@utility card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--spacing-lg);
+}
+
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all var(--duration-400) var(--ease-smooth);
+}
+
+@utility btn-primary {
+  background: var(--color-primary-500);
+  color: white;
+}
+
+@utility btn-primary:hover {
+  opacity: 0.9;
+}
+
+@utility container-xl {
+  max-width: var(--container-xl);
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+/* ------------------------------------------------ */
+/* DARK MODE SUPPORT                                */
+/* ------------------------------------------------ */
+
+.dark {
+
+  --color-background: #0f1115;
+  --color-surface: #1a1c22;
+  --color-border: #2a2d35;
+
+  --color-primary-500: #ffffff;
+
 }

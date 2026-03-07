@@ -1,13 +1,26 @@
-import { prisma } from "@/lib/db";
+import prisma from "@/lib/db";
 import { notFound } from "next/navigation";
 import ProductGallery from "@/components/ui/ProductGallery";
 import AddToCartSection from "@/components/ui/AddToCartSection";
 import StickyAddToCart from "@/components/ui/StickyAddToCart";
 import ProductCard from "@/components/ui/ProductCard";
 import { formatPrice } from "@/lib/formatters";
-import type { Product } from "@/lib/types";
+import type { ProductCardData } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
+
+// Strong type for the product detail page
+type ProductDetailData = {
+  id: string;
+  name: string;
+  slug: string;
+  priceNaira: number;
+  description: string | null;
+  category: string | null;
+  images: string[];
+  stock: number;
+  createdAt: Date;
+};
 
 type Props = {
   params: { slug: string };
@@ -33,10 +46,13 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!product) return notFound();
 
-  const relatedProducts = await prisma.product.findMany({
-    where: product.category
-      ? { category: product.category, NOT: { id: product.id } }
-      : { NOT: { id: product.id } },
+  const relatedProducts: ProductCardData[] = await prisma.product.findMany({
+    where: {
+      AND: [
+        { id: { not: product.id } },
+        product.category ? { category: product.category } : {},
+      ],
+    },
     take: 4,
     select: {
       id: true,
@@ -46,6 +62,7 @@ export default async function ProductDetailPage({ params }: Props) {
       images: true,
       category: true,
       stock: true,
+      createdAt: true,
     },
   });
 
@@ -53,8 +70,9 @@ export default async function ProductDetailPage({ params }: Props) {
 
   return (
     <div className="space-y-24 py-20">
+      {/* Product Section */}
       <div className="grid md:grid-cols-2 gap-20">
-        <ProductGallery images={product.images as string[]} />
+        <ProductGallery images={product.images} />
 
         <div className="space-y-8">
           {product.category && (
@@ -81,6 +99,7 @@ export default async function ProductDetailPage({ params }: Props) {
         </div>
       </div>
 
+      {/* Related Products */}
       {relatedProducts.length > 0 && (
         <div className="space-y-10">
           <h2 className="heading-2 text-primary tracking-tight">
@@ -89,12 +108,13 @@ export default async function ProductDetailPage({ params }: Props) {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-10">
             {relatedProducts.map((p) => (
-              <ProductCard key={p.id} product={p as Product} />
+              <ProductCard key={p.id} product={p} />
             ))}
           </div>
         </div>
       )}
 
+      {/* Sticky Add to Cart (Mobile) */}
       <StickyAddToCart product={product} />
     </div>
   );

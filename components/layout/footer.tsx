@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FaInstagram, FaFacebookF, FaPinterestP } from "react-icons/fa";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 const SOCIAL_LINKS = [
   {
@@ -36,14 +36,16 @@ export default function Footer() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Memoize social links for performance
+  const socialLinks = useMemo(() => SOCIAL_LINKS, []);
+
   return (
     <footer
       role="contentinfo"
       className="border-t border-neutral/20 bg-bg mt-20 relative"
     >
       <div className="container py-16 grid grid-cols-1 lg:grid-cols-4 gap-14">
-
-        {/* Brand Section (Always Expanded) */}
+        {/* Brand Section */}
         <div className="flex flex-col gap-5">
           <h2 className="heading-3 text-primary tracking-tight">
             Wallis Executive Wax
@@ -54,7 +56,7 @@ export default function Footer() {
           </p>
 
           <div className="flex gap-5">
-            {SOCIAL_LINKS.map(({ icon: Icon, label, href, ariaLabel }) => (
+            {socialLinks.map(({ icon: Icon, label, href, ariaLabel }) => (
               <a
                 key={label}
                 href={href}
@@ -70,7 +72,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Collapsible Section Component */}
+        {/* Footer Sections */}
         <FooterSection title="Explore">
           <FooterLink href="/products">Products</FooterLink>
           <FooterLink href="/about">About Us</FooterLink>
@@ -164,7 +166,11 @@ function FooterSection({
       <div
         className={`
           overflow-hidden transition-all duration-300
-          ${open ? "max-h-96 opacity-100" : "max-h-0 opacity-0 lg:max-h-none lg:opacity-100"}
+          ${
+            open
+              ? "max-h-96 opacity-100"
+              : "max-h-0 opacity-0 lg:max-h-none lg:opacity-100"
+          }
         `}
       >
         <div className="flex flex-col gap-3 mt-2 lg:mt-0">{children}</div>
@@ -177,7 +183,13 @@ function FooterSection({
 /* Footer Link Component          */
 /* ------------------------------ */
 
-function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+function FooterLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
   return (
     <Link
       href={href}
