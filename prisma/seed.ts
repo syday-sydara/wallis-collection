@@ -6,9 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding database...");
 
-  // -----------------------------------------------------
-  // 1. Create Admin User
-  // -----------------------------------------------------
+  // 1. Admin User
   const adminPassword = await bcrypt.hash("admin123", 10);
 
   const admin = await prisma.user.upsert({
@@ -24,9 +22,7 @@ async function main() {
 
   console.log("✔ Admin user created:", admin.email);
 
-  // -----------------------------------------------------
-  // 2. Create Regular User
-  // -----------------------------------------------------
+  // 2. Regular User
   const userPassword = await bcrypt.hash("password123", 10);
 
   const user = await prisma.user.upsert({
@@ -42,9 +38,7 @@ async function main() {
 
   console.log("✔ Customer user created:", user.email);
 
-  // -----------------------------------------------------
-  // 3. Seed Products
-  // -----------------------------------------------------
+  // 3. Products
   const sampleProducts = [
     {
       name: "Classic Leather Wallet",
@@ -53,10 +47,7 @@ async function main() {
       priceNaira: 15000,
       stock: 25,
       category: "Accessories",
-      images: [
-        "/products/wallet1.jpg",
-        "/products/wallet2.jpg",
-      ],
+      images: ["/products/wallet1.jpg", "/products/wallet2.jpg"],
     },
     {
       name: "Luxury Wristwatch",
@@ -65,10 +56,7 @@ async function main() {
       priceNaira: 85000,
       stock: 10,
       category: "Watches",
-      images: [
-        "/products/watch1.jpg",
-        "/products/watch2.jpg",
-      ],
+      images: ["/products/watch1.jpg", "/products/watch2.jpg"],
     },
     {
       name: "Men's Designer Shoes",
@@ -77,10 +65,7 @@ async function main() {
       priceNaira: 45000,
       stock: 18,
       category: "Footwear",
-      images: [
-        "/products/shoes1.jpg",
-        "/products/shoes2.jpg",
-      ],
+      images: ["/products/shoes1.jpg", "/products/shoes2.jpg"],
     },
   ];
 
