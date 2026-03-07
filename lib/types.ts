@@ -1,45 +1,37 @@
-/**
- * Core type definitions for the application
- */
+import { Prisma } from "@prisma/client"
 
 /* ---------------------------------- */
 /* Product Types                      */
 /* ---------------------------------- */
 
-export type Product = {
-  id: string;
-  name: string;
-  slug: string;
-  priceNaira: number;
-  images: string[];
-  category?: string | null; // simplified for UI
-  stock: number;
-  createdAt: Date;
-};
+export type Product = Prisma.ProductGetPayload<{}>
 
-/**
- * Product shape used specifically for ProductCard
- * (matches the Prisma select in homepage)
- */
-export type ProductCardData = {
-  id: string;
-  name: string;
-  slug: string;
-  priceNaira: number;
-  images: string[];
-  category: string | null;
-  stock: number;
-  createdAt: Date;
-};
+export const productCardSelect = Prisma.validator<Prisma.ProductSelect>()({
+  id: true,
+  name: true,
+  slug: true,
+  priceNaira: true,
+  images: true,
+  category: true,
+  stock: true,
+  createdAt: true,
+})
+
+export type ProductCardData = Prisma.ProductGetPayload<{
+  select: typeof productCardSelect
+}>
 
 /* ---------------------------------- */
 /* Cart Types                         */
 /* ---------------------------------- */
 
 export interface CartItem {
-  productId: string;
-  quantity: number;
-  addedAt: Date;
+  productId: string
+  name: string
+  priceNaira: number
+  image: string
+  quantity: number
+  addedAt: Date
 }
 
 /* ---------------------------------- */
@@ -48,16 +40,17 @@ export interface CartItem {
 
 export type OrderStatus =
   | "pending"
+  | "paid"
   | "confirmed"
+  | "processing"
   | "shipped"
-  | "delivered";
+  | "delivered"
+  | "cancelled"
+  | "refunded"
 
-/**
- * Lightweight order summary for UI lists
- */
 export interface OrderSummary {
-  id: string;
-  totalCents: number;
-  status: OrderStatus;
-  createdAt: Date;
+  id: string
+  totalCents: number
+  status: OrderStatus
+  createdAt: Date
 }

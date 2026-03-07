@@ -1,33 +1,34 @@
-import prisma from "@/lib/db";
-import { notFound } from "next/navigation";
-import ProductGallery from "@/components/ui/ProductGallery";
-import AddToCartSection from "@/components/ui/AddToCartSection";
-import StickyAddToCart from "@/components/ui/StickyAddToCart";
-import ProductCard from "@/components/ui/ProductCard";
-import { formatPrice } from "@/lib/formatters";
-import type { ProductCardData } from "@/lib/types";
+// File: app/(public)/products/[slug]/page.tsx
+import prisma from "@/lib/db"
+import { notFound } from "next/navigation"
+import ProductGallery from "@/components/ui/ProductGallery"
+import AddToCartSection from "@/components/ui/AddToCartSection"
+import StickyAddToCart from "@/components/ui/StickyAddToCart"
+import ProductCard from "@/components/ui/ProductCard"
+import { formatPrice } from "@/lib/formatters"
+import type { ProductCardData } from "@/lib/types"
 
-export const revalidate = 60;
+export const revalidate = 60
 
 // Strong type for the product detail page
 type ProductDetailData = {
-  id: string;
-  name: string;
-  slug: string;
-  priceNaira: number;
-  description: string | null;
-  category: string | null;
-  images: string[];
-  stock: number;
-  createdAt: Date;
-};
+  id: string
+  name: string
+  slug: string
+  priceNaira: number
+  description: string | null
+  category: string | null
+  images: string[]
+  stock: number
+  createdAt: Date
+}
 
 type Props = {
-  params: { slug: string };
-};
+  params: { slug: string }
+}
 
 export default async function ProductDetailPage({ params }: Props) {
-  if (!params?.slug) return notFound();
+  if (!params?.slug) return notFound()
 
   const product = await prisma.product.findUnique({
     where: { slug: params.slug },
@@ -42,16 +43,15 @@ export default async function ProductDetailPage({ params }: Props) {
       stock: true,
       createdAt: true,
     },
-  });
+  })
 
-  if (!product) return notFound();
+  if (!product) return notFound()
 
+  // Fetch related products (same category, exclude current)
   const relatedProducts: ProductCardData[] = await prisma.product.findMany({
     where: {
-      AND: [
-        { id: { not: product.id } },
-        product.category ? { category: product.category } : {},
-      ],
+      id: { not: product.id },
+      ...(product.category ? { category: product.category } : {}),
     },
     take: 4,
     select: {
@@ -64,9 +64,9 @@ export default async function ProductDetailPage({ params }: Props) {
       stock: true,
       createdAt: true,
     },
-  });
+  })
 
-  const price = formatPrice(product.priceNaira);
+  const formattedPrice = formatPrice(product.priceNaira)
 
   return (
     <div className="space-y-24 py-20">
@@ -84,7 +84,7 @@ export default async function ProductDetailPage({ params }: Props) {
           </h1>
 
           <p className="text-2xl font-semibold text-secondary tracking-tight">
-            {price}
+            {formattedPrice}
           </p>
 
           {product.description && (
@@ -93,8 +93,9 @@ export default async function ProductDetailPage({ params }: Props) {
             </p>
           )}
 
+          {/* Desktop Add to Cart */}
           <div className="hidden md:block">
-            <AddToCartSection product={product} />
+            <AddToCartSection product={{ ...product, formattedPrice }} />
           </div>
         </div>
       </div>
@@ -108,14 +109,17 @@ export default async function ProductDetailPage({ params }: Props) {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-10">
             {relatedProducts.map((p) => (
-              <ProductCard key={p.id} product={p} />
+              <ProductCard
+                key={p.id}
+                product={{ ...p, formattedPrice: formatPrice(p.priceNaira) }}
+              />
             ))}
           </div>
         </div>
       )}
 
       {/* Sticky Add to Cart (Mobile) */}
-      <StickyAddToCart product={product} />
+      <StickyAddToCart product={{ ...product, formattedPrice }} />
     </div>
-  );
+  )
 }
