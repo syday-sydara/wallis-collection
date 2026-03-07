@@ -1,181 +1,95 @@
+// ------------------------------------------------------
+//  Prisma Schema for Wallis Collection Ecommerce System
+// ------------------------------------------------------
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "postgresql" // or mysql / sqlite depending on your setup
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id                String             @id @default(cuid())
-  name              String?
-  email             String?            @unique
-  emailVerified     DateTime?
-  image             String?
-  password          String?
-  role              Role               @default(USER)
-  phone             String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  accounts          Account[]
-  orders            Order[]
-  pushSubscriptions PushSubscription[]
-  sessions          Session[]
-
-  @@index([email])
-  @@index([role])
-}
-
+// -----------------------------
+// Product Model
+// -----------------------------
 model Product {
-  id          String      @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
-  slug        String      @unique
-  description String?
-  stock       Int         @default(0)
-  images      Json
-  category    String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  slug        String   @unique
   priceNaira  Int
-  items       OrderItem[]
+  images      String[]
+  description String?
+  category    String?
+  stock       Int       @default(0)
 
-  @@index([slug])
-  @@index([category])
-  @@index([name])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  OrderItem   OrderItem[]
 }
 
+// -----------------------------
+// Order Model
+// -----------------------------
 model Order {
-  id             String          @id @default(cuid())
-  userId         String?
+  id             String         @id @default(cuid())
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  // Customer Info
   email          String
   phone          String?
-  status         OrderStatus     @default(PENDING)
-  paymentMethod  String
-  providerRef    String?
-  trackingStatus String          @default("Processing")
-  trackingSteps  Json?
-  currency       String          @default("NGN")
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  totalNaira     Int
-  fraudSignals   FraudSignal[]
-  user           User?           @relation(fields: [userId], references: [id])
+
+  // Shipping Info
+  shippingType   ShippingType
+  address        String?
+  city           String?
+  state          String?
+  postalCode     String?
+  courierPhone   String?
+  trackingNumber String?
+
+  // Payment Info
+  paymentMethod  PaymentMethod
+  paid           Boolean        @default(false)
+
+  // Totals
+  subtotal       Int
+  total          Int
+
+  // Relations
   items          OrderItem[]
-  refundRequests RefundRequest[]
-
-  @@index([userId])
-  @@index([status])
-  @@index([createdAt])
-  @@index([email])
 }
 
+// -----------------------------
+// Order Item Model
+// -----------------------------
 model OrderItem {
-  id         String  @id @default(cuid())
-  orderId    String
-  productId  String
-  quantity   Int
-  priceNaira Int
-  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product    Product @relation(fields: [productId], references: [id])
-
-  @@index([orderId])
-  @@index([productId])
-}
-
-model RefundRequest {
-  id        String       @id @default(cuid())
-  orderId   String
-  reason    String
-  status    RefundStatus @default(PENDING)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId])
-  @@index([status])
-}
-
-model FraudSignal {
   id        String   @id @default(cuid())
+
+  order     Order    @relation(fields: [orderId], references: [id])
   orderId   String
-  score     Int
-  details   Json?
-  createdAt DateTime @default(now())
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  @@index([orderId])
-  @@index([score])
+  productId String
+  name      String
+  price     Int
+  quantity  Int
+  image     String?
 }
 
-model PushSubscription {
-  id        String   @id @default(cuid())
-  userId    String?
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now())
-  user      User?    @relation(fields: [userId], references: [id])
-
-  @@index([userId])
+// -----------------------------
+// Enums
+// -----------------------------
+enum ShippingType {
+  DELIVERY
+  PICKUP
 }
 
-model Account {
-  id                String   @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@index([userId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  createdAt    DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-  createdAt  DateTime @default(now())
-
-  @@id([identifier, token])
-}
-
-enum Role {
-  USER
-  ADMIN
-}
-
-enum OrderStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-  CANCELLED
-}
-
-enum RefundStatus {
-  PENDING
-  APPROVED
-  REJECTED
+enum PaymentMethod {
+  CARD
+  BANK_TRANSFER
+  PAY_ON_DELIVERY
 }
