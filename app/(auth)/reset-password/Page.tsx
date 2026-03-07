@@ -1,31 +1,25 @@
 export default function Page() {
   return (
     <div>
-      <h1 className="text-xl font-semibold mb-4">Login</h1>
+      <h1 className="text-xl font-semibold mb-4">Reset Password</h1>
 
       <form className="space-y-4">
         <input
-          type="email"
-          placeholder="Email"
+          type="password"
+          placeholder="New password"
           className="w-full border rounded-lg p-3"
         />
 
         <input
           type="password"
-          placeholder="Password"
+          placeholder="Confirm password"
           className="w-full border rounded-lg p-3"
         />
 
         <button className="w-full bg-black text-white p-3 rounded-lg">
-          Login
+          Reset Password
         </button>
       </form>
-
-      <div className="mt-4 text-sm text-center">
-        <a href="/register" className="text-blue-600">
-          Create an account
-        </a>
-      </div>
     </div>
   );
 }

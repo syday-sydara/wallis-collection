@@ -69,7 +69,7 @@ ${items
 
 💰 *Total:* ₦${subtotal.toLocaleString()}
 
-We’ll notify you once your order ships.  
+We’ll notify you once your order ships.
 Thank you for shopping with Wallis Collection.
   `;
 }

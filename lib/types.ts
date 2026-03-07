@@ -6,7 +6,7 @@ export type Product = {
   id: string;
   name: string;
   slug: string;
-  priceNaira: number;
+  priceNaira: number; // integer, in naira (not kobo)
   images: string[];
   category?: string | null;
   stock: number;
@@ -18,9 +18,15 @@ export interface CartItem {
   addedAt: Date;
 }
 
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "shipped"
+  | "delivered";
+
 export interface Order {
   id: string;
-  totalCents: number;
-  status: "pending" | "confirmed" | "shipped" | "delivered";
+  totalCents: number; // stored in kobo/cents for accuracy
+  status: OrderStatus;
   createdAt: Date;
 }
