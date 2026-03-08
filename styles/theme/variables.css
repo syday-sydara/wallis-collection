@@ -1,0 +1,29 @@
+@layer base {
+  :root {
+    --color-primary: #272B36;
+    --color-accent: #a08a81;
+    --color-bg: #ffffff;
+    --color-neutral: #b7b8bb;
+    --color-secondary: #595d66;
+    --color-success: #4CAF50;
+    --color-warning: #A08A81;
+    --color-danger: #C94F4F;
+    --font-heading: "Space Grotesk", sans-serif;
+    --font-body: "Space Grotesk", sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --shadow-soft: 0 4px 20px rgba(0,0,0,0.04);
+    --shadow-card: 0 8px 30px rgba(0,0,0,0.06);
+    --ease-smooth: cubic-bezier(0.4,0,0.2,1);
+    --duration-400: 400ms;
+  }
+
+  .dark {
+    --color-bg: #0f1115;
+    --color-primary: #ffffff;
+    --color-accent: #a08a81;
+    --color-secondary: #bbbbbb;
+  }
+}

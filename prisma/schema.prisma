@@ -1,121 +1,19 @@
-generator client {
-  provider = "prisma-client-js"
-}
+generator client { provider = "prisma-client-js" }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  phone     String?
-  password  String?
-  orders    Order[]
-  addresses Address[]
-  createdAt DateTime @default(now())
-}
+model User { id String @id @default(cuid()); email String @unique; phone String?; password String?; orders Order[]; addresses Address[]; createdAt DateTime @default(now()) }
+model Address { id String @id @default(cuid()); userId String; name String; phone String; city String; state String; address String; user User @relation(fields: [userId], references: [id]) }
+model Category { id String @id @default(cuid()); name String; slug String @unique; products Product[] }
+model Product { id String @id @default(cuid()); name String; slug String @unique; description String?; priceCents Int; stock Int @default(0); reservedStock Int @default(0); images Json; categoryId String?; category Category? @relation(fields: [categoryId], references: [id]); createdAt DateTime @default(now()); updatedAt DateTime @updatedAt }
+model Order { id String @id @default(cuid()); userId String?; email String; phone String?; status OrderStatus @default(PENDING); paymentMethod String; providerRef String?; trackingStatus String @default("Processing"); trackingSteps Json?; totalCents Int; currency String @default("NGN"); createdAt DateTime @default(now()); updatedAt DateTime @updatedAt; items OrderItem[]; payments Payment[] }
+model OrderItem { id String @id @default(cuid()); orderId String; productId String; quantity Int; priceCents Int }
+model Payment { id String @id @default(cuid()); orderId String; provider String; reference String; status String; amountCents Int; createdAt DateTime @default(now()) }
+model RefundRequest { id String @id @default(cuid()); orderId String; reason String; status String @default("PENDING"); createdAt DateTime @default(now()); updatedAt DateTime @updatedAt }
+model FraudSignal { id String @id @default(cuid()); orderId String; score Int; details Json?; createdAt DateTime @default(now()) }
+model PushSubscription { id String @id @default(cuid()); userId String?; endpoint String; p256dh String; auth String; createdAt DateTime @default(now()) }
 
-model Address {
-  id      String @id @default(cuid())
-  userId  String
-  name    String
-  phone   String
-  city    String
-  state   String
-  address String
-  user    User   @relation(fields: [userId], references: [id])
-}
-
-model Category {
-  id       String    @id @default(cuid())
-  name     String
-  slug     String    @unique
-  products Product[]
-}
-
-model Product {
-  id            String   @id @default(cuid())
-  name          String
-  slug          String   @unique
-  description   String?
-  priceCents    Int
-  stock         Int      @default(0)
-  reservedStock Int      @default(0)
-  images        Json
-  categoryId    String?
-  category      Category? @relation(fields: [categoryId], references: [id])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-model Order {
-  id             String      @id @default(cuid())
-  userId         String?
-  email          String
-  phone          String?
-  status         OrderStatus @default(PENDING)
-  paymentMethod  String
-  providerRef    String?
-  trackingStatus String      @default("Processing")
-  trackingSteps  Json?
-  totalCents     Int
-  currency       String      @default("NGN")
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  items          OrderItem[]
-  payments       Payment[]
-}
-
-model OrderItem {
-  id         String   @id @default(cuid())
-  orderId    String
-  productId  String
-  quantity   Int
-  priceCents Int
-}
-
-model Payment {
-  id          String   @id @default(cuid())
-  orderId     String
-  provider    String
-  reference   String
-  status      String
-  amountCents Int
-  createdAt   DateTime @default(now())
-}
-
-model RefundRequest {
-  id        String   @id @default(cuid())
-  orderId   String
-  reason    String
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model FraudSignal {
-  id        String   @id @default(cuid())
-  orderId   String
-  score     Int
-  details   Json?
-  createdAt DateTime @default(now())
-}
-
-model PushSubscription {
-  id        String   @id @default(cuid())
-  userId    String?
-  endpoint  String
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now())
-}
-
-enum OrderStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-  CANCELLED
-}
+enum OrderStatus { PENDING PAID FAILED REFUNDED CANCELLED }

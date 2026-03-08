@@ -1,0 +1,7 @@
+@layer utilities {
+  .heading-display { font-family: var(--font-heading); font-weight:700; font-size:3.5rem; line-height:1.1; letter-spacing:-0.02em; }
+  .heading-1 { font-family: var(--font-heading); font-weight:600; font-size:2.5rem; line-height:1.15; }
+  .underline-grow { position: relative; }
+  .underline-grow::after { content:""; position:absolute; width:0; height:2px; bottom:-2px; left:0; background-color:currentColor; transition:width 0.3s var(--ease-smooth); }
+  .underline-grow:hover::after { width:100%; }
+}
