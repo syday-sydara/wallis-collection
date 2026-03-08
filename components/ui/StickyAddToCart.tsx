@@ -4,14 +4,17 @@ import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/formatters";
 import { useToast } from "@/components/ui/toast";
+import { useCart } from "@/components/cart/cart-context";
 
 export default function StickyAddToCart({ product }: { product: Product }) {
   const toast = useToast();
+  const { add } = useCart();
+
   const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(false);
 
   const outOfStock = product.stock === 0;
-  const price = formatPrice(product.priceNaira); // ✅ Correct field
+  const price = formatPrice(product.priceNaira);
 
   const increase = () => setQty((q) => Math.min(q + 1, product.stock));
   const decrease = () => setQty((q) => Math.max(q - 1, 1));
@@ -20,8 +23,18 @@ export default function StickyAddToCart({ product }: { product: Product }) {
     try {
       setLoading(true);
 
-      // TODO: Replace with real API call
-      await new Promise((res) => setTimeout(res, 800));
+      // Build CartItem shape expected by CartProvider
+      const cartItem = {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        priceCents: product.priceCents,
+        quantity: qty,
+        image: product.images?.[0] ?? null,
+      };
+
+      // Optimistic update
+      add(cartItem);
 
       toast.show("Added to cart!", "success");
     } catch {

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FiMenu, FiX, FiShoppingCart } from "react-icons/fi";
+import { useCart } from "@/components/cart/cart-context";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const { items } = useCart();
 
   const navItems = [
     { label: "Products", href: "/products" },
@@ -17,6 +19,20 @@ export function Navbar() {
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
+
+  // Prevent background scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? "hidden" : "";
+  }, [isOpen]);
+
+  // Close menu on Escape key
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   return (
     <header className="border-b border-neutral/20 bg-bg/80 backdrop-blur-md sticky top-0 z-50">
@@ -90,6 +106,13 @@ export function Navbar() {
             >
               {item.icon}
               {item.label}
+
+              {/* Optional cart badge */}
+              {item.href === "/cart" && items.length > 0 && (
+                <span className="ml-1 bg-primary text-bg text-xs px-2 py-0.5 rounded-full">
+                  {items.length}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
