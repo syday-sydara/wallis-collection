@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-import Header from "@/components/layout/header";
+import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/footer";
 import CartDrawer from "@/components/cart/CartDrawer";
 
@@ -19,13 +19,18 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://walliscollection.com"),
+
   title: {
     default: "Wallis Collection",
     template: "%s | Wallis Collection",
   },
+
   description:
     "A curated collection of timeless fashion pieces for the modern wardrobe.",
+
   viewport: "width=device-width, initial-scale=1",
+
   openGraph: {
     title: "Wallis Collection",
     description:
@@ -33,6 +38,22 @@ export const metadata: Metadata = {
     url: "https://walliscollection.com",
     siteName: "Wallis Collection",
     type: "website",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Wallis Collection",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Wallis Collection",
+    description:
+      "A curated collection of timeless fashion pieces for the modern wardrobe.",
+    images: ["/og-image.jpg"],
   },
 };
 
@@ -42,8 +63,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={spaceGrotesk.variable} suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased flex flex-col">
+    <html
+      lang="en"
+      className={spaceGrotesk.variable}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen bg-background text-foreground antialiased flex flex-col font-sans">
         <UIProvider>
           <CartProvider>
             <ToastProvider>
