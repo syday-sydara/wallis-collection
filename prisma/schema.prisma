@@ -1,95 +1,121 @@
-// ------------------------------------------------------
-//  Prisma Schema for Wallis Collection Ecommerce System
-// ------------------------------------------------------
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql" // or mysql / sqlite depending on your setup
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// -----------------------------
-// Product Model
-// -----------------------------
-model Product {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  priceNaira  Int
-  images      String[]
-  description String?
-  category    String?
-  stock       Int       @default(0)
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  // Relations
-  OrderItem   OrderItem[]
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  phone     String?
+  password  String?
+  orders    Order[]
+  addresses Address[]
+  createdAt DateTime @default(now())
 }
 
-// -----------------------------
-// Order Model
-// -----------------------------
-model Order {
-  id             String         @id @default(cuid())
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+model Address {
+  id      String @id @default(cuid())
+  userId  String
+  name    String
+  phone   String
+  city    String
+  state   String
+  address String
+  user    User   @relation(fields: [userId], references: [id])
+}
 
-  // Customer Info
+model Category {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  products Product[]
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  priceCents    Int
+  stock         Int      @default(0)
+  reservedStock Int      @default(0)
+  images        Json
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  userId         String?
   email          String
   phone          String?
-
-  // Shipping Info
-  shippingType   ShippingType
-  address        String?
-  city           String?
-  state          String?
-  postalCode     String?
-  courierPhone   String?
-  trackingNumber String?
-
-  // Payment Info
-  paymentMethod  PaymentMethod
-  paid           Boolean        @default(false)
-
-  // Totals
-  subtotal       Int
-  total          Int
-
-  // Relations
+  status         OrderStatus @default(PENDING)
+  paymentMethod  String
+  providerRef    String?
+  trackingStatus String      @default("Processing")
+  trackingSteps  Json?
+  totalCents     Int
+  currency       String      @default("NGN")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
   items          OrderItem[]
+  payments       Payment[]
 }
 
-// -----------------------------
-// Order Item Model
-// -----------------------------
 model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  productId  String
+  quantity   Int
+  priceCents Int
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  orderId     String
+  provider    String
+  reference   String
+  status      String
+  amountCents Int
+  createdAt   DateTime @default(now())
+}
+
+model RefundRequest {
   id        String   @id @default(cuid())
-
-  order     Order    @relation(fields: [orderId], references: [id])
   orderId   String
-
-  productId String
-  name      String
-  price     Int
-  quantity  Int
-  image     String?
+  reason    String
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-// -----------------------------
-// Enums
-// -----------------------------
-enum ShippingType {
-  DELIVERY
-  PICKUP
+model FraudSignal {
+  id        String   @id @default(cuid())
+  orderId   String
+  score     Int
+  details   Json?
+  createdAt DateTime @default(now())
 }
 
-enum PaymentMethod {
-  CARD
-  BANK_TRANSFER
-  PAY_ON_DELIVERY
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String?
+  endpoint  String
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
 }

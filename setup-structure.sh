@@ -5,10 +5,15 @@ echo "🧹 Cleaning old payment files and placeholders..."
 # -----------------------------
 # REMOVE OLD PAYMENTS
 # -----------------------------
-rm -rf app/api/paystack
-rm lib/paystack.ts
-rm -rf node_modules/stripe
-pnpm remove stripe || true
+rm -rf "app/api/paystack"
+rm -f "lib/paystack.ts"
+
+# Remove Stripe if installed
+if pnpm list stripe &> /dev/null; then
+  pnpm remove stripe
+else
+  echo "Stripe not installed, skipping removal..."
+fi
 
 # -----------------------------
 # REMOVE OLD PLACEHOLDER PAGES (public, auth, customer, admin)
@@ -35,88 +40,40 @@ OLD_LIBS=(
   "lib/stripe.ts"
 )
 for file in "${OLD_LIBS[@]}"; do
-  [ -f "$file" ] && rm "$file" && echo "Removed $file"
+  if [ -f "$file" ]; then
+    rm "$file"
+    echo "Removed $file"
+  fi
 done
 
 # -----------------------------
 # CREATE CLEAN STRUCTURE
 # -----------------------------
-
 echo "🚀 Creating African E-commerce Store Structure (Next.js 16 + Prisma 7 + Monnify)..."
 
 # Public pages
-mkdir -p app/(public)/products/[slug]
-mkdir -p app/(public)/cart
-mkdir -p app/(public)/checkout
-mkdir -p app/(public)/track-order
+mkdir -p "app/(public)/products/[slug]"
+mkdir -p "app/(public)/cart"
+mkdir -p "app/(public)/checkout"
+mkdir -p "app/(public)/track-order"
 
 # Auth
-mkdir -p app/(auth)/login
-mkdir -p app/(auth)/register
+mkdir -p "app/(auth)/login"
+mkdir -p "app/(auth)/register"
 
 # Customer Dashboard
-mkdir -p app/(customer)/account/orders
+mkdir -p "app/(customer)/account/orders"
 
 # Admin Dashboard
-mkdir -p app/(admin)/dashboard
-mkdir -p app/(admin)/orders
-mkdir -p app/(admin)/products
-mkdir -p app/(admin)/refunds
-mkdir -p app/(admin)/fraud
-mkdir -p app/(admin)/inventory
+mkdir -p "app/(admin)/dashboard"
+mkdir -p "app/(admin)/orders"
+mkdir -p "app/(admin)/products"
+mkdir -p "app/(admin)/refunds"
+mkdir -p "app/(admin)/fraud"
+mkdir -p "app/(admin)/inventory"
 
 # API
-mkdir -p app/api/auth
-mkdir -p app/api/products
-mkdir -p app/api/cart
-mkdir -p app/api/orders
-mkdir -p app/api/payments/monnify
-mkdir -p app/api/refunds
-mkdir -p app/api/uploads
-mkdir -p app/api/notifications
-mkdir -p app/api/search
-
-# Components
-mkdir -p components/ui
-mkdir -p components/checkout
-mkdir -p components/payments
-mkdir -p components/admin
-mkdir -p components/product
-
-# Lib / Services
-mkdir -p lib/services
-mkdir -p lib/fraud
-
-# Middleware
-touch middleware.ts
-
-# -----------------------------
-# PLACEHOLDER PAGES
-# -----------------------------
-echo "export default function Page() { return <div>Home</div> }" > app/(public)/page.tsx
-echo "export default function Page() { return <div>Products</div> }" > app/(public)/products/page.tsx
-echo "export default function Page() { return <div>Product Detail</div> }" > app/(public)/products/[slug]/page.tsx
-echo "export default function Page() { return <div>Cart</div> }" > app/(public)/cart/page.tsx
-echo "export default function Page() { return <div>Checkout</div> }" > app/(public)/checkout/page.tsx
-echo "export default function Page() { return <div>Track Order</div> }" > app/(public)/track-order/page.tsx
-
-echo "export default function Page() { return <div>Login</div> }" > app/(auth)/login/page.tsx
-echo "export default function Page() { return <div>Register</div> }" > app/(auth)/register/page.tsx
-
-echo "export default function Page() { return <div>Account</div> }" > app/(customer)/account/page.tsx
-echo "export default function Page() { return <div>Customer Orders</div> }" > app/(customer)/account/orders/page.tsx
-
-echo "export default function Page() { return <div>Admin Dashboard</div> }" > app/(admin)/dashboard/page.tsx
-echo "export default function Page() { return <div>Admin Orders</div> }" > app/(admin)/orders/page.tsx
-echo "export default function Page() { return <div>Admin Products</div> }" > app/(admin)/products/page.tsx
-echo "export default function Page() { return <div>Refund Center</div> }" > app/(admin)/refunds/page.tsx
-echo "export default function Page() { return <div>Fraud Center</div> }" > app/(admin)/fraud/page.tsx
-echo "export default function Page() { return <div>Inventory</div> }" > app/(admin)/inventory/page.tsx
-
-# -----------------------------
-# API PLACEHOLDERS
-# -----------------------------
-API_PLACEHOLDERS=(
+API_DIRS=(
   "auth/login"
   "auth/register"
   "products/list"
@@ -134,10 +91,47 @@ API_PLACEHOLDERS=(
   "search"
 )
 
-for route in "${API_PLACEHOLDERS[@]}"; do
+for route in "${API_DIRS[@]}"; do
   mkdir -p "app/api/$route"
   echo "export async function POST() { return Response.json({ ok: true }) }" > "app/api/$route/route.ts"
 done
+
+# Components
+mkdir -p "components/ui"
+mkdir -p "components/checkout"
+mkdir -p "components/payments"
+mkdir -p "components/admin"
+mkdir -p "components/product"
+
+# Lib / Services
+mkdir -p "lib/services"
+mkdir -p "lib/fraud"
+
+# Middleware
+touch "middleware.ts"
+
+# -----------------------------
+# PLACEHOLDER PAGES
+# -----------------------------
+echo "export default function Page() { return <div>Home</div> }" > "app/(public)/page.tsx"
+echo "export default function Page() { return <div>Products</div> }" > "app/(public)/products/page.tsx"
+echo "export default function Page() { return <div>Product Detail</div> }" > "app/(public)/products/[slug]/page.tsx"
+echo "export default function Page() { return <div>Cart</div> }" > "app/(public)/cart/page.tsx"
+echo "export default function Page() { return <div>Checkout</div> }" > "app/(public)/checkout/page.tsx"
+echo "export default function Page() { return <div>Track Order</div> }" > "app/(public)/track-order/page.tsx"
+
+echo "export default function Page() { return <div>Login</div> }" > "app/(auth)/login/page.tsx"
+echo "export default function Page() { return <div>Register</div> }" > "app/(auth)/register/page.tsx"
+
+echo "export default function Page() { return <div>Account</div> }" > "app/(customer)/account/page.tsx"
+echo "export default function Page() { return <div>Customer Orders</div> }" > "app/(customer)/account/orders/page.tsx"
+
+echo "export default function Page() { return <div>Admin Dashboard</div> }" > "app/(admin)/dashboard/page.tsx"
+echo "export default function Page() { return <div>Admin Orders</div> }" > "app/(admin)/orders/page.tsx"
+echo "export default function Page() { return <div>Admin Products</div> }" > "app/(admin)/products/page.tsx"
+echo "export default function Page() { return <div>Refund Center</div> }" > "app/(admin)/refunds/page.tsx"
+echo "export default function Page() { return <div>Fraud Center</div> }" > "app/(admin)/fraud/page.tsx"
+echo "export default function Page() { return <div>Inventory</div> }" > "app/(admin)/inventory/page.tsx"
 
 # -----------------------------
 # LIB PLACEHOLDERS / SERVICES
@@ -159,6 +153,7 @@ LIB_FILES=(
 )
 
 for file in "${LIB_FILES[@]}"; do
+  mkdir -p "lib/$(dirname $file)"
   touch "lib/$file"
 done
 
@@ -204,18 +199,18 @@ model Category {
 }
 
 model Product {
-  id           String   @id @default(cuid())
-  name         String
-  slug         String   @unique
-  description  String?
-  priceCents   Int
-  stock        Int      @default(0)
-  reservedStock Int     @default(0)
-  images       Json
-  categoryId   String?
-  category     Category? @relation(fields: [categoryId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  priceCents    Int
+  stock         Int      @default(0)
+  reservedStock Int      @default(0)
+  images        Json
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Order {
