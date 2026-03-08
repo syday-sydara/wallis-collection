@@ -74,7 +74,7 @@ export default function ProductCard({
           {name}
         </a>
         <span className="font-semibold">
-          {currency} {priceCents / 100}
+            ₦{priceCents.toLocaleString("en-NG")}
         </span>
       </div>
 
