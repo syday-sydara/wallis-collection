@@ -28,7 +28,7 @@ model Product {
   name        String
   slug        String   @unique
   description String?
-  priceCents  Int
+  priceNaira  Int
   stock       Int      @default(0)
   images      Json
   category    String?
