@@ -4,12 +4,11 @@
 import ProductCard from "./ProductCard";
 import Skeleton from "@/components/ui/Skeleton";
 
-interface Product {
+export interface Product {
   id: string;
   name: string;
   slug: string;
-  priceCents: number;
-  currency?: string;
+  priceNaira: number;
   images: string[];
   isNew?: boolean;
   isOnSale?: boolean;
@@ -19,7 +18,7 @@ interface Product {
 interface ProductGridProps {
   products?: Product[];
   loading?: boolean;
-  onAddToCart?: (id: string) => void;
+  onAddToCart?: (product: Product) => void;
 }
 
 export default function ProductGrid({
@@ -28,7 +27,6 @@ export default function ProductGrid({
   onAddToCart,
 }: ProductGridProps) {
   if (loading) {
-    // Show skeletons while loading
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
         {Array.from({ length: 8 }).map((_, i) => (
@@ -39,7 +37,11 @@ export default function ProductGrid({
   }
 
   if (!products.length) {
-    return <p className="text-center text-neutral-600 mt-10">No products found.</p>;
+    return (
+      <p className="text-center text-neutral-600 mt-10">
+        No products found.
+      </p>
+    );
   }
 
   return (
@@ -48,7 +50,7 @@ export default function ProductGrid({
         <ProductCard
           key={product.id}
           {...product}
-          onAddToCart={onAddToCart}
+          onAddToCart={() => onAddToCart?.(product)}
         />
       ))}
     </div>
