@@ -1,3 +1,4 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 
@@ -5,9 +6,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/footer";
 import CartDrawer from "@/components/cart/CartDrawer";
 
-import { ToastProvider } from "@/components/ui/toast";
 import { CartProvider } from "@/components/cart/cart-context";
-import { UIProvider } from "@/components/ui/ui-context";
 
 import { Space_Grotesk } from "next/font/google";
 
@@ -68,15 +67,20 @@ export default function RootLayout({
       className={spaceGrotesk.variable}
       suppressHydrationWarning
     >
-      <body className="min-h-screen bg-background text-foreground antialiased flex flex-col font-sans">
+      <body className="min-h-screen bg-background text-foreground antialiased flex flex-col">
         <UIProvider>
           <CartProvider>
             <ToastProvider>
+              {/* Header + Drawer */}
               <Header />
               <CartDrawer />
 
-              <main className="flex-1">{children}</main>
+              {/* Page content */}
+              <main className="flex-1">
+                <div className="container-xl py-10">{children}</div>
+              </main>
 
+              {/* Footer */}
               <Footer />
             </ToastProvider>
           </CartProvider>
