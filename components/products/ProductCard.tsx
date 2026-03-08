@@ -1,9 +1,10 @@
 // components/products/ProductCard.tsx
 "use client";
 
+import Image from "next/image";
 import Button from "@/components/ui/Button";
 
-interface ProductCardProps {
+export interface ProductCardProps {
   id: string;
   name: string;
   slug: string;
@@ -16,44 +17,63 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({
+  id,
   name,
+  slug,
   priceNaira,
   images,
+  isNew = false,
+  isOnSale = false,
   outOfStock = false,
   onAddToCart,
 }: ProductCardProps) {
   return (
-    <div className="card flex flex-col">
-      <div className="relative w-full h-64 overflow-hidden rounded-lg">
-        {images?.[0] && (
-          <img
-            src={images[0]}
-            alt={name}
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-          />
+    <div className="relative flex flex-col bg-surface rounded-lg shadow-card overflow-hidden group">
+      {/* Badges */}
+      <div className="absolute top-2 left-2 flex space-x-2 z-10">
+        {isNew && (
+          <span className="bg-success text-white text-xs px-2 py-1 rounded-md">
+            New
+          </span>
         )}
-
-        {outOfStock && (
-          <span className="absolute top-2 left-2 bg-danger text-white text-xs px-2 py-1 rounded">
-            Out of Stock
+        {isOnSale && (
+          <span className="bg-warning text-white text-xs px-2 py-1 rounded-md">
+            Sale
           </span>
         )}
       </div>
 
-      <div className="mt-3 flex-1 flex flex-col justify-between">
-        <div>
-          <h3 className="font-medium text-base">{name}</h3>
-          <p className="mt-1 font-semibold text-primary">₦{priceNaira.toLocaleString()}</p>
+      {/* Out of Stock Overlay */}
+      {outOfStock && (
+        <div className="absolute inset-0 bg-black/40 z-20 flex items-center justify-center text-white font-semibold text-lg">
+          Out of Stock
         </div>
+      )}
 
-        <Button
-          variant="primary"
-          className="mt-3 w-full"
-          onClick={onAddToCart}
-          disabled={outOfStock}
-        >
-          {outOfStock ? "Unavailable" : "Add to Cart"}
-        </Button>
+      {/* Product Image */}
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">
+        <Image
+          src={images[0]}
+          alt={name}
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      </div>
+
+      {/* Product Info */}
+      <div className="p-4 flex flex-col flex-1">
+        <h3 className="font-semibold text-sm truncate">{name}</h3>
+        <p className="mt-1 font-medium text-primary-500">₦{priceNaira.toLocaleString()}</p>
+        <div className="mt-auto">
+          <Button
+            variant="primary"
+            onClick={onAddToCart}
+            disabled={outOfStock}
+            className="w-full mt-3"
+          >
+            Add to Cart
+          </Button>
+        </div>
       </div>
     </div>
   );
