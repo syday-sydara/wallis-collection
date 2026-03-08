@@ -1,30 +1,34 @@
 "use client";
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+import React from "react";
+
+interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "outline" | "subtle";
+  loading?: boolean;
 }
 
 export default function Button({
   children,
   variant = "primary",
+  loading = false,
   className = "",
+  disabled,
   ...props
 }: ButtonProps) {
-  const base =
-    "px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm tracking-wide";
-
   const variants = {
-    primary: "bg-primary text-bg hover:opacity-90",
-    outline: "border border-primary text-primary hover:bg-primary/10",
-    subtle: "text-secondary hover:text-primary",
+    primary: "btn btn-primary",
+    outline: "btn border border-primary-500 text-primary-500 hover:bg-primary-500/10",
+    subtle: "btn text-neutral-600 hover:text-primary-500",
   };
 
   return (
     <button
-      className={`${base} ${variants[variant]} ${className}`}
+      className={`${variants[variant]} ${className}`}
+      disabled={disabled || loading}
       {...props}
     >
-      {children}
+      {loading ? "Loading..." : children}
     </button>
   );
 }
