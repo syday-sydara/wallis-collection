@@ -6,7 +6,10 @@ import { ToastProvider } from "@/components/ui/toast";
 import { CartProvider } from "@/components/cart/cart-context";
 import { UIProvider } from "@/components/ui/ui-context";
 import CartDrawer from "@/components/cart/CartDrawer";
-import { Space_Grotesk } from "next/font/google";
+import { Space_Grotesk, Figtree } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const figtree = Figtree({subsets:['latin'],variable:'--font-sans'});
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -22,7 +25,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={cn("font-sans", figtree.variable)}>
       <body className={`${spaceGrotesk.className} antialiased`}>
         <UIProvider>
           <CartProvider>
