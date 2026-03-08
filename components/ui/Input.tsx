@@ -1,48 +1,19 @@
-"use client";
+import * as React from "react"
 
-import { twMerge } from "tailwind-merge";
+import { cn } from "@/lib/utils"
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-  helperText?: string;
-}
-
-export default function Input({
-  label,
-  error,
-  helperText,
-  className = "",
-  disabled,
-  ...props
-}: InputProps) {
-  const base =
-    "w-full px-4 py-2 rounded-lg border text-sm transition-all duration-200 outline-none";
-
-  const stateStyles = error
-    ? "border-danger focus:ring-danger/40"
-    : "border-neutral/30 focus:ring-primary/40";
-
-  const disabledStyles =
-    "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-neutral/10";
-
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
-    <div className="space-y-1">
-      {label && (
-        <label className="text-sm text-primary font-medium">{label}</label>
+    <input
+      type={type}
+      data-slot="input"
+      className={cn(
+        "h-9 w-full min-w-0 rounded-4xl border border-input bg-input/30 px-3 py-1 text-base transition-colors outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 md:text-sm dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        className
       )}
-
-      <input
-        {...props}
-        disabled={disabled}
-        className={twMerge(base, stateStyles, disabledStyles, className)}
-      />
-
-      {error ? (
-        <p className="text-danger text-xs">{error}</p>
-      ) : helperText ? (
-        <p className="text-neutral-600 text-xs">{helperText}</p>
-      ) : null}
-    </div>
-  );
+      {...props}
+    />
+  )
 }
+
+export { Input }
