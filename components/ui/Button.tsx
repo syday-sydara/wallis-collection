@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
+import clsx from "clsx";
 
-interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "outline" | "subtle";
   loading?: boolean;
 }
@@ -24,7 +24,7 @@ export default function Button({
 
   return (
     <button
-      className={`${variants[variant]} ${className}`}
+      className={clsx(variants[variant], className)}
       disabled={disabled || loading}
       {...props}
     >

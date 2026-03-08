@@ -1,4 +1,3 @@
-// components/products/ProductCard.tsx
 "use client";
 
 import Image from "next/image";
@@ -27,6 +26,11 @@ export default function ProductCard({
   outOfStock = false,
   onAddToCart,
 }: ProductCardProps) {
+  const displayImage =
+    images && images.length
+      ? images[0]
+      : `https://picsum.photos/600/800?random=${Math.floor(Math.random() * 100)}`;
+
   return (
     <div className="relative flex flex-col bg-surface rounded-lg shadow-card overflow-hidden group">
       {/* Badges */}
@@ -53,9 +57,10 @@ export default function ProductCard({
       {/* Product Image */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">
         <Image
-          src={images[0]}
+          src={displayImage}
           alt={name}
           fill
+          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
       </div>
@@ -63,7 +68,9 @@ export default function ProductCard({
       {/* Product Info */}
       <div className="p-4 flex flex-col flex-1">
         <h3 className="font-semibold text-sm truncate">{name}</h3>
-        <p className="mt-1 font-medium text-primary-500">₦{priceNaira.toLocaleString()}</p>
+        <p className="mt-1 font-medium text-primary-500">
+          ₦{priceNaira.toLocaleString()}
+        </p>
         <div className="mt-auto">
           <Button
             variant="primary"

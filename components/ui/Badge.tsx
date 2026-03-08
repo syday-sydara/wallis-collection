@@ -1,3 +1,8 @@
+"use client";
+
+import React from "react";
+import clsx from "clsx";
+
 interface BadgeProps {
   children: React.ReactNode;
   variant?: "default" | "success" | "warning" | "danger";
@@ -12,9 +17,7 @@ export default function Badge({ children, variant = "default" }: BadgeProps) {
   };
 
   return (
-    <span
-      className={`text-xs px-2 py-1 rounded-full font-medium ${variants[variant]}`}
-    >
+    <span className={clsx("text-xs px-2 py-1 rounded-full font-medium", variants[variant])}>
       {children}
     </span>
   );
