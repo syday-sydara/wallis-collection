@@ -1,5 +1,3 @@
-// Prisma 7 schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,12 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  USER
+}
+
 model User {
   id        String   @id @default(cuid())
+  name      String?
   email     String   @unique
   phone     String?
   password  String?
-  orders    Order[]
+  role      Role     @default(USER)
+  orders    Order[]  @relation("UserOrders")
   createdAt DateTime @default(now())
 }
 
@@ -23,7 +28,7 @@ model Product {
   name        String
   slug        String   @unique
   description String?
-  priceCents  Int
+  priceNaira  Int
   stock       Int      @default(0)
   images      Json
   category    String?
@@ -34,6 +39,7 @@ model Product {
 model Order {
   id             String      @id @default(cuid())
   userId         String?
+  user           User?       @relation("UserOrders", fields: [userId], references: [id])
   email          String
   phone          String?
   status         OrderStatus @default(PENDING)
@@ -51,6 +57,7 @@ model Order {
 model OrderItem {
   id         String   @id @default(cuid())
   orderId    String
+  order      Order    @relation(fields: [orderId], references: [id])
   productId  String
   quantity   Int
   priceCents Int

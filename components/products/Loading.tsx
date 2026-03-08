@@ -1,3 +1,6 @@
+// components/products/Loading.tsx
+"use client";
+
 export default function Loading() {
   return (
     <div

@@ -1,94 +1,94 @@
-import { PrismaClient, Role } from "@prisma/client";
-import bcrypt from "bcryptjs";
+// prisma/seed.ts
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding database...");
-
-  // 1. Admin User
-  const adminPassword = await bcrypt.hash("admin123", 10);
-
-  const admin = await prisma.user.upsert({
-    where: { email: "admin@wallis.com" },
-    update: {},
-    create: {
-      name: "Admin User",
-      email: "admin@wallis.com",
-      password: adminPassword,
-      role: Role.ADMIN,
-    },
-  });
-
-  console.log("✔ Admin user created:", admin.email);
-
-  // 2. Regular User
-  const userPassword = await bcrypt.hash("password123", 10);
-
-  const user = await prisma.user.upsert({
-    where: { email: "customer@wallis.com" },
-    update: {},
-    create: {
-      name: "John Customer",
-      email: "customer@wallis.com",
-      password: userPassword,
-      role: Role.USER,
-    },
-  });
-
-  console.log("✔ Customer user created:", user.email);
-
-  // 3. Products
-  const sampleProducts = [
+  const products = [
     {
-      name: "Classic Leather Wallet",
-      slug: "classic-leather-wallet",
-      description: "Premium handcrafted leather wallet with multiple compartments.",
+      name: "Vibrant Ankara Dress",
+      slug: "vibrant-ankara-dress",
+      priceNaira: 12000,
+      images: [
+        "https://images.unsplash.com/photo-1600180758895-1c2d6f7d6c1a?auto=format&fit=crop&w=800&q=80"
+      ],
+      isNew: true,
+    },
+    {
+      name: "Wax Print Maxi Skirt",
+      slug: "wax-print-maxi-skirt",
+      priceNaira: 9000,
+      images: [
+        "https://images.unsplash.com/photo-1628234989351-0cb1c9c1bb12?auto=format&fit=crop&w=800&q=80"
+      ],
+    },
+    {
+      name: "Elegant Abaya",
+      slug: "elegant-abaya",
       priceNaira: 15000,
-      stock: 25,
-      category: "Accessories",
-      images: ["/products/wallet1.jpg", "/products/wallet2.jpg"],
+      images: [
+        "https://images.unsplash.com/photo-1626402262474-d8025d9114c3?auto=format&fit=crop&w=800&q=80"
+      ],
     },
     {
-      name: "Luxury Wristwatch",
-      slug: "luxury-wristwatch",
-      description: "Elegant wristwatch with stainless steel finish.",
-      priceNaira: 85000,
-      stock: 10,
-      category: "Watches",
-      images: ["/products/watch1.jpg", "/products/watch2.jpg"],
+      name: "African Print Headwrap",
+      slug: "african-print-headwrap",
+      priceNaira: 2500,
+      images: [
+        "https://images.unsplash.com/photo-1611821808033-8a9cd9c8f372?auto=format&fit=crop&w=800&q=80"
+      ],
     },
     {
-      name: "Men's Designer Shoes",
-      slug: "mens-designer-shoes",
-      description: "Comfortable and stylish designer shoes for men.",
-      priceNaira: 45000,
-      stock: 18,
-      category: "Footwear",
-      images: ["/products/shoes1.jpg", "/products/shoes2.jpg"],
+      name: "Kaftan with Embroidery",
+      slug: "kaftan-with-embroidery",
+      priceNaira: 18000,
+      images: [
+        "https://images.unsplash.com/photo-1628303411813-d6f1c3e93fa4?auto=format&fit=crop&w=800&q=80"
+      ],
+    },
+    {
+      name: "Casual Wax Top",
+      slug: "casual-wax-top",
+      priceNaira: 7000,
+      images: [
+        "https://images.unsplash.com/photo-1628303411800-9d7c3e9e57fa?auto=format&fit=crop&w=800&q=80"
+      ],
+    },
+    {
+      name: "Luxury African Gown",
+      slug: "luxury-african-gown",
+      priceNaira: 22000,
+      images: [
+        "https://images.unsplash.com/photo-1628234989351-0b1c9d1bcd12?auto=format&fit=crop&w=800&q=80"
+      ],
+      isOnSale: true,
+    },
+    {
+      name: "Men's Dashiki Shirt",
+      slug: "mens-dashiki-shirt",
+      priceNaira: 8000,
+      images: [
+        "https://images.unsplash.com/photo-1611821808030-8b9cd8c9f372?auto=format&fit=crop&w=800&q=80"
+      ],
     },
   ];
 
-  await Promise.all(
-    sampleProducts.map((product) =>
-      prisma.product.upsert({
-        where: { slug: product.slug },
-        update: {},
-        create: product,
-      })
-    )
-  );
+  for (const p of products) {
+    await prisma.product.upsert({
+      where: { slug: p.slug },
+      update: {},
+      create: p,
+    });
+  }
 
-  console.log(`✔ Products seeded: ${sampleProducts.length}`);
+  console.log("✅ Seeded products successfully!");
 }
 
 main()
-  .then(async () => {
-    console.log("🌱 Database seeding completed.");
-    await prisma.$disconnect();
-  })
-  .catch(async (err) => {
-    console.error("❌ Seeding error:", err);
-    await prisma.$disconnect();
+  .catch((e) => {
+    console.error(e);
     process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
   });

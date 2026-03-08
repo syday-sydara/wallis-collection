@@ -1,136 +1,94 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { FiMenu, FiX, FiShoppingCart } from "react-icons/fi";
+import { useState } from "react";
+import { Menu, X, ShoppingCart, Search } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 export default function Header() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const pathname = usePathname();
-
-  const navItems = useMemo(
-    () => [
-      { label: "Products", href: "/products" },
-      { label: "About", href: "/about" },
-      { label: "Cart", href: "/cart", icon: <FiShoppingCart size={18} /> },
-    ],
-    []
-  );
-
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
-  }, [isOpen]);
+  const [open, setOpen] = useState(false);
 
   return (
-    <header
-      className={`
-        sticky top-0 z-50 border-b border-neutral-400/20 bg-background/80 backdrop-blur-md
-        transition-all duration-300
-        ${scrolled ? "py-2 shadow-sm" : "py-4"}
-      `}
-    >
-      <div className="container flex items-center justify-between">
+    <header className="sticky top-0 z-50 bg-bg/80 backdrop-blur border-b border-border">
+      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
+        
         {/* Logo */}
-        <Link
-          href="/"
-          className="heading-3 tracking-tight text-primary-500 hover:opacity-80 transition-opacity"
-        >
-          Wallis Executive Wax
+        <Link href="/" className="text-xl font-semibold tracking-wide">
+          Wallis
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-10" role="navigation">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`
-                label underline-grow flex items-center gap-2 transition-colors
-                ${
-                  isActive(item.href)
-                    ? "text-primary-500 font-semibold"
-                    : "text-neutral-600 hover:text-primary-500"
-                }
-              `}
-            >
-              {item.icon}
-              {item.label}
-            </Link>
-          ))}
+        <nav className="hidden md:flex items-center gap-8 text-sm">
+          <Link href="/shop" className="hover:text-primary">
+            Shop
+          </Link>
+
+          <Link href="/collections" className="hover:text-primary">
+            Collections
+          </Link>
+
+          <Link href="/about" className="hover:text-primary">
+            About
+          </Link>
+
+          <Link href="/contact" className="hover:text-primary">
+            Contact
+          </Link>
         </nav>
 
-        {/* Mobile Menu Toggle */}
-        <button
-          className="md:hidden text-primary-500"
-          onClick={() => setIsOpen(true)}
-          aria-label="Open menu"
-          aria-expanded={isOpen}
-          aria-controls="mobile-menu"
-        >
-          <FiMenu size={24} />
-        </button>
-      </div>
+        {/* Right actions */}
+        <div className="flex items-center gap-4">
 
-      {/* Mobile Drawer */}
-      <aside
-        id="mobile-menu"
-        aria-hidden={!isOpen}
-        className={`
-          fixed inset-y-0 right-0 w-64 bg-background shadow-card transform
-          ${isOpen ? "translate-x-0" : "translate-x-full"}
-          transition-transform duration-300 ease-out z-50 md:hidden
-        `}
-      >
-        <div className="flex items-center justify-between p-6 border-b border-neutral-400/20">
-          <span className="heading-4 text-primary-500">Menu</span>
+          <button className="hover:text-primary">
+            <Search size={20} />
+          </button>
+
+          <Link href="/cart" className="relative">
+            <ShoppingCart size={22} />
+
+            {/* cart badge */}
+            <span className="absolute -top-2 -right-2 text-xs bg-primary text-bg px-1.5 py-0.5 rounded-full">
+              2
+            </span>
+          </Link>
+
+          {/* Mobile Menu Button */}
           <button
-            onClick={() => setIsOpen(false)}
-            aria-label="Close menu"
-            className="text-primary-500"
+            onClick={() => setOpen(!open)}
+            className="md:hidden"
           >
-            <FiX size={24} />
+            {open ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
+      </div>
 
-        <nav className="flex flex-col p-8 gap-6" role="navigation">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setIsOpen(false)}
-              className={`
-                label flex items-center gap-3 transition-colors
-                ${
-                  isActive(item.href)
-                    ? "text-primary-500 font-semibold"
-                    : "text-neutral-600 hover:text-primary-500"
-                }
-              `}
-            >
-              {item.icon}
-              {item.label}
+      {/* Mobile Menu */}
+      {open && (
+        <div className="md:hidden border-t border-border bg-bg">
+          <nav className="flex flex-col p-4 space-y-4 text-sm">
+
+            <Link href="/shop" onClick={() => setOpen(false)}>
+              Shop
             </Link>
-          ))}
-        </nav>
-      </aside>
 
-      {/* Backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-primary-500/20 backdrop-blur-sm z-40 md:hidden transition-opacity"
-          onClick={() => setIsOpen(false)}
-        />
+            <Link href="/collections" onClick={() => setOpen(false)}>
+              Collections
+            </Link>
+
+            <Link href="/about" onClick={() => setOpen(false)}>
+              About
+            </Link>
+
+            <Link href="/contact" onClick={() => setOpen(false)}>
+              Contact
+            </Link>
+
+            <Button className="w-full">
+              View Cart
+            </Button>
+
+          </nav>
+        </div>
       )}
     </header>
   );
