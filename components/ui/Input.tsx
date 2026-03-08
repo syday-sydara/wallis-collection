@@ -1,24 +1,35 @@
 "use client";
 
 import React from "react";
+import { cva, VariantProps } from "class-variance-authority";
+import clsx from "clsx";
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-}
+const input = cva(
+  "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 transition-colors duration-200 disabled:opacity-50 disabled:pointer-events-none",
+  {
+    variants: {
+      variant: {
+        default: "border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-primary-500)]",
+        subtle: "border-transparent bg-[color:var(--color-surface)] text-[color:var(--color-primary-500)]",
+        outline: "border-[color:var(--color-primary-500)] bg-white text-[color:var(--color-primary-500)]",
+      },
+      size: {
+        sm: "text-xs px-2 py-1",
+        md: "text-sm px-3 py-2",
+        lg: "text-base px-4 py-3",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "md",
+    },
+  }
+);
 
-export default function Input({ label, className = "", ...props }: InputProps) {
-  return (
-    <div className="flex flex-col gap-1 w-full">
-      {label && (
-        <label className="text-xs uppercase tracking-wider text-neutral-600">
-          {label}
-        </label>
-      )}
+interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement>,
+    VariantProps<typeof input> {}
 
-      <input
-        className={`w-full border border-border bg-surface rounded-md px-3 py-2 text-sm outline-none focus:border-accent-500 transition ${className}`}
-        {...props}
-      />
-    </div>
-  );
+export default function Input({ variant, size, className, ...props }: InputProps) {
+  return <input className={clsx(input({ variant, size }), className)} {...props} />;
 }

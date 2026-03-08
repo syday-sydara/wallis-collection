@@ -3,6 +3,7 @@
 
 import Image from "next/image";
 import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
 
 export interface ProductCardProps {
   id: string;
@@ -28,19 +29,11 @@ export default function ProductCard({
   onAddToCart,
 }: ProductCardProps) {
   return (
-    <div className="relative flex flex-col bg-surface rounded-lg shadow-card overflow-hidden group">
+    <div className="relative flex flex-col bg-[color:var(--color-surface)] rounded-lg shadow-card overflow-hidden group hover:shadow-lg transition-shadow duration-300">
       {/* Badges */}
       <div className="absolute top-2 left-2 flex space-x-2 z-10">
-        {isNew && (
-          <span className="bg-success text-white text-xs px-2 py-1 rounded-md">
-            New
-          </span>
-        )}
-        {isOnSale && (
-          <span className="bg-warning text-white text-xs px-2 py-1 rounded-md">
-            Sale
-          </span>
-        )}
+        {isNew && <Badge variant="success">New</Badge>}
+        {isOnSale && <Badge variant="warning">Sale</Badge>}
       </div>
 
       {/* Out of Stock Overlay */}
@@ -63,7 +56,10 @@ export default function ProductCard({
       {/* Product Info */}
       <div className="p-4 flex flex-col flex-1">
         <h3 className="font-semibold text-sm truncate">{name}</h3>
-        <p className="mt-1 font-medium text-primary-500">₦{priceNaira.toLocaleString()}</p>
+        <p className="mt-1 font-medium text-[color:var(--color-primary-500)]">
+          ₦{priceNaira.toLocaleString()}
+        </p>
+
         <div className="mt-auto">
           <Button
             variant="primary"
