@@ -1,7 +1,7 @@
 "use client";
 
 import ProductCard from "./ProductCard";
-import Loading from "@/components/ui/Loading";
+import Loading from "@/components/products/Loading";
 
 export interface Product {
   id: string;

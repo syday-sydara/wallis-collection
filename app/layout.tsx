@@ -1,5 +1,6 @@
 import "./globals.css";
 import { ReactNode } from "react";
+import { CartProvider } from "@/components/cart/cart-context";
 import { spaceGrotesk, metadata } from "./metadata";
 
 interface RootLayoutProps {
@@ -8,15 +9,12 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} font-sans`}>
-      <head>
-        {/* Metadata applied via Next.js App Router */}
-      </head>
-      <body className="bg-background text-primary-500 min-h-screen">
-        {children}
+    <html lang="en" className={spaceGrotesk.variable}>
+      <body>
+        <CartProvider>
+          {children}
+        </CartProvider>
       </body>
     </html>
   );
 }
-
-export { metadata };
