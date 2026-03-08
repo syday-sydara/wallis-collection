@@ -6,10 +6,20 @@ import QuantityStepper from "@/components/ui/QuantityStepper";
 import Button from "@/components/ui/Button";
 import Image from "next/image";
 import { formatPrice } from "@/lib/formatters";
+import { useEffect } from "react";
 
 export default function CartDrawer() {
   const { cartOpen, closeCart } = useUI();
   const { items, updateQty, removeItem, subtotal } = useCart();
+
+  // Prevent background scroll when cart is open
+  useEffect(() => {
+    if (cartOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [cartOpen]);
 
   return (
     <>
@@ -23,13 +33,15 @@ export default function CartDrawer() {
       <div
         className={`
           fixed top-0 right-0 h-full w-80 bg-bg shadow-xl z-50
-          transform transition-transform duration-300
+          transform transition-transform duration-300 will-change-transform
           ${cartOpen ? "translate-x-0" : "translate-x-full"}
         `}
       >
         <div className="p-6 border-b border-neutral/20 flex justify-between">
           <h2 className="heading-3 text-primary">Your Cart</h2>
-          <button onClick={closeCart}>✕</button>
+          <button aria-label="Close cart" onClick={closeCart}>
+            ✕
+          </button>
         </div>
 
         <div className="p-6 space-y-6 overflow-y-auto h-[calc(100%-200px)]">

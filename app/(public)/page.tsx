@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // File: app/(public)/page.tsx
 import prisma from "@/lib/db";
 import ProductCard from "@/components/ui/ProductCard";
@@ -53,3 +54,6 @@ export default async function HomePage() {
     </section>
   );
 }
+=======
+export default function Page() { return <div>Home</div> }
+>>>>>>> 53697748822e2979fd62a1f64ed72d91a6552a19

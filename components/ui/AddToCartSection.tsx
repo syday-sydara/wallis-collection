@@ -3,14 +3,21 @@
 import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { useToast } from "@/components/ui/toast";
+import { useCart } from "@/components/cart/cart-context";
 
 export default function AddToCartSection({ product }: { product: Product }) {
   const toast = useToast();
+  const { add } = useCart();
+
   const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const outOfStock = product.stock === 0;
+
+  const clampQty = (value: number) => {
+    return Math.max(1, Math.min(product.stock, value));
+  };
 
   const handleAddToCart = async () => {
     try {
@@ -22,15 +29,25 @@ export default function AddToCartSection({ product }: { product: Product }) {
         return;
       }
 
-      // TODO: Replace with real API call
-      await new Promise((res) => setTimeout(res, 1000));
+      // Build CartItem shape expected by CartContext
+      const cartItem = {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        priceCents: product.priceCents,
+        quantity: qty,
+        image: product.images?.[0] ?? null,
+      };
 
-      toast.show("Successfully added to cart!", "success");
+      // Optimistic update
+      add(cartItem);
+
+      toast.show("Added to cart!", "success");
     } catch (err) {
-      const errorMessage =
+      const message =
         err instanceof Error ? err.message : "Failed to add to cart";
-      setError(errorMessage);
-      toast.show(errorMessage, "error");
+      setError(message);
+      toast.show(message, "error");
     } finally {
       setLoading(false);
     }
@@ -62,7 +79,8 @@ export default function AddToCartSection({ product }: { product: Product }) {
             min={1}
             max={product.stock}
             value={qty}
-            onChange={(e) => setQty(Number(e.target.value))}
+            onChange={(e) => setQty(clampQty(Number(e.target.value)))}
+            onBlur={() => setQty((v) => clampQty(v))}
             className="
               w-20 px-3 py-2 rounded-md border border-neutral/40
               text-sm tracking-wide

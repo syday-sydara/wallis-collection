@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // File: app/(public)/products/[slug]/page.tsx
 import prisma from "@/lib/db"
 import { notFound } from "next/navigation"
@@ -123,3 +124,6 @@ export default async function ProductDetailPage({ params }: Props) {
     </div>
   )
 }
+=======
+export default function Page() { return <div>Product Detail</div> }
+>>>>>>> 53697748822e2979fd62a1f64ed72d91a6552a19

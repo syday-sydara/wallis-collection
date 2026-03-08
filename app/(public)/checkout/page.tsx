@@ -1,5 +1,1 @@
-import ShippingForm from "@/components/checkout/ShippingForm";
-
-export default function ShippingPage() {
-  return <ShippingForm />;
-}
+export default function Page() { return <div>Checkout</div> }

@@ -7,6 +7,7 @@ import {
   ReactNode,
   useCallback,
   useRef,
+  useEffect,
 } from "react";
 import { FiCheckCircle, FiAlertCircle } from "react-icons/fi";
 
@@ -45,7 +46,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
 
       {/* Toast Container */}
-      <div className="fixed bottom-6 right-6 space-y-3 z-50 flex flex-col items-end">
+      <div
+        className="
+          fixed bottom-6 right-6 space-y-3 z-50 flex flex-col items-end
+          pb-safe
+        "
+      >
         {toasts.map((toast) => (
           <SwipeToast key={toast.id} toast={toast} onDismiss={dismiss} />
         ))}
@@ -83,7 +89,9 @@ function SwipeToast({
     const el = toastRef.current;
     if (!el) return;
 
-    el.style.transform = `translateX(${currentX.current}px)`;
+    el.style.transform = `translateX(${currentX.current}px) scale(${
+      1 - Math.abs(currentX.current) / 800
+    })`;
     el.style.opacity = `${1 - Math.abs(currentX.current) / 200}`;
   };
 
@@ -96,8 +104,9 @@ function SwipeToast({
     if (Math.abs(currentX.current) > 120) {
       onDismiss(toast.id);
     } else {
-      el.style.transition = "transform 0.2s ease, opacity 0.2s ease";
-      el.style.transform = "translateX(0)";
+      el.style.transition =
+        "transform 0.2s ease, opacity 0.2s ease";
+      el.style.transform = "translateX(0) scale(1)";
       el.style.opacity = "1";
 
       setTimeout(() => {
@@ -108,11 +117,22 @@ function SwipeToast({
     currentX.current = 0;
   };
 
+  // Keyboard dismiss
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onDismiss(toast.id);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [toast.id, onDismiss]);
+
   const Icon = toast.type === "success" ? FiCheckCircle : FiAlertCircle;
 
   return (
     <div
       ref={toastRef}
+      role="alert"
+      aria-live="polite"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -134,7 +154,7 @@ function SwipeToast({
 }
 
 /* ----------------------------- */
-/* useToast Hook (Required!)     */
+/* useToast Hook                 */
 /* ----------------------------- */
 
 export function useToast() {
