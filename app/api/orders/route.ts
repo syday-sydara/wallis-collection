@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-
-const prisma = new PrismaClient();
 
 /* ---------------- GET: List Orders ---------------- */
 export async function GET() {
@@ -9,9 +7,7 @@ export async function GET() {
     const orders = await prisma.order.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        items: {
-          include: { product: true },
-        },
+        items: { include: { product: true } },
         shipments: true,
       },
     });
