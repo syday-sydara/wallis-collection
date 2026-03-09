@@ -23,32 +23,63 @@ interface SelectFieldProps {
   options: { value: string; label: string }[];
   rules?: RegisterOptions;
   helperText?: string;
+  placeholder?: string;
+  className?: string;
 }
 
-export function SelectField({ name, label, options, rules, helperText }: SelectFieldProps) {
+export function SelectField({
+  name,
+  label,
+  options,
+  rules,
+  helperText,
+  placeholder,
+  className,
+}: SelectFieldProps) {
   const { register, formState } = useFormContext();
   const error = formState.errors[name]?.message as string | undefined;
-  const state = error ? "error" : "default";
+
+  const id = name.replace(/\./g, "-");
+
+  const state: "default" | "error" = error ? "error" : "default";
   const message = error || helperText;
 
   return (
-    <div className="flex flex-col w-full">
-      <Label htmlFor={name}>{label}</Label>
+    <div className={clsx("flex flex-col w-full", className)}>
+      <Label htmlFor={id} required={!!rules?.required}>
+        {label}
+      </Label>
+
       <select
-        id={name}
+        id={id}
         {...register(name, rules)}
+        aria-invalid={!!error}
+        aria-describedby={message ? `${id}-helper` : undefined}
         className={clsx(
-          "rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 transition-colors duration-200 disabled:opacity-50 disabled:pointer-events-none",
-          state === "error" ? "border-[color:var(--color-danger-500)]" : "border-[color:var(--color-border)]"
+          "rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-colors duration-200 disabled:opacity-50 disabled:pointer-events-none",
+          state === "error"
+            ? "border-[color:var(--color-danger-500)] focus:ring-[var(--color-danger-500)]"
+            : "border-[color:var(--color-border)] focus:ring-[var(--color-primary-500)]"
         )}
       >
+        {placeholder && (
+          <option value="" disabled hidden>
+            {placeholder}
+          </option>
+        )}
+
         {options.map(opt => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
           </option>
         ))}
       </select>
-      {message && <p className={clsx(helperTextStyles({ state }))}>{message}</p>}
+
+      {message && (
+        <p id={`${id}-helper`} className={clsx(helperTextStyles({ state }))}>
+          {message}
+        </p>
+      )}
     </div>
   );
 }

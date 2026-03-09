@@ -23,10 +23,12 @@ interface InputFieldProps {
   label: React.ReactNode;
   rules?: RegisterOptions;
   helperText?: string;
+  description?: string;
   size?: VariantProps<typeof Input>["size"];
   variant?: VariantProps<typeof Input>["variant"];
   type?: React.InputHTMLAttributes<HTMLInputElement>["type"];
   placeholder?: string;
+  className?: string;
 }
 
 export function InputField({
@@ -34,30 +36,49 @@ export function InputField({
   label,
   rules,
   helperText,
+  description,
   size = "md",
   variant = "default",
   type = "text",
   placeholder,
+  className,
 }: InputFieldProps) {
   const { register, formState } = useFormContext();
   const error = formState.errors[name]?.message as string | undefined;
-  const state = error ? "error" : "default";
+
+  const id = name.replace(/\./g, "-");
+
+  const state: "default" | "error" | "success" = error ? "error" : "default";
   const message = error || helperText;
 
   return (
-    <div className="flex flex-col w-full">
-      <Label htmlFor={name} size={size} variant="default">
+    <div className={clsx("flex flex-col w-full", className)}>
+      <Label htmlFor={id} size={size} required={!!rules?.required}>
         {label}
       </Label>
+
       <Input
-        id={name}
+        id={id}
         {...register(name, rules)}
         type={type}
         size={size}
         variant={variant}
         placeholder={placeholder}
+        aria-invalid={!!error}
+        aria-describedby={message ? `${id}-helper` : undefined}
       />
-      {message && <p className={clsx(helperTextStyles({ state }))}>{message}</p>}
+
+      {description && (
+        <p className="text-xs text-[var(--color-neutral-500)] mt-1">
+          {description}
+        </p>
+      )}
+
+      {message && (
+        <p id={`${id}-helper`} className={clsx(helperTextStyles({ state }))}>
+          {message}
+        </p>
+      )}
     </div>
   );
 }

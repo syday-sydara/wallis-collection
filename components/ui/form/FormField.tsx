@@ -23,12 +23,14 @@ interface FormFieldProps {
   label: React.ReactNode;
   rules?: RegisterOptions;
   helperText?: string;
+  description?: string;
   showSuccess?: boolean;
   size?: VariantProps<typeof Input>["size"];
   variant?: VariantProps<typeof Input>["variant"];
   type?: React.InputHTMLAttributes<HTMLInputElement>["type"];
   placeholder?: string;
   disabled?: boolean;
+  className?: string;
 }
 
 export function FormField({
@@ -36,36 +38,51 @@ export function FormField({
   label,
   rules,
   helperText,
+  description,
   showSuccess = false,
   size = "md",
   variant = "default",
   type = "text",
   placeholder,
   disabled = false,
+  className,
 }: FormFieldProps) {
   const { register, formState } = useFormContext();
   const error = formState.errors[name]?.message as string | undefined;
 
+  const id = name.replace(/\./g, "-");
+
   const state: "default" | "error" | "success" =
     error ? "error" : showSuccess ? "success" : "default";
+
   const message = error || helperText;
 
   return (
-    <div className="flex flex-col w-full">
-      <Label htmlFor={name} size={size} variant="default">
+    <div className={clsx("flex flex-col w-full", className)}>
+      <Label htmlFor={id} size={size} required={!!rules?.required}>
         {label}
       </Label>
+
       <Input
-        id={name}
+        id={id}
         {...register(name, rules)}
         type={type}
         size={size}
         variant={variant}
         placeholder={placeholder}
         disabled={disabled}
+        aria-invalid={!!error}
+        aria-describedby={message ? `${id}-helper` : undefined}
       />
+
+      {description && (
+        <p className="text-xs text-[var(--color-text-muted)] mt-1">
+          {description}
+        </p>
+      )}
+
       {message && (
-        <p className={clsx(helperTextStyles({ state }))}>
+        <p id={`${id}-helper`} className={clsx(helperTextStyles({ state }))}>
           {state === "error" && (
             <span aria-hidden="true" className="text-[var(--color-danger-500)]">
               &#9888;
