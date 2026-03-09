@@ -1,13 +1,16 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import Button from "@/components/ui/Button";
+import { useMemo } from "react";
 
 export interface ProductCardProps {
   id: string;
   name: string;
   slug: string;
   priceNaira: number;
+  salePriceNaira?: number;
   images: string[];
   isNew?: boolean;
   isOnSale?: boolean;
@@ -20,16 +23,17 @@ export default function ProductCard({
   name,
   slug,
   priceNaira,
+  salePriceNaira,
   images,
   isNew = false,
   isOnSale = false,
   outOfStock = false,
   onAddToCart,
 }: ProductCardProps) {
-  const displayImage =
-    images && images.length
-      ? images[0]
-      : `https://picsum.photos/600/800?random=${Math.floor(Math.random() * 100)}`;
+  const displayImage = useMemo(() => {
+    if (images?.length) return images[0];
+    return `https://picsum.photos/600/800?random=${id}`;
+  }, [images, id]);
 
   return (
     <div className="relative flex flex-col bg-surface rounded-lg shadow-card overflow-hidden group">
@@ -55,7 +59,7 @@ export default function ProductCard({
       )}
 
       {/* Product Image */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">
+      <Link href={`/products/${slug}`} className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">
         <Image
           src={displayImage}
           alt={name}
@@ -63,14 +67,31 @@ export default function ProductCard({
           sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
-      </div>
+      </Link>
 
       {/* Product Info */}
       <div className="p-4 flex flex-col flex-1">
-        <h3 className="font-semibold text-sm truncate">{name}</h3>
-        <p className="mt-1 font-medium text-primary-500">
-          ₦{priceNaira.toLocaleString()}
-        </p>
+        <Link href={`/products/${slug}`}>
+          <h3 className="font-semibold text-sm truncate hover:underline">{name}</h3>
+        </Link>
+
+        <div className="mt-1 flex items-center space-x-2">
+          {isOnSale && salePriceNaira ? (
+            <>
+              <p className="font-semibold text-primary-500">
+                ₦{salePriceNaira.toLocaleString()}
+              </p>
+              <p className="text-xs line-through text-neutral-500">
+                ₦{priceNaira.toLocaleString()}
+              </p>
+            </>
+          ) : (
+            <p className="font-medium text-primary-500">
+              ₦{priceNaira.toLocaleString()}
+            </p>
+          )}
+        </div>
+
         <div className="mt-auto">
           <Button
             variant="primary"
