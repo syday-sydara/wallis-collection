@@ -8,6 +8,10 @@ const divider = cva(
   "border-[var(--color-border)] transition-colors duration-200",
   {
     variants: {
+      orientation: {
+        horizontal: "w-full border-t",
+        vertical: "h-full border-l",
+      },
       thickness: {
         thin: "border",
         thick: "border-2",
@@ -28,6 +32,7 @@ const divider = cva(
       },
     },
     defaultVariants: {
+      orientation: "horizontal",
       thickness: "thin",
       style: "solid",
       margin: "md",
@@ -36,13 +41,27 @@ const divider = cva(
   }
 );
 
-interface DividerProps extends VariantProps<typeof divider> {}
+interface DividerProps
+  extends VariantProps<typeof divider>,
+    React.HTMLAttributes<HTMLHRElement> {}
 
 export default function Divider({
+  orientation,
   thickness,
   style,
   margin,
   hoverEffect,
+  className,
+  ...props
 }: DividerProps) {
-  return <hr className={clsx(divider({ thickness, style, margin, hoverEffect }))} />;
+  return (
+    <hr
+      aria-hidden="true"
+      className={clsx(
+        divider({ orientation, thickness, style, margin, hoverEffect }),
+        className
+      )}
+      {...props}
+    />
+  );
 }

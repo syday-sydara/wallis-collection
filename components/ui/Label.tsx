@@ -26,12 +26,23 @@ const label = cva(
         true: "after:content-['*'] after:ml-1 after:text-[var(--color-danger-500)]",
         false: "",
       },
+      disabled: {
+        true: "opacity-50 cursor-not-allowed",
+        false: "",
+      },
+      weight: {
+        normal: "font-normal",
+        medium: "font-medium",
+        semibold: "font-semibold",
+      },
     },
     defaultVariants: {
       size: "sm",
       variant: "default",
       uppercase: true,
       required: false,
+      disabled: false,
+      weight: "medium",
     },
   }
 );
@@ -46,11 +57,20 @@ export default function Label({
   variant,
   uppercase,
   required,
+  disabled,
+  weight,
   className,
   ...props
 }: LabelProps) {
   return (
-    <label className={clsx(label({ size, variant, uppercase, required }), className)} {...props}>
+    <label
+      className={clsx(
+        label({ size, variant, uppercase, required, disabled, weight }),
+        className
+      )}
+      aria-required={required ? true : undefined}
+      {...props}
+    >
       {children}
     </label>
   );

@@ -24,7 +24,7 @@ const spinner = cva(
         fast: "animate-spin-fast",
       },
       overlay: {
-        true: "fixed inset-0 bg-black/30 flex items-center justify-center z-50",
+        true: "fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50",
         false: "",
       },
     },
@@ -48,5 +48,14 @@ export default function Spinner({
   overlay,
   className,
 }: SpinnerProps) {
-  return <div className={clsx(spinner({ size, color, speed, overlay }), className)} />;
+  return (
+    <div
+      className={clsx(spinner({ size, color, speed, overlay }), className)}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <span className="sr-only">Loading</span>
+    </div>
+  );
 }

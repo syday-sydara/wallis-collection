@@ -9,20 +9,36 @@ const input = cva(
   {
     variants: {
       variant: {
-        default: "border-[var(--color-border)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] focus:ring-[var(--color-primary-500)] hover:border-[var(--color-primary-500)]",
-        subtle: "border-transparent bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] focus:ring-[var(--color-primary-500)] hover:border-[var(--color-primary-500)]",
-        outline: "border-[var(--color-primary-500)] bg-white text-[var(--color-text-primary)] focus:ring-[var(--color-primary-500)] hover:border-[var(--color-accent-500)]",
-        error: "border-[var(--color-danger-500)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] focus:ring-[var(--color-danger-500)] hover:border-[var(--color-danger-500)]",
+        default:
+          "border-[var(--color-border)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] focus:ring-[var(--color-primary-500)] hover:border-[var(--color-primary-500)]",
+        subtle:
+          "border-transparent bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] focus:ring-[var(--color-primary-500)] hover:border-[var(--color-primary-500)]",
+        outline:
+          "border-[var(--color-primary-500)] bg-white text-[var(--color-text-primary)] focus:ring-[var(--color-primary-500)] hover:border-[var(--color-accent-500)]",
+        error:
+          "border-[var(--color-danger-500)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] focus:ring-[var(--color-danger-500)] hover:border-[var(--color-danger-500)]",
       },
       size: {
         sm: "text-xs px-2 py-1",
         md: "text-sm px-3 py-2",
         lg: "text-base px-4 py-3",
       },
+      rounded: {
+        sm: "rounded-sm",
+        md: "rounded-md",
+        lg: "rounded-lg",
+        full: "rounded-full",
+      },
+      fullWidth: {
+        true: "w-full",
+        false: "w-auto",
+      },
     },
     defaultVariants: {
       variant: "default",
       size: "md",
+      rounded: "md",
+      fullWidth: true,
     },
   }
 );
@@ -31,6 +47,19 @@ interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement>,
     VariantProps<typeof input> {}
 
-export default function Input({ variant, size, className, ...props }: InputProps) {
-  return <input className={clsx(input({ variant, size }), className)} {...props} />;
+export default function Input({
+  variant,
+  size,
+  rounded,
+  fullWidth,
+  className,
+  ...props
+}: InputProps) {
+  return (
+    <input
+      className={clsx(input({ variant, size, rounded, fullWidth }), className)}
+      aria-invalid={variant === "error" ? true : undefined}
+      {...props}
+    />
+  );
 }
