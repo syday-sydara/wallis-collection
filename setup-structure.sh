@@ -1,18 +1,20 @@
 #!/bin/bash
 
-echo "🚀 Setting up project structure (Prisma 7 compatible, no route conflicts)..."
+echo "🚀 Creating production-ready Nigerian ecommerce store structure..."
 
 ###############################################
-# APP ROUTER STRUCTURE (FIXED)
+# APP ROUTER STRUCTURE
 ###############################################
 
 # Public-facing pages
 mkdir -p "app/(public)"
 mkdir -p "app/(public)/products"
 mkdir -p "app/(public)/products/[slug]"
+mkdir -p "app/(public)/categories/[slug]"
 mkdir -p "app/(public)/cart"
 mkdir -p "app/(public)/checkout"
-mkdir -p "app/(public)/track-order"   # renamed from /orders to avoid conflict
+mkdir -p "app/(public)/track-order"
+mkdir -p "app/(public)/search"
 
 # Auth routes
 mkdir -p "app/(auth)/login"
@@ -20,18 +22,31 @@ mkdir -p "app/(auth)/register"
 
 # Customer dashboard
 mkdir -p "app/(customer)/account"
-mkdir -p "app/(customer)/account/orders"   # moved from /orders to avoid conflict
+mkdir -p "app/(customer)/account/orders"
+mkdir -p "app/(customer)/account/addresses"
+mkdir -p "app/(customer)/account/settings"
 
 # Admin dashboard
 mkdir -p "app/(admin)/dashboard"
+mkdir -p "app/(admin)/products"
 mkdir -p "app/(admin)/orders"
-mkdir -p "app/(admin)/refunds"
-mkdir -p "app/(admin)/fraud"
+mkdir -p "app/(admin)/customers"
 mkdir -p "app/(admin)/inventory"
+mkdir -p "app/(admin)/coupons"
+mkdir -p "app/(admin)/reviews"
+mkdir -p "app/(admin)/analytics"
+mkdir -p "app/(admin)/fraud"
+mkdir -p "app/(admin)/refunds"
 
 ###############################################
 # API ROUTES
 ###############################################
+
+mkdir -p "app/api/auth"
+mkdir -p "app/api/products"
+mkdir -p "app/api/cart"
+mkdir -p "app/api/orders"
+mkdir -p "app/api/orders/lookup"
 
 mkdir -p "app/api/paystack/initialize"
 mkdir -p "app/api/paystack/webhook"
@@ -39,8 +54,10 @@ mkdir -p "app/api/paystack/webhook"
 mkdir -p "app/api/monnify/create-account"
 mkdir -p "app/api/monnify/webhook"
 
-mkdir -p "app/api/orders/lookup"
+mkdir -p "app/api/coupons/validate"
+mkdir -p "app/api/reviews/create"
 mkdir -p "app/api/refunds/request"
+
 mkdir -p "app/api/push/subscribe"
 
 ###############################################
@@ -48,74 +65,83 @@ mkdir -p "app/api/push/subscribe"
 ###############################################
 
 mkdir -p components/ui
+mkdir -p components/layout
+mkdir -p components/product
+mkdir -p components/cart
 mkdir -p components/checkout
 mkdir -p components/payments
 mkdir -p components/admin
+mkdir -p components/reviews
 
 ###############################################
-# LIB FOLDERS
+# LIBRARIES
 ###############################################
 
+mkdir -p lib/payments
 mkdir -p lib/fraud
+mkdir -p lib/shipping
+mkdir -p lib/cart
+mkdir -p lib/analytics
 
 ###############################################
-# PLACEHOLDER PAGES
+# CORE LIB FILES
 ###############################################
 
-echo "export default function Page() { return <div>Home</div> }" > "app/(public)/page.tsx"
-echo "export default function Page() { return <div>Products</div> }" > "app/(public)/products/page.tsx"
-echo "export default function Page() { return <div>Product Detail</div> }" > "app/(public)/products/[slug]/page.tsx"
-echo "export default function Page() { return <div>Cart</div> }" > "app/(public)/cart/page.tsx"
-echo "export default function Page() { return <div>Checkout</div> }" > "app/(public)/checkout/page.tsx"
-echo "export default function Page() { return <div>Track Order</div> }" > "app/(public)/track-order/page.tsx"
+echo "// Prisma client" > lib/db.ts
+echo "// Authentication logic" > lib/auth.ts
 
-echo "export default function Page() { return <div>Login</div> }" > "app/(auth)/login/page.tsx"
-echo "export default function Page() { return <div>Register</div> }" > "app/(auth)/register/page.tsx"
+echo "// Paystack integration" > lib/payments/paystack.ts
+echo "// Monnify integration" > lib/payments/monnify.ts
 
-echo "export default function Page() { return <div>Account</div> }" > "app/(customer)/account/page.tsx"
-echo "export default function Page() { return <div>Customer Orders</div> }" > "app/(customer)/account/orders/page.tsx"
+echo "// Shipping rules (Nigeria states)" > lib/shipping/shipping.ts
 
-echo "export default function Page() { return <div>Admin Dashboard</div> }" > "app/(admin)/dashboard/page.tsx"
-echo "export default function Page() { return <div>Admin Orders</div> }" > "app/(admin)/orders/page.tsx"
-echo "export default function Page() { return <div>Refund Center</div> }" > "app/(admin)/refunds/page.tsx"
-echo "export default function Page() { return <div>Fraud Center</div> }" > "app/(admin)/fraud/page.tsx"
-echo "export default function Page() { return <div>Inventory</div> }" > "app/(admin)/inventory/page.tsx"
+echo "// Cart helpers" > lib/cart/cart.ts
 
-###############################################
-# API ROUTE PLACEHOLDERS
-###############################################
-
-echo "export async function POST() { return Response.json({ ok: true }) }" > "app/api/paystack/initialize/route.ts"
-echo "export async function POST() { return Response.json({ ok: true }) }" > "app/api/paystack/webhook/route.ts"
-
-echo "export async function POST() { return Response.json({ ok: true }) }" > "app/api/monnify/create-account/route.ts"
-echo "export async function POST() { return Response.json({ ok: true }) }" > "app/api/monnify/webhook/route.ts"
-
-echo "export async function POST() { return Response.json({ ok: true }) }" > "app/api/orders/lookup/route.ts"
-echo "export async function POST() { return Response.json({ ok: true }) }" > "app/api/refunds/request/route.ts"
-echo "export async function POST() { return Response.json({ ok: true }) }" > "app/api/push/subscribe/route.ts"
-
-###############################################
-# LIB PLACEHOLDERS
-###############################################
-
-echo "// Prisma client (Prisma 7)" > lib/db.ts
-echo "// Auth config" > lib/auth.ts
-echo "// Paystack wrapper" > lib/paystack.ts
-echo "// Monnify wrapper" > lib/monnify.ts
-echo "// Notifications" > lib/notifications.ts
-echo "// Inventory logic" > lib/inventory.ts
-echo "// Fraud rules" > lib/fraud/rules.ts
-echo "// AI fraud model" > lib/fraud/ai.ts
+echo "// Fraud rules engine" > lib/fraud/rules.ts
+echo "// AI fraud detection" > lib/fraud/ai.ts
 echo "// Fraud score combiner" > lib/fraud/compute.ts
 
+echo "// Analytics tracking" > lib/analytics/events.ts
+
 ###############################################
-# PRISMA 7 SCHEMA TEMPLATE
+# BASIC PLACEHOLDER PAGES
 ###############################################
 
+for page in page login register; do
+  echo "export default function Page(){return <div>${page^}</div>}" > "app/(public)/$page/page.tsx"
+done
+
+echo "export default function Page(){return <div>Cart</div>}" > "app/(public)/cart/page.tsx"
+echo "export default function Page(){return <div>Checkout</div>}" > "app/(public)/checkout/page.tsx"
+echo "export default function Page(){return <div>Track Order</div>}" > "app/(public)/track-order/page.tsx"
+
+###############################################
+# PLACEHOLDER API ROUTES
+###############################################
+
+ROUTES=(
+  "paystack/initialize"
+  "paystack/webhook"
+  "monnify/create-account"
+  "monnify/webhook"
+  "orders/lookup"
+  "refunds/request"
+  "coupons/validate"
+  "reviews/create"
+  "push/subscribe"
+)
+
+for route in "${ROUTES[@]}"; do
+  mkdir -p "app/api/$route"
+  echo "export async function POST(){return Response.json({ok:true})}" > "app/api/$route/route.ts"
+done
+
+###############################################
+# PRISMA SCHEMA
+###############################################
+
+mkdir -p prisma
 cat << 'EOF' > prisma/schema.prisma
-// Prisma 7 schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -125,12 +151,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role { ADMIN USER }
+enum PaymentMethod { PAYSTACK MONNIFY COD }
+enum OrderStatus { PENDING PAID FAILED SHIPPED DELIVERED REFUNDED CANCELLED }
+enum InventoryReason { SALE RESTOCK REFUND MANUAL_ADJUSTMENT }
+enum ShipmentStatus { PROCESSING SHIPPED IN_TRANSIT DELIVERED FAILED }
+enum EventType { PRODUCT_VIEW ADD_TO_CART CHECKOUT_STARTED ORDER_PLACED }
+
 model User {
   id        String   @id @default(cuid())
+  name      String?
   email     String   @unique
   phone     String?
   password  String?
+  role      Role     @default(USER)
   orders    Order[]
+  reviews   Review[]
+  addresses Address[]
+  events    Event[]
   createdAt DateTime @default(now())
 }
 
@@ -139,50 +177,92 @@ model Product {
   name        String
   slug        String   @unique
   description String?
-  priceCents  Int
-  stock       Int      @default(0)
-  images      Json
+  priceNaira  Int
+  salePriceNaira Int?
+  stock       Int @default(0)
   category    String?
+  brand       String?
+  sizes       String[]
+  colors      String[]
+  isNew       Boolean @default(false)
+  isOnSale    Boolean @default(false)
+  featured    Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  images      ProductImage[]
+  reviews     Review[]
+  inventory   InventoryMovement[]
+}
+
+model ProductImage {
+  id        String @id @default(cuid())
+  productId String
+  url       String
+  position  Int
+  product Product @relation(fields: [productId], references: [id])
 }
 
 model Order {
-  id             String      @id @default(cuid())
-  userId         String?
-  email          String
-  phone          String?
-  status         OrderStatus @default(PENDING)
-  paymentMethod  String
-  providerRef    String?
-  trackingStatus String      @default("Processing")
-  trackingSteps  Json?
-  totalCents     Int
-  currency       String      @default("NGN")
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  items          OrderItem[]
+  id            String      @id @default(cuid())
+  userId        String?
+  user          User?       @relation(fields: [userId], references: [id])
+  email         String
+  phone         String?
+  status        OrderStatus @default(PENDING)
+  paymentMethod PaymentMethod
+  providerRef   String?
+  totalCents    Int
+  currency      String      @default("NGN")
+  trackingStatus String     @default("Processing")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  items         OrderItem[]
+  shipments     Shipment[]
 }
 
 model OrderItem {
-  id         String   @id @default(cuid())
+  id         String  @id @default(cuid())
   orderId    String
   productId  String
   quantity   Int
   priceCents Int
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Address {
+  id        String @id @default(cuid())
+  userId    String?
+  fullName  String
+  phone     String
+  state     String
+  city      String
+  address   String
+  user      User? @relation(fields: [userId], references: [id])
+}
+
+model Review {
+  id        String @id @default(cuid())
+  productId String
+  userId    String?
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  product Product @relation(fields: [productId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
 }
 
 model RefundRequest {
-  id        String   @id @default(cuid())
+  id        String @id @default(cuid())
   orderId   String
   reason    String
   status    String   @default("PENDING")
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
 }
 
 model FraudSignal {
-  id        String   @id @default(cuid())
+  id        String @id @default(cuid())
   orderId   String
   score     Int
   details   Json?
@@ -190,7 +270,7 @@ model FraudSignal {
 }
 
 model PushSubscription {
-  id        String   @id @default(cuid())
+  id        String @id @default(cuid())
   userId    String?
   endpoint  String
   p256dh    String
@@ -198,13 +278,44 @@ model PushSubscription {
   createdAt DateTime @default(now())
 }
 
-enum OrderStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-  CANCELLED
+model InventoryMovement {
+  id        String   @id @default(cuid())
+  productId String
+  change    Int
+  reason    InventoryReason
+  reference String?
+  createdAt DateTime @default(now())
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Shipment {
+  id             String          @id @default(cuid())
+  orderId        String
+  courier        String?
+  trackingNumber String?
+  status         ShipmentStatus
+  createdAt      DateTime @default(now())
+  order   Order           @relation(fields: [orderId], references: [id])
+  updates ShipmentUpdate[]
+}
+
+model ShipmentUpdate {
+  id         String   @id @default(cuid())
+  shipmentId String
+  status     String
+  note       String?
+  createdAt  DateTime @default(now())
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  userId    String?
+  type      EventType
+  data      Json?
+  createdAt DateTime @default(now())
+  user User? @relation(fields: [userId], references: [id])
 }
 EOF
 
-echo "🎉 Project structure created successfully — no route conflicts!"
+echo "🎉 Project skeleton with complete Prisma schema created successfully!"

@@ -10,14 +10,19 @@ interface BadgeProps {
 
 export default function Badge({ children, variant = "default" }: BadgeProps) {
   const variants = {
-    default: "bg-neutral-400/20 text-neutral-600",
-    success: "bg-success/10 text-success",
-    warning: "bg-warning/10 text-warning",
-    danger: "bg-danger/10 text-danger",
+    default: "bg-[var(--color-border)]/20 text-[var(--color-text-secondary)]",
+    success: "bg-[var(--color-success-500)]/10 text-[var(--color-success-500)]",
+    warning: "bg-[var(--color-warning-500)]/10 text-[var(--color-warning-500)]",
+    danger: "bg-[var(--color-danger-500)]/10 text-[var(--color-danger-500)]",
   };
 
   return (
-    <span className={clsx("text-xs px-2 py-1 rounded-full font-medium", variants[variant])}>
+    <span
+      className={clsx(
+        "text-xs px-2 py-1 rounded-full font-medium",
+        variants[variant]
+      )}
+    >
       {children}
     </span>
   );

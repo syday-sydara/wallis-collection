@@ -1,1 +1,1 @@
-export default function Page() { return <div>Checkout</div> }
+export default function Page(){return <div>Checkout</div>}

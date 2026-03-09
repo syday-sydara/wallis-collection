@@ -1,1 +1,1 @@
-// AI fraud model
+// AI fraud detection

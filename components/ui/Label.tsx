@@ -5,7 +5,7 @@ import { cva, VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 
 const label = cva(
-  "block font-medium",
+  "block font-medium transition-colors duration-200",
   {
     variants: {
       size: {
@@ -14,12 +14,16 @@ const label = cva(
         lg: "text-base",
       },
       variant: {
-        default: "text-[color:var(--color-neutral-600)]",
-        subtle: "text-[color:var(--color-neutral-400)]",
-        accent: "text-[color:var(--color-accent-500)]",
+        default: "text-[var(--color-text-secondary)] hover:text-[var(--color-accent-500)]",
+        subtle: "text-[var(--color-text-muted)] hover:text-[var(--color-accent-500)]",
+        accent: "text-[var(--color-accent-500)]",
       },
       uppercase: {
         true: "uppercase tracking-widest",
+        false: "",
+      },
+      required: {
+        true: "after:content-['*'] after:ml-1 after:text-[var(--color-danger-500)]",
         false: "",
       },
     },
@@ -27,6 +31,7 @@ const label = cva(
       size: "sm",
       variant: "default",
       uppercase: true,
+      required: false,
     },
   }
 );
@@ -40,11 +45,12 @@ export default function Label({
   size,
   variant,
   uppercase,
+  required,
   className,
   ...props
 }: LabelProps) {
   return (
-    <label className={clsx(label({ size, variant, uppercase }), className)} {...props}>
+    <label className={clsx(label({ size, variant, uppercase, required }), className)} {...props}>
       {children}
     </label>
   );

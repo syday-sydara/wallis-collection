@@ -7,12 +7,12 @@ import Label from "@/components/ui/Label";
 import clsx from "clsx";
 import { cva, VariantProps } from "class-variance-authority";
 
-const helperTextStyles = cva("mt-1 text-xs", {
+const helperTextStyles = cva("mt-1 text-xs flex items-center gap-1", {
   variants: {
     state: {
-      default: "text-[color:var(--color-neutral-600)]",
-      error: "text-[color:var(--color-danger-500)]",
-      success: "text-[color:var(--color-success-500)]",
+      default: "text-[var(--color-text-secondary)]",
+      error: "text-[var(--color-danger-500)]",
+      success: "text-[var(--color-success-500)]",
     },
   },
   defaultVariants: { state: "default" },
@@ -23,10 +23,12 @@ interface FormFieldProps {
   label: React.ReactNode;
   rules?: RegisterOptions;
   helperText?: string;
+  showSuccess?: boolean;
   size?: VariantProps<typeof Input>["size"];
   variant?: VariantProps<typeof Input>["variant"];
   type?: React.InputHTMLAttributes<HTMLInputElement>["type"];
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export function FormField({
@@ -34,15 +36,18 @@ export function FormField({
   label,
   rules,
   helperText,
+  showSuccess = false,
   size = "md",
   variant = "default",
   type = "text",
   placeholder,
+  disabled = false,
 }: FormFieldProps) {
   const { register, formState } = useFormContext();
   const error = formState.errors[name]?.message as string | undefined;
 
-  const state = error ? "error" : "default";
+  const state: "default" | "error" | "success" =
+    error ? "error" : showSuccess ? "success" : "default";
   const message = error || helperText;
 
   return (
@@ -57,8 +62,18 @@ export function FormField({
         size={size}
         variant={variant}
         placeholder={placeholder}
+        disabled={disabled}
       />
-      {message && <p className={clsx(helperTextStyles({ state }))}>{message}</p>}
+      {message && (
+        <p className={clsx(helperTextStyles({ state }))}>
+          {state === "error" && (
+            <span aria-hidden="true" className="text-[var(--color-danger-500)]">
+              &#9888;
+            </span>
+          )}
+          {message}
+        </p>
+      )}
     </div>
   );
 }

@@ -1,1 +1,1 @@
-// Auth config
+// Authentication logic

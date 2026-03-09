@@ -5,7 +5,7 @@ import { cva, VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 
 const card = cva(
-  "rounded-lg shadow-card p-4 bg-[color:var(--color-surface)] transition-shadow duration-200",
+  "rounded-lg transition-shadow duration-200 bg-[var(--color-bg-surface)] transform",
   {
     variants: {
       shadow: {
@@ -14,20 +14,38 @@ const card = cva(
         none: "",
       },
       size: {
-        sm: "p-2",
-        md: "p-4",
-        lg: "p-6",
+        sm: "p-[var(--spacing-sm)]",
+        md: "p-[var(--spacing-md)]",
+        lg: "p-[var(--spacing-lg)]",
+      },
+      hoverEffect: {
+        none: "",
+        lift: "hover:shadow-card hover:-translate-y-1",
       },
     },
     defaultVariants: {
       shadow: "card",
       size: "md",
+      hoverEffect: "lift",
     },
   }
 );
 
-interface CardProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof card> {}
+interface CardProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof card> {}
 
-export default function Card({ children, shadow, size, className, ...props }: CardProps) {
-  return <div className={clsx(card({ shadow, size }), className)} {...props}>{children}</div>;
+export default function Card({
+  children,
+  shadow,
+  size,
+  hoverEffect,
+  className,
+  ...props
+}: CardProps) {
+  return (
+    <div className={clsx(card({ shadow, size, hoverEffect }), className)} {...props}>
+      {children}
+    </div>
+  );
 }
