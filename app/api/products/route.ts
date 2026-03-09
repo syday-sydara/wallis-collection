@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { handleError, handleSuccess } from "@/lib/errors";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
@@ -7,8 +7,9 @@ export async function GET() {
       include: { images: true },
     });
 
-    return handleSuccess(products);
+    return NextResponse.json(products);
   } catch (error) {
-    return handleError(error);
+    console.error("API Error:", error);
+    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
   }
 }

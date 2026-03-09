@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { ApiError, handleError, handleSuccess } from "@/lib/errors";
+import { NextResponse } from "next/server";
 
 export async function GET(req, { params }) {
   try {
@@ -8,10 +8,19 @@ export async function GET(req, { params }) {
       include: { images: true, reviews: true },
     });
 
-    if (!product) throw ApiError.notFound("Product not found");
+    if (!product) {
+      return NextResponse.json(
+        { error: "Product not found" },
+        { status: 404 }
+      );
+    }
 
-    return handleSuccess(product);
+    return NextResponse.json(product);
   } catch (error) {
-    return handleError(error);
+    console.error("API Error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch product" },
+      { status: 500 }
+    );
   }
 }
