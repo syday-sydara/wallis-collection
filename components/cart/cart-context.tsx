@@ -1,11 +1,17 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 
 export interface CartItem {
   id: string;
   name: string;
-  price: number; // Price in Naira
+  price: number; // price in Naira
   quantity: number;
   image?: string;
 }
@@ -54,16 +60,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /* --------------------------------------------- */
 
   const addItem = (item: CartItem) => {
+    const qty = Math.max(1, item.quantity); // ensure minimum quantity of 1
+
     setItems((prev) => {
       const existing = prev.find((i) => i.id === item.id);
+
       if (existing) {
         return prev.map((i) =>
           i.id === item.id
-            ? { ...i, quantity: i.quantity + item.quantity }
+            ? { ...i, quantity: i.quantity + qty }
             : i
         );
       }
-      return [...prev, item];
+
+      return [...prev, { ...item, quantity: qty }];
     });
   };
 
@@ -72,21 +82,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const updateQuantity = (id: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeItem(id);
-      return;
-    }
+    const safeQty = Math.max(0, quantity);
+
     setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, quantity } : i))
+      prev
+        .map((i) =>
+          i.id === id ? { ...i, quantity: safeQty } : i
+        )
+        .filter((i) => i.quantity > 0)
     );
   };
 
   const increment = (id: string) => {
-    updateQuantity(id, (items.find((i) => i.id === id)?.quantity || 0) + 1);
+    setItems((prev) =>
+      prev.map((i) =>
+        i.id === id ? { ...i, quantity: i.quantity + 1 } : i
+      )
+    );
   };
 
   const decrement = (id: string) => {
-    updateQuantity(id, (items.find((i) => i.id === id)?.quantity || 0) - 1);
+    setItems((prev) =>
+      prev
+        .map((i) =>
+          i.id === id ? { ...i, quantity: i.quantity - 1 } : i
+        )
+        .filter((i) => i.quantity > 0)
+    );
   };
 
   const clearCart = () => setItems([]);
@@ -95,9 +117,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /* Derived Values                                */
   /* --------------------------------------------- */
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const total = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
 
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const itemCount = items.reduce(
+    (sum, item) => sum + item.quantity,
+    0
+  );
 
   const isEmpty = items.length === 0;
 
@@ -126,6 +154,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 /* --------------------------------------------- */
 export function useCart() {
   const context = useContext(CartContext);
-  if (!context) throw new Error("useCart must be used within a CartProvider");
+  if (!context)
+    throw new Error("useCart must be used within a CartProvider");
   return context;
 }

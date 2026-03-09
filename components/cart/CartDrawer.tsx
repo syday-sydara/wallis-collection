@@ -1,25 +1,34 @@
 "use client";
 
 import { useCart } from "./cart-context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "@/components/ui/Button";
 import { X } from "lucide-react";
 
 export default function CartDrawer() {
-  const { items, removeItem, updateQuantity, clearCart, total } = useCart();
+  const { items, removeItem, increment, decrement, clearCart, total } = useCart();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Close drawer with Escape key
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   return (
     <>
       {/* Cart toggle button */}
       <button
-        className="fixed top-5 right-5 z-50 bg-[var(--color-primary-500)] text-white px-4 py-2 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:opacity-90 transition"
+        className="fixed top-5 right-5 z-50 bg-[var(--color-primary-500)] text-white px-4 py-2 rounded-lg shadow hover:opacity-90 transition"
         onClick={() => setIsOpen(true)}
       >
         Cart ({items.length})
       </button>
 
-      {/* Drawer overlay */}
+      {/* Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-40"
@@ -27,9 +36,9 @@ export default function CartDrawer() {
         />
       )}
 
-      {/* Drawer panel */}
+      {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-96 bg-[var(--color-bg-surface)] shadow-[0_2px_12px_rgba(0,0,0,0.15)] z-50 transform transition-transform duration-300 ${
+        className={`fixed top-0 right-0 h-full w-96 bg-[var(--color-bg-surface)] shadow-xl z-50 transform transition-transform duration-300 ${
           isOpen ? "translate-x-0" : "translate-x-full"
         } flex flex-col`}
       >
@@ -41,7 +50,7 @@ export default function CartDrawer() {
           </button>
         </div>
 
-        {/* Cart items */}
+        {/* Items */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {items.length === 0 && (
             <p className="text-[var(--color-text-secondary)] text-center mt-10">
@@ -68,9 +77,7 @@ export default function CartDrawer() {
                 {/* Quantity controls */}
                 <div className="flex items-center mt-1 space-x-2">
                   <button
-                    onClick={() =>
-                      updateQuantity(item.id, Math.max(1, item.quantity - 1))
-                    }
+                    onClick={() => decrement(item.id)}
                     className="px-2 py-1 border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-primary)] transition"
                   >
                     -
@@ -79,7 +86,7 @@ export default function CartDrawer() {
                   <span>{item.quantity}</span>
 
                   <button
-                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                    onClick={() => increment(item.id)}
                     className="px-2 py-1 border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-primary)] transition"
                   >
                     +
@@ -87,7 +94,7 @@ export default function CartDrawer() {
                 </div>
               </div>
 
-              {/* Remove item */}
+              {/* Remove */}
               <button
                 onClick={() => removeItem(item.id)}
                 className="text-[var(--color-danger-500)] hover:opacity-70"
@@ -111,7 +118,7 @@ export default function CartDrawer() {
             <Button
               variant="primary"
               className="w-full"
-              onClick={() => alert("Checkout flow not implemented yet")}
+              onClick={() => alert("Checkout flow coming soon")}
             >
               Checkout
             </Button>
