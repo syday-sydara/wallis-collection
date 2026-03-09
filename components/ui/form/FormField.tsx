@@ -1,7 +1,11 @@
 "use client";
 
 import React from "react";
-import { useFormContext, RegisterOptions } from "react-hook-form";
+import {
+  useFormContext,
+  RegisterOptions,
+  FieldError,
+} from "react-hook-form";
 import Input from "@/components/ui/Input";
 import Label from "@/components/ui/Label";
 import clsx from "clsx";
@@ -21,7 +25,7 @@ const helperTextStyles = cva("mt-1 text-xs flex items-center gap-1", {
 interface FormFieldProps {
   name: string;
   label: React.ReactNode;
-  rules?: RegisterOptions;
+  rules?: RegisterOptions<string>;
   helperText?: string;
   description?: string;
   showSuccess?: boolean;
@@ -30,6 +34,7 @@ interface FormFieldProps {
   type?: React.InputHTMLAttributes<HTMLInputElement>["type"];
   placeholder?: string;
   disabled?: boolean;
+  autoComplete?: string;
   className?: string;
 }
 
@@ -45,10 +50,13 @@ export function FormField({
   type = "text",
   placeholder,
   disabled = false,
+  autoComplete,
   className,
 }: FormFieldProps) {
   const { register, formState } = useFormContext();
-  const error = formState.errors[name]?.message as string | undefined;
+
+  const fieldError = formState.errors[name] as FieldError | undefined;
+  const error = fieldError?.message;
 
   const id = name.replace(/\./g, "-");
 
@@ -71,6 +79,7 @@ export function FormField({
         variant={variant}
         placeholder={placeholder}
         disabled={disabled}
+        autoComplete={autoComplete}
         aria-invalid={!!error}
         aria-describedby={message ? `${id}-helper` : undefined}
       />

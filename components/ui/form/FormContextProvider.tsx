@@ -1,26 +1,33 @@
 "use client";
 
 import React, { ReactNode } from "react";
-import { FormProvider, UseFormReturn } from "react-hook-form";
+import {
+  FormProvider,
+  UseFormReturn,
+  FieldErrors,
+} from "react-hook-form";
 import clsx from "clsx";
 
-interface FormContextProviderProps {
-  methods: UseFormReturn<any>;
+interface FormContextProviderProps<T> {
+  methods: UseFormReturn<T>;
   children: ReactNode;
-  onSubmit: (data: any) => void;
-  onError?: (errors: any) => void;
+  onSubmit: (data: T) => void;
+  onError?: (errors: FieldErrors<T>) => void;
   className?: string;
-  formProps?: React.FormHTMLAttributes<HTMLFormElement>;
+  formProps?: Omit<
+    React.FormHTMLAttributes<HTMLFormElement>,
+    "onSubmit" | "className"
+  >;
 }
 
-export function FormContextProvider({
+export function FormContextProvider<T>({
   methods,
   children,
   onSubmit,
   onError,
   className,
   formProps,
-}: FormContextProviderProps) {
+}: FormContextProviderProps<T>) {
   return (
     <FormProvider {...methods}>
       <form

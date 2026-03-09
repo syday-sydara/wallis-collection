@@ -1,7 +1,11 @@
 "use client";
 
 import React from "react";
-import { useFormContext, RegisterOptions } from "react-hook-form";
+import {
+  useFormContext,
+  RegisterOptions,
+  FieldError,
+} from "react-hook-form";
 import Input from "@/components/ui/Input";
 import Label from "@/components/ui/Label";
 import clsx from "clsx";
@@ -18,16 +22,17 @@ const helperTextStyles = cva("mt-1 text-xs", {
   defaultVariants: { state: "default" },
 });
 
-interface InputFieldProps {
+export interface InputFieldProps {
   name: string;
   label: React.ReactNode;
-  rules?: RegisterOptions;
+  rules?: RegisterOptions<string>;
   helperText?: string;
   description?: string;
   size?: VariantProps<typeof Input>["size"];
   variant?: VariantProps<typeof Input>["variant"];
   type?: React.InputHTMLAttributes<HTMLInputElement>["type"];
   placeholder?: string;
+  autoComplete?: string;
   className?: string;
 }
 
@@ -41,14 +46,17 @@ export function InputField({
   variant = "default",
   type = "text",
   placeholder,
+  autoComplete,
   className,
 }: InputFieldProps) {
   const { register, formState } = useFormContext();
-  const error = formState.errors[name]?.message as string | undefined;
+
+  const fieldError = formState.errors[name] as FieldError | undefined;
+  const error = fieldError?.message;
 
   const id = name.replace(/\./g, "-");
 
-  const state: "default" | "error" | "success" = error ? "error" : "default";
+  const state: "default" | "error" = error ? "error" : "default";
   const message = error || helperText;
 
   return (
@@ -64,6 +72,7 @@ export function InputField({
         size={size}
         variant={variant}
         placeholder={placeholder}
+        autoComplete={autoComplete}
         aria-invalid={!!error}
         aria-describedby={message ? `${id}-helper` : undefined}
       />

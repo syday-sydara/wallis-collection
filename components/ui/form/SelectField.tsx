@@ -1,10 +1,14 @@
 "use client";
 
 import React from "react";
-import { useFormContext, RegisterOptions } from "react-hook-form";
+import {
+  useFormContext,
+  RegisterOptions,
+  FieldError,
+} from "react-hook-form";
 import Label from "@/components/ui/Label";
 import clsx from "clsx";
-import { cva, VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 
 const helperTextStyles = cva("mt-1 text-xs", {
   variants: {
@@ -17,13 +21,15 @@ const helperTextStyles = cva("mt-1 text-xs", {
   defaultVariants: { state: "default" },
 });
 
-interface SelectFieldProps {
+export interface SelectFieldProps {
   name: string;
   label: React.ReactNode;
   options: { value: string; label: string }[];
-  rules?: RegisterOptions;
+  rules?: RegisterOptions<string>;
   helperText?: string;
   placeholder?: string;
+  disabled?: boolean;
+  autoComplete?: string;
   className?: string;
 }
 
@@ -34,10 +40,14 @@ export function SelectField({
   rules,
   helperText,
   placeholder,
+  disabled,
+  autoComplete,
   className,
 }: SelectFieldProps) {
   const { register, formState } = useFormContext();
-  const error = formState.errors[name]?.message as string | undefined;
+
+  const fieldError = formState.errors[name] as FieldError | undefined;
+  const error = fieldError?.message;
 
   const id = name.replace(/\./g, "-");
 
@@ -55,6 +65,8 @@ export function SelectField({
         {...register(name, rules)}
         aria-invalid={!!error}
         aria-describedby={message ? `${id}-helper` : undefined}
+        disabled={disabled}
+        autoComplete={autoComplete}
         className={clsx(
           "rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-colors duration-200 disabled:opacity-50 disabled:pointer-events-none",
           state === "error"
