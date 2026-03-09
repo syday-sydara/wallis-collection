@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useFormContext, RegisterOptions } from "react-hook-form";
+import Input from "@/components/ui/Input";
 import Label from "@/components/ui/Label";
 import clsx from "clsx";
 import { cva, VariantProps } from "class-variance-authority";
@@ -17,15 +18,27 @@ const helperTextStyles = cva("mt-1 text-xs", {
   defaultVariants: { state: "default" },
 });
 
-interface SelectFieldProps {
+interface InputFieldProps {
   name: string;
   label: React.ReactNode;
-  options: { value: string; label: string }[];
   rules?: RegisterOptions;
   helperText?: string;
+  size?: VariantProps<typeof Input>["size"];
+  variant?: VariantProps<typeof Input>["variant"];
+  type?: React.InputHTMLAttributes<HTMLInputElement>["type"];
+  placeholder?: string;
 }
 
-export function SelectField({ name, label, options, rules, helperText }: SelectFieldProps) {
+export function InputField({
+  name,
+  label,
+  rules,
+  helperText,
+  size = "md",
+  variant = "default",
+  type = "text",
+  placeholder,
+}: InputFieldProps) {
   const { register, formState } = useFormContext();
   const error = formState.errors[name]?.message as string | undefined;
   const state = error ? "error" : "default";
@@ -33,21 +46,17 @@ export function SelectField({ name, label, options, rules, helperText }: SelectF
 
   return (
     <div className="flex flex-col w-full">
-      <Label htmlFor={name}>{label}</Label>
-      <select
+      <Label htmlFor={name} size={size} variant="default">
+        {label}
+      </Label>
+      <Input
         id={name}
         {...register(name, rules)}
-        className={clsx(
-          "rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 transition-colors duration-200 disabled:opacity-50 disabled:pointer-events-none",
-          state === "error" ? "border-[color:var(--color-danger-500)]" : "border-[color:var(--color-border)]"
-        )}
-      >
-        {options.map(opt => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+        type={type}
+        size={size}
+        variant={variant}
+        placeholder={placeholder}
+      />
       {message && <p className={clsx(helperTextStyles({ state }))}>{message}</p>}
     </div>
   );
