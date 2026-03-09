@@ -1,5 +1,5 @@
 import { Space_Grotesk } from "next/font/google";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 export const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -11,9 +11,15 @@ export const spaceGrotesk = Space_Grotesk({
 // Global metadata
 export const metadata: Metadata = {
   metadataBase: new URL("https://walliscollection.com"),
-  title: "Wallis Collection",
+
+  title: {
+    default: "Wallis Collection",
+    template: "%s | Wallis Collection",
+  },
+
   description:
     "Shop premium Nigerian fashion: wax prints, super-wax, abayas, ankara, hollands, and luxury laces.",
+
   keywords: [
     "Nigerian fashion",
     "Nigerian clothing",
@@ -27,11 +33,14 @@ export const metadata: Metadata = {
     "Nigerian styles",
     "Wallis Collection",
   ],
+
   openGraph: {
     title: "Wallis Collection",
     description:
       "Discover curated Nigerian fashion: wax, super-wax, abayas, ankara, hollands, and elegant lace fabrics.",
-    url: "/",
+    url: "https://walliscollection.com",
+    siteName: "Wallis Collection",
+    type: "website",
     images: [
       {
         url: "/og-homepage.jpg",
@@ -41,6 +50,7 @@ export const metadata: Metadata = {
       },
     ],
   },
+
   twitter: {
     card: "summary_large_image",
     title: "Wallis Collection",
@@ -48,4 +58,12 @@ export const metadata: Metadata = {
       "Explore premium Nigerian fashion: wax prints, super-wax, abayas, ankara, hollands, and luxury laces.",
     images: ["/og-homepage.jpg"],
   },
+
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+
+  manifest: "/site.webmanifest",
 };

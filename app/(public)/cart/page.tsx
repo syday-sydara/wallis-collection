@@ -21,6 +21,18 @@ export default function CartPage() {
     <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
       <h1 className="heading-1 text-center">Your Cart</h1>
 
+      {/* Continue Shopping */}
+      {!isEmpty && (
+        <div className="text-center">
+          <Link
+            href="/products"
+            className="text-primary underline text-sm hover:opacity-80"
+          >
+            Continue Shopping
+          </Link>
+        </div>
+      )}
+
       {/* Empty State */}
       {isEmpty && (
         <div className="text-center py-20">
@@ -104,14 +116,14 @@ export default function CartPage() {
               <span>₦{total.toLocaleString()}</span>
             </div>
 
-            <Button
-              variant="primary"
-              className="w-full"
-              onClick={() => alert("Checkout flow coming soon")}
-            >
-              Proceed to Checkout
-            </Button>
+            {/* Proceed to Checkout */}
+            <Link href="/checkout/shipping">
+              <Button variant="primary" className="w-full">
+                Proceed to Checkout
+              </Button>
+            </Link>
 
+            {/* Clear Cart */}
             <Button
               variant="subtle"
               className="w-full"

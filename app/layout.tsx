@@ -20,13 +20,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
           <Header />
 
           {/* Main Content */}
-          <main className="flex-1 mx-auto max-w-[1280px] px-4 py-8">
+          <main className="flex-1 w-full mx-auto max-w-[1280px] px-4 py-8">
             {children}
           </main>
 
           {/* Global Footer */}
           <Footer />
-
         </CartProvider>
       </body>
     </html>
