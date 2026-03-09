@@ -27,13 +27,14 @@
 }
 
 /* ------------------------------------------------ */
-/* DARK MODE VARIABLES                               */
+/* DARK MODE (SYSTEM)                               */
 /* ------------------------------------------------ */
 @media (prefers-color-scheme: dark) {
   :root {
     --color-bg-primary: #0f1115;
     --color-bg-surface: #1a1d24;
     --color-border: #2a2f38;
+
     --color-text-primary: #ffffff;
     --color-text-secondary: #c7c7c7;
     --color-text-muted: #7c7c7c;
@@ -54,69 +55,87 @@
   }
 
   button {
-    @apply cursor-pointer border-0 bg-none font-inherit;
+    @apply cursor-pointer border-0 bg-transparent font-inherit;
   }
 
   :focus-visible {
     outline: 2px solid var(--color-accent-500);
     outline-offset: 2px;
   }
+
+  /* Tailwind 4 removes default border color */
+  *, ::before, ::after {
+    @apply border-[var(--color-border)];
+  }
 }
 
 /* ------------------------------------------------ */
-/* COMPONENT PLACEHOLDER UTILITIES                  */
+/* COMPONENTS                                       */
 /* ------------------------------------------------ */
 @layer components {
   /* Buttons */
   .btn {
-    @apply inline-flex items-center justify-center px-6 py-2 rounded-md font-medium transition duration-normal ease-smooth;
+    @apply inline-flex items-center justify-center
+      px-[1.5rem] py-[0.5rem]
+      rounded-md font-medium
+      transition duration-[180ms] ease-[cubic-bezier(0.4,0,0.2,1)];
   }
+
   .btn-primary {
     @apply bg-[var(--color-primary-500)] text-white hover:opacity-90;
   }
 
   /* Cards */
   .card {
-    @apply bg-[var(--color-bg-surface)] rounded-lg shadow-card p-lg;
+    @apply bg-[var(--color-bg-surface)]
+      rounded-lg
+      p-[1.25rem]
+      shadow-[0_2px_8px_rgba(0,0,0,0.06)];
   }
 
-  /* Skeleton loader */
+  /* Skeleton Loader */
   .skeleton {
-    @apply block w-full h-6 rounded-sm bg-gradient-to-r from-[rgba(183,184,187,0.12)] via-[rgba(183,184,187,0.24)] to-[rgba(183,184,187,0.12)] bg-[length:200%_100%] animate-shimmer;
+    @apply block w-full h-6 rounded-sm
+      bg-gradient-to-r
+      from-[rgba(183,184,187,0.12)]
+      via-[rgba(183,184,187,0.24)]
+      to-[rgba(183,184,187,0.12)]
+      bg-[length:200%_100%]
+      motion-safe:animate-[shimmer_1.4s_ease-in-out_infinite];
   }
 
   /* Headings */
   .heading-display {
-    @apply font-heading font-bold text-[3.5rem] leading-[1.1] tracking-[-0.02em];
+    @apply font-heading font-bold
+      text-[3.5rem] leading-[1.1] tracking-[-0.02em];
   }
 
   .heading-1 {
-    @apply font-heading font-semibold text-[2.5rem] leading-[1.15];
+    @apply font-heading font-semibold
+      text-[2.5rem] leading-[1.15];
   }
 
   .heading-2 {
-    @apply font-heading font-semibold text-2xl;
+    @apply font-heading font-semibold text-[1.5rem];
   }
 
   .heading-3 {
-    @apply font-heading font-medium text-xl;
+    @apply font-heading font-medium text-[1.25rem];
   }
 
   /* Labels */
   .label {
-    @apply text-xs tracking-widest uppercase text-[var(--color-text-secondary)];
+    @apply text-[0.75rem] tracking-[0.1em] uppercase
+      text-[var(--color-text-secondary)];
   }
 }
 
 /* ------------------------------------------------ */
-/* KEYFRAMES & ANIMATIONS                            */
+/* UTILITIES & ANIMATIONS                           */
 /* ------------------------------------------------ */
 @layer utilities {
   @keyframes shimmer {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
-  }
-  .animate-shimmer {
-    @apply animate-[shimmer_1.4s_ease-in-out_infinite] bg-[length:200%_100%];
   }
 }

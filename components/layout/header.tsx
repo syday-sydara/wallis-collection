@@ -9,45 +9,34 @@ export default function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-bg/80 backdrop-blur border-b border-border">
-      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
+    <header className="sticky top-0 z-50 bg-[var(--color-bg-surface)]/80 backdrop-blur border-b border-[var(--color-border)]">
+      <div className="mx-auto max-w-[1280px] px-4 flex items-center justify-between h-16">
         
         {/* Logo */}
-        <Link href="/" className="text-xl font-semibold tracking-wide">
+        <Link href="/" className="text-xl font-heading font-semibold tracking-wide text-[var(--color-text-primary)]">
           Wallis
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8 text-sm">
-          <Link href="/shop" className="hover:text-primary">
-            Shop
-          </Link>
-
-          <Link href="/collections" className="hover:text-primary">
-            Collections
-          </Link>
-
-          <Link href="/about" className="hover:text-primary">
-            About
-          </Link>
-
-          <Link href="/contact" className="hover:text-primary">
-            Contact
-          </Link>
+          <NavLink href="/shop">Shop</NavLink>
+          <NavLink href="/collections">Collections</NavLink>
+          <NavLink href="/about">About</NavLink>
+          <NavLink href="/contact">Contact</NavLink>
         </nav>
 
         {/* Right actions */}
         <div className="flex items-center gap-4">
 
-          <button className="hover:text-primary">
+          <button className="hover:text-[var(--color-primary-500)] transition-colors">
             <Search size={20} />
           </button>
 
-          <Link href="/cart" className="relative">
+          <Link href="/cart" className="relative hover:text-[var(--color-primary-500)] transition-colors">
             <ShoppingCart size={22} />
 
             {/* cart badge */}
-            <span className="absolute -top-2 -right-2 text-xs bg-primary text-bg px-1.5 py-0.5 rounded-full">
+            <span className="absolute -top-2 -right-2 text-xs bg-[var(--color-primary-500)] text-white px-1.5 py-0.5 rounded-full">
               2
             </span>
           </Link>
@@ -55,7 +44,7 @@ export default function Header() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setOpen(!open)}
-            className="md:hidden"
+            className="md:hidden hover:text-[var(--color-primary-500)] transition-colors"
           >
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -64,32 +53,56 @@ export default function Header() {
 
       {/* Mobile Menu */}
       {open && (
-        <div className="md:hidden border-t border-border bg-bg">
+        <div className="md:hidden border-t border-[var(--color-border)] bg-[var(--color-bg-surface)]">
           <nav className="flex flex-col p-4 space-y-4 text-sm">
-
-            <Link href="/shop" onClick={() => setOpen(false)}>
-              Shop
-            </Link>
-
-            <Link href="/collections" onClick={() => setOpen(false)}>
-              Collections
-            </Link>
-
-            <Link href="/about" onClick={() => setOpen(false)}>
-              About
-            </Link>
-
-            <Link href="/contact" onClick={() => setOpen(false)}>
-              Contact
-            </Link>
+            <MobileNavLink href="/shop" onClick={() => setOpen(false)}>Shop</MobileNavLink>
+            <MobileNavLink href="/collections" onClick={() => setOpen(false)}>Collections</MobileNavLink>
+            <MobileNavLink href="/about" onClick={() => setOpen(false)}>About</MobileNavLink>
+            <MobileNavLink href="/contact" onClick={() => setOpen(false)}>Contact</MobileNavLink>
 
             <Button className="w-full">
               View Cart
             </Button>
-
           </nav>
         </div>
       )}
     </header>
+  );
+}
+
+/* ------------------------------ */
+/* Desktop NavLink Component      */
+/* ------------------------------ */
+function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] transition-colors"
+    >
+      {children}
+    </Link>
+  );
+}
+
+/* ------------------------------ */
+/* Mobile NavLink Component       */
+/* ------------------------------ */
+function MobileNavLink({
+  href,
+  children,
+  onClick,
+}: {
+  href: string;
+  children: React.ReactNode;
+  onClick?: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] transition-colors"
+    >
+      {children}
+    </Link>
   );
 }

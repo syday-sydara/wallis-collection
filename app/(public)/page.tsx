@@ -1,4 +1,3 @@
-// app/(public)/page.tsx
 "use client";
 
 import Image from "next/image";
@@ -12,18 +11,17 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const { addItem } = useCart();
 
-  // Fetch products from API
+  // Fetch products
   useEffect(() => {
     async function fetchProducts() {
       try {
         const res = await fetch("/api/products");
         const data = await res.json();
 
-        // Ensure images exist, fallback to random placeholder
         const formatted: Product[] = data.map((p: Product, i: number) => ({
           ...p,
           images:
-            p.images && p.images.length
+            p.images?.length
               ? p.images
               : [`https://picsum.photos/600/800?random=${i + 1}`],
         }));
@@ -39,7 +37,6 @@ export default function HomePage() {
     fetchProducts();
   }, []);
 
-  // Add product to cart
   const handleAddToCart = (product: Product) => {
     addItem({
       id: product.id,
@@ -51,9 +48,9 @@ export default function HomePage() {
   };
 
   return (
-    <main className="space-y-16">
+    <main className="space-y-20">
       {/* Hero Section */}
-      <section className="relative w-full h-[500px] md:h-[600px] bg-neutral-100 flex items-center justify-center overflow-hidden rounded-lg">
+      <section className="relative w-full h-[500px] md:h-[600px] bg-[var(--color-bg-surface)] flex items-center justify-center overflow-hidden rounded-lg">
         <Image
           src="https://picsum.photos/1920/600?random=20"
           alt="Wallis Collection Hero"
@@ -61,11 +58,16 @@ export default function HomePage() {
           sizes="100vw"
           className="object-cover object-center"
         />
-        <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center text-center text-white px-4">
-          <h1 className="heading-display mb-4">Timeless African Fashion</h1>
-          <p className="text-lg mb-6 max-w-xl">
-            Discover curated pieces for the modern wardrobe — elegance meets tradition.
+
+        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center text-white px-4">
+          <h1 className="heading-display mb-4">
+            Timeless Nigerian Fashion
+          </h1>
+
+          <p className="text-lg mb-6 max-w-xl text-white/90">
+            Discover curated wax, super‑wax, abayas, ankara, hollands, and lace pieces.
           </p>
+
           <a href="/products" className="btn btn-primary px-6 py-3 text-lg">
             Shop Now
           </a>
@@ -73,39 +75,58 @@ export default function HomePage() {
       </section>
 
       {/* Product Sections */}
-      <div className="max-w-7xl mx-auto py-10 px-4 space-y-16">
+      <div className="mx-auto max-w-[1280px] px-4 py-10 space-y-20">
         {/* Featured Products */}
         <section>
           <h2 className="heading-2 mb-6">Featured Products</h2>
-          {loading ? <ProductGridSkeleton /> : <ProductGrid products={products} onAddToCart={handleAddToCart} />}
+          {loading ? (
+            <ProductGridSkeleton />
+          ) : (
+            <ProductGrid products={products} onAddToCart={handleAddToCart} />
+          )}
         </section>
 
         {/* New Arrivals */}
         <section>
           <h2 className="heading-2 mb-6">New Arrivals</h2>
-          {loading ? <ProductGridSkeleton /> : <ProductGrid products={products} onAddToCart={handleAddToCart} />}
+          {loading ? (
+            <ProductGridSkeleton />
+          ) : (
+            <ProductGrid products={products} onAddToCart={handleAddToCart} />
+          )}
         </section>
 
         {/* Best Sellers */}
         <section>
           <h2 className="heading-2 mb-6">Best Sellers</h2>
-          {loading ? <ProductGridSkeleton /> : <ProductGrid products={products} onAddToCart={handleAddToCart} />}
+          {loading ? (
+            <ProductGridSkeleton />
+          ) : (
+            <ProductGrid products={products} onAddToCart={handleAddToCart} />
+          )}
         </section>
       </div>
     </main>
   );
 }
 
-// Skeleton loader while fetching products
+/* ------------------------------ */
+/* Skeleton Loader                */
+/* ------------------------------ */
 function ProductGridSkeleton() {
   const skeletons = Array.from({ length: 8 });
+
   return (
     <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
       {skeletons.map((_, i) => (
-        <div key={i} className="flex flex-col bg-surface rounded-lg shadow-card overflow-hidden">
+        <div
+          key={i}
+          className="flex flex-col bg-[var(--color-bg-surface)] rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden"
+        >
           <div className="relative aspect-[3/4] w-full overflow-hidden">
             <Skeleton className="w-full h-full" />
           </div>
+
           <div className="p-4 flex flex-col flex-1 space-y-2">
             <Skeleton className="w-3/4 h-4" />
             <Skeleton className="w-1/2 h-4" />

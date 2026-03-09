@@ -7,12 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/* ---------------- Enums ---------------- */
+
 enum Role { ADMIN USER }
+
 enum PaymentMethod { PAYSTACK MONNIFY COD }
-enum OrderStatus { PENDING PAID FAILED SHIPPED DELIVERED REFUNDED CANCELLED }
+
+enum PaymentStatus { PENDING PAID FAILED REFUNDED }
+
+enum OrderStatus { PENDING PROCESSING SHIPPED DELIVERED CANCELLED }
+
 enum InventoryReason { SALE RESTOCK REFUND MANUAL_ADJUSTMENT }
+
 enum ShipmentStatus { PROCESSING SHIPPED IN_TRANSIT DELIVERED FAILED }
+
 enum EventType { PRODUCT_VIEW ADD_TO_CART CHECKOUT_STARTED ORDER_PLACED }
+
+enum AddressType { SHIPPING BILLING }
+
+/* ---------------- Models ---------------- */
 
 model User {
   id        String   @id @default(cuid())
@@ -26,28 +39,38 @@ model User {
   addresses Address[]
   events    Event[]
   createdAt DateTime @default(now())
+
+  @@index([email])
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String?
-  priceNaira  Int
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  description    String?
+  priceNaira     Int
   salePriceNaira Int?
-  stock       Int @default(0)
-  category    String?
-  brand       String?
-  sizes       String[]
-  colors      String[]
-  isNew       Boolean @default(false)
-  isOnSale    Boolean @default(false)
-  featured    Boolean @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  images      ProductImage[]
-  reviews     Review[]
-  inventory   InventoryMovement[]
+  stock          Int      @default(0)
+  category       String?
+  brand          String?
+  sizes          String[]
+  colors         String[]
+  isNew          Boolean  @default(false)
+  isOnSale       Boolean  @default(false)
+  featured       Boolean  @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  images         ProductImage[]
+  reviews        Review[]
+  inventory      InventoryMovement[]
+
+  @@index([category])
+  @@index([brand])
+  @@index([isNew])
+  @@index([isOnSale])
+  @@index([featured])
+  @@index([deletedAt])
 }
 
 model ProductImage {
@@ -55,25 +78,33 @@ model ProductImage {
   productId String
   url       String
   position  Int
-  product Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  userId        String?
-  user          User?       @relation(fields: [userId], references: [id])
-  email         String
-  phone         String?
-  status        OrderStatus @default(PENDING)
-  paymentMethod PaymentMethod
-  providerRef   String?
-  totalCents    Int
-  currency      String      @default("NGN")
-  trackingStatus String     @default("Processing")
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  items         OrderItem[]
-  shipments     Shipment[]
+  id             String        @id @default(cuid())
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id])
+  email          String
+  phone          String?
+  paymentMethod  PaymentMethod
+  paymentStatus  PaymentStatus @default(PENDING)
+  orderStatus    OrderStatus   @default(PENDING)
+  providerRef    String?
+  totalCents     Int
+  currency       String        @default("NGN")
+  trackingStatus String        @default("Processing")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  items          OrderItem[]
+  shipments      Shipment[]
+
+  @@index([userId])
+  @@index([paymentStatus])
+  @@index([orderStatus])
+  @@index([createdAt])
 }
 
 model OrderItem {
@@ -82,77 +113,105 @@ model OrderItem {
   productId  String
   quantity   Int
   priceCents Int
-  order   Order   @relation(fields: [orderId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
+  order      Order   @relation(fields: [orderId], references: [id])
+  product    Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 model Address {
-  id        String @id @default(cuid())
+  id        String      @id @default(cuid())
   userId    String?
   fullName  String
   phone     String
   state     String
   city      String
   address   String
-  user      User? @relation(fields: [userId], references: [id])
+  type      AddressType @default(SHIPPING)
+  user      User?       @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
 }
 
 model Review {
-  id        String @id @default(cuid())
+  id        String   @id @default(cuid())
   productId String
   userId    String?
   rating    Int
   comment   String?
   createdAt DateTime @default(now())
-  product Product @relation(fields: [productId], references: [id])
-  user    User?   @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([productId])
+  @@index([userId])
+  @@index([rating])
 }
 
 model RefundRequest {
-  id        String @id @default(cuid())
+  id        String   @id @default(cuid())
   orderId   String
   reason    String
   status    String   @default("PENDING")
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([status])
 }
 
 model FraudSignal {
-  id        String @id @default(cuid())
+  id        String   @id @default(cuid())
   orderId   String
   score     Int
   details   Json?
   createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([score])
 }
 
 model PushSubscription {
-  id        String @id @default(cuid())
+  id        String   @id @default(cuid())
   userId    String?
   endpoint  String
   p256dh    String
   auth      String
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@unique([endpoint])
 }
 
 model InventoryMovement {
-  id        String   @id @default(cuid())
+  id        String          @id @default(cuid())
   productId String
   change    Int
   reason    InventoryReason
   reference String?
-  createdAt DateTime @default(now())
-  product Product @relation(fields: [productId], references: [id])
+  createdAt DateTime        @default(now())
+  product   Product         @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@index([reason])
+  @@index([createdAt])
 }
 
 model Shipment {
-  id             String          @id @default(cuid())
+  id             String         @id @default(cuid())
   orderId        String
   courier        String?
   trackingNumber String?
   status         ShipmentStatus
-  createdAt      DateTime @default(now())
-  order   Order           @relation(fields: [orderId], references: [id])
-  updates ShipmentUpdate[]
+  createdAt      DateTime       @default(now())
+  order          Order          @relation(fields: [orderId], references: [id])
+  updates        ShipmentUpdate[]
+
+  @@index([orderId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model ShipmentUpdate {
@@ -161,14 +220,21 @@ model ShipmentUpdate {
   status     String
   note       String?
   createdAt  DateTime @default(now())
-  shipment Shipment @relation(fields: [shipmentId], references: [id])
+  shipment   Shipment @relation(fields: [shipmentId], references: [id])
+
+  @@index([shipmentId])
+  @@index([status])
 }
 
 model Event {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String?
   type      EventType
   data      Json?
-  createdAt DateTime @default(now())
-  user User? @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+  user      User?     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
 }

@@ -135,12 +135,40 @@ async function main() {
     },
   ];
 
-  await prisma.product.createMany({
-    data: products,
-    skipDuplicates: true,
-  });
+  console.log("⏳ Seeding products...");
 
-  console.log("✅ Seeded products successfully!");
+  for (const product of products) {
+    const created = await prisma.product.upsert({
+      where: { slug: product.slug },
+      update: {},
+      create: {
+        name: product.name,
+        slug: product.slug,
+        description: product.description ?? "",
+        priceNaira: product.priceNaira,
+        salePriceNaira: product.salePriceNaira,
+        stock: product.stock,
+        category: product.category,
+        brand: product.brand,
+        sizes: product.sizes,
+        colors: product.colors,
+        isNew: product.isNew,
+        isOnSale: product.isOnSale,
+        featured: product.featured,
+
+        images: {
+          create: product.images.map((url, index) => ({
+            url,
+            position: index,
+          })),
+        },
+      },
+    });
+
+    console.log(`✔ Created: ${created.name}`);
+  }
+
+  console.log("🎉 All products seeded successfully!");
 }
 
 main()

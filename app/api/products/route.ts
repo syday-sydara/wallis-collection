@@ -3,59 +3,43 @@ import { NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const placeholderImages = [
-      "https://picsum.photos/600/800?random=1",
-      "https://picsum.photos/600/800?random=2",
-      "https://picsum.photos/600/800?random=3",
-      "https://picsum.photos/600/800?random=4",
-      "https://picsum.photos/600/800?random=5",
-      "https://picsum.photos/600/800?random=6",
-      "https://picsum.photos/600/800?random=7",
-      "https://picsum.photos/600/800?random=8",
-    ];
+    const { searchParams } = new URL(req.url);
 
-    // Featured: last 5 products marked featured
-    const featured = await prisma.product.findMany({
-      where: { isFeatured: true },
+    const category = searchParams.get("category") || undefined;
+    const brand = searchParams.get("brand") || undefined;
+    const search = searchParams.get("q") || undefined;
+    const featured = searchParams.get("featured") === "true";
+    const onSale = searchParams.get("onSale") === "true";
+    const page = Number(searchParams.get("page") || 1);
+    const limit = Number(searchParams.get("limit") || 20);
+
+    const skip = (page - 1) * limit;
+
+    const products = await prisma.product.findMany({
+      where: {
+        deletedAt: null,
+        category,
+        brand,
+        featured: featured || undefined,
+        isOnSale: onSale || undefined,
+        OR: search
+          ? [
+              { name: { contains: search, mode: "insensitive" } },
+              { description: { contains: search, mode: "insensitive" } },
+            ]
+          : undefined,
+      },
+      include: { images: true },
+      skip,
+      take: limit,
       orderBy: { createdAt: "desc" },
-      take: 5,
     });
 
-    // New Arrivals: latest 8 products
-    const newArrivals = await prisma.product.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 8,
-    });
-
-    // Best Sellers: top 8 products (placeholder logic)
-    const bestSellersRaw = await prisma.product.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 8,
-    });
-
-    const mapProduct = (p: any, index: number) => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      priceNaira: p.priceCents,
-      images: [p.images?.[0] ?? placeholderImages[index % placeholderImages.length]],
-      isNew: p.createdAt > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      isOnSale: false,
-      outOfStock: p.stock <= 0,
-    });
-
-    return NextResponse.json({
-      featured: featured.map(mapProduct),
-      newArrivals: newArrivals.map(mapProduct),
-      bestSellers: bestSellersRaw.map(mapProduct),
-    });
+    return NextResponse.json(products);
   } catch (err) {
-    console.error("Failed to fetch homepage products:", err);
-    return NextResponse.json(
-      { error: "Failed to fetch products" },
-      { status: 500 }
-    );
+    console.error("Failed to fetch products:", err);
+    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
   }
 }
