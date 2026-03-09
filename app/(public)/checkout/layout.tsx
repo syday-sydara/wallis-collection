@@ -8,7 +8,9 @@ export default function CheckoutLayout({ children }: { children: ReactNode }) {
   return (
     <CartProvider>
       <CheckoutProvider>
-        <div className="max-w-3xl mx-auto px-4 py-10">{children}</div>
+        <main className="max-w-3xl mx-auto px-4 py-10">
+          {children}
+        </main>
       </CheckoutProvider>
     </CartProvider>
   );

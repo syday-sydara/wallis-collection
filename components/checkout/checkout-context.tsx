@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { useCart } from "@/components/cart/cart-context";
+import type { PaymentMethod } from "@prisma/client"; 
+// This gives: "PAYSTACK" | "MONNIFY" | "COD"
 
 type ShippingType = "DELIVERY" | "PICKUP";
 
@@ -16,7 +18,7 @@ interface ShippingInfo {
 }
 
 interface PaymentInfo {
-  method?: "CARD" | "BANK_TRANSFER";
+  method?: PaymentMethod; // <-- FIXED
   cardNumber?: string;
   expiry?: string;
   cvv?: string;
@@ -32,15 +34,24 @@ interface CheckoutContextType {
 const CheckoutContext = createContext<CheckoutContextType | undefined>(undefined);
 
 export function CheckoutProvider({ children }: { children: ReactNode }) {
-  const [shipping, setShippingState] = useState<ShippingInfo>({ type: "DELIVERY" });
-  const [payment, setPaymentState] = useState<PaymentInfo>({});
-  const { items } = useCart();
+  const [shipping, setShippingState] = useState<ShippingInfo>({
+    type: "DELIVERY",
+  });
 
-  const setShipping = (data: Partial<ShippingInfo>) => setShippingState(prev => ({ ...prev, ...data }));
-  const setPayment = (data: Partial<PaymentInfo>) => setPaymentState(prev => ({ ...prev, ...data }));
+  const [payment, setPaymentState] = useState<PaymentInfo>({});
+
+  const { items } = useCart(); // useful for validation later
+
+  const setShipping = (data: Partial<ShippingInfo>) =>
+    setShippingState((prev) => ({ ...prev, ...data }));
+
+  const setPayment = (data: Partial<PaymentInfo>) =>
+    setPaymentState((prev) => ({ ...prev, ...data }));
 
   return (
-    <CheckoutContext.Provider value={{ shipping, setShipping, payment, setPayment }}>
+    <CheckoutContext.Provider
+      value={{ shipping, setShipping, payment, setPayment }}
+    >
       {children}
     </CheckoutContext.Provider>
   );

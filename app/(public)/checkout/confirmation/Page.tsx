@@ -15,11 +15,44 @@ export default async function ConfirmationPage({
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
-      items: true,
+      items: {
+        include: {
+          product: {
+            select: {
+              name: true,
+              priceNaira: true,
+              images: {
+                select: { url: true, position: true },
+                orderBy: { position: "asc" },
+              },
+            },
+          },
+        },
+      },
+      shipments: {
+        include: {
+          updates: true,
+        },
+      },
     },
   });
 
   if (!order) return notFound();
 
-  return <OrderConfirmation order={order} />;
+  // Add fallback image for products with no images
+  const normalizedOrder = {
+    ...order,
+    items: order.items.map((item) => ({
+      ...item,
+      product: {
+        ...item.product,
+        images:
+          item.product?.images?.length > 0
+            ? item.product.images
+            : [{ url: "/placeholder.png", position: 0 }],
+      },
+    })),
+  };
+
+  return <OrderConfirmation order={normalizedOrder} />;
 }

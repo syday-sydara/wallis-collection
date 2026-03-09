@@ -9,32 +9,163 @@ import {
   CheckboxField,
   SubmitButton,
 } from "@/components/ui/form";
+import { useCart } from "@/components/cart/cart-context";
+import Button from "@/components/ui/Button";
 
 export default function CheckoutPage() {
-  const methods = useForm({ mode: "onChange" });
+  const { items, total, clearCart } = useCart();
 
-  const onSubmit = (data: any) => {
-    console.log("Form data:", data);
-    alert("Order submitted! Check console for data.");
+  const methods = useForm({
+    mode: "onChange",
+    defaultValues: {
+      fullName: "",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      state: "",
+      paymentMethod: "",
+      terms: false,
+    },
+  });
+
+  const onSubmit = async (data: any) => {
+    if (items.length === 0) {
+      alert("Your cart is empty.");
+      return;
+    }
+
+    const payload = {
+      ...data,
+      items: items.map((i) => ({
+        id: i.id,
+        quantity: i.quantity,
+        priceNaira: i.price,
+      })),
+    };
+
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        alert(result.error || "Checkout failed");
+        return;
+      }
+
+      // Redirect to payment page if needed
+      if (result.paymentUrl) {
+        window.location.href = result.paymentUrl;
+      } else {
+        alert("Order placed successfully (COD)");
+      }
+
+      clearCart();
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong during checkout.");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-bg-primary)] p-8">
-      <h1 className="text-2xl font-bold mb-6">Checkout</h1>
+    <div className="max-w-4xl mx-auto py-10 px-4 space-y-10">
+      <h1 className="heading-1 text-center">Checkout</h1>
+
       <FormContextProvider methods={methods} onSubmit={onSubmit}>
-        <InputField name="fullName" label="Full Name" rules={{ required: "Full name is required" }} />
-        <InputField name="email" label="Email" type="email" rules={{ required: "Email is required" }} />
-        <SelectField
-          name="shipping"
-          label="Shipping Option"
-          options={[
-            { value: "standard", label: "Standard" },
-            { value: "express", label: "Express" },
-          ]}
-          rules={{ required: "Select a shipping option" }}
+        {/* Customer Info */}
+        <div className="space-y-4 p-6 border rounded-lg bg-[var(--color-bg-surface)]">
+          <h2 className="heading-3 mb-4">Customer Information</h2>
+
+          <InputField
+            name="fullName"
+            label="Full Name"
+            rules={{ required: "Full name is required" }}
+          />
+
+          <InputField
+            name="email"
+            label="Email"
+            type="email"
+            rules={{ required: "Email is required" }}
+          />
+
+          <InputField
+            name="phone"
+            label="Phone Number"
+            rules={{ required: "Phone number is required" }}
+          />
+        </div>
+
+        {/* Shipping Address */}
+        <div className="space-y-4 p-6 border rounded-lg bg-[var(--color-bg-surface)]">
+          <h2 className="heading-3 mb-4">Shipping Address</h2>
+
+          <InputField
+            name="address"
+            label="Street Address"
+            rules={{ required: "Address is required" }}
+          />
+
+          <InputField
+            name="city"
+            label="City"
+            rules={{ required: "City is required" }}
+          />
+
+          <InputField
+            name="state"
+            label="State"
+            rules={{ required: "State is required" }}
+          />
+        </div>
+
+        {/* Payment Method */}
+        <div className="space-y-4 p-6 border rounded-lg bg-[var(--color-bg-surface)]">
+          <h2 className="heading-3 mb-4">Payment Method</h2>
+
+          <SelectField
+            name="paymentMethod"
+            label="Select Payment Method"
+            options={[
+              { value: "PAYSTACK", label: "Paystack" },
+              { value: "MONNIFY", label: "Monnify" },
+              { value: "COD", label: "Cash on Delivery" },
+            ]}
+            rules={{ required: "Select a payment method" }}
+          />
+        </div>
+
+        {/* Order Summary */}
+        <div className="space-y-4 p-6 border rounded-lg bg-[var(--color-bg-surface)]">
+          <h2 className="heading-3 mb-4">Order Summary</h2>
+
+          {items.map((item) => (
+            <div key={item.id} className="flex justify-between text-sm">
+              <span>
+                {item.name} × {item.quantity}
+              </span>
+              <span>₦{(item.price * item.quantity).toLocaleString()}</span>
+            </div>
+          ))}
+
+          <div className="flex justify-between text-lg font-semibold border-t pt-4">
+            <span>Total</span>
+            <span>₦{total.toLocaleString()}</span>
+          </div>
+        </div>
+
+        {/* Terms */}
+        <CheckboxField
+          name="terms"
+          label="I agree to the Terms & Conditions"
+          rules={{ required: true }}
         />
-        <CheckboxField name="terms" label="Accept Terms & Conditions" rules={{ required: true }} />
-        <SubmitButton>Place Order</SubmitButton>
+
+        <SubmitButton className="w-full">Place Order</SubmitButton>
       </FormContextProvider>
     </div>
   );
