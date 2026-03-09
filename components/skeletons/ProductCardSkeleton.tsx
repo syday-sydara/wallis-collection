@@ -11,6 +11,12 @@ export default function ProductCardSkeleton({
   variant = "grid",
   className,
 }: ProductCardSkeletonProps) {
+  const imageClass = clsx({
+    "h-64": variant === "grid",
+    "h-32 w-full": variant === "list",
+    "h-40": variant === "compact",
+  });
+
   return (
     <div
       className={clsx(
@@ -19,13 +25,13 @@ export default function ProductCardSkeleton({
       )}
       role="status"
       aria-label="Loading product"
+      aria-busy="true"
     >
       {/* Image placeholder */}
       <div
         className={clsx(
           "bg-[var(--color-neutral)]/10 skeleton-shimmer",
-          variant === "list" ? "h-32 w-full" : "h-64",
-          variant === "compact" && "h-40"
+          imageClass
         )}
       />
 
@@ -33,6 +39,7 @@ export default function ProductCardSkeleton({
       <div className="p-4 space-y-4">
         <div className="h-4 w-4/5 bg-[var(--color-neutral)]/20 rounded-[var(--radius-sm)] skeleton-shimmer" />
         <div className="h-4 w-1/3 bg-[var(--color-neutral)]/20 rounded-[var(--radius-sm)] skeleton-shimmer" />
+
         {variant !== "compact" && (
           <div className="h-3 w-1/4 bg-[var(--color-neutral)]/20 rounded-[var(--radius-sm)] skeleton-shimmer" />
         )}

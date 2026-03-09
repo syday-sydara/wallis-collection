@@ -8,7 +8,6 @@ export const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
 });
 
-// Global metadata
 export const metadata: Metadata = {
   metadataBase: new URL("https://walliscollection.com"),
 
@@ -43,10 +42,10 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-homepage.jpg",
+        url: "https://images.unsplash.com/photo-1520975918318-3a4e6e791f6b?q=80&w=1200&auto=format&fit=crop",
         width: 1200,
         height: 630,
-        alt: "Wallis Collection",
+        alt: "Wallis Collection Fashion Preview",
       },
     ],
   },
@@ -56,7 +55,9 @@ export const metadata: Metadata = {
     title: "Wallis Collection",
     description:
       "Explore premium Nigerian fashion: wax prints, super-wax, abayas, ankara, hollands, and luxury laces.",
-    images: ["/og-homepage.jpg"],
+    images: [
+      "https://images.unsplash.com/photo-1520975918318-3a4e6e791f6b?q=80&w=1200&auto=format&fit=crop",
+    ],
   },
 
   icons: {

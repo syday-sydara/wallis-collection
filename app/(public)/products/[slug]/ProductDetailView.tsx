@@ -6,15 +6,19 @@ import { useCart } from "@/components/cart/cart-context";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 
-export default function ProductDetailView({ product }: any) {
+export default function ProductDetailView({ product }) {
   const { addItem } = useCart();
-  const [selectedImage, setSelectedImage] = useState(product.images[0] ?? "");
+
+  const initialImage = product.images[0]?.url ?? "";
+  const [selectedImage, setSelectedImage] = useState(initialImage);
+
+  const price = product.salePriceNaira ?? product.priceNaira;
 
   const handleAddToCart = () => {
     addItem({
       id: product.id,
       name: product.name,
-      price: product.priceCents,
+      price,
       quantity: 1,
       image: selectedImage,
     });
@@ -34,15 +38,23 @@ export default function ProductDetailView({ product }: any) {
 
         {product.images.length > 1 && (
           <div className="flex space-x-2 mt-2">
-            {product.images.map((img: string) => (
+            {product.images.map((img) => (
               <div
-                key={img}
+                key={img.id}
                 className={`w-20 h-20 rounded-md overflow-hidden border-2 ${
-                  img === selectedImage ? "border-primary-500" : "border-neutral-300"
+                  img.url === selectedImage
+                    ? "border-[var(--color-primary-500)]"
+                    : "border-neutral-300"
                 } cursor-pointer`}
-                onClick={() => setSelectedImage(img)}
+                onClick={() => setSelectedImage(img.url)}
               >
-                <Image src={img} alt={product.name} width={80} height={80} className="object-cover" />
+                <Image
+                  src={img.url}
+                  alt={product.name}
+                  width={80}
+                  height={80}
+                  className="object-cover"
+                />
               </div>
             ))}
           </div>
@@ -57,8 +69,9 @@ export default function ProductDetailView({ product }: any) {
         </div>
 
         <h1 className="heading-2">{product.name}</h1>
-        <p className="text-xl font-semibold text-primary-500">
-          ₦{product.priceCents.toLocaleString()}
+
+        <p className="text-xl font-semibold text-[var(--color-primary-500)]">
+          ₦{price.toLocaleString()}
         </p>
 
         {product.description && (

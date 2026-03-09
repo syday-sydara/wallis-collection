@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
-import { useMemo } from "react";
 
 export interface ProductCardProps {
   id: string;
@@ -11,10 +10,10 @@ export interface ProductCardProps {
   slug: string;
   priceNaira: number;
   salePriceNaira?: number;
-  images: string[];
+  images: { url: string }[];
   isNew?: boolean;
   isOnSale?: boolean;
-  outOfStock?: boolean;
+  stock?: number;
   onAddToCart?: () => void;
 }
 
@@ -27,25 +26,28 @@ export default function ProductCard({
   images,
   isNew = false,
   isOnSale = false,
-  outOfStock = false,
+  stock = 0,
   onAddToCart,
 }: ProductCardProps) {
-  const displayImage = useMemo(() => {
-    if (images?.length) return images[0];
-    return `https://picsum.photos/600/800?random=${id}`;
-  }, [images, id]);
+  const outOfStock = stock <= 0;
+
+  const displayImage =
+    images?.[0]?.url ??
+    `https://picsum.photos/600/800?random=${id}`;
+
+  const price = salePriceNaira ?? priceNaira;
 
   return (
-    <div className="relative flex flex-col bg-surface rounded-lg shadow-card overflow-hidden group">
+    <div className="relative flex flex-col bg-[var(--color-bg-surface)] rounded-lg shadow-card overflow-hidden group">
       {/* Badges */}
       <div className="absolute top-2 left-2 flex space-x-2 z-10">
         {isNew && (
-          <span className="bg-success text-white text-xs px-2 py-1 rounded-md">
+          <span className="bg-[var(--color-success-500)] text-white text-xs px-2 py-1 rounded-md">
             New
           </span>
         )}
         {isOnSale && (
-          <span className="bg-warning text-white text-xs px-2 py-1 rounded-md">
+          <span className="bg-[var(--color-warning-500)] text-white text-xs px-2 py-1 rounded-md">
             Sale
           </span>
         )}
@@ -59,7 +61,10 @@ export default function ProductCard({
       )}
 
       {/* Product Image */}
-      <Link href={`/products/${slug}`} className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">
+      <Link
+        href={`/products/${slug}`}
+        className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100"
+      >
         <Image
           src={displayImage}
           alt={name}
@@ -72,13 +77,15 @@ export default function ProductCard({
       {/* Product Info */}
       <div className="p-4 flex flex-col flex-1">
         <Link href={`/products/${slug}`}>
-          <h3 className="font-semibold text-sm truncate hover:underline">{name}</h3>
+          <h3 className="font-semibold text-sm truncate hover:underline">
+            {name}
+          </h3>
         </Link>
 
         <div className="mt-1 flex items-center space-x-2">
           {isOnSale && salePriceNaira ? (
             <>
-              <p className="font-semibold text-primary-500">
+              <p className="font-semibold text-[var(--color-primary-500)]">
                 ₦{salePriceNaira.toLocaleString()}
               </p>
               <p className="text-xs line-through text-neutral-500">
@@ -86,8 +93,8 @@ export default function ProductCard({
               </p>
             </>
           ) : (
-            <p className="font-medium text-primary-500">
-              ₦{priceNaira.toLocaleString()}
+            <p className="font-medium text-[var(--color-primary-500)]">
+              ₦{price.toLocaleString()}
             </p>
           )}
         </div>

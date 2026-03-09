@@ -11,6 +11,13 @@ export default function ProductDetailSkeleton({
   variant = "default",
   className,
 }: ProductDetailSkeletonProps) {
+  const imageClass = clsx({
+    "h-[500px]": variant === "default",
+    "h-80": variant === "compact",
+  });
+
+  const relatedCount = variant === "compact" ? 3 : 4;
+
   return (
     <div
       className={clsx(
@@ -19,6 +26,7 @@ export default function ProductDetailSkeleton({
       )}
       role="status"
       aria-live="polite"
+      aria-busy="true"
     >
       {/* Main Product Section */}
       <div
@@ -31,7 +39,7 @@ export default function ProductDetailSkeleton({
         <div
           className={clsx(
             "bg-[var(--color-neutral)]/10 rounded-[var(--radius-xl)] skeleton-shimmer",
-            variant === "compact" ? "h-80" : "h-[500px]"
+            imageClass
           )}
         />
 
@@ -63,7 +71,7 @@ export default function ProductDetailSkeleton({
               : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
           )}
         >
-          {Array.from({ length: variant === "compact" ? 3 : 4 }).map((_, i) => (
+          {Array.from({ length: relatedCount }).map((_, i) => (
             <div key={i} className="space-y-4">
               <div className="h-64 bg-[var(--color-neutral)]/10 rounded-[var(--radius-xl)] skeleton-shimmer" />
               <div className="h-4 w-3/4 bg-[var(--color-neutral)]/20 rounded-[var(--radius-sm)] skeleton-shimmer" />

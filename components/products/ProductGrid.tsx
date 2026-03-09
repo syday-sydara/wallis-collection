@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import ProductCard from "./ProductCard";
 import Loading from "@/components/products/Loading";
 
@@ -9,10 +8,11 @@ export interface Product {
   name: string;
   slug: string;
   priceNaira: number;
-  images: string[];
+  salePriceNaira?: number;
+  images: { url: string }[];
   isNew?: boolean;
   isOnSale?: boolean;
-  outOfStock?: boolean;
+  stock?: number;
 }
 
 interface ProductGridProps {
@@ -26,13 +26,6 @@ export default function ProductGrid({
   loading = false,
   onAddToCart,
 }: ProductGridProps) {
-  const handleAddToCart = useCallback(
-    (product: Product) => {
-      onAddToCart?.(product);
-    },
-    [onAddToCart]
-  );
-
   if (loading) {
     return <Loading count={8} message="Loading products..." />;
   }
@@ -46,12 +39,12 @@ export default function ProductGrid({
   }
 
   return (
-    <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {products.map((product) => (
         <ProductCard
           key={product.id}
           {...product}
-          onAddToCart={() => handleAddToCart(product)}
+          onAddToCart={() => onAddToCart?.(product)}
         />
       ))}
     </div>
