@@ -1,31 +1,17 @@
-import { PrismaClient } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { ApiError, handleError, handleSuccess } from "@/lib/errors";
 
-const prisma = new PrismaClient();
-
-export async function GET(
-  req: Request,
-  { params }: { params: { slug: string } }
-) {
+export async function GET(req, { params }) {
   try {
     const product = await prisma.product.findUnique({
       where: { slug: params.slug },
-      include: {
-        images: true,
-        reviews: {
-          include: { user: true },
-          orderBy: { createdAt: "desc" },
-        },
-      },
+      include: { images: true, reviews: true },
     });
 
-    if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
+    if (!product) throw ApiError.notFound("Product not found");
 
-    return NextResponse.json(product);
-  } catch (err) {
-    console.error("Failed to fetch product:", err);
-    return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 });
+    return handleSuccess(product);
+  } catch (error) {
+    return handleError(error);
   }
 }

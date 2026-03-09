@@ -4,11 +4,7 @@ export function orderReceiptTemplate({
   subtotal,
 }: {
   orderId: string;
-  items: {
-    name: string;
-    quantity: number;
-    price: number;
-  }[];
+  items: { name: string; quantity: number; price: number }[];
   subtotal: number;
 }) {
   return `
@@ -18,11 +14,11 @@ Order Number: ${orderId}
 
 Items:
 ${items
-  .map(
-    (item) =>
-      `• ${item.name} × ${item.quantity} — ₦${item.price.toLocaleString()}`
-  )
-  .join("\n")}
+    .map(
+      (item) =>
+        `• ${item.name} × ${item.quantity} — ₦${item.price.toLocaleString()}`
+    )
+    .join("\n")}
 
 Total: ₦${subtotal.toLocaleString()}
 
@@ -47,11 +43,7 @@ export function orderReceiptWhatsApp({
   subtotal,
 }: {
   orderId: string;
-  items: {
-    name: string;
-    quantity: number;
-    price: number;
-  }[];
+  items: { name: string; quantity: number; price: number }[];
   subtotal: number;
 }) {
   return `
@@ -73,3 +65,4 @@ We’ll notify you once your order ships.
 Thank you for shopping with Wallis Collection.
   `;
 }
+

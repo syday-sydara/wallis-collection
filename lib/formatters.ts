@@ -5,14 +5,14 @@ const formatterWithDecimals = new Intl.NumberFormat("en-NG", {
   currency: "NGN",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
-})
+});
 
 const formatterNoDecimals = new Intl.NumberFormat("en-NG", {
   style: "currency",
   currency: "NGN",
   minimumFractionDigits: 0,
   maximumFractionDigits: 0,
-})
+});
 
 /**
  * Format price in Naira to NGN currency string
@@ -25,13 +25,13 @@ export const formatPrice = (
   withDecimals: boolean = true
 ): string => {
   if (typeof priceNaira !== "number" || isNaN(priceNaira)) {
-    return withDecimals ? "₦0.00" : "₦0"
+    return withDecimals ? "₦0.00" : "₦0";
   }
 
   return withDecimals
     ? formatterWithDecimals.format(priceNaira)
-    : formatterNoDecimals.format(priceNaira)
-}
+    : formatterNoDecimals.format(priceNaira);
+};
 
 /**
  * General currency formatter (optional for other currencies)
@@ -46,6 +46,7 @@ export const formatCurrency = (
     currency,
     minimumFractionDigits: withDecimals ? 2 : 0,
     maximumFractionDigits: withDecimals ? 2 : 0,
-  })
-  return formatter.format(amount)
-}
+  });
+
+  return formatter.format(amount);
+};

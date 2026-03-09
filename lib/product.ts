@@ -1,31 +1,48 @@
 // types/products.ts
-export type Product = {
-  id: string;
-  slug: string;
-  name: string;
-  priceNaira: number; // integer, in naira
-  image: string;
-  description: string;
-  tags?: string[];
-};
+import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/db";
 
-export const products: Product[] = [
-  {
-    id: "1",
-    slug: "premium-body-wax",
-    name: "Premium Body Wax",
-    priceNaira: 129, // ₦129
-    image: "/images/wax-1.jpg",
-    description: "A smooth, long-lasting premium wax ideal for body grooming and skincare.",
-    tags: ["wax", "skincare", "grooming"],
+/* ---------------------------------- */
+/* Product Types (Prisma-powered)     */
+/* ---------------------------------- */
+
+export const productSelect = Prisma.validator<Prisma.ProductSelect>()({
+  id: true,
+  slug: true,
+  name: true,
+  description: true,
+  priceNaira: true,
+  salePriceNaira: true,
+  category: true,
+  stock: true,
+  images: {
+    select: {
+      url: true,
+      position: true,
+    },
   },
-  // ...
-];
+});
 
-export function getAllProducts(): Product[] {
-  return products;
+export type Product = Prisma.ProductGetPayload<{
+  select: typeof productSelect;
+}>;
+
+/* ---------------------------------- */
+/* Product Query Helpers              */
+/* ---------------------------------- */
+
+export async function getAllProducts(): Promise<Product[]> {
+  return prisma.product.findMany({
+    select: productSelect,
+    orderBy: { createdAt: "desc" },
+  });
 }
 
-export function getProductBySlug(slug: string): Product | undefined {
-  return products.find((p) => p.slug === slug);
+export async function getProductBySlug(
+  slug: string
+): Promise<Product | null> {
+  return prisma.product.findUnique({
+    where: { slug },
+    select: productSelect,
+  });
 }

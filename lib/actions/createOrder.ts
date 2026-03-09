@@ -24,8 +24,11 @@ export async function createOrder(data: {
     image: string | null;
   }[];
 
-  subtotal: number;
+  subtotal: number; // in naira
 }) {
+  // Future: shipping fee, tax, discounts
+  const total = data.subtotal;
+
   const order = await prisma.order.create({
     data: {
       email: data.email,
@@ -40,8 +43,11 @@ export async function createOrder(data: {
       trackingNumber: data.trackingNumber,
 
       paymentMethod: data.paymentMethod,
+      paymentStatus: "PENDING",
+      orderStatus: "PENDING",
+
       subtotal: data.subtotal,
-      total: data.subtotal, // extend later with shipping/tax
+      total,
 
       items: {
         create: data.items.map((item) => ({
