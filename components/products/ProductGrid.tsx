@@ -34,6 +34,9 @@ export default function ProductGrid({
     return (
       <div className="flex flex-col items-center justify-center py-16 text-neutral-600">
         <p className="text-center">No products found.</p>
+        <Link href="/" className="mt-4 text-blue-500 hover:underline">
+          Return to homepage
+        </Link>
       </div>
     );
   }

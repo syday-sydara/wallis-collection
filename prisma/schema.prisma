@@ -9,21 +9,58 @@ datasource db {
 
 /* ---------------- Enums ---------------- */
 
-enum Role { ADMIN USER }
+enum Role {
+  ADMIN
+  USER
+}
 
-enum PaymentMethod { PAYSTACK MONNIFY COD }
+enum PaymentMethod {
+  PAYSTACK
+  MONNIFY
+  COD
+}
 
-enum PaymentStatus { PENDING PAID FAILED REFUNDED }
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
 
-enum OrderStatus { PENDING PROCESSING SHIPPED DELIVERED CANCELLED }
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
 
-enum InventoryReason { SALE RESTOCK REFUND MANUAL_ADJUSTMENT }
+enum InventoryReason {
+  SALE
+  RESTOCK
+  REFUND
+  MANUAL_ADJUSTMENT
+}
 
-enum ShipmentStatus { PROCESSING SHIPPED IN_TRANSIT DELIVERED FAILED }
+enum ShipmentStatus {
+  PROCESSING
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  FAILED
+}
 
-enum EventType { PRODUCT_VIEW ADD_TO_CART CHECKOUT_STARTED ORDER_PLACED }
+enum EventType {
+  PRODUCT_VIEW
+  ADD_TO_CART
+  CHECKOUT_STARTED
+  ORDER_PLACED
+}
 
-enum AddressType { SHIPPING BILLING }
+enum AddressType {
+  SHIPPING
+  BILLING
+}
 
 /* ---------------- Models ---------------- */
 

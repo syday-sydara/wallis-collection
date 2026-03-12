@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FaInstagram, FaFacebookF, FaPinterestP } from "react-icons/fa";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 
 const SOCIAL_LINKS = [
   {
@@ -35,12 +35,10 @@ export default function Footer() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const socialLinks = useMemo(() => SOCIAL_LINKS, []);
-
   return (
-    <footer className="border-t border-[var(--color-border)] bg-[var(--color-bg-surface)] mt-20 relative">
-      <div className="mx-auto max-w-[1280px] px-4 py-16 grid grid-cols-1 lg:grid-cols-4 gap-14">
-        
+    <footer className="border-t border-[var(--color-border)] bg-[var(--color-bg-surface)] mt-16 relative">
+      <div className="w-full px-4 py-12 md:max-w-[1280px] md:mx-auto grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-12">
+
         {/* Brand Section */}
         <div className="flex flex-col gap-5">
           <h2 className="heading-3 text-[var(--color-primary-500)] tracking-tight">
@@ -52,7 +50,7 @@ export default function Footer() {
           </p>
 
           <div className="flex gap-5">
-            {socialLinks.map(({ icon: Icon, label, href, ariaLabel }) => (
+            {SOCIAL_LINKS.map(({ icon: Icon, label, href, ariaLabel }) => (
               <a
                 key={label}
                 href={href}
@@ -79,7 +77,7 @@ export default function Footer() {
 
       {/* Bottom Bar */}
       <div className="border-t border-[var(--color-border)]">
-        <div className="mx-auto max-w-[1280px] px-4 py-5 text-xs text-[var(--color-text-secondary)] text-center tracking-wide">
+        <div className="w-full px-4 py-5 md:max-w-[1280px] md:mx-auto text-xs text-[var(--color-text-secondary)] text-center tracking-wide">
           © {currentYear} Wallis Executive Wax. All rights reserved.
         </div>
       </div>
@@ -99,7 +97,7 @@ export default function Footer() {
 }
 
 /* ------------------------------ */
-/* Reusable Collapsible Section   */
+/* Collapsible Section            */
 /* ------------------------------ */
 function FooterSection({
   title,
@@ -114,7 +112,7 @@ function FooterSection({
     <div className="flex flex-col gap-4">
       {/* Mobile Toggle */}
       <button
-        className="flex justify-between items-center lg:hidden w-full text-left label text-[var(--color-primary-500)] uppercase tracking-wide"
+        className="flex justify-between items-center md:hidden w-full text-left label text-[var(--color-primary-500)] uppercase tracking-wide"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
       >
@@ -123,18 +121,17 @@ function FooterSection({
       </button>
 
       {/* Desktop Title */}
-      <h3 className="hidden lg:block label text-[var(--color-primary-500)] uppercase tracking-wide">
+      <h3 className="hidden md:block label text-[var(--color-primary-500)] uppercase tracking-wide">
         {title}
       </h3>
 
       {/* Collapsible Content */}
       <div
-        className={`
-          overflow-hidden transition-all duration-300
-          ${open ? "max-h-96 opacity-100" : "max-h-0 opacity-0 lg:max-h-none lg:opacity-100"}
-        `}
+        className={`overflow-hidden transition-all duration-300 ${
+          open ? "max-h-96 opacity-100" : "max-h-0 opacity-0 md:max-h-none md:opacity-100"
+        }`}
       >
-        <div className="flex flex-col gap-3 mt-2 lg:mt-0">{children}</div>
+        <div className="flex flex-col gap-3 mt-2 md:mt-0">{children}</div>
       </div>
     </div>
   );

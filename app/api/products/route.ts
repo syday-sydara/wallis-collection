@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { productCardSelect } from "@/lib/types/product";
+
+export const revalidate = 60;
 
 export async function GET() {
   try {
@@ -7,15 +10,7 @@ export async function GET() {
       where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
       select: {
-        id: true,
-        name: true,
-        slug: true,
-        priceNaira: true,
-        salePriceNaira: true,
-        stock: true,
-        isNew: true,
-        isOnSale: true,
-        featured: true,
+        ...productCardSelect,
         images: {
           select: { url: true, position: true },
           orderBy: { position: "asc" },
@@ -23,15 +18,29 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(products, {
-      headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+    return NextResponse.json(
+      {
+        success: true,
+        data: products,
+        count: products.length,
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (error) {
     console.error("API Error:", error);
+
     return NextResponse.json(
-      { error: "Failed to fetch products" },
+      {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch products",
+      },
       { status: 500 }
     );
   }

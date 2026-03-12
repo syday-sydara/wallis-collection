@@ -1,6 +1,6 @@
 // lib/cart.ts
-import type { CartItem } from "@/lib/types";
-import type { ProductCardData } from "@/lib/types";
+import type { CartItem } from "@/lib/types/types";
+import type { ProductCardData } from "@/lib/types/types";
 
 /* ---------------------------------- */
 /* Create a CartItem from Product     */

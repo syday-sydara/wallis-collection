@@ -32,10 +32,9 @@ export default function ProductCard({
   const outOfStock = stock <= 0;
 
   const displayImage =
-    images?.[0]?.url ??
-    `https://picsum.photos/600/800?random=${id}`;
+    images[0]?.url ?? `https://picsum.photos/600/800?random=${id}`;
 
-  const price = salePriceNaira ?? priceNaira;
+  const price = salePriceNaira || priceNaira;
 
   return (
     <div className="relative flex flex-col bg-[var(--color-bg-surface)] rounded-lg shadow-card overflow-hidden group">
@@ -61,10 +60,7 @@ export default function ProductCard({
       )}
 
       {/* Product Image */}
-      <Link
-        href={`/products/${slug}`}
-        className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100"
-      >
+      <Link href={`/products/${slug}`} className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">
         <Image
           src={displayImage}
           alt={name}
@@ -98,6 +94,13 @@ export default function ProductCard({
             </p>
           )}
         </div>
+
+        {/* Stock Info */}
+        {stock > 0 && (
+          <p className="text-xs text-gray-500 mt-1">
+            {outOfStock ? "Out of Stock" : `Only ${stock} left`}
+          </p>
+        )}
 
         <div className="mt-auto">
           <Button

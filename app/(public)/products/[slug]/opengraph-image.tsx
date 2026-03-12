@@ -13,24 +13,32 @@ interface ProductOgImageProps {
 }
 
 export default async function ProductOgImage({ params }: ProductOgImageProps) {
-  const product = await prisma.product.findUnique({
-    where: { slug: params.slug, deletedAt: null },
-    include: { images: true },
-  });
+  let product = null;
+
+  try {
+    product = await prisma.product.findUnique({
+      where: { slug: params.slug },
+      include: { images: true },
+    });
+  } catch (err) {
+    console.error("OG Image Prisma Error:", err);
+  }
 
   const fallbackImage =
     "https://images.unsplash.com/photo-1520975918318-3a4e6e791f6b?q=80&w=1200&auto=format&fit=crop";
 
   const imageUrl =
-    product && product.images.length > 0
-      ? product.images[0].url
-      : fallbackImage;
+    product?.images?.[0]?.url ?? fallbackImage;
 
   const title = product?.name ?? "Wallis Collection";
   const price =
     product?.priceNaira != null
       ? `₦${product.priceNaira.toLocaleString("en-NG")}`
-      : "";
+      : null;
+
+  const description =
+    product?.description ??
+    "Premium Northern Nigerian fashion crafted with elegance and heritage.";
 
   return new ImageResponse(
     (
@@ -41,18 +49,12 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
           display: "flex",
           background: "#272B36",
           color: "#ffffff",
-          fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI'",
+          fontFamily:
+            "Space Grotesk, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI'",
         }}
       >
         {/* Left: Product image */}
-        <div
-          style={{
-            flex: 1,
-            height: "100%",
-            overflow: "hidden",
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+        <div style={{ flex: 1, height: "100%", overflow: "hidden" }}>
           <img
             src={imageUrl}
             alt={title}
@@ -64,7 +66,7 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
           />
         </div>
 
-        {/* Right: Text + branding */}
+        {/* Right: Text */}
         <div
           style={{
             flex: 1,
@@ -92,6 +94,7 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
                 fontSize: 40,
                 fontWeight: 700,
                 lineHeight: 1.1,
+                maxWidth: "90%",
               }}
             >
               {title}
@@ -110,20 +113,18 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
               </div>
             )}
 
-            {product?.description && (
-              <div
-                style={{
-                  marginTop: 16,
-                  fontSize: 18,
-                  lineHeight: 1.4,
-                  color: "#c7c7c7",
-                  maxHeight: 140,
-                  overflow: "hidden",
-                }}
-              >
-                {product.description}
-              </div>
-            )}
+            <div
+              style={{
+                marginTop: 16,
+                fontSize: 18,
+                lineHeight: 1.4,
+                color: "#c7c7c7",
+                maxHeight: 140,
+                overflow: "hidden",
+              }}
+            >
+              {description}
+            </div>
           </div>
 
           <div
@@ -138,14 +139,12 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
               marginTop: 24,
             }}
           >
-            <span>Premium Nigerian Fashion</span>
+            <span>Premium Northern Nigerian Fashion</span>
             <span>walliscollection.com</span>
           </div>
         </div>
       </div>
     ),
-    {
-      ...size,
-    }
+    { ...size }
   );
 }

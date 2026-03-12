@@ -3,15 +3,14 @@ import { NextResponse } from "next/server";
 
 export async function GET(req, { params }) {
   try {
-    // Validate slug
     if (!params?.slug || typeof params.slug !== "string") {
       return NextResponse.json(
-        { error: "Invalid product slug" },
+        { success: false, error: "Invalid product slug" },
         { status: 400 }
       );
     }
 
-    const product = await prisma.product.findUnique({
+    const product = await prisma.product.findFirst({
       where: { slug: params.slug, deletedAt: null },
       select: {
         id: true,
@@ -43,20 +42,23 @@ export async function GET(req, { params }) {
 
     if (!product) {
       return NextResponse.json(
-        { error: "Product not found" },
+        { success: false, error: "Product not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(product);
+    return NextResponse.json({
+      success: true,
+      data: product,
+    });
   } catch (error) {
     console.error("API Error (product detail):", {
       slug: params.slug,
-      message: error.message,
+      message: error instanceof Error ? error.message : "Unknown error",
     });
 
     return NextResponse.json(
-      { error: "Failed to fetch product" },
+      { success: false, error: "Failed to fetch product" },
       { status: 500 }
     );
   }

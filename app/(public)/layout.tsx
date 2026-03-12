@@ -11,7 +11,14 @@ export default function PublicLayout({ children }: PublicLayoutProps) {
     <div className="min-h-screen flex flex-col bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
       <Header />
 
-      <main className="flex-1 mx-auto max-w-[1280px] px-4 py-8">
+      <main
+        role="main"
+        className="
+          flex-1 w-full
+          px-4 py-6
+          md:max-w-[1280px] md:mx-auto md:px-6 md:py-10
+        "
+      >
         {children}
       </main>
 
