@@ -1,4 +1,5 @@
-// lib/notifications.ts
+// PATH: lib/notifications.ts
+// NAME: notifications.ts
 
 import { orderReceiptTemplate, orderReceiptSMS, orderReceiptWhatsApp } from "@/lib/receipts";
 
@@ -12,18 +13,16 @@ export interface NotificationPayload {
 }
 
 /* ---------------------------------- */
-/* Email Sender (plug in provider)    */
+/* Email Sender (provider‑agnostic)   */
 /* ---------------------------------- */
 async function sendEmail(payload: NotificationPayload) {
-  // Example: Resend, SendGrid, Mailgun, etc.
   console.log("EMAIL:", payload);
 }
 
 /* ---------------------------------- */
-/* SMS Sender (plug in provider)      */
+/* SMS Sender (provider‑agnostic)     */
 /* ---------------------------------- */
 async function sendSMS(payload: NotificationPayload) {
-  // Example: Twilio, Termii, Africa's Talking
   console.log("SMS:", payload);
 }
 
@@ -31,7 +30,6 @@ async function sendSMS(payload: NotificationPayload) {
 /* WhatsApp Sender                    */
 /* ---------------------------------- */
 async function sendWhatsApp(payload: NotificationPayload) {
-  // Example: WhatsApp Cloud API
   console.log("WHATSAPP:", payload);
 }
 

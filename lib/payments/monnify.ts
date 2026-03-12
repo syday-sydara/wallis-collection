@@ -1,4 +1,5 @@
-// lib/monnify.ts
+// PATH: lib/monnify.ts
+// NAME: monnify.ts
 
 const MONNIFY_BASE_URL = "https://api.monnify.com/api/v1";
 

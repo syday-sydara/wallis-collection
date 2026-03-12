@@ -1,3 +1,6 @@
+// PATH: lib/notifications/templates/order-receipt.ts
+// NAME: order-receipt.ts
+
 export function orderReceiptTemplate({
   orderId,
   items,
@@ -65,4 +68,3 @@ We’ll notify you once your order ships.
 Thank you for shopping with Wallis Collection.
   `;
 }
-

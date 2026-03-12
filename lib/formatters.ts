@@ -1,4 +1,5 @@
-// lib/formatters.ts
+// PATH: lib/formatters.ts
+// NAME: formatters.ts
 
 const formatterWithDecimals = new Intl.NumberFormat("en-NG", {
   style: "currency",

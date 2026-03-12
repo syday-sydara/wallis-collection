@@ -1,7 +1,11 @@
-// lib/notifications-payment.ts
+// PATH: lib/notifications-payment.ts
+// NAME: notifications-payment.ts
 
-import { sendNotification } from "@/lib/notifications";
+import { sendNotification } from "@/lib/notifications/notifications";
 
+/* ---------------------------------- */
+/* Email Template                     */
+/* ---------------------------------- */
 export function paymentConfirmationEmail({
   orderId,
   total,
@@ -20,6 +24,9 @@ Thank you for shopping with Wallis Collection.
   `;
 }
 
+/* ---------------------------------- */
+/* SMS Template                       */
+/* ---------------------------------- */
 export function paymentConfirmationSMS({
   orderId,
   total,
@@ -30,6 +37,9 @@ export function paymentConfirmationSMS({
   return `Wallis Collection: Payment confirmed for order ${orderId}. Amount: ₦${total.toLocaleString()}. Thank you.`;
 }
 
+/* ---------------------------------- */
+/* WhatsApp Template                  */
+/* ---------------------------------- */
 export function paymentConfirmationWhatsApp({
   orderId,
   total,
@@ -51,7 +61,12 @@ Your order is now being processed. We’ll notify you once it ships.
 /* ---------------------------------- */
 /* Main Notification Helper           */
 /* ---------------------------------- */
-export async function notifyPaymentConfirmed(order: any) {
+export async function notifyPaymentConfirmed(order: {
+  id: string;
+  email: string;
+  phone?: string | null;
+  total: number;
+}) {
   // Email
   await sendNotification("EMAIL", {
     to: order.email,

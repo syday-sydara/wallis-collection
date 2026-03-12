@@ -1,3 +1,6 @@
+// PATH: lib/errors.ts
+// NAME: errors.ts
+
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { ZodError } from "zod";
 
@@ -72,7 +75,6 @@ export function handleSuccess<T>(data: T, status = 200, meta?: unknown): Respons
 /* Unified Error Handler              */
 /* ---------------------------------- */
 export function handleError(error: unknown): Response {
-  // Custom API errors
   if (error instanceof ApiError) {
     logError(error);
     return new Response(
@@ -88,7 +90,6 @@ export function handleError(error: unknown): Response {
     );
   }
 
-  // Prisma known errors
   if (error instanceof PrismaClientKnownRequestError) {
     logError(error);
 
@@ -124,7 +125,6 @@ export function handleError(error: unknown): Response {
     );
   }
 
-  // Zod validation errors
   if (error instanceof ZodError) {
     return new Response(
       JSON.stringify({
@@ -136,7 +136,6 @@ export function handleError(error: unknown): Response {
     );
   }
 
-  // Unknown errors
   logError(error);
   return new Response(
     JSON.stringify({
