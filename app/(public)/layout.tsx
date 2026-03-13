@@ -8,11 +8,12 @@ interface PublicLayoutProps {
 
 export default function PublicLayout({ children }: PublicLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
+    <div className="min-h-screen flex flex-col">
       <Header />
 
       <main
         role="main"
+        aria-label="Main content"
         className="
           flex-1 w-full
           px-4 py-6
