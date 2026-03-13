@@ -10,6 +10,9 @@
   --color-primary-500: #272B36;
   --color-accent-500: #A08A81;
 
+  /* Focus */
+  --focus-ring: var(--color-accent-500);
+
   /* Status */
   --color-success-500: #4CAF50;
   --color-warning-500: #A08A81;
@@ -24,6 +27,11 @@
   --color-text-primary: #272B36;
   --color-text-secondary: #595d66;
   --color-text-muted: #b7b8bb;
+
+  /* Shimmer (light) */
+  --shimmer-from: rgba(183,184,187,0.12);
+  --shimmer-via: rgba(183,184,187,0.24);
+  --shimmer-to: rgba(183,184,187,0.12);
 }
 
 /* ------------------------------------------------ */
@@ -38,6 +46,11 @@
     --color-text-primary: #ffffff;
     --color-text-secondary: #c7c7c7;
     --color-text-muted: #7c7c7c;
+
+    /* Shimmer (dark) */
+    --shimmer-from: rgba(255,255,255,0.02);
+    --shimmer-via: rgba(255,255,255,0.06);
+    --shimmer-to: rgba(255,255,255,0.02);
   }
 }
 
@@ -64,12 +77,12 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-accent-500);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
 
-  /* Only set border-color globally, not border-width */
-  *, ::before, ::after {
+  /* Limit border-color to common interactive/surface elements to avoid global side-effects */
+  .card, input, button, textarea, select, fieldset, .btn {
     border-color: var(--color-border);
   }
 }
@@ -83,7 +96,7 @@
     @apply inline-flex items-center justify-center
       px-6 py-2 rounded-md font-medium
       transition duration-200 ease-in-out
-      focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent-500)];
+      focus-visible:outline focus-visible:outline-2;
   }
 
   .btn-primary {
@@ -98,14 +111,20 @@
 
   /* Skeleton Loader */
   .skeleton {
-    @apply block w-full h-6 rounded-sm
+    @apply block w-full rounded-sm
       bg-gradient-to-r
-      from-[rgba(183,184,187,0.12)]
-      via-[rgba(183,184,187,0.24)]
-      to-[rgba(183,184,187,0.12)]
+      from-[var(--shimmer-from)]
+      via-[var(--shimmer-via)]
+      to-[var(--shimmer-to)]
       bg-[length:200%_100%]
       animate-shimmer;
   }
+
+  /* Skeleton size variants */
+  .skeleton-sm { height: 1rem; }
+  .skeleton-md { height: 1.5rem; }
+  .skeleton-lg { height: 2.5rem; }
+  .skeleton-block { aspect-ratio: 3/4; width: 100%; }
 
   /* Headings */
   .heading-display {
@@ -136,10 +155,19 @@
 @layer utilities {
   @keyframes shimmer {
     0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+    50% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 
   .animate-shimmer {
     animation: shimmer 1.4s ease-in-out infinite;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-shimmer {
+      animation: none;
+      background-position: 0 0;
+    }
   }
 }

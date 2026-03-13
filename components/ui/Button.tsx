@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { cva, VariantProps } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 import Spinner from "@/components/ui/Spinner";
 
@@ -42,44 +42,70 @@ const button = cva(
   }
 );
 
+type CVAProps = VariantProps<typeof button>;
+
 interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof button> {
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, keyof CVAProps>,
+    CVAProps {
   loading?: boolean;
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
 }
 
-export default function Button({
-  children,
-  variant,
-  size,
-  fullWidth,
-  rounded,
-  loading = false,
-  iconLeft,
-  iconRight,
-  className,
-  disabled,
-  ...props
-}: ButtonProps) {
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    children,
+    variant,
+    size,
+    fullWidth = false,
+    rounded = "md",
+    loading = false,
+    iconLeft,
+    iconRight,
+    className,
+    disabled,
+    "aria-label": ariaLabel,
+    ...props
+  },
+  ref
+) {
+  const isPrimary = variant === "primary";
+
   return (
     <button
+      ref={ref}
       className={clsx(button({ variant, size, fullWidth, rounded }), className)}
       disabled={disabled || loading}
-      aria-busy={loading}
-      aria-live="polite"
+      aria-busy={loading || undefined}
+      aria-label={ariaLabel}
       {...props}
     >
-      {loading ? (
-        <Spinner size="sm" color={variant === "primary" ? "white" : "primary"} />
-      ) : (
-        <>
-          {iconLeft && <span className="mr-2">{iconLeft}</span>}
+      <span className="relative inline-flex items-center">
+        {loading && (
+          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <Spinner size="sm" color={isPrimary ? "white" : "primary"} />
+          </span>
+        )}
+
+        <span
+          className={clsx(
+            "inline-flex items-center transition-opacity",
+            loading ? "opacity-0" : "opacity-100"
+          )}
+          aria-hidden={loading}
+        >
+          {iconLeft && <span className="mr-2 flex items-center">{iconLeft}</span>}
           {children}
-          {iconRight && <span className="ml-2">{iconRight}</span>}
-        </>
-      )}
+          {iconRight && <span className="ml-2 flex items-center">{iconRight}</span>}
+        </span>
+
+        {/* Visible text for assistive tech when loading */}
+        {loading && <span className="sr-only">Loading…</span>}
+      </span>
     </button>
   );
-}
+});
+
+Button.displayName = "Button";
+
+export default Button;

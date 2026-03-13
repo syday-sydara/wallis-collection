@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import { cva, VariantProps } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 
-const skeleton = cva(
+const skeletonStyles = cva(
   "bg-[var(--color-neutral-100)] transition-colors duration-200",
   {
     variants: {
@@ -40,22 +40,65 @@ const skeleton = cva(
   }
 );
 
-interface SkeletonProps extends VariantProps<typeof skeleton> {
+type CVAProps = VariantProps<typeof skeletonStyles>;
+
+interface SkeletonProps extends CVAProps {
   className?: string;
+  as?: keyof JSX.IntrinsicElements;
+  ariaLabel?: string;
 }
 
-export default function Skeleton({
-  shape,
-  size,
-  animation,
-  margin,
-  className,
-}: SkeletonProps) {
+const Skeleton = React.forwardRef<HTMLElement, SkeletonProps>(function Skeleton(
+  {
+    shape = "block",
+    size = "full",
+    animation = "shimmer",
+    margin = "none",
+    className,
+    as,
+    ariaLabel,
+    ...props
+  },
+  ref
+) {
+  const Element = as ?? (shape === "text" ? "span" : "div");
+
+  const [motionSafeAnimation, setMotionSafeAnimation] = React.useState<
+    SkeletonProps["animation"]
+  >(animation);
+
+  React.useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (media.matches) {
+      setMotionSafeAnimation("none");
+    } else {
+      setMotionSafeAnimation(animation);
+    }
+  }, [animation]);
+
+  const isAnnounced = Boolean(ariaLabel);
+
   return (
-    <div
-      aria-hidden="true"
-      role="presentation"
-      className={clsx(skeleton({ shape, size, animation, margin }), className)}
+    <Element
+      ref={ref}
+      role={isAnnounced ? "status" : undefined}
+      aria-live={isAnnounced ? "polite" : undefined}
+      aria-label={ariaLabel}
+      aria-hidden={isAnnounced ? undefined : true}
+      className={clsx(
+        skeletonStyles({
+          shape,
+          size,
+          animation: motionSafeAnimation,
+          margin,
+        }),
+        className
+      )}
+      {...props}
     />
   );
-}
+});
+
+Skeleton.displayName = "Skeleton";
+
+export default Skeleton;

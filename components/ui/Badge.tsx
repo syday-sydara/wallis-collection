@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { cva, VariantProps } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 
 const badge = cva(
@@ -48,24 +48,38 @@ const badge = cva(
   }
 );
 
-interface BadgeProps
-  extends React.HTMLAttributes<HTMLSpanElement>,
-    VariantProps<typeof badge> {}
+type CVAProps = VariantProps<typeof badge>;
 
-export default function Badge({
-  children,
-  variant,
-  size,
-  rounded,
-  uppercase,
-  interactive,
-  className,
-  ...props
-}: BadgeProps) {
+interface BadgeProps
+  extends Omit<React.HTMLAttributes<HTMLSpanElement>, keyof CVAProps>,
+    CVAProps {
+  asChild?: boolean; // optional: allow slotting another element via Slot pattern
+}
+
+const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
+  {
+    children,
+    variant,
+    size,
+    rounded,
+    uppercase = false,
+    interactive = false,
+    className,
+    asChild = false,
+    ...props
+  },
+  ref
+) {
+  // If interactive, suggest role button by default (can be overridden)
+  const role = interactive ? (props.role ?? "button") : props.role;
+
   return (
     <span
+      ref={ref}
+      role={role}
+      aria-pressed={interactive ? props["aria-pressed"] ?? undefined : undefined}
       className={clsx(
-        badge({ variant, size, rounded, uppercase, interactive }),
+        badge({ variant, size, rounded, uppercase: String(uppercase) as any, interactive: String(interactive) as any }),
         className
       )}
       {...props}
@@ -73,4 +87,8 @@ export default function Badge({
       {children}
     </span>
   );
-}
+});
+
+Badge.displayName = "Badge";
+
+export default Badge;

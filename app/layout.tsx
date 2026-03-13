@@ -9,7 +9,13 @@ export { metadata } from "./metadata";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} scroll-smooth`}>
+    <html
+      lang="en"
+      className={`${spaceGrotesk.variable} scroll-smooth`}
+      suppressHydrationWarning
+    >
+      <head />
+
       <body
         className="
           flex flex-col min-h-screen
@@ -22,7 +28,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       >
         <Header />
 
-        <main role="main" aria-label="Main content" className="flex-1 w-full">
+        <main
+          id="main-content"
+          role="main"
+          aria-label="Main content"
+          className="flex-1 w-full"
+        >
           {children}
         </main>
 

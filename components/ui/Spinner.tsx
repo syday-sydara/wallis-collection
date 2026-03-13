@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { cva, VariantProps } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 
-const spinner = cva(
-  "rounded-full border-t-transparent border-solid animate-spin",
+const spinnerStyles = cva(
+  "rounded-full border-t-transparent border-solid",
   {
     variants: {
       size: {
@@ -22,6 +22,7 @@ const spinner = cva(
         slow: "animate-spin-slow",
         normal: "animate-spin",
         fast: "animate-spin-fast",
+        none: "",
       },
       overlay: {
         true: "fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50",
@@ -37,25 +38,61 @@ const spinner = cva(
   }
 );
 
-interface SpinnerProps extends VariantProps<typeof spinner> {
+type CVAProps = VariantProps<typeof spinnerStyles>;
+
+interface SpinnerProps extends CVAProps {
   className?: string;
+  label?: string;
 }
 
-export default function Spinner({
-  size,
-  color,
-  speed,
-  overlay,
-  className,
-}: SpinnerProps) {
+const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(function Spinner(
+  {
+    size = "sm",
+    color = "white",
+    speed = "normal",
+    overlay = false,
+    className,
+    label = "Loading",
+    ...props
+  },
+  ref
+) {
+  const [motionSafeSpeed, setMotionSafeSpeed] = React.useState(speed);
+
+  React.useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (media.matches) {
+      setMotionSafeSpeed("none");
+    } else {
+      setMotionSafeSpeed(speed);
+    }
+  }, [speed]);
+
+  const isAnnounced = Boolean(label);
+
   return (
     <div
-      className={clsx(spinner({ size, color, speed, overlay }), className)}
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
+      ref={ref}
+      className={clsx(
+        spinnerStyles({
+          size,
+          color,
+          speed: motionSafeSpeed,
+          overlay,
+        }),
+        className
+      )}
+      role={isAnnounced ? "status" : undefined}
+      aria-live={isAnnounced ? "polite" : undefined}
+      aria-busy={isAnnounced ? "true" : undefined}
+      aria-hidden={isAnnounced ? undefined : true}
+      {...props}
     >
-      <span className="sr-only">Loading</span>
+      {isAnnounced && <span className="sr-only">{label}</span>}
     </div>
   );
-}
+});
+
+Spinner.displayName = "Spinner";
+
+export default Spinner;
