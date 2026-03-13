@@ -27,8 +27,7 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
   const fallbackImage =
     "https://images.unsplash.com/photo-1520975918318-3a4e6e791f6b?q=80&w=1200&auto=format&fit=crop";
 
-  const imageUrl =
-    product?.images?.[0]?.url ?? fallbackImage;
+  const imageUrl = product?.images?.[0]?.url ?? fallbackImage;
 
   const title = product?.name ?? "Wallis Collection";
   const price =
