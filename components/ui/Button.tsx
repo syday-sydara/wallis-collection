@@ -4,14 +4,14 @@ import React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 import Spinner from "@/components/ui/Spinner";
+import { Slot } from "@radix-ui/react-slot";
 
 const button = cva(
   "inline-flex items-center justify-center font-medium transition duration-normal ease-smooth disabled:opacity-50 disabled:pointer-events-none",
   {
     variants: {
       variant: {
-        primary:
-          "bg-[var(--color-primary-500)] text-white hover:opacity-90",
+        primary: "bg-[var(--color-primary-500)] text-white hover:opacity-90",
         outline:
           "border border-[var(--color-primary-500)] text-[var(--color-primary-500)] hover:bg-[var(--color-primary-500)]/10",
         subtle:
@@ -50,61 +50,65 @@ interface ButtonProps
   loading?: boolean;
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
+  asChild?: boolean;
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  {
-    children,
-    variant,
-    size,
-    fullWidth = false,
-    rounded = "md",
-    loading = false,
-    iconLeft,
-    iconRight,
-    className,
-    disabled,
-    "aria-label": ariaLabel,
-    ...props
-  },
-  ref
-) {
-  const isPrimary = variant === "primary";
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      children,
+      variant,
+      size,
+      fullWidth = false,
+      rounded = "md",
+      loading = false,
+      iconLeft,
+      iconRight,
+      className,
+      disabled,
+      asChild = false,
+      "aria-label": ariaLabel,
+      ...props
+    },
+    ref
+  ) => {
+    const isPrimary = variant === "primary";
+    const Comp = asChild ? Slot : "button";
 
-  return (
-    <button
-      ref={ref}
-      className={clsx(button({ variant, size, fullWidth, rounded }), className)}
-      disabled={disabled || loading}
-      aria-busy={loading || undefined}
-      aria-label={ariaLabel}
-      {...props}
-    >
-      <span className="relative inline-flex items-center">
-        {loading && (
-          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <Spinner size="sm" color={isPrimary ? "white" : "primary"} />
-          </span>
-        )}
-
-        <span
-          className={clsx(
-            "inline-flex items-center transition-opacity",
-            loading ? "opacity-0" : "opacity-100"
+    return (
+      <Comp
+        ref={ref}
+        className={clsx(button({ variant, size, fullWidth, rounded }), className)}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        aria-label={ariaLabel}
+        {...props}
+      >
+        <span className="relative inline-flex items-center">
+          {loading && (
+            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <Spinner size="sm" color={isPrimary ? "white" : "primary"} />
+            </span>
           )}
-          aria-hidden={loading}
-        >
-          {iconLeft && <span className="mr-2 flex items-center">{iconLeft}</span>}
-          {children}
-          {iconRight && <span className="ml-2 flex items-center">{iconRight}</span>}
-        </span>
 
-        {/* Visible text for assistive tech when loading */}
-        {loading && <span className="sr-only">Loading…</span>}
-      </span>
-    </button>
-  );
-});
+          <span
+            className={clsx(
+              "inline-flex items-center transition-opacity",
+              loading ? "opacity-0" : "opacity-100"
+            )}
+            aria-hidden={loading}
+          >
+            {iconLeft && <span className="mr-2 flex items-center">{iconLeft}</span>}
+            {children}
+            {iconRight && <span className="ml-2 flex items-center">{iconRight}</span>}
+          </span>
+
+          {loading && <span className="sr-only">Loading…</span>}
+        </span>
+      </Comp>
+    );
+  }
+);
 
 Button.displayName = "Button";
 

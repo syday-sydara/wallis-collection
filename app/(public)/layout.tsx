@@ -1,41 +1,28 @@
 "use client";
 
-import React, { ReactNode } from "react";
+import { CartProvider } from "@/components/cart/cart-context";
+import CartDrawer from "@/components/cart/CartDrawer";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
-interface PublicLayoutProps {
-  children: ReactNode;
-}
-
-export default function PublicLayout({ children }: PublicLayoutProps) {
+export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="
-        min-h-screen flex flex-col
-        bg-[var(--color-bg-primary)]
-        text-[var(--color-text-primary)]
-        pl-[env(safe-area-inset-left)]
-        pr-[env(safe-area-inset-right)]
-      "
-    >
-      <Header />
+    <CartProvider>
+      <div className="min-h-screen flex flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
+        {/* Storefront Header */}
+        <Header />
 
-      <main
-        id="main-content"
-        role="main"
-        aria-label="Main content"
-        className="
-          flex-1 w-full
-          container mx-auto
-          px-4 py-6
-          md:px-6 md:py-10
-        "
-      >
-        {children}
-      </main>
+        {/* Cart Drawer (always mounted so it can slide in/out) */}
+        <CartDrawer />
 
-      <Footer />
-    </div>
+        {/* Main content */}
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6">
+          {children}
+        </main>
+
+        {/* Storefront Footer */}
+        <Footer />
+      </div>
+    </CartProvider>
   );
 }

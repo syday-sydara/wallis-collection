@@ -50,7 +50,7 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-6">
             {items.map((item) => (
               <div
-                key={item.id}
+                key={item.key}
                 className="flex items-center gap-4 p-4 border border-[var(--color-border)] rounded-lg"
               >
                 {item.image && (
@@ -65,13 +65,23 @@ export default function CartPage() {
 
                 <div className="flex-1">
                   <h3 className="font-semibold">{item.name}</h3>
+
+                  {/* Variant display */}
+                  {item.variants && (
+                    <p className="text-xs text-[var(--color-text-secondary)]">
+                      {Object.entries(item.variants)
+                        .map(([k, v]) => `${k}: ${v}`)
+                        .join(", ")}
+                    </p>
+                  )}
+
                   <p className="text-sm text-[var(--color-text-secondary)]">
-                    ₦{item.price.toLocaleString()}
+                    ₦{(item.price ?? 0).toLocaleString()}
                   </p>
 
                   <div className="flex items-center mt-2 space-x-3">
                     <button
-                      onClick={() => decrement(item.id)}
+                      onClick={() => decrement(item.key)}
                       className="px-2 py-1 border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-surface)] transition"
                     >
                       -
@@ -80,7 +90,7 @@ export default function CartPage() {
                     <span className="font-medium">{item.quantity}</span>
 
                     <button
-                      onClick={() => increment(item.id)}
+                      onClick={() => increment(item.key)}
                       className="px-2 py-1 border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-surface)] transition"
                     >
                       +
@@ -89,7 +99,7 @@ export default function CartPage() {
                 </div>
 
                 <button
-                  onClick={() => removeItem(item.id)}
+                  onClick={() => removeItem(item.key)}
                   className="text-[var(--color-danger-500)] hover:opacity-70"
                 >
                   <X size={20} />

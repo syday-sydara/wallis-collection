@@ -2,8 +2,6 @@
 import "./globals.css";
 import { ReactNode } from "react";
 import { spaceGrotesk } from "./metadata";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
 
 export { metadata } from "./metadata";
 
@@ -26,18 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           pr-[env(safe-area-inset-right)]
         "
       >
-        <Header />
-
-        <main
-          id="main-content"
-          role="main"
-          aria-label="Main content"
-          className="flex-1 w-full"
-        >
-          {children}
-        </main>
-
-        <Footer />
+        {children}
       </body>
     </html>
   );

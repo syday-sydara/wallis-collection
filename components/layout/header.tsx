@@ -4,9 +4,16 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu, X, ShoppingCart, Search } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { useCart } from "@/components/cart/cart-context";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const { itemCount } = useCart();
+
+  // Trigger the cart drawer via a custom event
+  const openCart = () => {
+    window.dispatchEvent(new CustomEvent("open-cart"));
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-[var(--color-bg-surface)]/80 backdrop-blur border-b border-[var(--color-border)]">
@@ -35,15 +42,18 @@ export default function Header() {
             <Search size={20} />
           </button>
 
-          <Link
-            href="/cart"
+          {/* Cart Icon */}
+          <button
+            onClick={openCart}
             className="relative p-2 rounded-md hover:text-[var(--color-primary-500)] transition-colors"
           >
             <ShoppingCart size={22} />
-            <span className="absolute -top-1.5 -right-1.5 text-xs bg-[var(--color-primary-500)] text-white px-1.5 py-0.5 rounded-full">
-              2
-            </span>
-          </Link>
+            {itemCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 text-xs bg-[var(--color-primary-500)] text-white px-1.5 py-0.5 rounded-full">
+                {itemCount}
+              </span>
+            )}
+          </button>
 
           {/* Mobile Menu Button */}
           <button
@@ -67,7 +77,9 @@ export default function Header() {
           <MobileNavLink href="/about" onClick={() => setOpen(false)}>About</MobileNavLink>
           <MobileNavLink href="/contact" onClick={() => setOpen(false)}>Contact</MobileNavLink>
 
-          <Button className="w-full">View Cart</Button>
+          <Button className="w-full" onClick={openCart}>
+            View Cart
+          </Button>
         </nav>
       </div>
     </header>
