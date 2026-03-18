@@ -12,23 +12,37 @@ interface ProductOgImageProps {
   params: { slug: string };
 }
 
-export default async function ProductOgImage({ params }: ProductOgImageProps) {
-  let product = null;
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1520975918318-3a4e6e791f6b?q=80&w=1200&auto=format&fit=crop";
 
+const BRAND = {
+  primary: "#272B36",
+  surface: "#0f1115",
+  accent: "#A08A81",
+  textPrimary: "#ffffff",
+  textSecondary: "#c7c7c7",
+  textMuted: "#b7b8bb",
+  border: "#2a2f38",
+  font:
+    "Space Grotesk, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI'",
+};
+
+async function getProduct(slug: string) {
   try {
-    product = await prisma.product.findUnique({
-      where: { slug: params.slug },
+    return await prisma.product.findUnique({
+      where: { slug },
       include: { images: true },
     });
   } catch (err) {
     console.error("OG Image Prisma Error:", err);
+    return null;
   }
+}
 
-  const fallbackImage =
-    "https://images.unsplash.com/photo-1520975918318-3a4e6e791f6b?q=80&w=1200&auto=format&fit=crop";
+export default async function ProductOgImage({ params }: ProductOgImageProps) {
+  const product = await getProduct(params.slug);
 
-  const imageUrl = product?.images?.[0]?.url ?? fallbackImage;
-
+  const imageUrl = product?.images?.[0]?.url ?? FALLBACK_IMAGE;
   const title = product?.name ?? "Wallis Collection";
   const price =
     product?.priceNaira != null
@@ -36,7 +50,7 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
       : null;
 
   const description =
-    product?.description ??
+    product?.description?.slice(0, 180) ??
     "Premium Northern Nigerian fashion crafted with elegance and heritage.";
 
   return new ImageResponse(
@@ -46,10 +60,9 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
           width: "100%",
           height: "100%",
           display: "flex",
-          background: "#272B36",
-          color: "#ffffff",
-          fontFamily:
-            "Space Grotesk, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI'",
+          background: BRAND.primary,
+          color: BRAND.textPrimary,
+          fontFamily: BRAND.font,
         }}
       >
         {/* Left: Product image */}
@@ -73,7 +86,7 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
-            background: "#0f1115",
+            background: BRAND.surface,
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -82,7 +95,7 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
                 fontSize: 18,
                 letterSpacing: 4,
                 textTransform: "uppercase",
-                color: "#A08A81",
+                color: BRAND.accent,
               }}
             >
               Wallis Collection
@@ -90,7 +103,7 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
 
             <div
               style={{
-                fontSize: 40,
+                fontSize: 44,
                 fontWeight: 700,
                 lineHeight: 1.1,
                 maxWidth: "90%",
@@ -103,9 +116,9 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
               <div
                 style={{
                   marginTop: 8,
-                  fontSize: 28,
+                  fontSize: 30,
                   fontWeight: 600,
-                  color: "#A08A81",
+                  color: BRAND.accent,
                 }}
               >
                 {price}
@@ -117,7 +130,7 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
                 marginTop: 16,
                 fontSize: 18,
                 lineHeight: 1.4,
-                color: "#c7c7c7",
+                color: BRAND.textSecondary,
                 maxHeight: 140,
                 overflow: "hidden",
               }}
@@ -129,11 +142,11 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
           <div
             style={{
               fontSize: 18,
-              color: "#b7b8bb",
+              color: BRAND.textMuted,
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              borderTop: "1px solid #2a2f38",
+              borderTop: `1px solid ${BRAND.border}`,
               paddingTop: 16,
               marginTop: 24,
             }}
@@ -144,6 +157,6 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
         </div>
       </div>
     ),
-    { ...size }
+    size
   );
 }

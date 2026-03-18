@@ -20,16 +20,22 @@ export default function Loading({
   variant = "grid",
   className,
 }: LoadingProps) {
-  const containerClass = {
-    grid: "grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4",
-    list: "flex flex-col gap-4",
-    compact: "grid grid-cols-3 gap-4 sm:grid-cols-4",
-  }[variant];
-
-  const imageClass = {
-    grid: "aspect-[3/4] w-full",
-    list: "h-24 w-24 rounded-md",
-    compact: "h-20 w-full rounded-md",
+  const variantConfig = {
+    grid: {
+      container: "grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4",
+      image: "aspect-[3/4] w-full rounded-lg",
+      extra: true,
+    },
+    list: {
+      container: "flex flex-col gap-4",
+      image: "h-24 w-24 rounded-md",
+      extra: false,
+    },
+    compact: {
+      container: "grid grid-cols-3 gap-4 sm:grid-cols-4",
+      image: "h-20 w-full rounded-md",
+      extra: false,
+    },
   }[variant];
 
   const skeletons = React.useMemo(() => {
@@ -37,16 +43,15 @@ export default function Loading({
       <div
         key={i}
         className="flex flex-col gap-3 animate-pulse motion-reduce:animate-none transition-opacity duration-300 opacity-80"
+        role="presentation"
       >
-        <Skeleton shape="block" size="full" className={imageClass} />
-        <Skeleton shape="text" size="full" className="w-3/4" />
-        <Skeleton shape="text" size="md" className="w-1/2" />
-        {variant === "grid" && (
-          <Skeleton shape="block" size="sm" className="w-full h-10" />
-        )}
+        <Skeleton className={variantConfig.image} />
+        <Skeleton className="w-3/4 h-4" />
+        <Skeleton className="w-1/2 h-4" />
+        {variantConfig.extra && <Skeleton className="w-full h-10 rounded-md" />}
       </div>
     ));
-  }, [count, variant, imageClass]);
+  }, [count, variantConfig]);
 
   return (
     <div
@@ -55,15 +60,12 @@ export default function Loading({
       aria-live="polite"
       aria-busy="true"
     >
-      <div
-        className={clsx("w-full mb-4", containerClass)}
-        aria-hidden="true"
-      >
+      <div className={clsx("w-full mb-4", variantConfig.container)} aria-hidden="true">
         {skeletons}
       </div>
 
       {message ? (
-        <p className="text-neutral-600 text-sm mb-2">{message}</p>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-2">{message}</p>
       ) : (
         <span className="sr-only">Loading content</span>
       )}

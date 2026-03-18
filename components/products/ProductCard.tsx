@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
@@ -38,27 +38,20 @@ export default function ProductCard({
 }: ProductCardProps) {
   const outOfStock = stock <= 0;
 
-  const displayImage = useMemo(() => {
-    return (
-      images[0]?.url ??
-      `https://picsum.photos/800/1067?random=${encodeURIComponent(id)}`
-    );
-  }, [images, id]);
+  const imageUrl =
+    images[0]?.url ??
+    `https://picsum.photos/800/1067?random=${encodeURIComponent(id)}`;
 
-  const price = useMemo(() => {
-    const discounted = Boolean(isOnSale && salePriceNaira);
-    return {
-      current: discounted ? salePriceNaira! : priceNaira,
-      original: priceNaira,
-      discounted,
-    };
-  }, [priceNaira, salePriceNaira, isOnSale]);
+  const discounted = isOnSale && salePriceNaira;
+  const currentPrice = discounted ? salePriceNaira! : priceNaira;
 
-  const stockMessage = useMemo(() => {
-    if (outOfStock) return "Out of stock";
-    if (stock <= 10) return `Only ${stock} left`;
-    return "In stock";
-  }, [stock, outOfStock]);
+  const stockMessage = outOfStock
+    ? "Out of stock"
+    : stock <= 10
+    ? `Only ${stock} left`
+    : "In stock";
+
+  const encodedSlug = encodeURIComponent(slug);
 
   const handleAdd = () => {
     if (!outOfStock) onAddToCart?.();
@@ -68,89 +61,94 @@ export default function ProductCard({
     <article
       aria-labelledby={`product-title-${id}`}
       aria-describedby={`product-price-${id} product-stock-${id}`}
-      className="relative flex flex-col bg-[var(--color-bg-surface)] rounded-lg shadow-card overflow-hidden group"
+      className="relative flex flex-col rounded-lg bg-[var(--color-bg-surface)] shadow-card overflow-hidden group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
       data-product-id={id}
     >
-      <div className="absolute top-2 left-2 flex space-x-2 z-10 pointer-events-none">
+      {/* Badges */}
+      <div className="absolute top-2 left-2 z-10 flex gap-2">
         {isNew && (
-          <span className="inline-flex items-center bg-[var(--color-success-500)] text-white text-xs px-2 py-1 rounded-md pointer-events-auto">
+          <span className="px-2 py-1 text-xs rounded-md bg-[var(--color-success-500)] text-white shadow-sm">
             New
           </span>
         )}
-        {price.discounted && (
-          <span className="inline-flex items-center bg-[var(--color-warning-500)] text-white text-xs px-2 py-1 rounded-md pointer-events-auto">
+        {discounted && (
+          <span className="px-2 py-1 text-xs rounded-md bg-[var(--color-warning-500)] text-white shadow-sm">
             Sale
           </span>
         )}
       </div>
 
+      {/* Out of stock overlay */}
       {outOfStock && (
-        <div className="absolute inset-0 bg-black/40 z-20 flex items-center justify-center text-white font-semibold text-lg">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 text-white text-lg font-semibold">
           Out of stock
         </div>
       )}
 
+      {/* Image */}
       <Link
-        href={`/products/${encodeURIComponent(slug)}`}
+        href={`/products/${encodedSlug}`}
         className="relative w-full overflow-hidden bg-neutral-100"
         prefetch={false}
       >
-        <div className="w-full aspect-[3/4] relative">
+        <div className="relative aspect-[3/4]">
           <Image
-            src={displayImage}
+            src={imageUrl}
             alt={name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="object-cover transition-transform duration-300 ease-out group-hover:scale-105"
           />
         </div>
       </Link>
 
-      <div className="p-4 flex flex-col flex-1">
+      {/* Content */}
+      <div className="flex flex-col flex-1 p-4">
         <header>
-          <Link href={`/products/${encodeURIComponent(slug)}`} className="no-underline">
+          <Link href={`/products/${encodedSlug}`}>
             <h3
               id={`product-title-${id}`}
-              className="font-semibold text-sm truncate hover:underline"
+              className="text-sm font-semibold truncate hover:underline"
             >
               {name}
             </h3>
           </Link>
         </header>
 
+        {/* Price */}
         <section
           id={`product-price-${id}`}
-          className="mt-2 flex items-baseline space-x-2"
+          className="mt-2 flex items-baseline gap-2"
         >
-          {price.discounted ? (
-            <>
-              <p className="font-semibold text-[var(--color-primary-500)]">
-                {CURRENCY.format(price.current)}
-              </p>
-              <p className="text-xs line-through text-neutral-500">
-                {CURRENCY.format(price.original)}
-              </p>
-            </>
-          ) : (
-            <p className="font-medium text-[var(--color-primary-500)]">
-              {CURRENCY.format(price.current)}
+          <p className="font-semibold text-[var(--color-primary-500)]">
+            {CURRENCY.format(currentPrice)}
+          </p>
+
+          {discounted && (
+            <p className="text-xs line-through text-neutral-500">
+              {CURRENCY.format(priceNaira)}
             </p>
           )}
         </section>
 
+        {/* Stock */}
         <p
           id={`product-stock-${id}`}
-          className="text-xs text-gray-500 mt-1"
+          className="mt-1 text-xs text-[var(--color-text-muted)]"
         >
           {stockMessage}
         </p>
 
+        {/* Add to cart */}
         <footer className="mt-auto">
           <Button
             variant="primary"
             onClick={handleAdd}
             disabled={outOfStock}
-            aria-label={outOfStock ? "Out of stock" : `Add ${name} to cart`}
+            aria-disabled={outOfStock}
+            aria-label={
+              outOfStock ? "Out of stock" : `Add ${name} to cart`
+            }
             className="w-full mt-3"
           >
             Add to cart

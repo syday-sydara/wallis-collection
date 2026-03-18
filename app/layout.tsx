@@ -9,19 +9,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} scroll-smooth`}
+      className={`${spaceGrotesk.variable} font-sans scroll-smooth`}
       suppressHydrationWarning
     >
-      <head />
-
       <body
         className="
-          flex flex-col min-h-screen
-          font-sans antialiased
+          flex flex-col min-h-dvh
+          antialiased
           bg-[var(--color-bg-primary)]
           text-[var(--color-text-primary)]
-          pl-[env(safe-area-inset-left)]
-          pr-[env(safe-area-inset-right)]
         "
       >
         {children}

@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 
 const spinnerStyles = cva(
-  "rounded-full border-t-transparent border-solid",
+  "rounded-full border-solid border-t-transparent motion-reduce:animate-none",
   {
     variants: {
       size: {
@@ -14,84 +14,69 @@ const spinnerStyles = cva(
         lg: "w-8 h-8 border-4",
       },
       color: {
-        white: "border-white border-t-transparent",
-        primary: "border-[var(--color-primary-500)] border-t-transparent",
-        accent: "border-[var(--color-accent-500)] border-t-transparent",
+        white: "border-white",
+        primary: "border-[var(--color-primary-500)]",
+        accent: "border-[var(--color-accent-500)]",
       },
       speed: {
         slow: "animate-spin-slow",
         normal: "animate-spin",
         fast: "animate-spin-fast",
-        none: "",
-      },
-      overlay: {
-        true: "fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50",
-        false: "",
+        static: "",
       },
     },
     defaultVariants: {
       size: "sm",
       color: "white",
       speed: "normal",
-      overlay: false,
     },
   }
 );
 
-type CVAProps = VariantProps<typeof spinnerStyles>;
+type SpinnerVariants = VariantProps<typeof spinnerStyles>;
 
-interface SpinnerProps extends CVAProps {
+interface SpinnerProps extends SpinnerVariants {
   className?: string;
   label?: string;
+  overlay?: boolean;
 }
 
-const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(function Spinner(
-  {
-    size = "sm",
-    color = "white",
-    speed = "normal",
-    overlay = false,
-    className,
-    label = "Loading",
-    ...props
-  },
-  ref
-) {
-  const [motionSafeSpeed, setMotionSafeSpeed] = React.useState(speed);
+const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
+  (
+    {
+      size,
+      color,
+      speed,
+      overlay = false,
+      className,
+      label = "Loading",
+      ...props
+    },
+    ref
+  ) => {
+    const spinner = (
+      <div
+        ref={ref}
+        className={clsx(spinnerStyles({ size, color, speed }), className)}
+        role={label ? "status" : undefined}
+        aria-live={label ? "polite" : undefined}
+        aria-busy={label ? "true" : undefined}
+        aria-hidden={label ? undefined : true}
+        {...props}
+      >
+        {label && <span className="sr-only">{label}</span>}
+      </div>
+    );
 
-  React.useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (media.matches) {
-      setMotionSafeSpeed("none");
-    } else {
-      setMotionSafeSpeed(speed);
-    }
-  }, [speed]);
+    if (!overlay) return spinner;
 
-  const isAnnounced = Boolean(label);
-
-  return (
-    <div
-      ref={ref}
-      className={clsx(
-        spinnerStyles({
-          size,
-          color,
-          speed: motionSafeSpeed,
-          overlay,
-        }),
-        className
-      )}
-      role={isAnnounced ? "status" : undefined}
-      aria-live={isAnnounced ? "polite" : undefined}
-      aria-busy={isAnnounced ? "true" : undefined}
-      aria-hidden={isAnnounced ? undefined : true}
-      {...props}
-    >
-      {isAnnounced && <span className="sr-only">{label}</span>}
-    </div>
-  );
-});
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+        {spinner}
+      </div>
+    );
+  }
+);
 
 Spinner.displayName = "Spinner";
 

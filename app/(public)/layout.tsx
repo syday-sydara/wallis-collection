@@ -8,19 +8,25 @@ import Footer from "@/components/layout/footer";
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <CartProvider>
-      <div className="min-h-screen flex flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
-        {/* Storefront Header */}
+      <div
+        className="
+          min-h-screen flex flex-col
+          bg-[var(--color-bg-primary)]
+          text-[var(--color-text-primary)]
+        "
+      >
+        {/* Global Header */}
         <Header />
 
-        {/* Cart Drawer (always mounted so it can slide in/out) */}
+        {/* Cart Drawer (always mounted) */}
         <CartDrawer />
 
-        {/* Main content */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6">
+        {/* Main Content */}
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-10">
           {children}
         </main>
 
-        {/* Storefront Footer */}
+        {/* Global Footer */}
         <Footer />
       </div>
     </CartProvider>

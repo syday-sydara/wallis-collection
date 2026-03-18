@@ -4,8 +4,8 @@ import React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 
-const badge = cva(
-  "inline-flex items-center font-medium transition-colors duration-200",
+const badgeStyles = cva(
+  "inline-flex items-center font-medium transition-colors duration-200 select-none",
   {
     variants: {
       variant: {
@@ -34,7 +34,7 @@ const badge = cva(
         false: "",
       },
       interactive: {
-        true: "cursor-pointer hover:opacity-80",
+        true: "cursor-pointer hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]",
         false: "",
       },
     },
@@ -48,46 +48,49 @@ const badge = cva(
   }
 );
 
-type CVAProps = VariantProps<typeof badge>;
+type BadgeVariants = VariantProps<typeof badgeStyles>;
 
 interface BadgeProps
-  extends Omit<React.HTMLAttributes<HTMLSpanElement>, keyof CVAProps>,
-    CVAProps {
-  asChild?: boolean; // optional: allow slotting another element via Slot pattern
+  extends React.HTMLAttributes<HTMLSpanElement>,
+    BadgeVariants {
+  asChild?: boolean;
 }
 
-const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
-  {
-    children,
-    variant,
-    size,
-    rounded,
-    uppercase = false,
-    interactive = false,
-    className,
-    asChild = false,
-    ...props
-  },
-  ref
-) {
-  // If interactive, suggest role button by default (can be overridden)
-  const role = interactive ? (props.role ?? "button") : props.role;
+const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
+  (
+    {
+      children,
+      variant,
+      size,
+      rounded,
+      uppercase,
+      interactive,
+      className,
+      asChild = false,
+      role,
+      tabIndex,
+      ...props
+    },
+    ref
+  ) => {
+    const isInteractive = Boolean(interactive);
 
-  return (
-    <span
-      ref={ref}
-      role={role}
-      aria-pressed={interactive ? props["aria-pressed"] ?? undefined : undefined}
-      className={clsx(
-        badge({ variant, size, rounded, uppercase: String(uppercase) as any, interactive: String(interactive) as any }),
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </span>
-  );
-});
+    return (
+      <span
+        ref={ref}
+        role={isInteractive ? role ?? "button" : role}
+        tabIndex={isInteractive ? tabIndex ?? 0 : tabIndex}
+        className={clsx(
+          badgeStyles({ variant, size, rounded, uppercase, interactive }),
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </span>
+    );
+  }
+);
 
 Badge.displayName = "Badge";
 

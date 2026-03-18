@@ -1,3 +1,4 @@
+// app/(public)/products/[slug]/page.tsx
 import { prisma } from "@/lib/db";
 import ProductDetailView from "./ProductDetailView";
 import { Metadata } from "next";
@@ -7,17 +8,20 @@ interface ProductPageProps {
   params: { slug: string };
 }
 
-export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  let product = null;
-
+async function getProduct(slug: string) {
   try {
-    product = await prisma.product.findUnique({
-      where: { slug: params.slug },
-      include: { images: true },
+    return await prisma.product.findUnique({
+      where: { slug },
+      include: { images: true, reviews: true },
     });
   } catch (err) {
-    console.error("Metadata Prisma Error:", err);
+    console.error("Product fetch error:", err);
+    return null;
   }
+}
+
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const product = await getProduct(params.slug);
 
   if (!product || product.deletedAt) {
     return {
@@ -75,10 +79,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 }
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
-  const product = await prisma.product.findUnique({
-    where: { slug: params.slug },
-    include: { images: true, reviews: true },
-  });
+  const product = await getProduct(params.slug);
 
   if (!product || product.deletedAt) notFound();
 

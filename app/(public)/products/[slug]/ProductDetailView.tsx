@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import clsx from "clsx";
 import { useCart } from "@/components/cart/cart-context";
 import Button from "@/components/ui/Button";
@@ -13,7 +13,9 @@ const FALLBACK_IMAGE =
 function VariantSelector({ label, options, value, onChange }) {
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-[var(--color-text-secondary)]">{label}</p>
+      <p className="text-sm font-medium text-[var(--color-text-secondary)]">
+        {label}
+      </p>
 
       <div role="radiogroup" className="flex flex-wrap gap-2">
         {options.map((opt) => {
@@ -46,10 +48,19 @@ function VariantSelector({ label, options, value, onChange }) {
 }
 
 function ZoomModal({ src, alt, open, onClose }) {
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center"
       onClick={onClose}
     >
@@ -66,7 +77,7 @@ function StickyCartBar({ price, onAdd, visible }) {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[var(--color-bg-surface)] border-t border-[var(--color-border)] p-4 flex items-center justify-between lg:hidden z-40">
+    <div className="fixed bottom-0 left-0 right-0 bg-[var(--color-bg-surface)] border-t border-[var(--color-border)] p-4 flex items-center justify-between lg:hidden z-40 shadow-lg">
       <p className="font-semibold text-[var(--color-primary-500)]">
         ₦{price.toLocaleString("en-NG")}
       </p>
@@ -87,22 +98,21 @@ export default function ProductDetailView({ product }) {
   const [zoomOpen, setZoomOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState(null);
 
-  const price = useMemo(() => {
-    const discounted = product.salePriceNaira != null;
-    return {
-      current: discounted ? product.salePriceNaira : product.priceNaira,
-      original: product.priceNaira,
-      discounted,
-    };
-  }, [product.salePriceNaira, product.priceNaira]);
+  const discounted = product.salePriceNaira != null;
+  const price = {
+    current: discounted ? product.salePriceNaira : product.priceNaira,
+    original: product.priceNaira,
+    discounted,
+  };
 
-  const stockMessage = useMemo(() => {
-    if (product.stock <= 0) return "Out of stock";
-    if (product.stock <= 10) return `Only ${product.stock} left`;
-    return "In stock";
-  }, [product.stock]);
+  const stockMessage =
+    product.stock <= 0
+      ? "Out of stock"
+      : product.stock <= 10
+      ? `Only ${product.stock} left`
+      : "In stock";
 
-  const handleAddToCart = () => {
+  const handleAddToCart = useCallback(() => {
     addItem({
       id: product.id,
       name: product.name,
@@ -111,7 +121,7 @@ export default function ProductDetailView({ product }) {
       image: selectedImage || FALLBACK_IMAGE,
       size: selectedSize,
     });
-  };
+  }, [product, price.current, selectedImage, selectedSize, addItem]);
 
   const buttonRef = useRef(null);
   const [stickyVisible, setStickyVisible] = useState(false);
@@ -135,20 +145,21 @@ export default function ProductDetailView({ product }) {
         onClose={() => setZoomOpen(false)}
       />
 
-      <div className="w-full max-w-6xl mx-auto py-8 px-4 flex flex-col lg:flex-row gap-10">
+      <div className="w-full max-w-6xl mx-auto py-10 px-4 flex flex-col lg:flex-row gap-12">
+        {/* Left: Images */}
         <div className="flex-1 space-y-4">
           <Image
             src={selectedImage}
             alt={product.name}
             width={600}
             height={800}
-            className="rounded-lg object-cover w-full h-auto cursor-zoom-in"
+            className="rounded-lg object-cover w-full h-auto cursor-zoom-in transition-opacity duration-300"
             priority
             onClick={() => setZoomOpen(true)}
           />
 
           {images.length > 1 && (
-            <div className="flex space-x-3 mt-2 overflow-x-auto pb-2">
+            <div className="flex gap-3 mt-2 overflow-x-auto pb-2 snap-x snap-mandatory">
               {images.map((img) => {
                 const isActive = img.url === selectedImage;
                 return (
@@ -157,7 +168,7 @@ export default function ProductDetailView({ product }) {
                     onClick={() => setSelectedImage(img.url)}
                     aria-selected={isActive}
                     className={clsx(
-                      "w-20 h-20 rounded-md overflow-hidden border-2 transition-all",
+                      "w-20 h-20 rounded-md overflow-hidden border-2 transition-all snap-start",
                       isActive
                         ? "border-[var(--color-primary-500)]"
                         : "border-[var(--color-border)] hover:border-[var(--color-primary-500)]"
@@ -178,7 +189,8 @@ export default function ProductDetailView({ product }) {
           )}
         </div>
 
-        <div className="flex-1 space-y-5">
+        {/* Right: Info */}
+        <div className="flex-1 space-y-6">
           <div className="flex items-center gap-2">
             {product.isNew && <Badge variant="success">New</Badge>}
             {price.discounted && <Badge variant="warning">Sale</Badge>}
