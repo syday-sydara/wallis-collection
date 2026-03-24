@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FaInstagram, FaFacebookF, FaPinterestP } from "react-icons/fa";
 import { useEffect, useState } from "react";
 
+// Social Links Data
 const SOCIAL_LINKS = [
   {
     icon: FaInstagram,
@@ -25,6 +26,20 @@ const SOCIAL_LINKS = [
   },
 ];
 
+// Footer Sections Data
+const FOOTER_SECTIONS = [
+  {
+    title: "Explore",
+    links: [
+      { href: "/products", label: "Products" },
+      { href: "/about", label: "About Us" },
+      { href: "/contact", label: "Contact" },
+      { href: "/cart", label: "Cart" },
+    ],
+  },
+  // You can add more sections here as needed
+];
+
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const [showTop, setShowTop] = useState(false);
@@ -38,7 +53,6 @@ export default function Footer() {
   return (
     <footer className="border-t border-[var(--color-border)] bg-[var(--color-bg-surface)] mt-16 relative">
       <div className="w-full px-4 py-12 md:max-w-[1280px] md:mx-auto grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-12">
-
         {/* Brand Section */}
         <div className="flex flex-col gap-5">
           <h2 className="heading-3 text-[var(--color-primary-500)] tracking-tight">
@@ -67,12 +81,15 @@ export default function Footer() {
         </div>
 
         {/* Footer Sections */}
-        <FooterSection title="Explore">
-          <FooterLink href="/products">Products</FooterLink>
-          <FooterLink href="/about">About Us</FooterLink>
-          <FooterLink href="/contact">Contact</FooterLink>
-          <FooterLink href="/cart">Cart</FooterLink>
-        </FooterSection>
+        {FOOTER_SECTIONS.map((section) => (
+          <FooterSection key={section.title} title={section.title}>
+            {section.links.map(({ href, label }) => (
+              <FooterLink key={label} href={href}>
+                {label}
+              </FooterLink>
+            ))}
+          </FooterSection>
+        ))}
       </div>
 
       {/* Bottom Bar */}
