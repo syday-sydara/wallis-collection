@@ -7,8 +7,8 @@ async function main() {
     {
       name: "Vibrant Ankara Dress",
       slug: "vibrant-ankara-dress",
-      priceNaira: 12000,
-      salePriceNaira: 10000,
+      price: 12000 * 100, // convert Naira to Kobo
+      salePrice: 10000 * 100, // convert Naira to Kobo
       stock: 15,
       category: "Dresses",
       brand: "Ankara Couture",
@@ -21,7 +21,7 @@ async function main() {
       isOnSale: true,
       featured: true,
     },
-    // ... rest of your products
+    // Add more products here...
   ];
 
   console.log("⏳ Seeding products...");
@@ -29,13 +29,21 @@ async function main() {
   for (const product of products) {
     const created = await prisma.product.upsert({
       where: { slug: product.slug },
-      update: {},
+      update: {
+        // Optional: you can update prices/stock if needed
+        price: product.price,
+        salePrice: product.salePrice,
+        stock: product.stock,
+        isNew: product.isNew,
+        isOnSale: product.isOnSale,
+        featured: product.featured,
+      },
       create: {
         name: product.name,
         slug: product.slug,
         description: product.description ?? "",
-        priceNaira: product.priceNaira,
-        salePriceNaira: product.salePriceNaira,
+        price: product.price,
+        salePrice: product.salePrice,
         stock: product.stock,
         category: product.category,
         brand: product.brand,
@@ -54,7 +62,7 @@ async function main() {
       },
     });
 
-    console.log(`✔ Created: ${created.name}`);
+    console.log(`✔ Created or updated: ${created.name}`);
   }
 
   console.log("🎉 All products seeded successfully!");
