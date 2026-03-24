@@ -1,64 +1,110 @@
 "use client";
 
-import { X } from "lucide-react";
-import { useCart } from "./CartProvider";
 import Image from "next/image";
+import { X, Minus, Plus } from "lucide-react";
+import { useCart } from "./CartProvider";
+import Button from "@/components/ui/Button";
 
-export default function CartItemRow({ item, variant = "default", maxStock }) {
+interface CartItemRowProps {
+  item: {
+    key: string;
+    productId: string;
+    name: string;
+    price: number;
+    quantity: number;
+    stock?: number;
+    image?: string;
+  };
+  variant?: "default" | "compact";
+  maxStock?: number;
+}
+
+export default function CartItemRow({
+  item,
+  variant = "default",
+  maxStock = item.stock ?? Infinity,
+}: CartItemRowProps) {
   const { increment, decrement, removeItem } = useCart();
 
-  const compact = variant === "compact";
+  const handleIncrement = () => increment(item.key);
+  const handleDecrement = () => decrement(item.key);
+  const handleRemove = () => removeItem(item.key);
+
+  const isCompact = variant === "compact";
 
   return (
     <div
-      className={`flex items-center gap-4 ${
-        compact ? "py-2" : "py-4"
-      } border-b last:border-none`}
+      className={`flex gap-4 border-b border-border pb-4 ${
+        isCompact ? "items-start" : "items-center"
+      }`}
     >
       {/* Product Image */}
-      {item.image && (
-        <Image
-          src={item.image}
-          alt={item.name}
-          width={compact ? 48 : 64}
-          height={compact ? 48 : 64}
-          className="rounded-md object-cover"
-        />
-      )}
-
-      {/* Product Info */}
-      <div className="flex-1">
-        <h3 className="font-medium text-sm">{item.name}</h3>
-        <p className="text-xs text-gray-500">₦{item.price.toLocaleString()}</p>
-
-        {/* Quantity Controls */}
-        <div className="flex items-center gap-2 mt-2">
-          <button
-            onClick={() => decrement(item.key)}
-            className="px-2 py-1 border rounded text-sm"
-          >
-            -
-          </button>
-
-          <span className="w-6 text-center text-sm">{item.quantity}</span>
-
-          <button
-            onClick={() => increment(item.key)}
-            disabled={item.quantity >= (maxStock ?? item.stock ?? Infinity)}
-            className="px-2 py-1 border rounded text-sm disabled:opacity-50"
-          >
-            +
-          </button>
-        </div>
+      <div className="relative w-20 h-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+        {item.image ? (
+          <Image
+            src={item.image}
+            alt={item.name}
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-200 animate-pulse" />
+        )}
       </div>
 
-      {/* Remove Button */}
-      <button
-        onClick={() => removeItem(item.key)}
-        className="text-gray-400 hover:text-red-500"
-      >
-        <X size={16} />
-      </button>
+      {/* Product Info */}
+      <div className="flex flex-col flex-1">
+        <div className="flex justify-between items-start">
+          <h3 className="font-medium text-sm text-text-primary leading-tight">
+            {item.name}
+          </h3>
+
+          {/* Remove Button */}
+          <button
+            onClick={handleRemove}
+            aria-label="Remove item"
+            className="text-text-muted hover:text-danger-500 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Price */}
+        <p className="text-sm font-semibold mt-1">
+          ₦{(item.price * item.quantity).toLocaleString()}
+        </p>
+
+        {/* Quantity Controls */}
+        <div className="flex items-center gap-3 mt-3">
+          <button
+            onClick={handleDecrement}
+            aria-label="Decrease quantity"
+            className="p-1 rounded border border-border hover:bg-gray-100 transition"
+          >
+            <Minus size={14} />
+          </button>
+
+          <span className="text-sm font-medium w-6 text-center">
+            {item.quantity}
+          </span>
+
+          <button
+            onClick={handleIncrement}
+            aria-label="Increase quantity"
+            disabled={item.quantity >= maxStock}
+            className="p-1 rounded border border-border hover:bg-gray-100 disabled:opacity-40 transition"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+
+        {/* Stock Warning */}
+        {item.quantity >= maxStock && (
+          <p className="text-xs text-danger-500 mt-1">
+            Maximum stock reached
+          </p>
+        )}
+      </div>
     </div>
   );
 }
