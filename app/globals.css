@@ -4,9 +4,9 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------ */
-/* THEME (Tailwind v4 Native Tokens)                */
+/* THEME (Tokens & Semantic Colors)                */
 /* ------------------------------------------------ */
-@theme {
+:root {
   /* Primitive Colors */
   --color-gray-0: #ffffff;
   --color-gray-50: #fafafa;
@@ -18,7 +18,7 @@
   --color-success-500: #4CAF50;
   --color-danger-500: #C94F4F;
 
-  /* Semantic Tokens */
+  /* Semantic Colors */
   --color-bg-primary: var(--color-gray-0);
   --color-bg-surface: var(--color-gray-50);
 
@@ -26,7 +26,7 @@
   --color-text-secondary: var(--color-gray-600);
   --color-text-muted: var(--color-gray-300);
 
-  --color-border: #e6e6e6;
+  --color-border: var(--color-gray-300);
 
   --color-button-primary: var(--color-gray-900);
   --color-button-primary-text: #ffffff;
@@ -40,7 +40,7 @@
   --space-4: 16px;
   --space-6: 24px;
 
-  /* Radius */
+  /* Border Radius */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -48,13 +48,16 @@
   /* Typography */
   --font-body: system-ui, sans-serif;
   --font-heading: system-ui, sans-serif;
+
+  /* Container */
+  --container-max: 1280px;
 }
 
 /* ------------------------------------------------ */
 /* DARK MODE                                        */
 /* ------------------------------------------------ */
 @media (prefers-color-scheme: dark) {
-  @theme {
+  :root {
     --color-bg-primary: #0f1115;
     --color-bg-surface: #1a1d24;
 
@@ -76,6 +79,7 @@
     background: var(--color-bg-primary);
     color: var(--color-text-primary);
     -webkit-tap-highlight-color: transparent;
+    line-height: 1.5;
   }
 
   a {
@@ -86,15 +90,29 @@
   button {
     font: inherit;
     background: none;
+    cursor: pointer;
   }
 
   input, textarea, select {
     border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-2);
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
   }
 
   :focus-visible {
     outline: 2px solid var(--focus-ring);
-    outline-offset: 3px;
+    outline-offset: 2px;
+  }
+
+  /* Container for layout consistency */
+  .container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--space-4);
+    width: 100%;
   }
 }
 
@@ -105,29 +123,28 @@
 
   /* ---------------- BUTTON ---------------- */
   .btn {
-    @apply inline-flex items-center justify-center
-      font-medium transition duration-200 ease-in-out;
-
+    @apply inline-flex items-center justify-center font-medium transition duration-200 ease-in-out;
     padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-md);
   }
 
-  /* Variants */
   .btn-primary {
     background: var(--color-button-primary);
     color: var(--color-button-primary-text);
   }
 
-  .btn-primary:hover {
-    opacity: 0.9;
+  @media (hover: hover) {
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
   }
 
   .btn-secondary {
     border: 1px solid var(--color-border);
     background: transparent;
+    color: var(--color-text-primary);
   }
 
-  /* Sizes */
   .btn-sm {
     padding: var(--space-1) var(--space-3);
     font-size: 0.875rem;
@@ -138,9 +155,9 @@
     font-size: 1.125rem;
   }
 
-  /* States */
   .btn:active {
     transform: scale(0.97);
+    opacity: 0.9;
   }
 
   .btn:disabled {
@@ -148,11 +165,17 @@
     cursor: not-allowed;
   }
 
+  .btn:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
   /* ---------------- CARD ---------------- */
   .card {
     background: var(--color-bg-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
+    overflow: hidden;
   }
 
   .card-body {
@@ -167,22 +190,28 @@
   .skeleton {
     width: 100%;
     border-radius: var(--radius-sm);
-
     background: linear-gradient(
       90deg,
       rgba(183,184,187,0.12),
       rgba(183,184,187,0.24),
       rgba(183,184,187,0.12)
     );
-
     background-size: 200% 100%;
-    animation: shimmer 1.4s infinite;
+    animation: shimmer 1.6s infinite linear;
+    will-change: background-position;
   }
 
   .skeleton-sm { height: 1rem; }
   .skeleton-md { height: 1.5rem; }
   .skeleton-lg { height: 2.5rem; }
   .skeleton-block { aspect-ratio: 3/4; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton {
+      animation: none;
+      opacity: 0.7;
+    }
+  }
 
   /* ---------------- TYPOGRAPHY ---------------- */
   .heading-display {
@@ -216,6 +245,15 @@
     letter-spacing: 0.05em;
     color: var(--color-text-secondary);
   }
+
+  .text-body {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .text-small {
+    font-size: 0.85rem;
+  }
 }
 
 /* ------------------------------------------------ */
@@ -227,11 +265,12 @@
     50% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
   }
+}
 
-  @media (prefers-reduced-motion: reduce) {
-    .skeleton {
-      animation: none;
-      opacity: 0.7;
-    }
-  }
+@keyframes pulse-on-add {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+.animate-pulse-on-add {
+  animation: pulse-on-add 0.3s ease-in-out;
 }

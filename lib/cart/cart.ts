@@ -1,119 +1,30 @@
-// lib/cart.ts
-import type { CartItem } from "@/lib/types/types";
-import type { ProductCardData } from "@/lib/types/types";
+const formatterWithDecimals = new Intl.NumberFormat("en-NG", {
+  style: "currency",
+  currency: "NGN",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
-/* ---------------------------------- */
-/* Create a CartItem from Product     */
-/* ---------------------------------- */
-export function toCartItem(
-  product: ProductCardData,
-  quantity: number = 1
-): CartItem {
-  const key = generateCartKey(product, product.variants ?? {});
-  return {
-    productId: product.id,
-    name: product.name,
-    price: product.salePriceNaira ?? product.priceNaira,
-    image: product.images?.[0]?.url ?? "",
-    quantity,
-    addedAt: new Date(),
-    key, // unique key for variant + product
-    variants: product.variants ?? {},
-  };
-}
+const formatterNoDecimals = new Intl.NumberFormat("en-NG", {
+  style: "currency",
+  currency: "NGN",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
 
-/* ---------------------------------- */
-/* Generate unique key per product+variant */
-/* ---------------------------------- */
-export function generateCartKey(
-  product: ProductCardData,
-  variants: Record<string, string>
+export function formatPrice(
+  price: number | null | undefined,
+  withDecimals = true
 ) {
-  const variantKey =
-    Object.entries(variants).map(([k, v]) => `${k}:${v}`).join("|") || "default";
-  return `${product.id}-${variantKey}`;
+  if (typeof price !== "number" || isNaN(price)) return withDecimals ? "₦0.00" : "₦0";
+  return withDecimals ? formatterWithDecimals.format(price) : formatterNoDecimals.format(price);
 }
 
-/* ---------------------------------- */
-/* Add item to cart                   */
-/* ---------------------------------- */
-export function addToCart(cart: CartItem[], item: CartItem): CartItem[] {
-  const existing = cart.find((c) => c.key === item.key);
-
-  if (existing) {
-    return cart.map((c) =>
-      c.key === item.key ? { ...c, quantity: c.quantity + item.quantity } : c
-    );
-  }
-
-  return [...cart, item];
-}
-
-/* ---------------------------------- */
-/* Remove item from cart              */
-/* ---------------------------------- */
-export function removeFromCart(cart: CartItem[], key: string): CartItem[] {
-  return cart.filter((c) => c.key !== key);
-}
-
-/* ---------------------------------- */
-/* Update quantity                    */
-/* ---------------------------------- */
-export function updateCartQuantity(
-  cart: CartItem[],
-  key: string,
-  quantity: number
-): CartItem[] {
-  if (quantity <= 0) {
-    return removeFromCart(cart, key);
-  }
-
-  return cart.map((c) => (c.key === key ? { ...c, quantity } : c));
-}
-
-/* ---------------------------------- */
-/* Clear cart                         */
-/* ---------------------------------- */
-export function clearCart(): CartItem[] {
-  return [];
-}
-
-/* ---------------------------------- */
-/* Calculate totals                   */
-/* ---------------------------------- */
-export function calculateCartTotal(cart: CartItem[]): number {
-  return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-}
-
-/* ---------------------------------- */
-/* Count total items                  */
-/* ---------------------------------- */
-export function countCartItems(cart: CartItem[]): number {
-  return cart.reduce((sum, item) => sum + item.quantity, 0);
-}
-
-/* ---------------------------------- */
-/* Cart Snapshot for recovery         */
-/* ---------------------------------- */
-export function saveCartSnapshot(cart: CartItem[]) {
-  try {
-    localStorage.setItem("cart_snapshot", JSON.stringify(cart));
-  } catch {
-    // ignore errors on low-end devices
-  }
-}
-
-export function loadCartSnapshot(): CartItem[] {
-  try {
-    const snapshot = localStorage.getItem("cart_snapshot");
-    return snapshot ? JSON.parse(snapshot) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function clearCartSnapshot() {
-  try {
-    localStorage.removeItem("cart_snapshot");
-  } catch {}
+export function formatCurrency(amount: number, currency = "NGN", withDecimals = true) {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: withDecimals ? 2 : 0,
+    maximumFractionDigits: withDecimals ? 2 : 0,
+  }).format(amount);
 }

@@ -4,10 +4,30 @@ import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import CheckoutProgress from "@/components/checkout/CheckoutProgress";
-import { useCheckout } from "./checkout-context";
+import { useCheckout } from "./checkoutProvider";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function ShippingForm() {
   const { shipping, setShipping } = useCheckout();
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+
+  const handleContinue = () => {
+    // Basic validation
+    if (shipping.type === "DELIVERY") {
+      // Ensure all required delivery fields are filled in
+      if (!shipping.address || !shipping.city || !shipping.state || !shipping.postalCode || !shipping.courierPhone) {
+        setError("Please fill in all required delivery details.");
+        return;
+      }
+    }
+
+    setError(null); // Clear any existing errors
+
+    // Navigate to payment page
+    router.push("/checkout/payment");
+  };
 
   return (
     <div className="space-y-12">
@@ -16,6 +36,7 @@ export default function ShippingForm() {
       <h1 className="heading-1 text-primary">Shipping Details</h1>
 
       <Card className="space-y-6">
+        {/* Shipping Method */}
         <div className="space-y-2">
           <label className="text-sm text-primary font-medium">Shipping Method</label>
           <select
@@ -28,6 +49,7 @@ export default function ShippingForm() {
           </select>
         </div>
 
+        {/* Delivery Fields */}
         {shipping.type === "DELIVERY" && (
           <>
             <Input
@@ -63,13 +85,18 @@ export default function ShippingForm() {
           </>
         )}
 
+        {/* Pickup Info */}
         {shipping.type === "PICKUP" && (
           <p className="text-neutral text-sm">
             You will receive a WhatsApp message when your order is ready for pickup.
           </p>
         )}
 
-        <Button className="w-full mt-4" onClick={() => { /* navigate to payment */ }}>
+        {/* Error Message */}
+        {error && <p className="text-danger text-sm">{error}</p>}
+
+        {/* Continue Button */}
+        <Button className="w-full mt-4" onClick={handleContinue} disabled={shipping.type === ""}>
           Continue to Payment
         </Button>
       </Card>

@@ -38,7 +38,11 @@ export default function Header() {
         {/* Right actions */}
         <div className="flex items-center gap-4">
 
-          <button className="p-2 rounded-md hover:text-[var(--color-primary-500)] transition-colors">
+          {/* Search Button */}
+          <button
+            className="p-2 rounded-md hover:text-[var(--color-primary-500)] transition-colors"
+            aria-label="Search"
+          >
             <Search size={20} />
           </button>
 
@@ -46,6 +50,7 @@ export default function Header() {
           <button
             onClick={openCart}
             className="relative p-2 rounded-md hover:text-[var(--color-primary-500)] transition-colors"
+            aria-label="View cart"
           >
             <ShoppingCart size={22} />
             {itemCount > 0 && (
@@ -59,6 +64,7 @@ export default function Header() {
           <button
             onClick={() => setOpen(!open)}
             className="md:hidden p-2 rounded-md hover:text-[var(--color-primary-500)] transition-colors"
+            aria-label={open ? "Close menu" : "Open menu"}
           >
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -67,9 +73,7 @@ export default function Header() {
 
       {/* Mobile Menu */}
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 ${
-          open ? "max-h-96" : "max-h-0"
-        }`}
+        className={`md:hidden overflow-hidden transition-all duration-300 ${open ? "max-h-96" : "max-h-0"}`}
       >
         <nav className="flex flex-col p-4 space-y-4 text-sm bg-[var(--color-bg-surface)] border-t border-[var(--color-border)]">
           <MobileNavLink href="/shop" onClick={() => setOpen(false)}>Shop</MobileNavLink>

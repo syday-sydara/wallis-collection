@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { formatPrice } from "@/lib/formatters";
@@ -72,16 +73,14 @@ export default function OrderConfirmationClient({ order }: OrderConfirmationProp
       </p>
 
       {/* Shipment Status */}
-      {latestShipment && (
+      {latestShipment ? (
         <Card className="max-w-xl mx-auto p-6 space-y-3">
           <h3 className="heading-4 text-primary">Shipment Status</h3>
-          <p className="text-neutral">
-            {latestUpdate?.status || latestShipment.status}
-          </p>
-          {latestUpdate?.note && (
-            <p className="text-sm text-neutral/70">{latestUpdate.note}</p>
-          )}
+          <p className="text-neutral">{latestUpdate?.status || latestShipment.status}</p>
+          {latestUpdate?.note && <p className="text-sm text-neutral/70">{latestUpdate.note}</p>}
         </Card>
+      ) : (
+        <p className="text-neutral">No shipment details available.</p>
       )}
 
       {/* Order Summary */}
@@ -89,35 +88,41 @@ export default function OrderConfirmationClient({ order }: OrderConfirmationProp
         <h2 className="heading-3 text-primary">Order Summary</h2>
 
         <div className="space-y-4 text-left">
-          {orderData.items.map((item) => {
-            const image = item.product.images?.[0]?.url || "/placeholder.png";
+          {orderData.items.length === 0 ? (
+            <p>No items in this order.</p>
+          ) : (
+            orderData.items.map((item) => {
+              const image = item.product.images?.[0]?.url || "/placeholder.png";
 
-            return (
-              <div key={item.id} className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={image}
-                    alt={item.product.name}
-                    className="w-14 h-14 object-cover rounded-md"
-                  />
-                  <span className="text-primary">
-                    {item.product.name} × {item.quantity}
+              return (
+                <div key={item.id} className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-14 h-14 rounded-md overflow-hidden">
+                      <Image
+                        src={image}
+                        alt={item.product.name}
+                        fill
+                        className="object-cover"
+                        sizes="56px"
+                      />
+                    </div>
+                    <span className="text-primary">
+                      {item.product.name} × {item.quantity}
+                    </span>
+                  </div>
+
+                  <span className="text-secondary font-medium">
+                    {formatPrice((item.priceCents * item.quantity) / 100)}
                   </span>
                 </div>
-
-                <span className="text-secondary font-medium">
-                  {formatPrice((item.priceCents * item.quantity) / 100)}
-                </span>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
 
         <div className="pt-4 border-t border-neutral/20 flex justify-between">
           <span className="label text-primary">Total</span>
-          <span className="text-xl font-semibold text-primary">
-            {formatPrice(total)}
-          </span>
+          <span className="text-xl font-semibold text-primary">{formatPrice(total)}</span>
         </div>
       </Card>
 

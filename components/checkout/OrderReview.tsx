@@ -6,14 +6,18 @@ import Button from "@/components/ui/Button";
 import CheckoutProgress from "@/components/checkout/CheckoutProgress";
 import { formatPrice } from "@/lib/formatters";
 import { useRouter } from "next/navigation";
-import { useCheckout } from "./checkout-context";
+import { useCheckout } from "./checkoutProvider";
+import { useState } from "react";
 
 export default function OrderReview() {
   const { items, total, clearCart } = useCart();
   const { shipping, payment } = useCheckout();
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   const handlePlaceOrder = async () => {
+    setLoading(true);
+
     const payload = {
       shipping,
       paymentMethod: payment.method,
@@ -25,20 +29,28 @@ export default function OrderReview() {
       totalCents: total * 100,
     };
 
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      alert(data.error || "Failed to place order");
-      return;
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to place order");
+      }
+
+      clearCart();
+      router.push(`/checkout/confirmation?orderId=${data.orderId}`);
+    } catch (error: any) {
+      alert(error.message || "Something went wrong, please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    clearCart();
-    router.push(`/checkout/confirmation?orderId=${data.orderId}`);
   };
 
   return (
@@ -89,8 +101,12 @@ export default function OrderReview() {
         </div>
       </Card>
 
-      <Button className="w-full" onClick={handlePlaceOrder}>
-        Place Order
+      <Button
+        className="w-full"
+        onClick={handlePlaceOrder}
+        disabled={loading}
+      >
+        {loading ? "Placing Order..." : "Place Order"}
       </Button>
     </div>
   );

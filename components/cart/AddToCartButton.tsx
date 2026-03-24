@@ -1,63 +1,94 @@
 "use client";
 
-import { useState } from "react";
-import { useCart } from "@/components/cart/CartProvider";
-import { CartItem } from "@/lib/types/types";
+import React, { useMemo } from "react";
+import Skeleton from "@/components/ui/Skeleton";
+import Spinner from "@/components/ui/Spinner";
+import clsx from "clsx";
 
-interface AddToCartButtonProps {
-  id: string;
-  name: string;
-  price: number;
-  image?: string;
-  variants?: Record<string, string>; // e.g., { size: "M", color: "Black" }
-  quantity?: number;
+export interface LoadingProps {
+  count?: number;
+  showSpinner?: boolean;
+  message?: string | null;
+  variant?: "grid" | "list" | "compact";
+  className?: string;
 }
 
-export default function AddToCartButton({
-  id,
-  name,
-  price,
-  image,
-  variants = {},
-  quantity = 1,
-}: AddToCartButtonProps) {
-  const { addItem } = useCart();
-  const [loading, setLoading] = useState(false);
+export default function Loading({
+  count = 8,
+  showSpinner = true,
+  message = null,
+  variant = "grid",
+  className,
+}: LoadingProps) {
+  // Configure layouts per variant
+  const variantConfig = useMemo(() => {
+    return {
+      grid: {
+        container: "grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4",
+        image: "aspect-[3/4] w-full rounded-lg",
+        extra: true,
+      },
+      list: {
+        container: "flex flex-col gap-4",
+        image: "h-24 w-24 rounded-md",
+        extra: false,
+      },
+      compact: {
+        container: "grid grid-cols-3 gap-4 sm:grid-cols-4",
+        image: "h-20 w-full rounded-md",
+        extra: false,
+      },
+    }[variant];
+  }, [variant]);
 
-  // Create unique key for product + variant combination
-  const variantKey =
-    Object.entries(variants)
-      .map(([k, v]) => `${k}:${v}`)
-      .join("|") || "default";
-
-  const uniqueKey = `${id}-${variantKey}`;
-
-  const handleAdd = () => {
-    setLoading(true);
-
-    const item: CartItem = {
-      productId: id,
-      name,
-      price,
-      image: image ?? "",
-      quantity,
-      variants,
-      key: uniqueKey,
-      addedAt: new Date(),
-    };
-
-    addItem(item);
-
-    setTimeout(() => setLoading(false), 300); // simple UI feedback
-  };
+  // Generate skeletons
+  const skeletons = useMemo(
+    () =>
+      Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="flex flex-col gap-2 animate-pulse motion-reduce:animate-none transition-opacity duration-300 opacity-80"
+          role="presentation"
+        >
+          <Skeleton className={variantConfig.image} />
+          <Skeleton className="w-3/4 h-4" />
+          <Skeleton className="w-1/2 h-4" />
+          {variantConfig.extra && <Skeleton className="w-full h-10 rounded-md" />}
+        </div>
+      )),
+    [count, variantConfig]
+  );
 
   return (
-    <button
-      onClick={handleAdd}
-      disabled={loading}
-      className="btn btn-primary w-full flex items-center justify-center"
+    <div
+      className={clsx("flex flex-col items-center", className)}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
     >
-      {loading ? "Adding..." : "Add to Cart"}
-    </button>
+      {/* Skeleton Grid/List */}
+      <div
+        className={clsx("w-full mb-4", variantConfig.container)}
+        aria-hidden="true"
+      >
+        {skeletons}
+      </div>
+
+      {/* Optional message */}
+      {message ? (
+        <p className="text-sm text-[var(--color-text-secondary)] mb-2">{message}</p>
+      ) : (
+        <span className="sr-only">Loading content</span>
+      )}
+
+      {/* Optional spinner */}
+      {showSpinner && (
+        <Spinner
+          size="md"
+          color="primary"
+          aria-hidden={message ? true : undefined}
+        />
+      )}
+    </div>
   );
 }

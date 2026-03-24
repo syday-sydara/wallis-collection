@@ -1,5 +1,4 @@
-// PATH: lib/formatters.ts
-// NAME: formatters.ts
+// lib/formatters.ts
 
 const formatterWithDecimals = new Intl.NumberFormat("en-NG", {
   style: "currency",
@@ -17,14 +16,11 @@ const formatterNoDecimals = new Intl.NumberFormat("en-NG", {
 
 /**
  * Format price in Naira to NGN currency string
- * @param priceNaira Price in naira (number)
- * @param withDecimals Whether to show decimals (default: true)
- * @returns Formatted price string (e.g., "₦50,000.00")
  */
-export const formatPrice = (
+export function formatPrice(
   priceNaira: number | null | undefined,
   withDecimals: boolean = true
-): string => {
+): string {
   if (typeof priceNaira !== "number" || isNaN(priceNaira)) {
     return withDecimals ? "₦0.00" : "₦0";
   }
@@ -32,16 +28,16 @@ export const formatPrice = (
   return withDecimals
     ? formatterWithDecimals.format(priceNaira)
     : formatterNoDecimals.format(priceNaira);
-};
+}
 
 /**
- * General currency formatter (optional for other currencies)
+ * Optional: general currency formatter
  */
-export const formatCurrency = (
+export function formatCurrency(
   amount: number,
   currency: string = "NGN",
   withDecimals: boolean = true
-) => {
+) {
   const formatter = new Intl.NumberFormat("en-NG", {
     style: "currency",
     currency,
@@ -50,4 +46,4 @@ export const formatCurrency = (
   });
 
   return formatter.format(amount);
-};
+}

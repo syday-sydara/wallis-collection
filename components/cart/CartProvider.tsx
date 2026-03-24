@@ -1,7 +1,7 @@
 "use client";
-
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { CartItem } from "@/lib/types/types";
+import { v4 as uuidv4 } from "uuid";
 
 interface CartContextType {
   items: CartItem[];
@@ -20,13 +20,11 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  // Load cart from localStorage
   useEffect(() => {
     const stored = localStorage.getItem("cart");
     if (stored) setItems(JSON.parse(stored));
   }, []);
 
-  // Save cart to localStorage whenever items change
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(items));
   }, [items]);
@@ -39,13 +37,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
           i.key === item.key ? { ...i, quantity: i.quantity + item.quantity } : i
         );
       }
-      return [...prev, item];
+      return [...prev, { ...item, key: item.key || uuidv4() }];
     });
   };
 
   const increment = (key: string) => {
     setItems((prev) =>
-      prev.map((i) => (i.key === key ? { ...i, quantity: i.quantity + 1 } : i))
+      prev.map((i) =>
+        i.key === key
+          ? { ...i, quantity: Math.min(i.quantity + 1, i.stock ?? Infinity) } // disable above stock
+          : i
+      )
     );
   };
 
@@ -57,10 +59,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  const removeItem = (key: string) => {
-    setItems((prev) => prev.filter((i) => i.key !== key));
-  };
-
+  const removeItem = (key: string) => setItems((prev) => prev.filter((i) => i.key !== key));
   const clearCart = () => setItems([]);
 
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
@@ -69,17 +68,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{
-        items,
-        itemCount,
-        total,
-        isEmpty,
-        addItem,
-        increment,
-        decrement,
-        removeItem,
-        clearCart,
-      }}
+      value={{ items, itemCount, total, isEmpty, addItem, increment, decrement, removeItem, clearCart }}
     >
       {children}
     </CartContext.Provider>
