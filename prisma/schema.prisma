@@ -7,7 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ---------------- Enums ----------------
+//////////////////////////////////////////////////////
+// ENUMS
+//////////////////////////////////////////////////////
 
 enum Role {
   ADMIN
@@ -62,7 +64,16 @@ enum AddressType {
   BILLING
 }
 
-// ---------------- Models ----------------
+enum RefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSED
+}
+
+//////////////////////////////////////////////////////
+// MODELS
+//////////////////////////////////////////////////////
 
 model User {
   id        String   @id @default(cuid())
@@ -71,37 +82,50 @@ model User {
   phone     String?
   password  String?
   role      Role     @default(USER)
+
   orders    Order[]
   reviews   Review[]
   addresses Address[]
   events    Event[]
+
   createdAt DateTime @default(now())
 
   @@index([email])
 }
 
+//////////////////////////////////////////////////////
+
 model Product {
-  id             String   @id @default(cuid())
-  name           String
-  slug           String   @unique
-  description    String?
-  priceNaira     Int
-  salePriceNaira Int?
-  stock          Int      @default(0)
-  category       String?
-  brand          String?
-  sizes          String[]
-  colors         String[]
-  isNew          Boolean  @default(false)
-  isOnSale       Boolean  @default(false)
-  featured       Boolean  @default(false)
-  deletedAt      DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  images         ProductImage[]
-  reviews        Review[]
-  inventory      InventoryMovement[]
-  orderItems     OrderItem[]
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+
+  // Stored in KOBO (₦100 = 10000)
+  price       Int
+  salePrice   Int?
+
+  stock       Int      @default(0)
+
+  category    String?
+  brand       String?
+
+  sizes       String[]
+  colors      String[]
+
+  isNew       Boolean  @default(false)
+  isOnSale    Boolean  @default(false)
+  featured    Boolean  @default(false)
+
+  deletedAt   DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  images      ProductImage[]
+  reviews     Review[]
+  inventory   InventoryMovement[]
+  orderItems  OrderItem[]
 
   @@index([category])
   @@index([brand])
@@ -109,31 +133,46 @@ model Product {
   @@index([isOnSale])
   @@index([featured])
   @@index([deletedAt])
+
+  // compound indexes for filtering
+  @@index([category, isOnSale])
+  @@index([category, featured])
 }
+
+//////////////////////////////////////////////////////
 
 model ProductImage {
   id        String @id @default(cuid())
   productId String
   url       String
   position  Int
+
   product   Product @relation(fields: [productId], references: [id])
 }
+
+//////////////////////////////////////////////////////
 
 model Order {
   id             String        @id @default(cuid())
   userId         String?
   user           User?         @relation(fields: [userId], references: [id])
+
   email          String
   phone          String?
+
   paymentMethod  PaymentMethod
   paymentStatus  PaymentStatus @default(PENDING)
   orderStatus    OrderStatus   @default(PENDING)
-  providerRef    String?
-  totalCents     Int
+
+  providerRef    String?       @unique
+
+  // Stored in KOBO
+  total          Int
   currency       String        @default("NGN")
-  trackingStatus String        @default("Processing")
+
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
   items          OrderItem[]
   shipments      Shipment[]
 
@@ -141,14 +180,21 @@ model Order {
   @@index([paymentStatus])
   @@index([orderStatus])
   @@index([createdAt])
+  @@index([email, createdAt])
 }
+
+//////////////////////////////////////////////////////
 
 model OrderItem {
   id         String  @id @default(cuid())
   orderId    String
   productId  String
+
   quantity   Int
-  priceCents Int
+
+  // price at time of purchase (KOBO)
+  price      Int
+
   order      Order   @relation(fields: [orderId], references: [id])
   product    Product @relation(fields: [productId], references: [id])
 
@@ -156,92 +202,127 @@ model OrderItem {
   @@index([productId])
 }
 
+//////////////////////////////////////////////////////
+
 model Address {
   id        String      @id @default(cuid())
   userId    String?
+
   fullName  String
   phone     String
+
   state     String
   city      String
+  lga       String?     // Nigerian-specific
+
   address   String
+
   type      AddressType @default(SHIPPING)
+
   user      User?       @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([type])
 }
 
+//////////////////////////////////////////////////////
+
 model Review {
   id        String   @id @default(cuid())
   productId String
   userId    String?
+
   rating    Int
   comment   String?
+
   createdAt DateTime @default(now())
+
   product   Product  @relation(fields: [productId], references: [id])
   user      User?    @relation(fields: [userId], references: [id])
 
   @@index([productId])
   @@index([userId])
   @@index([rating])
+
+  // prevent duplicate reviews
+  @@unique([userId, productId])
 }
 
+//////////////////////////////////////////////////////
+
 model RefundRequest {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   orderId   String
+
   reason    String
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  status    RefundStatus @default(PENDING)
+
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   @@index([orderId])
   @@index([status])
 }
 
+//////////////////////////////////////////////////////
+
 model FraudSignal {
   id        String   @id @default(cuid())
   orderId   String
+
   score     Int
   details   Json?
+
   createdAt DateTime @default(now())
 
   @@index([orderId])
   @@index([score])
 }
 
-model PushSubscription {
-  id        String   @id @default(cuid())
-  userId    String?
-  endpoint  String
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now())
+//////////////////////////////////////////////////////
 
-  @@index([userId])
-  @@unique([endpoint])
+model PaymentEvent {
+  id        String   @id @default(cuid())
+  reference String   @unique
+  type      String
+  payload   Json?
+
+  createdAt DateTime @default(now())
 }
+
+//////////////////////////////////////////////////////
 
 model InventoryMovement {
   id        String          @id @default(cuid())
   productId String
+
   change    Int
   reason    InventoryReason
   reference String?
+
   createdAt DateTime        @default(now())
+
   product   Product         @relation(fields: [productId], references: [id])
 
   @@index([productId])
   @@index([reason])
   @@index([createdAt])
+  @@index([productId, createdAt])
 }
+
+//////////////////////////////////////////////////////
 
 model Shipment {
   id             String         @id @default(cuid())
   orderId        String
+
   courier        String?
   trackingNumber String?
+
   status         ShipmentStatus
+
   createdAt      DateTime       @default(now())
+
   order          Order          @relation(fields: [orderId], references: [id])
   updates        ShipmentUpdate[]
 
@@ -250,24 +331,34 @@ model Shipment {
   @@index([createdAt])
 }
 
+//////////////////////////////////////////////////////
+
 model ShipmentUpdate {
   id         String   @id @default(cuid())
   shipmentId String
+
   status     String
   note       String?
+
   createdAt  DateTime @default(now())
+
   shipment   Shipment @relation(fields: [shipmentId], references: [id])
 
   @@index([shipmentId])
   @@index([status])
 }
 
+//////////////////////////////////////////////////////
+
 model Event {
   id        String    @id @default(cuid())
   userId    String?
+
   type      EventType
   data      Json?
+
   createdAt DateTime  @default(now())
+
   user      User?     @relation(fields: [userId], references: [id])
 
   @@index([userId])
