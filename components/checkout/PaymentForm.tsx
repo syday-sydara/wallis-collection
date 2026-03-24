@@ -5,7 +5,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import CheckoutProgress from "@/components/checkout/CheckoutProgress";
 import { useCheckout } from "./checkout-context";
-import { useCart } from "@/components/cart/cart-context";
+import { useCart } from "@/components/cart/CartProvider";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 

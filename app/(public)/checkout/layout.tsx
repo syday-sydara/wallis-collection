@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { CartProvider } from "@/components/cart/cart-context";
+import { CartProvider } from "@/components/cart/CartProvider";
 import { CheckoutProvider } from "@/components/checkout/checkout-context";
 
 export default function CheckoutLayout({ children }: { children: ReactNode }) {

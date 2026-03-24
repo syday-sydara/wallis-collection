@@ -9,6 +9,7 @@ export function toCartItem(
   product: ProductCardData,
   quantity: number = 1
 ): CartItem {
+  const key = generateCartKey(product, product.variants ?? {});
   return {
     productId: product.id,
     name: product.name,
@@ -16,23 +17,32 @@ export function toCartItem(
     image: product.images?.[0]?.url ?? "",
     quantity,
     addedAt: new Date(),
+    key, // unique key for variant + product
+    variants: product.variants ?? {},
   };
+}
+
+/* ---------------------------------- */
+/* Generate unique key per product+variant */
+/* ---------------------------------- */
+export function generateCartKey(
+  product: ProductCardData,
+  variants: Record<string, string>
+) {
+  const variantKey =
+    Object.entries(variants).map(([k, v]) => `${k}:${v}`).join("|") || "default";
+  return `${product.id}-${variantKey}`;
 }
 
 /* ---------------------------------- */
 /* Add item to cart                   */
 /* ---------------------------------- */
-export function addToCart(
-  cart: CartItem[],
-  item: CartItem
-): CartItem[] {
-  const existing = cart.find((c) => c.productId === item.productId);
+export function addToCart(cart: CartItem[], item: CartItem): CartItem[] {
+  const existing = cart.find((c) => c.key === item.key);
 
   if (existing) {
     return cart.map((c) =>
-      c.productId === item.productId
-        ? { ...c, quantity: c.quantity + item.quantity }
-        : c
+      c.key === item.key ? { ...c, quantity: c.quantity + item.quantity } : c
     );
   }
 
@@ -42,11 +52,8 @@ export function addToCart(
 /* ---------------------------------- */
 /* Remove item from cart              */
 /* ---------------------------------- */
-export function removeFromCart(
-  cart: CartItem[],
-  productId: string
-): CartItem[] {
-  return cart.filter((c) => c.productId !== productId);
+export function removeFromCart(cart: CartItem[], key: string): CartItem[] {
+  return cart.filter((c) => c.key !== key);
 }
 
 /* ---------------------------------- */
@@ -54,16 +61,14 @@ export function removeFromCart(
 /* ---------------------------------- */
 export function updateCartQuantity(
   cart: CartItem[],
-  productId: string,
+  key: string,
   quantity: number
 ): CartItem[] {
   if (quantity <= 0) {
-    return removeFromCart(cart, productId);
+    return removeFromCart(cart, key);
   }
 
-  return cart.map((c) =>
-    c.productId === productId ? { ...c, quantity } : c
-  );
+  return cart.map((c) => (c.key === key ? { ...c, quantity } : c));
 }
 
 /* ---------------------------------- */
@@ -76,15 +81,39 @@ export function clearCart(): CartItem[] {
 /* ---------------------------------- */
 /* Calculate totals                   */
 /* ---------------------------------- */
-export function calculateCartTotal(cart: CartItem[]) {
-  return cart.reduce((sum, item) => {
-    return sum + item.price * item.quantity;
-  }, 0);
+export function calculateCartTotal(cart: CartItem[]): number {
+  return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 }
 
 /* ---------------------------------- */
 /* Count total items                  */
 /* ---------------------------------- */
-export function countCartItems(cart: CartItem[]) {
+export function countCartItems(cart: CartItem[]): number {
   return cart.reduce((sum, item) => sum + item.quantity, 0);
+}
+
+/* ---------------------------------- */
+/* Cart Snapshot for recovery         */
+/* ---------------------------------- */
+export function saveCartSnapshot(cart: CartItem[]) {
+  try {
+    localStorage.setItem("cart_snapshot", JSON.stringify(cart));
+  } catch {
+    // ignore errors on low-end devices
+  }
+}
+
+export function loadCartSnapshot(): CartItem[] {
+  try {
+    const snapshot = localStorage.getItem("cart_snapshot");
+    return snapshot ? JSON.parse(snapshot) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function clearCartSnapshot() {
+  try {
+    localStorage.removeItem("cart_snapshot");
+  } catch {}
 }

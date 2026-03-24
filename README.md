@@ -1,9 +1,13 @@
 # Wallis Collection
 
-Wallis Collection is a modern **full-stack e-commerce platform** built with **Next.js, Prisma, PostgreSQL, and Paystack**.
-It supports product management, checkout, fraud monitoring, order tracking, refunds, and an admin dashboard.
+Wallis Collection is a modern **mobile-first full-stack e-commerce platform** built with **Next.js 14, Prisma, PostgreSQL, and Paystack**.
 
-This project is designed with **scalability, security, and modular architecture** in mind.
+It is designed specifically for **emerging markets like Nigeria**, focusing on:
+
+* low-bandwidth performance
+* reliable payments
+* simple checkout experience
+* scalable architecture
 
 ---
 
@@ -11,37 +15,110 @@ This project is designed with **scalability, security, and modular architecture*
 
 ## Frontend
 
-* Next.js (App Router)
+* Next.js 14 (App Router)
 * React
-* TailwindCSS
-* Framer Motion
-* SWR
+* TailwindCSS v4
+* Minimal Framer Motion (lightweight interactions only)
 
 ## Backend
 
-* Next.js API Routes
+* Next.js Server Actions
+* Route Handlers (for webhooks & external APIs)
 * Prisma ORM
 * PostgreSQL
 * Zod validation
 
 ## Authentication
 
-* NextAuth
+* NextAuth (Credentials Provider)
 * Prisma Adapter
 * bcrypt password hashing
 
 ## Payments
 
-* Paystack
-* Monnify
+* Paystack (primary)
+* Monnify (bank transfers)
+* Cash on Delivery (COD)
 
-## Additional Features
+---
 
-* Fraud detection system
-* Push notifications
-* Inventory management
-* Refund workflow
-* Order tracking system
+# Architecture
+
+The application follows a **server-first architecture**:
+
+* Server Components for data fetching
+* Server Actions for mutations (cart, checkout, refunds)
+* Route Handlers only for external services (webhooks)
+* Prisma as the single database access layer
+
+This minimizes client-side JavaScript and improves performance on low-end devices.
+
+---
+
+# Mobile-First Design
+
+Wallis Collection is optimized for **Nigerian mobile users**:
+
+* Designed for **3G networks and low-end Android devices**
+* Minimal JavaScript shipped to the client
+* Optimized images using `next/image`
+* Single-column layouts for all critical flows
+* Large touch-friendly buttons
+* Simple and fast checkout experience
+
+---
+
+# Features
+
+## Customer Features
+
+* Browse products
+* View product details
+* Add items to cart
+* Fast checkout (mobile optimized)
+* Pay via Paystack or bank transfer
+* Cash on Delivery support
+* Track order status
+* Request refunds
+* Account dashboard
+
+---
+
+## Admin Features
+
+* Admin dashboard
+* Order management
+* Inventory tracking
+* Refund approval system
+* Fraud monitoring (rule-based)
+
+---
+
+## Payments
+
+The platform integrates:
+
+* Paystack (card, bank, USSD)
+* Monnify (bank transfers)
+
+### Key Capabilities
+
+* Secure payment verification via webhooks
+* Idempotent transaction handling (prevents duplicate charges)
+* Automatic order status updates
+* Support for COD orders
+
+---
+
+## Fraud Detection
+
+A lightweight **rule-based fraud system** is implemented:
+
+* High-value order detection
+* Suspicious email patterns
+* Missing user data signals
+
+Flagged orders can be reviewed manually.
 
 ---
 
@@ -51,6 +128,7 @@ This project is designed with **scalability, security, and modular architecture*
 app/
  ├ (public)
  │   ├ products/
+ │   ├ categories/
  │   ├ cart/
  │   ├ checkout/
  │   └ track-order/
@@ -68,32 +146,31 @@ app/
  │   ├ orders/
  │   ├ refunds/
  │   ├ fraud/
- │   └ inventory/
+ │   ├ inventory/
+ │   └ _components/
  │
  └ api/
-     ├ paystack/
-     ├ monnify/
-     ├ orders/
-     ├ refunds/
-     └ push/
+     ├ paystack/webhook/
+     ├ monnify/webhook/
+     └ orders/lookup/
 
 components/
  ├ ui/
- ├ checkout/
- ├ payments/
- └ admin/
+ ├ shared/
+ ├ product/
+ └ cart/
 
 lib/
  ├ auth.ts
  ├ db.ts
- ├ paystack.ts
- ├ monnify.ts
- ├ notifications.ts
+ ├ env.ts
+ ├ utils.ts
+ ├ payments/
+ │   └ index.ts
+ ├ shipping/
  ├ inventory.ts
  └ fraud/
-     ├ rules.ts
-     ├ ai.ts
-     └ compute.ts
+     └ index.ts
 
 prisma/
  ├ schema.prisma
@@ -102,49 +179,35 @@ prisma/
 
 ---
 
-# Features
+# API Endpoints
 
-## Customer Features
+Only essential endpoints are exposed:
 
-* Browse products
-* View product details
-* Add items to cart
-* Secure checkout
-* Pay via Paystack
-* Track order status
-* Request refunds
-* Account dashboard
+## Webhooks
+
+```
+POST /api/paystack/webhook
+POST /api/monnify/webhook
+```
+
+## Orders
+
+```
+POST /api/orders/lookup
+```
 
 ---
 
-## Admin Features
+# Server Actions
 
-* Admin dashboard
-* Order management
-* Inventory tracking
-* Fraud monitoring
-* Refund approval system
+Used for:
 
----
+* Cart management
+* Checkout
+* Refund requests
+* User interactions
 
-## Fraud Detection
-
-The platform includes a modular fraud detection system:
-
-```
-lib/fraud
- ├ rules.ts
- ├ ai.ts
- └ compute.ts
-```
-
-Fraud scores are calculated using:
-
-* rule-based detection
-* behavioral signals
-* AI scoring
-
-Orders can be flagged for manual review.
+This replaces most traditional API routes.
 
 ---
 
@@ -161,8 +224,6 @@ cd wallis-collection
 
 ## 2. Install dependencies
 
-Using **pnpm**
-
 ```bash
 pnpm install
 ```
@@ -171,9 +232,7 @@ pnpm install
 
 ## 3. Configure environment variables
 
-Create a `.env` file.
-
-Example:
+Create a `.env` file:
 
 ```
 DATABASE_URL="postgresql://user:password@localhost:5432/wallis"
@@ -186,7 +245,7 @@ MONNIFY_SECRET_KEY=your_key
 
 ## 4. Run Prisma migrations
 
-```
+```bash
 npx prisma migrate dev
 ```
 
@@ -194,19 +253,19 @@ npx prisma migrate dev
 
 ## 5. Seed the database
 
-```
+```bash
 npx prisma db seed
 ```
 
 ---
 
-## 6. Start the development server
+## 6. Start development server
 
-```
+```bash
 pnpm dev
 ```
 
-The application will run at:
+App runs on:
 
 ```
 http://localhost:3000
@@ -214,106 +273,4 @@ http://localhost:3000
 
 ---
 
-# Database
-
-The project uses **PostgreSQL with Prisma ORM**.
-
-Main models include:
-
-* User
-* Product
-* Order
-* OrderItem
-* RefundRequest
-* FraudSignal
-* PushSubscription
-
----
-
-# API Endpoints
-
-## Payments
-
-```
-POST /api/paystack/initialize
-POST /api/paystack/webhook
-```
-
-## Monnify
-
-```
-POST /api/monnify/create-account
-POST /api/monnify/webhook
-```
-
-## Orders
-
-```
-POST /api/orders/lookup
-```
-
-## Refunds
-
-```
-POST /api/refunds/request
-```
-
-## Push Notifications
-
-```
-POST /api/push/subscribe
-```
-
----
-
-# Scripts
-
-```
-pnpm dev             # start development server
-pnpm build           # build project
-pnpm start           # start production server
-pnpm lint            # run eslint
-pnpm typecheck       # run TypeScript checks
-pnpm prisma:migrate  # run database migrations
-pnpm prisma:studio   # open Prisma Studio
-```
-
----
-
-# Security
-
-* Password hashing with bcrypt
-* Secure payment verification
-* Fraud scoring
-* Protected admin routes
-* Server-side validation using Zod
-
----
-
-# Deployment
-
-Recommended platforms:
-
-* Vercel
-* Railway
-* Render
-* DigitalOcean
-
-Make sure environment variables are configured in your hosting platform.
-
----
-
-# Future Improvements
-
-* AI fraud model
-* Email notifications
-* SMS order updates
-* Product reviews
-* Multi-currency support
-* Multi-vendor marketplace support
-
----
-
-# License
-
-MIT License
+#

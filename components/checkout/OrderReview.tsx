@@ -1,6 +1,6 @@
 "use client";
 
-import { useCart } from "@/components/cart/cart-context";
+import { useCart } from "@/components/cart/CartProvider";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import CheckoutProgress from "@/components/checkout/CheckoutProgress";

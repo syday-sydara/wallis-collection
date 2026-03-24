@@ -1,89 +1,100 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ------------------------------------------------ */
+/* TAILWIND v4 IMPORT                               */
+/* ------------------------------------------------ */
+@import "tailwindcss";
 
 /* ------------------------------------------------ */
-/* DESIGN TOKENS                                    */
+/* THEME (Tailwind v4 Native Tokens)                */
 /* ------------------------------------------------ */
-:root {
-  /* Brand */
-  --color-primary-500: #272B36;
+@theme {
+  /* Primitive Colors */
+  --color-gray-0: #ffffff;
+  --color-gray-50: #fafafa;
+  --color-gray-300: #b7b8bb;
+  --color-gray-600: #595d66;
+  --color-gray-900: #272B36;
+
   --color-accent-500: #A08A81;
-
-  /* Focus */
-  --focus-ring: var(--color-accent-500);
-
-  /* Status */
   --color-success-500: #4CAF50;
-  --color-warning-500: #A08A81;
   --color-danger-500: #C94F4F;
 
-  /* Surfaces */
-  --color-bg-primary: #ffffff;
-  --color-bg-surface: #fafafa;
+  /* Semantic Tokens */
+  --color-bg-primary: var(--color-gray-0);
+  --color-bg-surface: var(--color-gray-50);
+
+  --color-text-primary: var(--color-gray-900);
+  --color-text-secondary: var(--color-gray-600);
+  --color-text-muted: var(--color-gray-300);
+
   --color-border: #e6e6e6;
 
-  /* Text */
-  --color-text-primary: #272B36;
-  --color-text-secondary: #595d66;
-  --color-text-muted: #b7b8bb;
+  --color-button-primary: var(--color-gray-900);
+  --color-button-primary-text: #ffffff;
 
-  /* Shimmer (light) */
-  --shimmer-from: rgba(183,184,187,0.12);
-  --shimmer-via: rgba(183,184,187,0.24);
-  --shimmer-to: rgba(183,184,187,0.12);
+  --focus-ring: var(--color-accent-500);
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* Typography */
+  --font-body: system-ui, sans-serif;
+  --font-heading: system-ui, sans-serif;
 }
 
 /* ------------------------------------------------ */
-/* DARK MODE (SYSTEM)                               */
+/* DARK MODE                                        */
 /* ------------------------------------------------ */
 @media (prefers-color-scheme: dark) {
-  :root {
+  @theme {
     --color-bg-primary: #0f1115;
     --color-bg-surface: #1a1d24;
-    --color-border: #2a2f38;
 
     --color-text-primary: #ffffff;
     --color-text-secondary: #c7c7c7;
     --color-text-muted: #7c7c7c;
 
-    /* Shimmer (dark) */
-    --shimmer-from: rgba(255,255,255,0.02);
-    --shimmer-via: rgba(255,255,255,0.06);
-    --shimmer-to: rgba(255,255,255,0.02);
+    --color-border: #2a2f38;
   }
 }
 
 /* ------------------------------------------------ */
-/* BASE STYLES                                      */
+/* BASE                                             */
 /* ------------------------------------------------ */
 @layer base {
-  html,
-  body {
-    @apply h-full font-body antialiased;
-    background-color: var(--color-bg-primary);
+  html, body {
+    height: 100%;
+    font-family: var(--font-body);
+    background: var(--color-bg-primary);
     color: var(--color-text-primary);
+    -webkit-tap-highlight-color: transparent;
   }
 
   a {
-    @apply no-underline;
+    text-decoration: none;
     color: inherit;
   }
 
   button {
-    @apply cursor-pointer font-inherit;
-    background: transparent;
-    border: none;
+    font: inherit;
+    background: none;
+  }
+
+  input, textarea, select {
+    border: 1px solid var(--color-border);
   }
 
   :focus-visible {
     outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  /* Limit border-color to common interactive/surface elements to avoid global side-effects */
-  .card, input, button, textarea, select, fieldset, .btn {
-    border-color: var(--color-border);
+    outline-offset: 3px;
   }
 }
 
@@ -91,66 +102,124 @@
 /* COMPONENTS                                       */
 /* ------------------------------------------------ */
 @layer components {
-  /* Buttons */
+
+  /* ---------------- BUTTON ---------------- */
   .btn {
     @apply inline-flex items-center justify-center
-      px-6 py-2 rounded-md font-medium
-      transition duration-200 ease-in-out
-      focus-visible:outline focus-visible:outline-2;
+      font-medium transition duration-200 ease-in-out;
+
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
   }
 
+  /* Variants */
   .btn-primary {
-    @apply text-white bg-[var(--color-primary-500)] hover:opacity-90;
+    background: var(--color-button-primary);
+    color: var(--color-button-primary-text);
   }
 
-  /* Cards */
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
+
+  .btn-secondary {
+    border: 1px solid var(--color-border);
+    background: transparent;
+  }
+
+  /* Sizes */
+  .btn-sm {
+    padding: var(--space-1) var(--space-3);
+    font-size: 0.875rem;
+  }
+
+  .btn-lg {
+    padding: var(--space-3) var(--space-6);
+    font-size: 1.125rem;
+  }
+
+  /* States */
+  .btn:active {
+    transform: scale(0.97);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* ---------------- CARD ---------------- */
   .card {
-    @apply bg-[var(--color-bg-surface)]
-      rounded-lg p-5 shadow-md;
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
   }
 
-  /* Skeleton Loader */
+  .card-body {
+    padding: var(--space-4);
+  }
+
+  .card-lg {
+    padding: var(--space-6);
+  }
+
+  /* ---------------- SKELETON ---------------- */
   .skeleton {
-    @apply block w-full rounded-sm
-      bg-gradient-to-r
-      from-[var(--shimmer-from)]
-      via-[var(--shimmer-via)]
-      to-[var(--shimmer-to)]
-      bg-[length:200%_100%]
-      animate-shimmer;
+    width: 100%;
+    border-radius: var(--radius-sm);
+
+    background: linear-gradient(
+      90deg,
+      rgba(183,184,187,0.12),
+      rgba(183,184,187,0.24),
+      rgba(183,184,187,0.12)
+    );
+
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
   }
 
-  /* Skeleton size variants */
   .skeleton-sm { height: 1rem; }
   .skeleton-md { height: 1.5rem; }
   .skeleton-lg { height: 2.5rem; }
-  .skeleton-block { aspect-ratio: 3/4; width: 100%; }
+  .skeleton-block { aspect-ratio: 3/4; }
 
-  /* Headings */
+  /* ---------------- TYPOGRAPHY ---------------- */
   .heading-display {
-    @apply font-heading font-bold text-6xl leading-tight tracking-tight;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1.1;
   }
 
   .heading-1 {
-    @apply font-heading font-semibold text-4xl leading-tight;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
   }
 
   .heading-2 {
-    @apply font-heading font-semibold text-2xl;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 1.5rem;
   }
 
   .heading-3 {
-    @apply font-heading font-medium text-xl;
+    font-family: var(--font-heading);
+    font-weight: 500;
+    font-size: 1.25rem;
   }
 
-  /* Labels */
   .label {
-    @apply text-xs uppercase tracking-wide text-[var(--color-text-secondary)];
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
   }
 }
 
 /* ------------------------------------------------ */
-/* UTILITIES & ANIMATIONS                           */
+/* UTILITIES                                        */
 /* ------------------------------------------------ */
 @layer utilities {
   @keyframes shimmer {
@@ -159,15 +228,10 @@
     100% { background-position: -200% 0; }
   }
 
-  .animate-shimmer {
-    animation: shimmer 1.4s ease-in-out infinite;
-  }
-
-  /* Respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
-    .animate-shimmer {
+    .skeleton {
       animation: none;
-      background-position: 0 0;
+      opacity: 0.7;
     }
   }
 }

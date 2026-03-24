@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { useCart } from "@/components/cart/cart-context";
+import { useCart } from "@/components/cart/CartProvider";
 import type { PaymentMethod } from "@prisma/client"; 
 // This gives: "PAYSTACK" | "MONNIFY" | "COD"
 

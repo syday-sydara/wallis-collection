@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { useCart } from "@/components/cart/cart-context";
+import { useCart } from "@/components/cart/CartProvider";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 

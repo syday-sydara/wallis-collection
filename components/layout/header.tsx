@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu, X, ShoppingCart, Search } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { useCart } from "@/components/cart/cart-context";
+import { useCart } from "@/components/cart/CartProvider";
 
 export default function Header() {
   const [open, setOpen] = useState(false);

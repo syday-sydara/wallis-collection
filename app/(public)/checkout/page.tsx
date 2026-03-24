@@ -9,7 +9,7 @@ import {
   CheckboxField,
   SubmitButton,
 } from "@/components/ui/form";
-import { useCart } from "@/components/cart/cart-context";
+import { useCart } from "@/components/cart/CartProvider";
 import Button from "@/components/ui/Button";
 
 export default function CheckoutPage() {

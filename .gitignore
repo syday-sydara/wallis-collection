@@ -1,9 +1,9 @@
 # -------------------------
-# Dependencies
+# Node Modules & Package Manager
 # -------------------------
 node_modules/
 .pnpm-debug.log*
-.pnp
+.pnp/
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -46,6 +46,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+logs/
+*.log
 
 # -------------------------
 # Testing
@@ -66,7 +68,7 @@ Thumbs.db
 next-env.d.ts
 
 # -------------------------
-# Local uploads
+# Local uploads / media
 # -------------------------
 public/uploads/
 

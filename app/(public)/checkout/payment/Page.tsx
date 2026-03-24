@@ -1,7 +1,7 @@
 "use client";
 
 import PaymentForm from "@/components/checkout/PaymentForm";
-import { useCart } from "@/components/cart/cart-context";
+import { useCart } from "@/components/cart/CartProvider";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 
