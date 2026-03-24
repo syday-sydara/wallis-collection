@@ -19,6 +19,7 @@ enum Role {
 enum PaymentMethod {
   PAYSTACK
   MONNIFY
+  BANK_TRANSFER
   COD
 }
 
@@ -71,6 +72,12 @@ enum RefundStatus {
   PROCESSED
 }
 
+enum PaymentEventType {
+  WEBHOOK_RECEIVED
+  PAYMENT_VERIFIED
+  PAYMENT_FAILED
+}
+
 //////////////////////////////////////////////////////
 // MODELS
 //////////////////////////////////////////////////////
@@ -97,16 +104,12 @@ model Product {
   slug        String   @unique
   description String?
 
-  // All prices in Naira
   price       Int
   salePrice   Int?
 
   stock       Int      @default(0)
   category    String?
   brand       String?
-
-  sizes       String[]
-  colors      String[]
 
   isNew       Boolean  @default(false)
   isOnSale    Boolean  @default(false)
@@ -121,6 +124,25 @@ model Product {
   reviews     Review[]
   inventory   InventoryMovement[]
   orderItems  OrderItem[]
+  variants    ProductVariant[]
+
+  @@index([slug])
+  @@index([isNew])
+  @@index([isOnSale])
+  @@index([featured])
+  @@index([deletedAt])
+}
+
+model ProductVariant {
+  id        String @id @default(cuid())
+  productId String
+  size      String?
+  color     String?
+  stock     Int     @default(0)
+
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
 }
 
 model ProductImage {
@@ -130,6 +152,8 @@ model ProductImage {
   position  Int
 
   product   Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
 }
 
 model Order {
@@ -146,11 +170,9 @@ model Order {
 
   providerRef    String?       @unique
 
-  // Total in Naira
   total          Int
   currency       String        @default("NGN")
 
-  // Full cart snapshot for recovery/display
   cartSnapshot   Json?
 
   createdAt      DateTime      @default(now())
@@ -158,6 +180,9 @@ model Order {
 
   items          OrderItem[]
   shipments      Shipment[]
+  refundRequests RefundRequest[]
+  fraudSignals   FraudSignal[]
+  paymentEvents  PaymentEvent[]
 
   @@index([userId])
   @@index([paymentStatus])
@@ -172,10 +197,17 @@ model OrderItem {
   productId  String
 
   quantity   Int
-  price      Int     // in Naira
+  price      Int
+
+  // Product snapshot
+  productName  String
+  productImage String?
 
   order      Order   @relation(fields: [orderId], references: [id])
   product    Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 model Address {
@@ -187,11 +219,14 @@ model Address {
   state     String
   city      String
   lga       String?
+  landmark  String?
 
   address   String
   type      AddressType @default(SHIPPING)
 
   user      User?       @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model Review {
@@ -219,6 +254,10 @@ model RefundRequest {
 
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+
+  order     Order        @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
 }
 
 model FraudSignal {
@@ -229,15 +268,24 @@ model FraudSignal {
   details   Json?
 
   createdAt DateTime @default(now())
+
+  order     Order    @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
 }
 
 model PaymentEvent {
-  id        String   @id @default(cuid())
-  reference String   @unique
-  type      String
+  id        String           @id @default(cuid())
+  orderId   String
+  reference String           @unique
+  type      PaymentEventType
   payload   Json?
 
   createdAt DateTime @default(now())
+
+  order     Order    @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
 }
 
 model InventoryMovement {
@@ -249,7 +297,10 @@ model InventoryMovement {
   reference String?
 
   createdAt DateTime @default(now())
+
   product   Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
 }
 
 model Shipment {
@@ -261,19 +312,26 @@ model Shipment {
   status         ShipmentStatus
 
   createdAt      DateTime       @default(now())
+
   order          Order          @relation(fields: [orderId], references: [id])
   updates        ShipmentUpdate[]
+
+  @@index([orderId])
+  @@index([trackingNumber])
 }
 
 model ShipmentUpdate {
-  id         String   @id @default(cuid())
+  id         String         @id @default(cuid())
   shipmentId String
 
-  status     String
+  status     ShipmentStatus
   note       String?
 
-  createdAt  DateTime @default(now())
-  shipment   Shipment @relation(fields: [shipmentId], references: [id])
+  createdAt  DateTime       @default(now())
+
+  shipment   Shipment       @relation(fields: [shipmentId], references: [id])
+
+  @@index([shipmentId])
 }
 
 model Event {
@@ -282,17 +340,33 @@ model Event {
 
   type      EventType
   data      Json?
+  ip        String?
+  userAgent String?
+  sessionId String?
 
   createdAt DateTime  @default(now())
+
   user      User?     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model DeliveryZone {
+  id      String @id @default(cuid())
+  state   String
+  lga     String?
+  fee     Int
+
+  @@index([state])
+  @@index([lga])
 }
 
 model Toast {
   id        String   @id @default(cuid())
   message   String
-  type      String   @default("info") // Could be "success", "error", "info"
+  type      String   @default("info")
   actionLabel String?
-  onAction  Json?    // Store a callback function (e.g., as a stringified function or a command)
+  onAction  Json?
 
   createdAt DateTime @default(now())
 }

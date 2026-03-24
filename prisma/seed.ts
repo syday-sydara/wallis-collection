@@ -1,76 +1,86 @@
 import { PrismaClient } from "@prisma/client";
+import argon2 from "argon2";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const products = [
-    {
-      name: "Vibrant Ankara Dress",
-      slug: "vibrant-ankara-dress",
-      price: 12000 * 100, // convert Naira to Kobo
-      salePrice: 10000 * 100, // convert Naira to Kobo
-      stock: 15,
-      category: "Dresses",
-      brand: "Ankara Couture",
-      sizes: ["S", "M", "L", "XL"],
-      colors: ["Red", "Yellow", "Blue"],
-      images: [
-        "https://images.unsplash.com/photo-1600180758895-1c2d6f7d6c1a?auto=format&fit=crop&w=800&q=80"
-      ],
+  console.log("🌱 Seeding database with Argon2 password hashing...");
+
+  // Create admin user
+  const adminPassword = await argon2.hash("admin123");
+
+  const admin = await prisma.user.upsert({
+    where: { email: "admin@shop.com" },
+    update: {},
+    create: {
+      name: "Admin",
+      email: "admin@shop.com",
+      password: adminPassword,
+      role: "ADMIN",
+    },
+  });
+
+  console.log("👤 Admin user created:", admin.email);
+
+  // Sample product
+  const product1 = await prisma.product.create({
+    data: {
+      name: "Classic Leather Bag",
+      slug: "classic-leather-bag",
+      price: 35000,
+      salePrice: 30000,
+      stock: 20,
+      category: "Bags",
+      brand: "Wallis",
       isNew: true,
       isOnSale: true,
-      featured: true,
+
+      images: {
+        create: [
+          { url: "/seed/bag1.jpg", position: 1 },
+          { url: "/seed/bag1-2.jpg", position: 2 },
+        ],
+      },
+
+      variants: {
+        create: [
+          { size: "M", color: "Brown", stock: 10 },
+          { size: "L", color: "Black", stock: 10 },
+        ],
+      },
     },
-    // Add more products here...
-  ];
+  });
 
-  console.log("⏳ Seeding products...");
+  console.log("👜 Sample product created:", product1.name);
 
-  for (const product of products) {
-    const created = await prisma.product.upsert({
-      where: { slug: product.slug },
-      update: {
-        // Optional: you can update prices/stock if needed
-        price: product.price,
-        salePrice: product.salePrice,
-        stock: product.stock,
-        isNew: product.isNew,
-        isOnSale: product.isOnSale,
-        featured: product.featured,
-      },
-      create: {
-        name: product.name,
-        slug: product.slug,
-        description: product.description ?? "",
-        price: product.price,
-        salePrice: product.salePrice,
-        stock: product.stock,
-        category: product.category,
-        brand: product.brand,
-        sizes: product.sizes,
-        colors: product.colors,
-        isNew: product.isNew,
-        isOnSale: product.isOnSale,
-        featured: product.featured,
+  // Delivery zones (Nigeria‑specific)
+  await prisma.deliveryZone.createMany({
+    data: [
+      { state: "Lagos", lga: "Ikeja", fee: 1500 },
+      { state: "Lagos", lga: "Lekki", fee: 2000 },
+      { state: "Abuja", lga: "Garki", fee: 2500 },
+    ],
+  });
 
-        images: {
-          create: product.images.map((url, index) => ({
-            url,
-            position: index,
-          })),
-        },
-      },
-    });
+  console.log("🚚 Delivery zones seeded");
 
-    console.log(`✔ Created or updated: ${created.name}`);
-  }
+  // Inventory movement
+  await prisma.inventoryMovement.create({
+    data: {
+      productId: product1.id,
+      change: 20,
+      reason: "RESTOCK",
+    },
+  });
 
-  console.log("🎉 All products seeded successfully!");
+  console.log("📦 Inventory movement logged");
+
+  console.log("🌱 Seed completed successfully!");
 }
 
 main()
-  .catch((e) => {
-    console.error("❌ Seeding error:", e);
+  .catch((err) => {
+    console.error("❌ Seed failed:", err);
     process.exit(1);
   })
   .finally(async () => {
