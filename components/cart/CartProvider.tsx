@@ -1,17 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-
-export interface CartItem {
-  id: string;
-  name: string;
-  price: number; // in Naira
-  quantity: number;
-  image?: string;
-  variants?: Record<string, string>;
-  key: string; // unique for variant combination
-  addedAt: Date;
-}
+import { CartItem } from "@/lib/types/types";
 
 interface CartContextType {
   items: CartItem[];
@@ -36,7 +26,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (stored) setItems(JSON.parse(stored));
   }, []);
 
-  // Persist cart
+  // Save cart to localStorage whenever items change
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(items));
   }, [items]);
