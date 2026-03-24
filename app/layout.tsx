@@ -1,18 +1,14 @@
 // app/layout.tsx
-import "./globals.css";
 import { ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { spaceGrotesk } from "./metadata";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { ToastProvider } from "@/components/toast/ToastProvider";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
-import dynamic from "next/dynamic";
-import { Suspense } from "react";
 
-/* Lazy load Cart Drawer for performance */
-const CartDrawer = dynamic(() => import("@/components/cart/CartDrawer"), {
-  ssr: false,
-});
+// Dynamically import CartDrawer (client-side only)
+const CartDrawer = dynamic(() => import("@/components/cart/CartDrawer"));
 
 interface RootLayoutProps {
   children: ReactNode;
@@ -40,9 +36,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <Footer />
 
             {/* Cart Drawer */}
-            <Suspense fallback={null}>
-              <CartDrawer />
-            </Suspense>
+            <CartDrawer />
           </ToastProvider>
         </CartProvider>
       </body>

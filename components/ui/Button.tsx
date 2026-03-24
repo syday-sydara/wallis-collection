@@ -11,12 +11,9 @@ const buttonStyles = cva(
   {
     variants: {
       variant: {
-        primary:
-          "bg-[var(--color-primary-500)] text-white hover:bg-[var(--color-primary-500)]/90",
-        outline:
-          "border border-[var(--color-primary-500)] text-[var(--color-primary-500)] hover:bg-[var(--color-primary-500)]/10",
-        subtle:
-          "text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)]",
+        primary: "bg-[var(--color-primary-500)] text-white hover:bg-[var(--color-primary-500)]/90",
+        outline: "border border-[var(--color-primary-500)] text-[var(--color-primary-500)] hover:bg-[var(--color-primary-500)]/10",
+        subtle: "text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)]",
       },
       size: {
         sm: "px-3 py-1 text-xs rounded-md",
@@ -94,10 +91,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           )}
 
           <span
-            className={clsx(
-              "inline-flex items-center gap-2 transition-opacity",
-              loading ? "opacity-0" : "opacity-100"
-            )}
+            className={clsx("inline-flex items-center gap-2 transition-opacity", loading ? "opacity-0" : "opacity-100")}
             aria-hidden={loading}
           >
             {iconLeft}

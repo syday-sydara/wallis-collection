@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useState, useCallback } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { X } from "lucide-react";
 import { useCart } from "./CartProvider";
@@ -11,6 +11,12 @@ import Link from "next/link";
 export default function CartDrawer() {
   const { items, isEmpty, clearCart, total, itemCount } = useCart();
   const [open, setOpen] = useState(false);
+
+  // Handle toggling of the drawer visibility
+  const toggleDrawer = useCallback(() => setOpen((prev) => !prev), []);
+
+  // Handle closing the cart
+  const closeDrawer = useCallback(() => setOpen(false), []);
 
   // Determine if desktop view (Tailwind breakpoint)
   const desktopSidebar = (
@@ -68,9 +74,10 @@ export default function CartDrawer() {
     <>
       {/* Floating Trigger Button (Mobile Only) */}
       <button
-        onClick={() => setOpen(true)}
+        onClick={toggleDrawer}
         aria-label="Open cart"
-        aria-expanded={open}
+        aria-expanded={open ? "true" : "false"}
+        aria-controls="cart-drawer"
         className="fixed bottom-4 right-4 z-50 rounded-full bg-[var(--color-primary-500)] text-white px-6 py-3 shadow-lg hover:scale-105 transition-transform font-medium lg:hidden"
       >
         Cart ({itemCount})
@@ -81,7 +88,7 @@ export default function CartDrawer() {
 
       {/* Mobile Drawer */}
       <Transition.Root show={open} as={Fragment}>
-        <Dialog as="div" className="relative z-50 lg:hidden" onClose={setOpen}>
+        <Dialog as="div" className="relative z-50 lg:hidden" onClose={closeDrawer}>
           <Transition.Child
             as={Fragment}
             enter="transition-opacity ease-linear duration-300"
@@ -106,7 +113,7 @@ export default function CartDrawer() {
                   leaveFrom="translate-x-0"
                   leaveTo="translate-x-full"
                 >
-                  <Dialog.Panel className="pointer-events-auto w-screen max-w-md bg-[var(--color-bg-surface)] shadow-xl flex flex-col">
+                  <Dialog.Panel className="pointer-events-auto w-screen max-w-md bg-[var(--color-bg-surface)] shadow-xl flex flex-col" id="cart-drawer">
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 border-b border-[var(--color-border)]">
                       <Dialog.Title className="text-lg font-semibold text-[var(--color-text-primary)]">
@@ -114,7 +121,7 @@ export default function CartDrawer() {
                       </Dialog.Title>
                       <button
                         className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                        onClick={() => setOpen(false)}
+                        onClick={closeDrawer}
                         aria-label="Close cart"
                       >
                         <X size={20} />
@@ -126,7 +133,7 @@ export default function CartDrawer() {
                       {isEmpty ? (
                         <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
                           <p className="text-[var(--color-text-secondary)]">Your cart is empty.</p>
-                          <Button variant="subtle" onClick={() => setOpen(false)}>
+                          <Button variant="subtle" onClick={closeDrawer}>
                             Continue Shopping
                           </Button>
                         </div>
@@ -147,7 +154,7 @@ export default function CartDrawer() {
 
                         <div className="flex flex-col gap-3">
                           <Button asChild variant="primary" className="w-full">
-                            <Link href="/checkout/shipping" onClick={() => setOpen(false)}>
+                            <Link href="/checkout/shipping" onClick={closeDrawer}>
                               Checkout
                             </Link>
                           </Button>
