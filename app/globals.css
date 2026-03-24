@@ -1,3 +1,6 @@
+/* ------------------------------------------------ */
+/* TAILWIND IMPORTS                                 */
+/* ------------------------------------------------ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,7 +9,7 @@
 /* DESIGN TOKENS                                    */
 /* ------------------------------------------------ */
 :root {
-  /* Brand */
+  /* Brand Colors */
   --color-primary-500: #272B36;
   --color-accent-500: #A08A81;
 
@@ -18,24 +21,24 @@
   --color-warning-500: #A08A81;
   --color-danger-500: #C94F4F;
 
-  /* Surfaces */
+  /* Background & Border */
   --color-bg-primary: #ffffff;
   --color-bg-surface: #fafafa;
   --color-border: #e6e6e6;
 
-  /* Text */
+  /* Text Colors */
   --color-text-primary: #272B36;
   --color-text-secondary: #595d66;
   --color-text-muted: #b7b8bb;
 
-  /* Shimmer (light) */
+  /* Skeleton Shimmer */
   --shimmer-from: rgba(183,184,187,0.12);
   --shimmer-via: rgba(183,184,187,0.24);
   --shimmer-to: rgba(183,184,187,0.12);
 }
 
 /* ------------------------------------------------ */
-/* DARK MODE (SYSTEM)                               */
+/* DARK MODE                                        */
 /* ------------------------------------------------ */
 @media (prefers-color-scheme: dark) {
   :root {
@@ -47,7 +50,6 @@
     --color-text-secondary: #c7c7c7;
     --color-text-muted: #7c7c7c;
 
-    /* Shimmer (dark) */
     --shimmer-from: rgba(255,255,255,0.02);
     --shimmer-via: rgba(255,255,255,0.06);
     --shimmer-to: rgba(255,255,255,0.02);
@@ -66,14 +68,11 @@
   }
 
   a {
-    @apply no-underline;
-    color: inherit;
+    @apply no-underline text-inherit;
   }
 
   button {
-    @apply cursor-pointer font-inherit;
-    background: transparent;
-    border: none;
+    @apply cursor-pointer font-inherit bg-transparent border-none;
   }
 
   :focus-visible {
@@ -81,7 +80,7 @@
     outline-offset: 2px;
   }
 
-  /* Limit border-color to common interactive/surface elements to avoid global side-effects */
+  /* Surface elements border */
   .card, input, button, textarea, select, fieldset, .btn {
     border-color: var(--color-border);
   }
@@ -95,8 +94,7 @@
   .btn {
     @apply inline-flex items-center justify-center
       px-6 py-2 rounded-md font-medium
-      transition duration-200 ease-in-out
-      focus-visible:outline focus-visible:outline-2;
+      transition duration-200 ease-in-out;
   }
 
   .btn-primary {
@@ -105,8 +103,7 @@
 
   /* Cards */
   .card {
-    @apply bg-[var(--color-bg-surface)]
-      rounded-lg p-5 shadow-md;
+    @apply bg-[var(--color-bg-surface)] rounded-lg p-5 shadow-md;
   }
 
   /* Skeleton Loader */
@@ -120,33 +117,19 @@
       animate-shimmer;
   }
 
-  /* Skeleton size variants */
   .skeleton-sm { height: 1rem; }
   .skeleton-md { height: 1.5rem; }
   .skeleton-lg { height: 2.5rem; }
   .skeleton-block { aspect-ratio: 3/4; width: 100%; }
 
   /* Headings */
-  .heading-display {
-    @apply font-heading font-bold text-6xl leading-tight tracking-tight;
-  }
-
-  .heading-1 {
-    @apply font-heading font-semibold text-4xl leading-tight;
-  }
-
-  .heading-2 {
-    @apply font-heading font-semibold text-2xl;
-  }
-
-  .heading-3 {
-    @apply font-heading font-medium text-xl;
-  }
+  .heading-display { @apply font-heading font-bold text-6xl leading-tight tracking-tight; }
+  .heading-1 { @apply font-heading font-semibold text-4xl leading-tight; }
+  .heading-2 { @apply font-heading font-semibold text-2xl; }
+  .heading-3 { @apply font-heading font-medium text-xl; }
 
   /* Labels */
-  .label {
-    @apply text-xs uppercase tracking-wide text-[var(--color-text-secondary)];
-  }
+  .label { @apply text-xs uppercase tracking-wide text-[var(--color-text-secondary)]; }
 }
 
 /* ------------------------------------------------ */
@@ -163,7 +146,6 @@
     animation: shimmer 1.4s ease-in-out infinite;
   }
 
-  /* Respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
     .animate-shimmer {
       animation: none;
