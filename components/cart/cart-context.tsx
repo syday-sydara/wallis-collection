@@ -4,7 +4,7 @@ import { Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { X } from "lucide-react";
 import { useCart } from "./cart-context";
-import CartItemRow from "./CartItemRow"; // separate component for each cart item
+import CartItemRow from "./CartItemRow";
 
 interface CartDrawerProps {}
 
