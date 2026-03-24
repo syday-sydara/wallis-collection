@@ -97,6 +97,7 @@ model Product {
   slug        String   @unique
   description String?
 
+  // All prices in Naira
   price       Int
   salePrice   Int?
 
@@ -145,14 +146,24 @@ model Order {
 
   providerRef    String?       @unique
 
-  total          Int           // in Naira
+  // Total in Naira
+  total          Int
   currency       String        @default("NGN")
+
+  // Full cart snapshot for recovery/display
+  cartSnapshot   Json?
 
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   items          OrderItem[]
   shipments      Shipment[]
+
+  @@index([userId])
+  @@index([paymentStatus])
+  @@index([orderStatus])
+  @@index([createdAt])
+  @@index([email, createdAt])
 }
 
 model OrderItem {
@@ -237,8 +248,8 @@ model InventoryMovement {
   reason    InventoryReason
   reference String?
 
-  createdAt DateTime        @default(now())
-  product   Product         @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+  product   Product @relation(fields: [productId], references: [id])
 }
 
 model Shipment {

@@ -23,22 +23,27 @@ export async function POST(req: Request) {
     const body = (await req.json()) as Partial<CheckoutBody>;
     const { items, email, phone, paymentMethod } = body;
 
-    if (!items || !Array.isArray(items) || items.length === 0)
+    // Basic validation
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+    }
 
-    if (!email || !phone)
+    if (!email || !phone) {
       return NextResponse.json({ error: "Email and phone are required" }, { status: 400 });
+    }
 
-    if (!paymentMethod || !Object.values(PaymentMethod).includes(paymentMethod))
+    if (!paymentMethod || !Object.values(PaymentMethod).includes(paymentMethod)) {
       return NextResponse.json({ error: "Invalid payment method" }, { status: 400 });
+    }
 
-    // Total in kobo
-    const totalCents = items.reduce((sum, item) => sum + item.priceNaira * 100 * item.quantity, 0);
-
-    if (totalCents <= 0)
+    // Calculate total in kobo for Paystack, Monnify expects Naira
+    const totalNaira = items.reduce((sum, item) => sum + item.priceNaira * item.quantity, 0);
+    if (totalNaira <= 0) {
       return NextResponse.json({ error: "Invalid cart total" }, { status: 400 });
+    }
+    const totalKobo = totalNaira * 100;
 
-    // Create order and save cart snapshot
+    // Create order with cart snapshot
     const order = await prisma.order.create({
       data: {
         email,
@@ -46,13 +51,13 @@ export async function POST(req: Request) {
         paymentMethod,
         paymentStatus: "PENDING",
         orderStatus: "PENDING",
-        totalCents,
-        cartSnapshot: items, // <-- Save cart for recovery
+        total: totalNaira,
+        cartSnapshot: items, // store cart snapshot for recovery
         items: {
           create: items.map((item) => ({
             productId: item.id,
             quantity: item.quantity,
-            priceCents: item.priceNaira * 100,
+            price: item.priceNaira,
           })),
         },
       },
@@ -60,7 +65,7 @@ export async function POST(req: Request) {
 
     let paymentUrl = "";
 
-    // PAYSTACK
+    // PAYSTACK (amount in kobo)
     if (paymentMethod === PaymentMethod.PAYSTACK) {
       const res = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
@@ -70,7 +75,7 @@ export async function POST(req: Request) {
         },
         body: JSON.stringify({
           email,
-          amount: totalCents,
+          amount: totalKobo,
           reference: order.id,
         }),
       });
@@ -84,7 +89,7 @@ export async function POST(req: Request) {
       paymentUrl = data?.data?.authorization_url ?? "";
     }
 
-    // MONNIFY
+    // MONNIFY (amount in Naira)
     if (paymentMethod === PaymentMethod.MONNIFY) {
       const res = await fetch("https://api.monnify.com/api/v1/merchant/transactions/init-transaction", {
         method: "POST",
@@ -93,7 +98,7 @@ export async function POST(req: Request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: totalCents / 100,
+          amount: totalNaira,
           customerName: email,
           customerEmail: email,
           paymentReference: order.id,
@@ -111,10 +116,11 @@ export async function POST(req: Request) {
     }
 
     // COD: no external payment URL
+
     return NextResponse.json({
       orderId: order.id,
       paymentUrl,
-      cartSnapshot: order.cartSnapshot, // <-- send snapshot to client
+      cartSnapshot: order.cartSnapshot,
     });
   } catch (err) {
     console.error("Checkout error:", err);
