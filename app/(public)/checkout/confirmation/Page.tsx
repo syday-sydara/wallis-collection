@@ -1,58 +1,38 @@
-// app/(public)/checkout/confirmation/page.tsx
-import { prisma } from "@/lib/db";
-import OrderConfirmation from "@/components/checkout/OrderConfirmation";
-import { notFound } from "next/navigation";
+"use client";
 
-export default async function ConfirmationPage({
-  searchParams,
-}: {
-  searchParams: { orderId?: string };
-}) {
-  const orderId = searchParams.orderId;
+import OrderConfirmationClient from "@/components/checkout/OrderConfirmation";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
-  if (!orderId) return notFound();
+export default function ConfirmationPage() {
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get("orderId");
 
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: {
-      items: {
-        include: {
-          product: {
-            select: {
-              name: true,
-              priceNaira: true,
-              images: {
-                select: { url: true, position: true },
-                orderBy: { position: "asc" },
-              },
-            },
-          },
-        },
-      },
-      shipments: {
-        include: {
-          updates: true,
-        },
-      },
-    },
-  });
+  const [order, setOrder] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!order) return notFound();
+  useEffect(() => {
+    if (!orderId) return;
+    const fetchOrder = async () => {
+      try {
+        const res = await fetch(`/api/orders/${orderId}`);
+        const data = await res.json();
+        setOrder(data);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrder();
+  }, [orderId]);
 
-  // Add fallback image for products with no images
-  const normalizedOrder = {
-    ...order,
-    items: order.items.map((item) => ({
-      ...item,
-      product: {
-        ...item.product,
-        images:
-          item.product?.images?.length > 0
-            ? item.product.images
-            : [{ url: "/placeholder.png", position: 0 }],
-      },
-    })),
-  };
+  if (!orderId) return <p className="text-center py-20">No order found.</p>;
+  if (loading) return <p className="text-center py-20">Loading order...</p>;
 
-  return <OrderConfirmation order={normalizedOrder} />;
+  return (
+    <div className="max-w-3xl mx-auto py-20 px-4">
+      <OrderConfirmationClient order={order} />
+    </div>
+  );
 }

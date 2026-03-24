@@ -1,6 +1,6 @@
 // app/(public)/products/[slug]/page.tsx
 import { prisma } from "@/lib/db";
-import ProductDetailView from "./ProductDetailView";
+import ProductDetailView from "@/components/products/ProductDetailView";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -16,7 +16,7 @@ async function getProduct(slug: string) {
     });
   } catch (err) {
     console.error("Product fetch error:", err);
-    return null;
+    return null; // Returning null if error occurs.
   }
 }
 
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     return {
       title: "Product not found",
       description: "This product does not exist.",
-      robots: { index: false, follow: false },
+      robots: { index: false, follow: false }, // Ensuring search engines don't index this page.
     };
   }
 
@@ -81,7 +81,10 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 export default async function ProductDetailPage({ params }: ProductPageProps) {
   const product = await getProduct(params.slug);
 
-  if (!product || product.deletedAt) notFound();
+  if (!product || product.deletedAt) {
+    // If the product is not found or deleted, show a custom 404 page
+    notFound();
+  }
 
   return <ProductDetailView product={product} />;
 }
