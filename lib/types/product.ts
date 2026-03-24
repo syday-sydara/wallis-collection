@@ -28,7 +28,7 @@ export const productCardSelect = Prisma.validator<Prisma.ProductSelect>()({
   id: true,
   slug: true,
   name: true,
-  priceNaira: true,
+  price: true,
   salePriceNaira: true,
   category: true,
   stock: true,
@@ -50,7 +50,7 @@ export type ProductCard = Prisma.ProductGetPayload<{
 /* -------------------------- */
 export const productDetailInclude = Prisma.validator<Prisma.ProductInclude>()({
   images: true,
-  reviews: { include: { user: { select: { id: true; name: true } } } },
+  reviews: { include: { user: { select: { id: true, name: true } } } }, // ✅ comma fixed
   inventory: true,
 });
 

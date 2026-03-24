@@ -1,97 +1,84 @@
 "use client";
 
 import { useCart } from "@/components/cart/CartProvider";
-import CartDrawer from "@/components/cart/CartDrawer";
 import CartItemRow from "@/components/cart/CartItemRow";
+import CartDrawer from "@/components/cart/CartDrawer";
 import Button from "@/components/ui/Button";
 import { formatPrice } from "@/lib/formatters";
 import { useState } from "react";
+import Link from "next/link";
 
 export default function CartPage() {
-  const { items, itemCount, total, clearCart } = useCart();
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const { items, total, itemCount, isEmpty, clearCart } = useCart();
+  const [loading, setLoading] = useState(false);
 
   const handleCheckout = async () => {
-    if (!items.length) return;
-
-    setCheckoutLoading(true);
-
+    setLoading(true);
     try {
       const res = await fetch("/api/cart/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items,
-          email: "test@example.com", // replace with actual user info
+          email: "customer@example.com", // replace with actual form input
           phone: "08012345678",
           fullName: "John Doe",
-          address: "123 Example St",
+          address: "123 Street",
           city: "Lagos",
           state: "Lagos",
-          paymentMethod: "PAYSTACK", // or MONNIFY
+          paymentMethod: "PAYSTACK", // or "MONNIFY"
         }),
       });
 
       const data = await res.json();
-
       if (data.success) {
-        window.location.href = data.paymentUrl;
+        window.location.href = data.paymentUrl || `/order/success/${data.orderId}`;
       } else {
         alert(data.error || "Checkout failed");
       }
     } catch (err) {
       console.error(err);
-      alert("An unexpected error occurred.");
+      alert("Checkout failed");
     } finally {
-      setCheckoutLoading(false);
+      setLoading(false);
     }
   };
 
+  if (isEmpty) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen text-center">
+        <h2 className="text-2xl font-semibold mb-4">Your cart is empty</h2>
+        <Button asChild>
+          <Link href="/products">Continue Shopping</Link>
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[var(--color-bg-primary)] p-6 lg:p-12">
-      <h1 className="text-2xl font-bold mb-6">Your Cart ({itemCount})</h1>
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">Shopping Cart</h1>
 
-      {items.length === 0 ? (
-        <div className="text-center text-[var(--color-text-secondary)] mt-12">
-          Your cart is empty.
+      <div className="grid grid-cols-1 gap-4">
+        {items.map((item) => (
+          <CartItemRow key={item.key} item={item} variant="full" maxStock={item.quantity} />
+        ))}
+      </div>
+
+      <div className="mt-8 flex flex-col md:flex-row justify-between items-center border-t pt-6">
+        <div className="text-lg font-semibold">
+          Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"}): <span>{formatPrice(total)}</span>
         </div>
-      ) : (
-        <div className="flex flex-col gap-4 lg:max-w-4xl lg:mx-auto">
-          {/* Cart Items */}
-          {items.map((item) => (
-            <CartItemRow key={item.key} item={item} variant="full" />
-          ))}
 
-          {/* Cart Summary */}
-          <div className="flex justify-between items-center mt-6 p-4 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-md">
-            <span className="font-medium text-lg">Total:</span>
-            <span className="font-bold text-xl">{formatPrice(total)}</span>
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-col lg:flex-row gap-4 mt-6">
-            <Button
-              variant="primary"
-              className="flex-1"
-              onClick={handleCheckout}
-              disabled={checkoutLoading || items.length === 0}
-            >
-              {checkoutLoading ? "Processing..." : "Proceed to Checkout"}
-            </Button>
-
-            <Button
-              variant="subtle"
-              className="flex-1"
-              onClick={clearCart}
-            >
-              Clear Cart
-            </Button>
-          </div>
+        <div className="flex gap-3 mt-4 md:mt-0">
+          <Button onClick={handleCheckout} disabled={loading}>
+            {loading ? "Processing..." : "Proceed to Checkout"}
+          </Button>
+          <Button variant="ghost" onClick={clearCart}>
+            Clear Cart
+          </Button>
         </div>
-      )}
-
-      {/* Mobile Cart Drawer */}
-      <CartDrawer />
+      </div>
     </div>
   );
 }

@@ -1,71 +1,8 @@
 import { Prisma, PaymentMethod, PaymentStatus, OrderStatus } from "@prisma/client";
 
-/* ---------------------------------- */
-/* Product Image Type                 */
-/* ---------------------------------- */
-export type ProductImage = {
-  id?: string;
-  url: string;
-  position?: number;
-};
-
-/* ---------------------------------- */
-/* Product Review Type                */
-/* ---------------------------------- */
-export type ProductReview = {
-  id: string;
-  rating: number;
-  comment: string | null;
-  createdAt: Date;
-  userId?: string;
-};
-
-/* ---------------------------------- */
-/* Product Types                      */
-/* ---------------------------------- */
-export const productCardSelect = Prisma.validator<Prisma.ProductSelect>()({
-  id: true,
-  name: true,
-  slug: true,
-  price: true,
-  salePrice: true,
-  category: true,
-  stock: true,
-  createdAt: true,
-  images: {
-    select: {
-      url: true,
-      position: true,
-    },
-  },
-});
-
-export type ProductCardData = Prisma.ProductGetPayload<{
-  select: typeof productCardSelect;
-}>;
-
-export type Product = Prisma.ProductGetPayload<{
-  include: { images: true; reviews: true };
-}>;
-
-/* ---------------------------------- */
-/* Collection Types                   */
-/* ---------------------------------- */
-export type Collection = Prisma.CollectionGetPayload<{
-  include: { products: true };
-}>;
-
-export type CollectionSummary = Prisma.CollectionGetPayload<{
-  select: { id: true; name: true; slug: true; description: true };
-}>;
-
-export type ProductWithCollection = Prisma.ProductGetPayload<{
-  include: { images: true; reviews: true; collection: true };
-}>;
-
-/* ---------------------------------- */
-/* Cart Types                         */
-/* ---------------------------------- */
+/* -------------------------- */
+/* Cart Types                  */
+/* -------------------------- */
 export interface CartItem {
   productId: string;
   name: string;
@@ -77,9 +14,21 @@ export interface CartItem {
   addedAt: Date;
 }
 
-/* ---------------------------------- */
-/* Order Types                        */
-/* ---------------------------------- */
+/* -------------------------- */
+/* Cart Snapshot               */
+/* -------------------------- */
+export interface CartItemSnapshot {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  variants?: Record<string, string>;
+  key: string;
+}
+
+/* -------------------------- */
+/* Order Types                 */
+/* -------------------------- */
 export interface OrderItem {
   productId: string;
   quantity: number;
@@ -88,7 +37,7 @@ export interface OrderItem {
 
 export interface OrderSnapshot {
   items: CartItem[];
-  total: number; // in Naira
+  total: number;
 }
 
 export interface CheckoutBody {
@@ -112,7 +61,7 @@ export interface Order {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
-  total: number; // in Naira
+  total: number;
   currency: string;
   cartSnapshot?: CartItem[];
   createdAt: Date;
