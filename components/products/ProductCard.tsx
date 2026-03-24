@@ -17,15 +17,15 @@ export default function ProductCard({
   id,
   name,
   slug,
-  priceNaira,
-  salePriceNaira,
+  price,
+  salePrice,
   images,
   stock = 0,
   isNew,
   isOnSale,
   onAddToCart,
 }: Props) {
-  const price = getCurrentPrice({ priceNaira, salePriceNaira });
+  const finalPrice = getCurrentPrice({ price, salePrice });
   const imageUrl = getPrimaryImage(images);
   const outOfStock = stock <= 0;
 
@@ -76,7 +76,7 @@ export default function ProductCard({
         </h3>
 
         <p className="mt-2 font-semibold text-accent-500">
-          {price.toLocaleString("en-NG", {
+          {finalPrice.toLocaleString("en-NG", {
             style: "currency",
             currency: "NGN",
             maximumFractionDigits: 0,
