@@ -14,10 +14,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     >
       <body
         className="
-          flex flex-col min-h-dvh
-          antialiased
+          flex flex-col min-h-screen antialiased
           bg-[var(--color-bg-primary)]
           text-[var(--color-text-primary)]
+          transition-colors duration-300
         "
       >
         {children}

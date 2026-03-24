@@ -1,6 +1,9 @@
 import { Space_Grotesk } from "next/font/google";
 import type { Metadata } from "next";
 
+/* ------------------------------------------------
+   Google Font: Space Grotesk
+------------------------------------------------ */
 export const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -8,6 +11,9 @@ export const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
 });
 
+/* ------------------------------------------------
+   SEO & Metadata
+------------------------------------------------ */
 export const metadata: Metadata = {
   metadataBase: new URL("https://walliscollection.com"),
 
