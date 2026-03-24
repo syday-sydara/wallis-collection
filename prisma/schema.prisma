@@ -89,11 +89,7 @@ model User {
   events    Event[]
 
   createdAt DateTime @default(now())
-
-  @@index([email])
 }
-
-//////////////////////////////////////////////////////
 
 model Product {
   id          String   @id @default(cuid())
@@ -101,12 +97,10 @@ model Product {
   slug        String   @unique
   description String?
 
-  // Stored in KOBO (₦100 = 10000)
   price       Int
   salePrice   Int?
 
   stock       Int      @default(0)
-
   category    String?
   brand       String?
 
@@ -126,20 +120,7 @@ model Product {
   reviews     Review[]
   inventory   InventoryMovement[]
   orderItems  OrderItem[]
-
-  @@index([category])
-  @@index([brand])
-  @@index([isNew])
-  @@index([isOnSale])
-  @@index([featured])
-  @@index([deletedAt])
-
-  // compound indexes for filtering
-  @@index([category, isOnSale])
-  @@index([category, featured])
 }
-
-//////////////////////////////////////////////////////
 
 model ProductImage {
   id        String @id @default(cuid())
@@ -149,8 +130,6 @@ model ProductImage {
 
   product   Product @relation(fields: [productId], references: [id])
 }
-
-//////////////////////////////////////////////////////
 
 model Order {
   id             String        @id @default(cuid())
@@ -166,8 +145,7 @@ model Order {
 
   providerRef    String?       @unique
 
-  // Stored in KOBO
-  total          Int
+  total          Int           // in Naira
   currency       String        @default("NGN")
 
   createdAt      DateTime      @default(now())
@@ -175,15 +153,7 @@ model Order {
 
   items          OrderItem[]
   shipments      Shipment[]
-
-  @@index([userId])
-  @@index([paymentStatus])
-  @@index([orderStatus])
-  @@index([createdAt])
-  @@index([email, createdAt])
 }
-
-//////////////////////////////////////////////////////
 
 model OrderItem {
   id         String  @id @default(cuid())
@@ -191,18 +161,11 @@ model OrderItem {
   productId  String
 
   quantity   Int
-
-  // price at time of purchase (KOBO)
-  price      Int
+  price      Int     // in Naira
 
   order      Order   @relation(fields: [orderId], references: [id])
   product    Product @relation(fields: [productId], references: [id])
-
-  @@index([orderId])
-  @@index([productId])
 }
-
-//////////////////////////////////////////////////////
 
 model Address {
   id        String      @id @default(cuid())
@@ -210,22 +173,15 @@ model Address {
 
   fullName  String
   phone     String
-
   state     String
   city      String
-  lga       String?     // Nigerian-specific
+  lga       String?
 
   address   String
-
   type      AddressType @default(SHIPPING)
 
   user      User?       @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([type])
 }
-
-//////////////////////////////////////////////////////
 
 model Review {
   id        String   @id @default(cuid())
@@ -240,15 +196,8 @@ model Review {
   product   Product  @relation(fields: [productId], references: [id])
   user      User?    @relation(fields: [userId], references: [id])
 
-  @@index([productId])
-  @@index([userId])
-  @@index([rating])
-
-  // prevent duplicate reviews
   @@unique([userId, productId])
 }
-
-//////////////////////////////////////////////////////
 
 model RefundRequest {
   id        String       @id @default(cuid())
@@ -259,12 +208,7 @@ model RefundRequest {
 
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
-
-  @@index([orderId])
-  @@index([status])
 }
-
-//////////////////////////////////////////////////////
 
 model FraudSignal {
   id        String   @id @default(cuid())
@@ -274,12 +218,7 @@ model FraudSignal {
   details   Json?
 
   createdAt DateTime @default(now())
-
-  @@index([orderId])
-  @@index([score])
 }
-
-//////////////////////////////////////////////////////
 
 model PaymentEvent {
   id        String   @id @default(cuid())
@@ -290,8 +229,6 @@ model PaymentEvent {
   createdAt DateTime @default(now())
 }
 
-//////////////////////////////////////////////////////
-
 model InventoryMovement {
   id        String          @id @default(cuid())
   productId String
@@ -301,16 +238,8 @@ model InventoryMovement {
   reference String?
 
   createdAt DateTime        @default(now())
-
   product   Product         @relation(fields: [productId], references: [id])
-
-  @@index([productId])
-  @@index([reason])
-  @@index([createdAt])
-  @@index([productId, createdAt])
 }
-
-//////////////////////////////////////////////////////
 
 model Shipment {
   id             String         @id @default(cuid())
@@ -318,20 +247,12 @@ model Shipment {
 
   courier        String?
   trackingNumber String?
-
   status         ShipmentStatus
 
   createdAt      DateTime       @default(now())
-
   order          Order          @relation(fields: [orderId], references: [id])
   updates        ShipmentUpdate[]
-
-  @@index([orderId])
-  @@index([status])
-  @@index([createdAt])
 }
-
-//////////////////////////////////////////////////////
 
 model ShipmentUpdate {
   id         String   @id @default(cuid())
@@ -341,14 +262,8 @@ model ShipmentUpdate {
   note       String?
 
   createdAt  DateTime @default(now())
-
   shipment   Shipment @relation(fields: [shipmentId], references: [id])
-
-  @@index([shipmentId])
-  @@index([status])
 }
-
-//////////////////////////////////////////////////////
 
 model Event {
   id        String    @id @default(cuid())
@@ -358,10 +273,5 @@ model Event {
   data      Json?
 
   createdAt DateTime  @default(now())
-
   user      User?     @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([type])
-  @@index([createdAt])
 }

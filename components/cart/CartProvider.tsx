@@ -1,22 +1,15 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useMemo,
-  useCallback,
-} from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 export interface CartItem {
   id: string;
   name: string;
-  price: number;
+  price: number;       // in Naira
   quantity: number;
   image?: string;
   variants?: Record<string, string>;
-  key: string; // unique identifier for variant combination
+  key: string;         // unique for product+variant
 }
 
 interface CartContextType {
@@ -36,27 +29,18 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  // Load from localStorage safely
+  // load from localStorage
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("cart");
-      if (stored) setItems(JSON.parse(stored));
-    } catch {
-      setItems([]);
-    }
+    const stored = localStorage.getItem("cart");
+    if (stored) setItems(JSON.parse(stored));
   }, []);
 
-  // Save to localStorage
+  // save to localStorage
   useEffect(() => {
-    const handler = setTimeout(() => {
-      try {
-        localStorage.setItem("cart", JSON.stringify(items));
-      } catch {}
-    }, 100);
-    return () => clearTimeout(handler);
+    localStorage.setItem("cart", JSON.stringify(items));
   }, [items]);
 
-  const addItem = useCallback((item: CartItem) => {
+  const addItem = (item: CartItem) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.key === item.key);
       if (existing) {
@@ -66,34 +50,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...prev, item];
     });
-  }, []);
+  };
 
-  const increment = useCallback((key: string) => {
+  const increment = (key: string) => {
     setItems((prev) =>
       prev.map((i) => (i.key === key ? { ...i, quantity: i.quantity + 1 } : i))
     );
-  }, []);
+  };
 
-  const decrement = useCallback((key: string) => {
+  const decrement = (key: string) => {
     setItems((prev) =>
       prev
-        .map((i) =>
-          i.key === key ? { ...i, quantity: i.quantity - 1 } : i
-        )
+        .map((i) => (i.key === key ? { ...i, quantity: i.quantity - 1 } : i))
         .filter((i) => i.quantity > 0)
     );
-  }, []);
+  };
 
-  const removeItem = useCallback((key: string) => {
-    setItems((prev) => prev.filter((i) => i.key !== key));
-  }, []);
+  const removeItem = (key: string) => setItems((prev) => prev.filter((i) => i.key !== key));
 
-  const clearCart = useCallback(() => setItems([]), []);
+  const clearCart = () => setItems([]);
 
-  // Memoized derived state
-  const itemCount = useMemo(() => items.reduce((sum, i) => sum + i.quantity, 0), [items]);
-  const total = useMemo(() => items.reduce((sum, i) => sum + i.price * i.quantity, 0), [items]);
-  const isEmpty = useMemo(() => items.length === 0, [items]);
+  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
+  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const isEmpty = items.length === 0;
 
   return (
     <CartContext.Provider

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
-import { CartProvider } from "@/components/cart/cart-context";
+import { CartProvider } from "@/components/cart/CartProvider";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 

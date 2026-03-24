@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useCart } from "./cart-context";
+import { useState } from "react";
+import { useCart } from "./CartProvider";
 
 interface AddToCartButtonProps {
   id: string;
   name: string;
-  price: number;
+  price: number;           // in Naira
   image?: string;
   variants?: Record<string, string>;
   quantity?: number;
@@ -23,23 +23,23 @@ export default function AddToCartButton({
   const { addItem } = useCart();
   const [loading, setLoading] = useState(false);
 
-  const uniqueKey = `${id}-${Object.entries(variants).map(([k, v]) => `${k}:${v}`).join("|") || "default"}`;
+  const variantKey = Object.entries(variants)
+    .map(([k, v]) => `${k}:${v}`)
+    .join("|") || "default";
 
-  const handleAdd = useCallback(() => {
-    if (loading) return;
+  const uniqueKey = `${id}-${variantKey}`;
+
+  const handleAdd = () => {
     setLoading(true);
-
     addItem({ id, name, price, image, variants, quantity, key: uniqueKey });
-
-    setTimeout(() => setLoading(false), 200); // simulate UX feedback
-  }, [addItem, id, name, price, image, variants, quantity, uniqueKey, loading]);
+    setTimeout(() => setLoading(false), 200);
+  };
 
   return (
     <button
       onClick={handleAdd}
       disabled={loading}
-      aria-label={`Add ${name} to cart`}
-      className={`btn btn-primary w-full flex items-center justify-center transition-transform duration-150 hover:scale-105 active:scale-95 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
+      className="btn btn-primary w-full flex items-center justify-center"
     >
       {loading ? "Adding..." : "Add to Cart"}
     </button>

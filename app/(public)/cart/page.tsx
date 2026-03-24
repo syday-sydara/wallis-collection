@@ -1,41 +1,31 @@
 "use client";
 
 import Image from "next/image";
-import { useCart } from "@/components/cart/cart-context";
+import { useCart } from "@/components/cart/CartProvider"; // ✅ CartProvider hook
 import Button from "@/components/ui/Button";
 import { X } from "lucide-react";
 import Link from "next/link";
 
 export default function CartPage() {
-  const {
-    items,
-    increment,
-    decrement,
-    removeItem,
-    clearCart,
-    total,
-    itemCount,
-    isEmpty,
-  } = useCart();
+  const { items, increment, decrement, removeItem, clearCart, total, itemCount, isEmpty } = useCart();
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
       <h1 className="heading-1 text-center">Your Cart</h1>
 
+      {/* Continue shopping link if cart has items */}
       {!isEmpty && (
         <div className="text-center">
-          <Link
-            href="/products"
-            className="text-primary underline text-sm hover:opacity-80"
-          >
+          <Link href="/products" className="text-[var(--color-primary-500)] underline text-sm hover:opacity-80">
             Continue Shopping
           </Link>
         </div>
       )}
 
+      {/* Empty cart state */}
       {isEmpty && (
-        <div className="text-center py-20">
-          <p className="text-lg text-[var(--color-text-secondary)] mb-6">
+        <div className="text-center py-20 space-y-6">
+          <p className="text-lg text-[var(--color-text-secondary)]">
             Your cart is empty.
           </p>
           <Button asChild variant="primary">
@@ -44,15 +34,13 @@ export default function CartPage() {
         </div>
       )}
 
+      {/* Cart items + summary */}
       {!isEmpty && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Items */}
+          {/* Items list */}
           <div className="lg:col-span-2 space-y-6">
             {items.map((item) => (
-              <div
-                key={item.key}
-                className="flex items-center gap-4 p-4 border border-[var(--color-border)] rounded-lg"
-              >
+              <div key={item.key} className="flex items-center gap-4 p-4 border border-[var(--color-border)] rounded-lg">
                 {item.image && (
                   <Image
                     src={item.image}
@@ -63,12 +51,12 @@ export default function CartPage() {
                   />
                 )}
 
-                <div className="flex-1">
-                  <h3 className="font-semibold">{item.name}</h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold truncate">{item.name}</h3>
 
-                  {/* Variant display */}
+                  {/* Variants */}
                   {item.variants && (
-                    <p className="text-xs text-[var(--color-text-secondary)]">
+                    <p className="text-xs text-[var(--color-text-secondary)] truncate">
                       {Object.entries(item.variants)
                         .map(([k, v]) => `${k}: ${v}`)
                         .join(", ")}
@@ -76,15 +64,17 @@ export default function CartPage() {
                   )}
 
                   <p className="text-sm text-[var(--color-text-secondary)]">
-                    ₦{(item.price ?? 0).toLocaleString()}
+                    ₦{item.price.toLocaleString()}
                   </p>
 
+                  {/* Quantity controls */}
                   <div className="flex items-center mt-2 space-x-3">
                     <button
                       onClick={() => decrement(item.key)}
                       className="px-2 py-1 border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-surface)] transition"
+                      aria-label={`Decrease quantity of ${item.name}`}
                     >
-                      -
+                      −
                     </button>
 
                     <span className="font-medium">{item.quantity}</span>
@@ -92,15 +82,18 @@ export default function CartPage() {
                     <button
                       onClick={() => increment(item.key)}
                       className="px-2 py-1 border border-[var(--color-border)] rounded hover:bg-[var(--color-bg-surface)] transition"
+                      aria-label={`Increase quantity of ${item.name}`}
                     >
                       +
                     </button>
                   </div>
                 </div>
 
+                {/* Remove item */}
                 <button
                   onClick={() => removeItem(item.key)}
                   className="text-[var(--color-danger-500)] hover:opacity-70"
+                  aria-label={`Remove ${item.name} from cart`}
                 >
                   <X size={20} />
                 </button>
