@@ -9,18 +9,33 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} font-sans scroll-smooth`}
+      className={`${spaceGrotesk.variable} scroll-smooth`}
       suppressHydrationWarning
     >
       <body
         className="
-          flex flex-col min-h-screen antialiased
-          bg-[var(--color-bg-primary)]
-          text-[var(--color-text-primary)]
+          min-h-screen flex flex-col
+          bg-bg-primary text-text-primary
+          antialiased
           transition-colors duration-300
+          [text-rendering:optimizeLegibility]
         "
       >
-        {children}
+        {/* Root App Wrapper */}
+        <div className="flex flex-col min-h-screen">
+          
+          {/* Future: Navbar */}
+          {/* <Navbar /> */}
+
+          {/* Main Content */}
+          <main className="flex-1">
+            {children}
+          </main>
+
+          {/* Future: Footer */}
+          {/* <Footer /> */}
+
+        </div>
       </body>
     </html>
   );
