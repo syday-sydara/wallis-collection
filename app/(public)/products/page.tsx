@@ -1,41 +1,64 @@
 import { prisma } from "@/lib/db";
-import ProductCard from "@/components/products/ProductCard"; // Assuming you have a ProductCard component to render each product.
+import ProductCard from "@/components/products/ProductCard";
 import Loading from "@/components/products/Loading";
 import { Metadata } from "next";
-import { cache } from "react";
-
-const getAllProducts = cache(async () => {
-  return await prisma.product.findMany({
-    where: {
-      deletedAt: null,
-    },
-    include: {
-      images: {
-        orderBy: {
-          position: "asc",
-        },
-      },
-    },
-  });
-});
 
 export const revalidate = 300;
 
+export const metadata: Metadata = {
+  title: "All Products",
+  description: "Browse all available products",
+};
+
+const getAllProducts = async () => {
+  return prisma.product.findMany({
+    where: {
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      images: {
+        take: 1,
+        orderBy: { position: "asc" },
+        select: { url: true },
+      },
+    },
+  });
+};
+
 export default async function ProductPage() {
-  const products = await getAllProducts();
+  let products = [];
+
+  try {
+    products = await getAllProducts();
+  } catch (error) {
+    console.error(error);
+    return (
+      <p className="text-center text-red-500 py-10">
+        Failed to load products.
+      </p>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <p className="text-center text-gray-500 py-10">
+        No products available.
+      </p>
+    );
+  }
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-4">All Products</h1>
-      {products.length === 0 ? (
-        <Loading count={8} variant="grid" showSpinner={true} message="Loading products..." />
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {products.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
     </main>
   );
 }
