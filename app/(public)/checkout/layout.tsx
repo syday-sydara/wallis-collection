@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import { CartProvider } from "@/components/cart/CartProvider";
-import { CheckoutProvider } from "@/components/checkout/checkout-context";
+import { CheckoutProvider } from "@/components/checkout/checkoutProvider";
 
 export default function CheckoutLayout({ children }: { children: ReactNode }) {
   return (

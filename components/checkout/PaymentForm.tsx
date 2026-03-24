@@ -4,7 +4,7 @@ import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import CheckoutProgress from "@/components/checkout/CheckoutProgress";
-import { useCheckout } from "./checkout-context";
+import { useCheckout } from "./checkoutProvider";
 import { useCart } from "@/components/cart/CartProvider";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -15,26 +15,33 @@ export default function PaymentForm() {
   const router = useRouter();
 
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleContinue = () => {
+    // Reset the error before validating
+    setError("");
+
+    // Validate Payment Method
     if (!payment.method) {
       setError("Please select a payment method");
       return;
     }
 
-    // If card is selected, validate card fields
-    if (payment.method === "CARD") {
-      if (!payment.cardNumber || !payment.expiry || !payment.cvv) {
-        setError("Please fill in all card details");
+    // If Paystack or Monnify is selected, validate card fields
+    if (payment.method === "PAYSTACK" || payment.method === "MONNIFY") {
+      if (payment.method === "PAYSTACK" && (!payment.cardNumber || !payment.expiry || !payment.cvv)) {
+        setError("Please fill in all card details.");
         return;
       }
+      // Monnify doesn’t require card details, so we don’t need to validate them here
     }
 
-    // If bank transfer is selected, no extra fields needed
-    // If pay on delivery, no extra fields needed
+    setIsSubmitting(true);
 
-    setError("");
-    router.push("/checkout/review");
+    // Proceed to review page after validation
+    setTimeout(() => {
+      router.push("/checkout/review");
+    }, 500); // Simulating network delay if needed, you can replace this with an API call
   };
 
   return (
@@ -104,8 +111,12 @@ export default function PaymentForm() {
         {error && <p className="text-danger text-sm">{error}</p>}
 
         {/* Continue Button */}
-        <Button className="w-full mt-4" onClick={handleContinue}>
-          Review Order
+        <Button
+          className="w-full mt-4"
+          onClick={handleContinue}
+          disabled={isSubmitting} // Disable while submitting
+        >
+          {isSubmitting ? "Processing..." : "Review Order"}
         </Button>
       </Card>
     </div>
