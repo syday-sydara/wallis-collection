@@ -12,18 +12,18 @@ const getAllProducts = cache(async (): Promise<Product[]> => {
     where: { deletedAt: null },
     include: { images: { orderBy: { position: "asc" } } },
     orderBy: { createdAt: "desc" },
-    take: 50, // initial batch
+    take: 50,
   });
 
   return products.map((p) => ({
     id: p.id,
     name: p.name,
     slug: p.slug,
-    priceNaira: p.priceNaira,
-    salePriceNaira: p.salePriceNaira ?? undefined,
+    price: p.price,
+    salePrice: p.salePrice ?? undefined,
     images: p.images?.map((img) => ({ url: img.url })) ?? [],
     isNew: p.isNew ?? false,
-    isOnSale: p.salePriceNaira != null,
+    isOnSale: p.salePrice != null,
     stock: p.stock,
   }));
 });

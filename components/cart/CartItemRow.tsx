@@ -1,78 +1,110 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { CartItem } from "@/lib/types/types";
-import { v4 as uuidv4 } from "uuid";
+import Image from "next/image";
+import { X, Minus, Plus } from "lucide-react";
+import { useCart } from "./CartProvider";
+import Button from "@/components/ui/Button";
 
-interface CartContextType {
-  items: CartItem[];
-  itemCount: number;
-  total: number;
-  isEmpty: boolean;
-  addItem: (item: CartItem, stock?: number) => void;
-  increment: (key: string, stock?: number) => void;
-  decrement: (key: string) => void;
-  removeItem: (key: string) => void;
-  clearCart: () => void;
+interface CartItemRowProps {
+  item: {
+    key: string;
+    productId: string;
+    name: string;
+    price: number;
+    quantity: number;
+    stock?: number;
+    image?: string;
+  };
+  variant?: "default" | "compact";
+  maxStock?: number;
 }
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
+export default function CartItemRow({
+  item,
+  variant = "default",
+  maxStock = item.stock ?? Infinity,
+}: CartItemRowProps) {
+  const { increment, decrement, removeItem } = useCart();
 
-export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const handleIncrement = () => increment(item.key);
+  const handleDecrement = () => decrement(item.key);
+  const handleRemove = () => removeItem(item.key);
 
-  useEffect(() => {
-    const stored = localStorage.getItem("cart");
-    if (stored) setItems(JSON.parse(stored));
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(items));
-  }, [items]);
-
-  const addItem = (item: CartItem, stock = Infinity) => {
-    setItems((prev) => {
-      const existing = prev.find((i) => i.key === item.key);
-      if (existing) {
-        const qty = Math.min(existing.quantity + item.quantity, stock);
-        return prev.map((i) => i.key === item.key ? { ...i, quantity: qty } : i);
-      }
-      return [...prev, { ...item, key: item.key || uuidv4(), quantity: Math.min(item.quantity, stock) }];
-    });
-  };
-
-  const increment = (key: string, stock = Infinity) => {
-    setItems((prev) =>
-      prev.map((i) => (i.key === key ? { ...i, quantity: Math.min(i.quantity + 1, stock) } : i))
-    );
-  };
-
-  const decrement = (key: string) => {
-    setItems((prev) =>
-      prev
-        .map((i) => (i.key === key ? { ...i, quantity: i.quantity - 1 } : i))
-        .filter((i) => i.quantity > 0)
-    );
-  };
-
-  const removeItem = (key: string) => setItems((prev) => prev.filter((i) => i.key !== key));
-  const clearCart = () => setItems([]);
-
-  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
-  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const isEmpty = items.length === 0;
+  const isCompact = variant === "compact";
 
   return (
-    <CartContext.Provider
-      value={{ items, itemCount, total, isEmpty, addItem, increment, decrement, removeItem, clearCart }}
+    <div
+      className={`flex gap-4 border-b border-border pb-4 ${
+        isCompact ? "items-start" : "items-center"
+      }`}
     >
-      {children}
-    </CartContext.Provider>
-  );
-}
+      {/* Product Image */}
+      <div className="relative w-20 h-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+        {item.image ? (
+          <Image
+            src={item.image}
+            alt={item.name}
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-200 animate-pulse" />
+        )}
+      </div>
 
-export function useCart() {
-  const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used inside <CartProvider>");
-  return ctx;
+      {/* Product Info */}
+      <div className="flex flex-col flex-1">
+        <div className="flex justify-between items-start">
+          <h3 className="font-medium text-sm text-text-primary leading-tight">
+            {item.name}
+          </h3>
+
+          {/* Remove Button */}
+          <button
+            onClick={handleRemove}
+            aria-label="Remove item"
+            className="text-text-muted hover:text-danger-500 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Price */}
+        <p className="text-sm font-semibold mt-1">
+          ₦{(item.price * item.quantity).toLocaleString()}
+        </p>
+
+        {/* Quantity Controls */}
+        <div className="flex items-center gap-3 mt-3">
+          <button
+            onClick={handleDecrement}
+            aria-label="Decrease quantity"
+            className="p-1 rounded border border-border hover:bg-gray-100 transition"
+          >
+            <Minus size={14} />
+          </button>
+
+          <span className="text-sm font-medium w-6 text-center">
+            {item.quantity}
+          </span>
+
+          <button
+            onClick={handleIncrement}
+            aria-label="Increase quantity"
+            disabled={item.quantity >= maxStock}
+            className="p-1 rounded border border-border hover:bg-gray-100 disabled:opacity-40 transition"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+
+        {/* Stock Warning */}
+        {item.quantity >= maxStock && (
+          <p className="text-xs text-danger-500 mt-1">
+            Maximum stock reached
+          </p>
+        )}
+      </div>
+    </div>
+  );
 }
