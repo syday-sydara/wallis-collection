@@ -274,3 +274,11 @@
 .animate-pulse-on-add {
   animation: pulse-on-add 0.3s ease-in-out;
 }
+
+@layer utilities {
+  .sticky-info {
+    position: sticky;
+    top: 6rem; /* Adjust based on your header height */
+    height: fit-content;
+  }
+}

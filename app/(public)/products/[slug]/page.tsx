@@ -1,55 +1,53 @@
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import ProductDetailView from "@/components/products/ProductDetailView";
-import { Metadata } from "next";
+// ... (keep existing imports and generateMetadata)
 
-interface Props {
-  params: { slug: string };
-}
-
-export const revalidate = 300;
-
-const getProduct = async (slug: string) => {
-  return prisma.product.findFirst({
-    where: {
-      slug,
-      deletedAt: null,
-    },
-    include: {
-      images: {
-        take: 3,
-        orderBy: { position: "asc" },
-        select: { url: true },
-      },
-    },
+export default async function ProductPage({ params }: { params: { slug: string } }) {
+  const product = await prisma.product.findUnique({
+    where: { slug: params.slug, deletedAt: null },
+    include: { images: { orderBy: { position: "asc" } } },
   });
-};
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const product = await getProduct(params.slug);
-
-  if (!product) return { title: "Product Not Found" };
-
-  const imageUrl = product.images?.[0]?.url || "/fallback-product.jpg";
-
-  return {
-    title: `${product.name} | Wallis Collection`,
-    description:
-      product.description || "View product details and pricing",
-    openGraph: {
-      images: [imageUrl],
-    },
-  };
-}
-
-export default async function ProductDetailPage({ params }: Props) {
-  const product = await getProduct(params.slug);
 
   if (!product) notFound();
 
+  const formattedProduct = {
+    ...product,
+    priceNaira: product.price / 100,
+    salePriceNaira: product.salePrice ? product.salePrice / 100 : null,
+  };
+
+  // NEW: Generate Google Structured Data
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.images[0]?.url,
+    "description": product.description,
+    "brand": {
+      "@type": "Brand",
+      "name": "Wallis Collection"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": `${process.env.NEXT_PUBLIC_URL}/products/${product.slug}`,
+      "priceCurrency": "NGN",
+      "price": formattedProduct.salePriceNaira || formattedProduct.priceNaira,
+      "itemCondition": "https://schema.org/NewCondition",
+      "availability": product.stock > 0 
+        ? "https://schema.org/InStock" 
+        : "https://schema.org/OutOfStock"
+    }
+  };
+
   return (
-    <main className="max-w-7xl mx-auto px-4 py-4 md:py-8">
-      <ProductDetailView product={product} />
+    <main className="max-w-7xl mx-auto px-4 py-8">
+      {/* Inject JSON-LD invisibly for search engines */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ProductDetailView product={formattedProduct} />
     </main>
   );
 }

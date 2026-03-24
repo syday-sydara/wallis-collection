@@ -1,78 +1,64 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { CartItem } from "@/lib/types/types";
-import { v4 as uuidv4 } from "uuid";
+import { X } from "lucide-react";
+import { useCart } from "./CartProvider";
+import Image from "next/image";
 
-interface CartContextType {
-  items: CartItem[];
-  itemCount: number;
-  total: number;
-  isEmpty: boolean;
-  addItem: (item: CartItem, stock?: number) => void;
-  increment: (key: string, stock?: number) => void;
-  decrement: (key: string) => void;
-  removeItem: (key: string) => void;
-  clearCart: () => void;
-}
+export default function CartItemRow({ item, variant = "default", maxStock }) {
+  const { increment, decrement, removeItem } = useCart();
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
-
-export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("cart");
-    if (stored) setItems(JSON.parse(stored));
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(items));
-  }, [items]);
-
-  const addItem = (item: CartItem, stock = Infinity) => {
-    setItems((prev) => {
-      const existing = prev.find((i) => i.key === item.key);
-      if (existing) {
-        const qty = Math.min(existing.quantity + item.quantity, stock);
-        return prev.map((i) => i.key === item.key ? { ...i, quantity: qty } : i);
-      }
-      return [...prev, { ...item, key: item.key || uuidv4(), quantity: Math.min(item.quantity, stock) }];
-    });
-  };
-
-  const increment = (key: string, stock = Infinity) => {
-    setItems((prev) =>
-      prev.map((i) => (i.key === key ? { ...i, quantity: Math.min(i.quantity + 1, stock) } : i))
-    );
-  };
-
-  const decrement = (key: string) => {
-    setItems((prev) =>
-      prev
-        .map((i) => (i.key === key ? { ...i, quantity: i.quantity - 1 } : i))
-        .filter((i) => i.quantity > 0)
-    );
-  };
-
-  const removeItem = (key: string) => setItems((prev) => prev.filter((i) => i.key !== key));
-  const clearCart = () => setItems([]);
-
-  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
-  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const isEmpty = items.length === 0;
+  const compact = variant === "compact";
 
   return (
-    <CartContext.Provider
-      value={{ items, itemCount, total, isEmpty, addItem, increment, decrement, removeItem, clearCart }}
+    <div
+      className={`flex items-center gap-4 ${
+        compact ? "py-2" : "py-4"
+      } border-b last:border-none`}
     >
-      {children}
-    </CartContext.Provider>
-  );
-}
+      {/* Product Image */}
+      {item.image && (
+        <Image
+          src={item.image}
+          alt={item.name}
+          width={compact ? 48 : 64}
+          height={compact ? 48 : 64}
+          className="rounded-md object-cover"
+        />
+      )}
 
-export function useCart() {
-  const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used inside <CartProvider>");
-  return ctx;
+      {/* Product Info */}
+      <div className="flex-1">
+        <h3 className="font-medium text-sm">{item.name}</h3>
+        <p className="text-xs text-gray-500">₦{item.price.toLocaleString()}</p>
+
+        {/* Quantity Controls */}
+        <div className="flex items-center gap-2 mt-2">
+          <button
+            onClick={() => decrement(item.key)}
+            className="px-2 py-1 border rounded text-sm"
+          >
+            -
+          </button>
+
+          <span className="w-6 text-center text-sm">{item.quantity}</span>
+
+          <button
+            onClick={() => increment(item.key)}
+            disabled={item.quantity >= (maxStock ?? item.stock ?? Infinity)}
+            className="px-2 py-1 border rounded text-sm disabled:opacity-50"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      {/* Remove Button */}
+      <button
+        onClick={() => removeItem(item.key)}
+        className="text-gray-400 hover:text-red-500"
+      >
+        <X size={16} />
+      </button>
+    </div>
+  );
 }

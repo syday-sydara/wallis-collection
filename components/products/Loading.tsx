@@ -20,9 +20,8 @@ export default function Loading({
   variant = "grid",
   className,
 }: LoadingProps) {
-  // Configure layouts per variant
   const variantConfig = useMemo(() => {
-    return {
+    const configs = {
       grid: {
         container: "grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4",
         image: "aspect-[3/4] w-full rounded-lg",
@@ -38,13 +37,14 @@ export default function Loading({
         image: "h-20 w-full rounded-md",
         extra: false,
       },
-    }[variant];
+    };
+
+    return configs[variant];
   }, [variant]);
 
-  // Generate skeletons
   const skeletons = useMemo(
     () =>
-      Array.from({ length: count }).map((_, i) => (
+      Array.from({ length: count }, (_, i) => (
         <div
           key={i}
           className="flex flex-col gap-2 animate-pulse motion-reduce:animate-none transition-opacity duration-300 opacity-80"
@@ -66,22 +66,16 @@ export default function Loading({
       aria-live="polite"
       aria-busy="true"
     >
-      {/* Skeleton Grid/List */}
-      <div
-        className={clsx("w-full mb-4", variantConfig.container)}
-        aria-hidden="true"
-      >
+      <div className={clsx("w-full mb-4", variantConfig.container)} aria-hidden="true">
         {skeletons}
       </div>
 
-      {/* Optional message */}
       {message ? (
         <p className="text-sm text-[var(--color-text-secondary)] mb-2">{message}</p>
       ) : (
         <span className="sr-only">Loading content</span>
       )}
 
-      {/* Optional spinner */}
       {showSpinner && (
         <Spinner
           size="md"
