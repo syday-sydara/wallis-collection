@@ -1,82 +1,116 @@
 "use client";
 
 import { useCart } from "@/components/cart/CartProvider";
-import CartItemRow from "@/components/cart/CartItemRow";
-import CartDrawer from "@/components/cart/CartDrawer";
-import Button from "@/components/ui/Button";
 import { formatPrice } from "@/lib/formatters";
 import { useState } from "react";
-import Link from "next/link";
 
 export default function CartPage() {
-  const { items, total, itemCount, isEmpty, clearCart } = useCart();
-  const [loading, setLoading] = useState(false);
+  const { items, increment, decrement, removeItem, clearCart, total, isEmpty } = useCart();
+  const [variantSelection, setVariantSelection] = useState<Record<string, Record<string, string>>>({});
 
-  const handleCheckout = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/cart/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items,
-          email: "customer@example.com", // replace with actual form input
-          phone: "08012345678",
-          fullName: "John Doe",
-          address: "123 Street",
-          city: "Lagos",
-          state: "Lagos",
-          paymentMethod: "PAYSTACK", // or "MONNIFY"
-        }),
-      });
+  if (isEmpty) return <p className="p-4 text-center">Your cart is empty.</p>;
 
-      const data = await res.json();
-      if (data.success) {
-        window.location.href = data.paymentUrl || `/order/success/${data.orderId}`;
-      } else {
-        alert(data.error || "Checkout failed");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Checkout failed");
-    } finally {
-      setLoading(false);
-    }
+  const handleVariantChange = (itemKey: string, variantName: string, value: string) => {
+    setVariantSelection((prev) => ({
+      ...prev,
+      [itemKey]: { ...prev[itemKey], [variantName]: value },
+    }));
   };
 
-  if (isEmpty) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen text-center">
-        <h2 className="text-2xl font-semibold mb-4">Your cart is empty</h2>
-        <Button asChild>
-          <Link href="/products">Continue Shopping</Link>
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Shopping Cart</h1>
+    <div className="max-w-4xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Shopping Cart</h1>
+      <div className="space-y-4">
+        {items.map((item) => {
+          const stockLimit = item.stock ?? Infinity;
+          const selectedVariants = variantSelection[item.key] || item.variants || {};
+          const isOverStock = item.quantity > stockLimit;
 
-      <div className="grid grid-cols-1 gap-4">
-        {items.map((item) => (
-          <CartItemRow key={item.key} item={item} variant="full" maxStock={item.quantity} />
-        ))}
+          return (
+            <div
+              key={item.key}
+              className="flex items-center justify-between border p-4 rounded-md"
+            >
+              <div className="flex items-center gap-4">
+                <img
+                  src={item.image || "/fallback-product.jpg"}
+                  alt={item.name}
+                  className="w-20 h-20 object-cover rounded"
+                />
+                <div>
+                  <h2 className="font-semibold">{item.name}</h2>
+                  <p className="text-sm text-gray-600">{formatPrice(item.price)}</p>
+                  {item.variants && (
+                    <div className="flex gap-2 mt-1">
+                      {Object.keys(item.variants).map((variantName) => (
+                        <select
+                          key={variantName}
+                          value={selectedVariants[variantName] || ""}
+                          onChange={(e) =>
+                            handleVariantChange(item.key, variantName, e.target.value)
+                          }
+                          className="border px-1 py-0.5 rounded text-sm"
+                        >
+                          <option value="">Select {variantName}</option>
+                          <option value={item.variants![variantName]}>{item.variants![variantName]}</option>
+                        </select>
+                      ))}
+                    </div>
+                  )}
+                  {isOverStock && (
+                    <p className="text-red-500 text-sm mt-1">Stock insufficient!</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => decrement(item.key)}
+                    className="px-2 py-1 bg-gray-200 rounded"
+                  >
+                    -
+                  </button>
+                  <span>{item.quantity}</span>
+                  <button
+                    onClick={() => increment(item.key)}
+                    disabled={item.quantity >= stockLimit}
+                    className={`px-2 py-1 rounded ${
+                      item.quantity >= stockLimit ? "bg-gray-300 cursor-not-allowed" : "bg-gray-200"
+                    }`}
+                  >
+                    +
+                  </button>
+                </div>
+                <button
+                  onClick={() => removeItem(item.key)}
+                  className="text-red-500 text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      <div className="mt-8 flex flex-col md:flex-row justify-between items-center border-t pt-6">
+      <div className="mt-6 flex justify-between items-center">
         <div className="text-lg font-semibold">
-          Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"}): <span>{formatPrice(total)}</span>
+          Total: {formatPrice(total)}
         </div>
-
-        <div className="flex gap-3 mt-4 md:mt-0">
-          <Button onClick={handleCheckout} disabled={loading}>
-            {loading ? "Processing..." : "Proceed to Checkout"}
-          </Button>
-          <Button variant="ghost" onClick={clearCart}>
+        <div className="flex gap-2">
+          <button
+            onClick={clearCart}
+            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+          >
             Clear Cart
-          </Button>
+          </button>
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            disabled={items.some((i) => (i.stock ?? Infinity) < i.quantity)}
+          >
+            Checkout
+          </button>
         </div>
       </div>
     </div>
