@@ -1,51 +1,90 @@
 "use client";
 
-import React from "react";
-import { cva, VariantProps } from "class-variance-authority";
+import React, { useId } from "react";
 import clsx from "clsx";
+import Input, { InputProps } from "@/components/ui/Input";
+import Label from "@/components/ui/Label";
 
-const label = cva(
-  "block font-medium",
-  {
-    variants: {
-      size: {
-        sm: "text-xs",
-        md: "text-sm",
-        lg: "text-base",
-      },
-      variant: {
-        default: "text-[color:var(--color-neutral-600)]",
-        subtle: "text-[color:var(--color-neutral-400)]",
-        accent: "text-[color:var(--color-accent-500)]",
-      },
-      uppercase: {
-        true: "uppercase tracking-widest",
-        false: "",
-      },
-    },
-    defaultVariants: {
-      size: "sm",
-      variant: "default",
-      uppercase: true,
-    },
-  }
-);
+interface TextFieldProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "id"> {
+  label: string;
+  hint?: string;
+  error?: string | null;
+  id?: string;
+  required?: boolean;
+  disabled?: boolean;
+  labelSize?: "sm" | "md" | "lg";
+  labelVariant?: "default" | "subtle" | "accent";
+  labelWeight?: "normal" | "medium" | "semibold";
+  hideLabel?: boolean;
+  variant?: InputProps["variant"];
+}
 
-interface LabelProps
-  extends React.LabelHTMLAttributes<HTMLLabelElement>,
-    VariantProps<typeof label> {}
-
-export default function Label({
-  children,
-  size,
-  variant,
-  uppercase,
+export default function TextField({
+  label,
+  hint,
+  error,
+  id,
+  required = false,
+  disabled = false,
+  hideLabel = false,
+  labelSize = "sm",
+  labelVariant = "default",
+  labelWeight = "medium",
   className,
-  ...props
-}: LabelProps) {
+  variant,
+  ...inputProps
+}: TextFieldProps) {
+  const reactId = useId();
+  const inputId = id ?? `tf-${reactId}`;
+
+  const hintId = hint ? `${inputId}-hint` : undefined;
+  const errorId = error ? `${inputId}-error` : undefined;
+
+  const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
+
   return (
-    <label className={clsx(label({ size, variant, uppercase }), className)} {...props}>
-      {children}
-    </label>
+    <div className={clsx("space-y-1", className)}>
+      <Label
+        htmlFor={inputId}
+        size={labelSize}
+        variant={labelVariant}
+        weight={labelWeight}
+        required={required}
+        disabled={disabled}
+        className={hideLabel ? "sr-only" : undefined}
+      >
+        {label}
+      </Label>
+
+      <Input
+        id={inputId}
+        aria-describedby={describedBy}
+        aria-invalid={!!error}
+        disabled={disabled}
+        required={required}
+        variant={error ? "error" : variant ?? "default"}
+        {...inputProps}
+      />
+
+      {error && (
+        <p
+          id={errorId}
+          className="text-sm text-[var(--color-danger-500)]"
+          role="alert"
+        >
+          {error}
+        </p>
+      )}
+
+      {!error && hint && (
+        <p
+          id={hintId}
+          className="text-sm text-[var(--color-text-secondary)]"
+        >
+          {hint}
+        </p>
+      )}
+    </div>
   );
 }

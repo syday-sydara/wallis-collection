@@ -5,46 +5,50 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import CheckoutProgress from "@/components/checkout/CheckoutProgress";
 import { formatPrice } from "@/lib/formatters";
-import { createOrder } from "@/lib/actions/createOrder";
 import { useRouter } from "next/navigation";
+import { useCheckout } from "./checkout-context";
 
 export default function OrderReview() {
-  const { items, subtotal, clear } = useCart();
+  const { items, total, clearCart } = useCart();
+  const { shipping, payment } = useCheckout();
   const router = useRouter();
 
   const handlePlaceOrder = async () => {
-    const orderId = await createOrder({
-      email: "customer@example.com",
-      phone: "08012345678",
+    const payload = {
+      shipping,
+      paymentMethod: payment.method,
+      items: items.map((i) => ({
+        id: i.id,
+        quantity: i.quantity,
+        priceCents: i.price * 100, // convert naira → kobo
+      })),
+      totalCents: total * 100,
+    };
 
-      shippingType: "DELIVERY",
-      address: "123 Street",
-      city: "Lagos",
-      state: "LA",
-      postalCode: "100001",
-      courierPhone: "08098765432",
-      trackingNumber: "WLS-12345",
-
-      paymentMethod: "CARD",
-
-      items,
-      subtotal,
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      body: JSON.stringify(payload),
     });
 
-    clear();
-    router.push(`/checkout/confirmation?orderId=${orderId}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Failed to place order");
+      return;
+    }
+
+    clearCart();
+    router.push(`/checkout/confirmation?orderId=${data.orderId}`);
   };
 
   return (
     <div className="space-y-12">
       <CheckoutProgress step={4} />
-
       <h1 className="heading-1 text-primary">Review Your Order</h1>
 
       {/* Items */}
-      <Card className="space-y-6">
+      <Card className="space-y-6 p-6">
         <h2 className="heading-3 text-primary">Items</h2>
-
         <div className="space-y-4">
           {items.map((item) => (
             <div key={item.id} className="flex justify-between">
@@ -52,7 +56,7 @@ export default function OrderReview() {
                 {item.name} × {item.quantity}
               </span>
               <span className="text-secondary font-medium">
-                {formatPrice((item.priceCents * item.quantity) / 100)}
+                {formatPrice(item.price * item.quantity)}
               </span>
             </div>
           ))}
@@ -60,30 +64,27 @@ export default function OrderReview() {
       </Card>
 
       {/* Summary */}
-      <Card className="space-y-4">
+      <Card className="space-y-4 p-6">
         <h2 className="heading-3 text-primary">Summary</h2>
 
         <div className="flex justify-between text-sm">
           <span className="text-neutral">Subtotal</span>
           <span className="text-primary font-medium">
-            {formatPrice(subtotal / 100)}
+            {formatPrice(total)}
           </span>
         </div>
 
         <div className="flex justify-between text-sm">
           <span className="text-neutral">Shipping</span>
-          <span className="text-primary font-medium">₦0 (Free)</span>
-        </div>
-
-        <div className="flex justify-between text-sm">
-          <span className="text-neutral">Tax</span>
-          <span className="text-neutral">Calculated at delivery</span>
+          <span className="text-primary font-medium">
+            {shipping.type === "DELIVERY" ? "₦0 (Free)" : "Pickup"}
+          </span>
         </div>
 
         <div className="flex justify-between pt-3 border-t border-neutral/20">
           <span className="label text-primary">Total</span>
           <span className="text-xl font-semibold text-primary">
-            {formatPrice(subtotal / 100)}
+            {formatPrice(total)}
           </span>
         </div>
       </Card>

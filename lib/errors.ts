@@ -1,53 +1,55 @@
-// lib/errors.ts
-import { Prisma, PrismaClientKnownRequestError } from "@prisma/client"
-import { ZodError } from "zod"
+// PATH: lib/errors.ts
+// NAME: errors.ts
+
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { ZodError } from "zod";
 
 /* ---------------------------------- */
 /* Typed API Response                 */
 /* ---------------------------------- */
 export type ApiResponse<T> = {
-  success: boolean
-  data?: T
-  error?: string
-  issues?: unknown
-  meta?: unknown
-}
+  success: boolean;
+  data?: T;
+  error?: string;
+  issues?: unknown;
+  meta?: unknown;
+};
 
 /* ---------------------------------- */
 /* Custom API Error with HTTP Status  */
 /* ---------------------------------- */
 export class ApiError extends Error {
-  status: number
-  meta?: unknown
+  status: number;
+  meta?: unknown;
 
   constructor(message: string, status = 400, meta?: unknown) {
-    super(message)
-    this.status = status
-    this.meta = meta
+    super(message);
+    this.status = status;
+    this.meta = meta;
   }
 
   static badRequest(message = "Bad request", meta?: unknown) {
-    return new ApiError(message, 400, meta)
+    return new ApiError(message, 400, meta);
   }
 
   static unauthorized(message = "Unauthorized", meta?: unknown) {
-    return new ApiError(message, 401, meta)
+    return new ApiError(message, 401, meta);
   }
 
   static forbidden(message = "Forbidden", meta?: unknown) {
-    return new ApiError(message, 403, meta)
+    return new ApiError(message, 403, meta);
   }
 
   static notFound(message = "Not found", meta?: unknown) {
-    return new ApiError(message, 404, meta)
+    return new ApiError(message, 404, meta);
   }
 
   static conflict(message = "Conflict", meta?: unknown) {
-    return new ApiError(message, 409, meta)
+    return new ApiError(message, 409, meta);
   }
 
   static serverError(message = "Internal server error", meta?: unknown) {
-    return new ApiError(message, 500, meta)
+    return new ApiError(message, 500, meta);
   }
 }
 
@@ -55,41 +57,74 @@ export class ApiError extends Error {
 /* Centralized Error Logger           */
 /* ---------------------------------- */
 export function logError(error: unknown) {
-  // Extendable for Sentry, Logtail, Datadog, etc.
-  console.error("[API ERROR]", error)
+  console.error("[API ERROR]", error);
 }
 
 /* ---------------------------------- */
 /* Success Response Helper            */
 /* ---------------------------------- */
-export function handleSuccess<T>(data: T, status = 200): Response {
-  const payload: ApiResponse<T> = { success: true, data }
-  return new Response(JSON.stringify(payload), { status, headers: { "Content-Type": "application/json" } })
+export function handleSuccess<T>(data: T, status = 200, meta?: unknown): Response {
+  const payload: ApiResponse<T> = { success: true, data, meta };
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 /* ---------------------------------- */
 /* Unified Error Handler              */
 /* ---------------------------------- */
 export function handleError(error: unknown): Response {
-  // 1️⃣ Custom ApiError
   if (error instanceof ApiError) {
-    logError(error)
+    logError(error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message, meta: error.meta }),
-      { status: error.status, headers: { "Content-Type": "application/json" } }
-    )
+      JSON.stringify({
+        success: false,
+        error: error.message,
+        meta: error.meta,
+      }),
+      {
+        status: error.status,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 
-  // 2️⃣ Prisma Known Errors
   if (error instanceof PrismaClientKnownRequestError) {
-    logError(error)
+    logError(error);
+
+    if (error.code === "P2002") {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Unique constraint violation",
+          meta: error.meta,
+        }),
+        { status: 409, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    if (error.code === "P2025") {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Record not found",
+          meta: error.meta,
+        }),
+        { status: 404, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ success: false, error: "Database error", meta: error.meta }),
+      JSON.stringify({
+        success: false,
+        error: "Database error",
+        meta: error.meta,
+      }),
       { status: 500, headers: { "Content-Type": "application/json" } }
-    )
+    );
   }
 
-  // 3️⃣ Zod Validation Errors
   if (error instanceof ZodError) {
     return new Response(
       JSON.stringify({
@@ -98,13 +133,16 @@ export function handleError(error: unknown): Response {
         issues: error.issues,
       }),
       { status: 422, headers: { "Content-Type": "application/json" } }
-    )
+    );
   }
 
-  // 4️⃣ Unknown / Unexpected Errors
-  logError(error)
+  logError(error);
   return new Response(
-    JSON.stringify({ success: false, error: "Internal server error" }),
+    JSON.stringify({
+      success: false,
+      error: "Internal server error",
+      meta: error instanceof Error ? error.message : error,
+    }),
     { status: 500, headers: { "Content-Type": "application/json" } }
-  )
+  );
 }

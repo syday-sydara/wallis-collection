@@ -1,35 +1,83 @@
 "use client";
 
-import React from "react";
-import { cva, VariantProps } from "class-variance-authority";
+import React, { useId } from "react";
 import clsx from "clsx";
+import Input, { InputProps } from "@/components/ui/Input";
 
-const input = cva(
-  "w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 transition-colors duration-200 disabled:opacity-50 disabled:pointer-events-none",
-  {
-    variants: {
-      variant: {
-        default: "border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-primary-500)]",
-        subtle: "border-transparent bg-[color:var(--color-surface)] text-[color:var(--color-primary-500)]",
-        outline: "border-[color:var(--color-primary-500)] bg-white text-[color:var(--color-primary-500)]",
-      },
-      size: {
-        sm: "text-xs px-2 py-1",
-        md: "text-sm px-3 py-2",
-        lg: "text-base px-4 py-3",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "md",
-    },
-  }
-);
+interface TextFieldProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "id"> {
+  label: string;
+  hint?: string;
+  error?: string | null;
+  id?: string;
+  required?: boolean;
+  hideLabel?: boolean;
+  variant?: InputProps["variant"];
+}
 
-interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement>,
-    VariantProps<typeof input> {}
+export default function TextField({
+  label,
+  hint,
+  error,
+  id,
+  required,
+  hideLabel = false,
+  className,
+  variant,
+  ...inputProps
+}: TextFieldProps) {
+  const reactId = useId();
+  const inputId = id ?? `tf-${reactId}`;
 
-export default function Input({ variant, size, className, ...props }: InputProps) {
-  return <input className={clsx(input({ variant, size }), className)} {...props} />;
+  const hintId = hint ? `${inputId}-hint` : undefined;
+  const errorId = error ? `${inputId}-error` : undefined;
+
+  const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
+
+  return (
+    <div className={clsx("space-y-1", className)}>
+      <label
+        htmlFor={inputId}
+        className={clsx(
+          "block text-sm font-medium",
+          hideLabel && "sr-only"
+        )}
+      >
+        {label}
+        {required && (
+          <span aria-hidden="true" className="text-[var(--color-danger-500)]">
+            *
+          </span>
+        )}
+      </label>
+
+      <Input
+        id={inputId}
+        aria-describedby={describedBy}
+        aria-invalid={!!error}
+        variant={error ? "error" : variant ?? "default"}
+        required={required}
+        {...inputProps}
+      />
+
+      {error && (
+        <p
+          id={errorId}
+          className="text-sm text-[var(--color-danger-500)]"
+          role="alert"
+        >
+          {error}
+        </p>
+      )}
+
+      {!error && hint && (
+        <p
+          id={hintId}
+          className="text-sm text-[var(--color-text-secondary)]"
+        >
+          {hint}
+        </p>
+      )}
+    </div>
+  );
 }

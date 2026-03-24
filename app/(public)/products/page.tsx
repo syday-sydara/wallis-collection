@@ -1,71 +1,69 @@
-"use client";
+// app/(public)/products/page.tsx
+import { prisma } from "@/lib/db";
+import ProductGrid from "@/components/products/ProductGrid";
+import { Metadata } from "next";
+import { Suspense } from "react";
+import Loading from "@/components/products/Loading";
 
-import { useEffect, useState } from "react";
-import ProductGrid, { Product } from "@/components/products/ProductGrid";
-import { useCart } from "@/components/cart/cart-context";
-import Loading from "@/components/ui/Loading";
+export const metadata: Metadata = {
+  title: "All Products – Wallis Collection",
+  description:
+    "Explore premium Northern Nigerian fashion crafted with elegance, heritage, and modern design.",
+  alternates: {
+    canonical: "https://walliscollection.com/products",
+  },
+  openGraph: {
+    title: "All Products – Wallis Collection",
+    description:
+      "Explore premium Northern Nigerian fashion crafted with elegance, heritage, and modern design.",
+    url: "https://walliscollection.com/products",
+    type: "website",
+    images: [
+      {
+        url: "https://walliscollection.com/og/products.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Wallis Collection Products",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "All Products – Wallis Collection",
+    description:
+      "Explore premium Northern Nigerian fashion crafted with elegance, heritage, and modern design.",
+    images: ["https://walliscollection.com/og/products.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
-export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { addItem } = useCart();
+async function fetchProducts() {
+  return prisma.product.findMany({
+    where: { deletedAt: null },
+    include: { images: true },
+    orderBy: { createdAt: "desc" },
+  });
+}
 
-  // Fetch products from API
-  useEffect(() => {
-    async function fetchProducts() {
-      try {
-        setLoading(true);
-        const res = await fetch("/api/products");
-        if (!res.ok) throw new Error("Failed to fetch products");
-        const data: Product[] = await res.json();
-        setProducts(data);
-      } catch (err) {
-        console.error(err);
-        setError("Unable to load products at the moment.");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchProducts();
-  }, []);
-
-  // Add item to cart safely
-  const handleAddToCart = (product: Product) => {
-    if (!product || !product.id) return;
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: product.priceNaira,
-      quantity: 1,
-      image: product.images[0] ?? "",
-    });
-  };
+export default async function ProductsPage() {
+  const productsPromise = fetchProducts();
 
   return (
-    <div className="py-10 max-w-7xl mx-auto px-4 space-y-8">
-      <h1 className="heading-1 text-center">Shop African Fashion</h1>
-
-      {/* Loading State */}
-      {loading && <Loading count={8} message="Loading products..." />}
-
-      {/* Error State */}
-      {!loading && error && (
-        <p className="text-center text-red-500 font-medium">{error}</p>
-      )}
-
-      {/* Empty State */}
-      {!loading && !error && !products.length && (
-        <p className="text-center text-neutral-600 font-medium">
-          No products found.
+    <div className="w-full max-w-7xl mx-auto px-4 py-12">
+      <header className="mb-10">
+        <h1 className="heading-2">All Products</h1>
+        <p className="text-[var(--color-text-secondary)] mt-2 text-sm">
+          Discover our latest arrivals and timeless pieces crafted with
+          elegance and heritage.
         </p>
-      )}
+      </header>
 
-      {/* Product Grid */}
-      {!loading && !error && products.length > 0 && (
-        <ProductGrid products={products} onAddToCart={handleAddToCart} />
-      )}
+      <Suspense fallback={<Loading count={12} message="Loading products..." />}>
+        <ProductGrid products={await productsPromise} />
+      </Suspense>
     </div>
   );
 }

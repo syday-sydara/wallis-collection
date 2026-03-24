@@ -1,1 +1,1 @@
-export default function Page() { return <div>Track Order</div> }
+export default function Page(){return <div>Track Order</div>}

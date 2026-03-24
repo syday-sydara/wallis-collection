@@ -1,14 +1,13 @@
+// PATH: lib/notifications/templates/order-receipt.ts
+// NAME: order-receipt.ts
+
 export function orderReceiptTemplate({
   orderId,
   items,
   subtotal,
 }: {
   orderId: string;
-  items: {
-    name: string;
-    quantity: number;
-    price: number;
-  }[];
+  items: { name: string; quantity: number; price: number }[];
   subtotal: number;
 }) {
   return `
@@ -18,11 +17,11 @@ Order Number: ${orderId}
 
 Items:
 ${items
-  .map(
-    (item) =>
-      `• ${item.name} × ${item.quantity} — ₦${item.price.toLocaleString()}`
-  )
-  .join("\n")}
+    .map(
+      (item) =>
+        `• ${item.name} × ${item.quantity} — ₦${item.price.toLocaleString()}`
+    )
+    .join("\n")}
 
 Total: ₦${subtotal.toLocaleString()}
 
@@ -47,11 +46,7 @@ export function orderReceiptWhatsApp({
   subtotal,
 }: {
   orderId: string;
-  items: {
-    name: string;
-    quantity: number;
-    price: number;
-  }[];
+  items: { name: string; quantity: number; price: number }[];
   subtotal: number;
 }) {
   return `
