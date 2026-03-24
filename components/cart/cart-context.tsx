@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 
 export interface CartItem {
   id: string;
@@ -29,18 +36,27 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  // Load cart from localStorage
+  // Load from localStorage safely
   useEffect(() => {
-    const stored = localStorage.getItem("cart");
-    if (stored) setItems(JSON.parse(stored));
+    try {
+      const stored = localStorage.getItem("cart");
+      if (stored) setItems(JSON.parse(stored));
+    } catch {
+      setItems([]);
+    }
   }, []);
 
-  // Save cart to localStorage
+  // Save to localStorage
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(items));
+    const handler = setTimeout(() => {
+      try {
+        localStorage.setItem("cart", JSON.stringify(items));
+      } catch {}
+    }, 100);
+    return () => clearTimeout(handler);
   }, [items]);
 
-  const addItem = (item: CartItem) => {
+  const addItem = useCallback((item: CartItem) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.key === item.key);
       if (existing) {
@@ -50,17 +66,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...prev, item];
     });
-  };
+  }, []);
 
-  const increment = (key: string) => {
+  const increment = useCallback((key: string) => {
     setItems((prev) =>
-      prev.map((i) =>
-        i.key === key ? { ...i, quantity: i.quantity + 1 } : i
-      )
+      prev.map((i) => (i.key === key ? { ...i, quantity: i.quantity + 1 } : i))
     );
-  };
+  }, []);
 
-  const decrement = (key: string) => {
+  const decrement = useCallback((key: string) => {
     setItems((prev) =>
       prev
         .map((i) =>
@@ -68,31 +82,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         )
         .filter((i) => i.quantity > 0)
     );
-  };
+  }, []);
 
-  const removeItem = (key: string) => {
+  const removeItem = useCallback((key: string) => {
     setItems((prev) => prev.filter((i) => i.key !== key));
-  };
+  }, []);
 
-  const clearCart = () => setItems([]);
+  const clearCart = useCallback(() => setItems([]), []);
 
-  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
-  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const isEmpty = items.length === 0;
+  // Memoized derived state
+  const itemCount = useMemo(() => items.reduce((sum, i) => sum + i.quantity, 0), [items]);
+  const total = useMemo(() => items.reduce((sum, i) => sum + i.price * i.quantity, 0), [items]);
+  const isEmpty = useMemo(() => items.length === 0, [items]);
 
   return (
     <CartContext.Provider
-      value={{
-        items,
-        itemCount,
-        total,
-        isEmpty,
-        addItem,
-        increment,
-        decrement,
-        removeItem,
-        clearCart,
-      }}
+      value={{ items, itemCount, total, isEmpty, addItem, increment, decrement, removeItem, clearCart }}
     >
       {children}
     </CartContext.Provider>
@@ -101,8 +106,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
 export function useCart() {
   const ctx = useContext(CartContext);
-  if (!ctx) {
-    throw new Error("useCart must be used inside <CartProvider>");
-  }
+  if (!ctx) throw new Error("useCart must be used inside <CartProvider>");
   return ctx;
 }

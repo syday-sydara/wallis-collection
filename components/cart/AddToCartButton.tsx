@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useCart } from "./cart-context";
 
 interface AddToCartButtonProps {
@@ -8,7 +8,7 @@ interface AddToCartButtonProps {
   name: string;
   price: number;
   image?: string;
-  variants?: Record<string, string>; // e.g. { size: "M", color: "Black" }
+  variants?: Record<string, string>;
   quantity?: number;
 }
 
@@ -23,35 +23,23 @@ export default function AddToCartButton({
   const { addItem } = useCart();
   const [loading, setLoading] = useState(false);
 
-  // Create a unique key based on product + variant combination
-  const variantKey =
-    Object.entries(variants)
-      .map(([k, v]) => `${k}:${v}`)
-      .join("|") || "default";
+  const uniqueKey = `${id}-${Object.entries(variants).map(([k, v]) => `${k}:${v}`).join("|") || "default"}`;
 
-  const uniqueKey = `${id}-${variantKey}`;
-
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
+    if (loading) return;
     setLoading(true);
 
-    addItem({
-      id,
-      name,
-      price,
-      image,
-      variants,
-      quantity,
-      key: uniqueKey,
-    });
+    addItem({ id, name, price, image, variants, quantity, key: uniqueKey });
 
-    setTimeout(() => setLoading(false), 300);
-  };
+    setTimeout(() => setLoading(false), 200); // simulate UX feedback
+  }, [addItem, id, name, price, image, variants, quantity, uniqueKey, loading]);
 
   return (
     <button
       onClick={handleAdd}
       disabled={loading}
-      className="btn btn-primary w-full flex items-center justify-center"
+      aria-label={`Add ${name} to cart`}
+      className={`btn btn-primary w-full flex items-center justify-center transition-transform duration-150 hover:scale-105 active:scale-95 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
     >
       {loading ? "Adding..." : "Add to Cart"}
     </button>
