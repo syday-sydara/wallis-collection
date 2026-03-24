@@ -5,24 +5,24 @@ import { useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-
-const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1520975918318-3a4e6e791f6b?q=80&w=1200&auto=format&fit=crop";
+import { formatPrice } from "@/lib/formatters";
 
 export default function ProductDetailView({ product }) {
   const { addItem } = useCart();
-
+  
   const images = product.images ?? [];
-  const initialImage = images[0]?.url ?? FALLBACK_IMAGE;
-  const [selectedImage, setSelectedImage] = useState(initialImage);
-
-  const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(images[0]?.url || "/placeholder.png");
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
   const price = product.salePriceNaira ?? product.priceNaira ?? 0;
+  const isOutOfStock = product.stock <= 0;
 
   const handleAddToCart = () => {
+    // Generate the unique key for this variant
+    const variantKey = selectedSize ? `size:${selectedSize}` : "default";
+    
     addItem({
-      id: product.id,
+      productId: product.id,
       name: product.name,
       price,
       quantity: 1,
@@ -30,102 +30,96 @@ export default function ProductDetailView({ product }) {
       variants: {
         size: selectedSize ?? "Default",
       },
+      key: `${product.id}-${variantKey}`,
+      addedAt: new Date(),
     });
+
+    // Optional: Trigger the cart drawer
+    window.dispatchEvent(new CustomEvent("open-cart"));
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto py-10 px-4 flex flex-col lg:flex-row gap-12">
-      {/* Image Gallery */}
-      <div className="flex-1 space-y-4">
-        <div className="relative w-full overflow-hidden rounded-lg bg-neutral-100">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      {/* Left: Image Gallery */}
+      <div className="space-y-4">
+        <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-gray-50">
           <Image
             src={selectedImage}
             alt={product.name}
-            width={600}
-            height={800}
-            className="object-cover w-full h-auto transition-all duration-300"
+            fill
+            className="object-cover transition-transform hover:scale-105 duration-500"
+            priority
           />
         </div>
-
+        
         {images.length > 1 && (
-          <div className="flex gap-3 mt-2 overflow-x-auto pb-2">
-            {images.map((img) => {
-              const isActive = selectedImage === img.url;
-              return (
-                <button
-                  key={img.id}
-                  onClick={() => setSelectedImage(img.url)}
-                  className={`w-20 h-20 rounded-md overflow-hidden border-2 transition-all duration-200 ${
-                    isActive
-                      ? "border-[var(--color-primary-500)] shadow-sm"
-                      : "border-[var(--color-border)] hover:border-[var(--color-primary-500)]"
-                  }`}
-                >
-                  <Image
-                    src={img.url}
-                    alt={product.name}
-                    width={80}
-                    height={80}
-                    className="object-cover w-full h-full"
-                  />
-                </button>
-              );
-            })}
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {images.map((img: any) => (
+              <button
+                key={img.id}
+                onClick={() => setSelectedImage(img.url)}
+                className={`relative h-24 w-20 flex-shrink-0 rounded-md overflow-hidden border-2 transition-all ${
+                  selectedImage === img.url ? "border-accent-500" : "border-transparent"
+                }`}
+              >
+                <Image src={img.url} alt="" fill className="object-cover" />
+              </button>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Product Info */}
-      <div className="flex-1 space-y-6">
-        {/* Badges */}
-        <div className="flex items-center gap-2">
-          {product.isNew && <Badge variant="success">New</Badge>}
-          {product.salePriceNaira && <Badge variant="warning">Sale</Badge>}
+      {/* Right: Product Info */}
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="heading-1">{product.name}</h1>
+          <p className="text-text-secondary mt-1">{product.category} — {product.brand}</p>
         </div>
 
-        {/* Title */}
-        <h1 className="heading-2">{product.name}</h1>
+        <div className="flex items-center gap-3">
+          <p className="text-3xl font-semibold text-accent-500">
+            {formatPrice(price)}
+          </p>
+          {product.isOnSale && (
+            <p className="text-xl text-text-muted line-through">
+              {formatPrice(product.priceNaira)}
+            </p>
+          )}
+        </div>
 
-        {/* Price */}
-        <p className="text-3xl font-semibold text-[var(--color-primary-500)]">
-          ₦{price.toLocaleString("en-NG")}
-        </p>
-
-        {/* Size Selector */}
+        {/* Size Selection */}
         {product.sizes?.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Size</p>
-            <div className="flex gap-2 flex-wrap">
-              {product.sizes.map((size) => {
-                const isActive = selectedSize === size;
-                return (
-                  <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    className={`px-4 py-2 rounded-md border transition-all duration-200 ${
-                      isActive
-                        ? "border-[var(--color-primary-500)] bg-[var(--color-primary-500)] text-white shadow-sm"
-                        : "border-[var(--color-border)] hover:border-[var(--color-primary-500)]"
-                    }`}
-                  >
-                    {size}
-                  </button>
-                );
-              })}
+          <div className="space-y-3">
+            <span className="text-sm font-medium uppercase tracking-wider">Select Size</span>
+            <div className="flex flex-wrap gap-2">
+              {product.sizes.map((size: string) => (
+                <button
+                  key={size}
+                  onClick={() => setSelectedSize(size)}
+                  className={`min-w-[3rem] px-4 py-2 border rounded-md transition-all ${
+                    selectedSize === size
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "border-gray-200 hover:border-gray-900"
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Description */}
-        {product.description && (
-          <p className="text-[var(--color-text-secondary)] leading-relaxed">
-            {product.description}
-          </p>
-        )}
+        <div className="prose prose-sm text-text-secondary">
+          <p>{product.description}</p>
+        </div>
 
-        {/* Add to Cart */}
-        <Button variant="primary" onClick={handleAddToCart} className="w-full">
-          Add to Cart
+        <Button 
+          variant="primary" 
+          onClick={handleAddToCart} 
+          disabled={isOutOfStock}
+          className="w-full py-4 text-lg"
+        >
+          {isOutOfStock ? "Out of Stock" : "Add to Cart"}
         </Button>
       </div>
     </div>

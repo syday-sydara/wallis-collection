@@ -1,5 +1,5 @@
 // lib/cart/cart.ts
-import type { CartItem } from "@/lib/types/types";
+import type { CartItem, ProductCardData } from "@/lib/types/types";
 
 /**
  * Custom interface to match your database Product model
@@ -16,13 +16,18 @@ interface ProductData {
 /**
  * Create a standardized CartItem from a Product
  */
+
 export function toCartItem(
-  product: ProductData,
+  product: any, // Use 'any' temporarily or import the Product type from @prisma/client
   quantity: number = 1,
   selectedVariants: Record<string, string> = {}
 ): CartItem {
-  // Logic: Use salePrice if available, otherwise regular price
-  const activePrice = product.salePrice ?? product.price;
+  // 1. Use the correct property names from schema.prisma
+  // 2. Convert from Kobo (stored) to Naira (UI) if you follow the seed.ts logic
+  const basePrice = product.price / 100;
+  const salePrice = product.salePrice ? product.salePrice / 100 : null;
+  
+  const activePrice = salePrice ?? basePrice;
   
   const key = generateCartKey(product.id, selectedVariants);
   
