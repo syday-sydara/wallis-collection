@@ -1,32 +1,29 @@
-// lib/types/products.ts
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
-/* ---------------------------------- */
-/* Product Image Type                 */
-/* ---------------------------------- */
-
+/* -------------------------- */
+/* Product Image Type          */
+/* -------------------------- */
 export type ProductImage = {
+  id?: string;
   url: string;
   position: number;
 };
 
-/* ---------------------------------- */
-/* Product Review Type                */
-/* ---------------------------------- */
-
+/* -------------------------- */
+/* Product Review Type         */
+/* -------------------------- */
 export type ProductReview = {
   id: string;
   rating: number;
   comment: string | null;
   createdAt: Date;
-  userId: string | null;
+  user: { id: string; name: string } | null;
 };
 
-/* ---------------------------------- */
-/* Product Card (Listing)             */
-/* ---------------------------------- */
-
+/* -------------------------- */
+/* Product Card Type           */
+/* -------------------------- */
 export const productCardSelect = Prisma.validator<Prisma.ProductSelect>()({
   id: true,
   slug: true,
@@ -35,11 +32,12 @@ export const productCardSelect = Prisma.validator<Prisma.ProductSelect>()({
   salePriceNaira: true,
   category: true,
   stock: true,
+  isNew: true,
+  isOnSale: true,
+  featured: true,
   images: {
-    select: {
-      url: true,
-      position: true,
-    },
+    select: { id: true, url: true, position: true },
+    orderBy: { position: "asc" },
   },
 });
 
@@ -47,13 +45,12 @@ export type ProductCard = Prisma.ProductGetPayload<{
   select: typeof productCardSelect;
 }>;
 
-/* ---------------------------------- */
-/* Full Product Detail Type           */
-/* ---------------------------------- */
-
+/* -------------------------- */
+/* Product Detail Type         */
+/* -------------------------- */
 export const productDetailInclude = Prisma.validator<Prisma.ProductInclude>()({
   images: true,
-  reviews: true,
+  reviews: { include: { user: { select: { id: true; name: true } } } },
   inventory: true,
 });
 
@@ -61,41 +58,11 @@ export type ProductDetail = Prisma.ProductGetPayload<{
   include: typeof productDetailInclude;
 }>;
 
-/* ---------------------------------- */
-/* Query Helpers                      */
-/* ---------------------------------- */
+/* -------------------------- */
+/* Helpers                     */
+/* -------------------------- */
+export const getCurrentPrice = (product: ProductCard | ProductDetail) =>
+  product.salePriceNaira ?? product.priceNaira;
 
-export async function getAllProducts(): Promise<ProductCard[]> {
-  return prisma.product.findMany({
-    select: productCardSelect,
-    where: { deletedAt: null },
-    orderBy: { createdAt: "desc" },
-  });
-}
-
-export async function getProductBySlug(
-  slug: string
-): Promise<ProductDetail | null> {
-  return prisma.product.findUnique({
-    where: { slug },
-    include: productDetailInclude,
-  });
-}
-
-export async function getFeaturedProducts(): Promise<ProductCard[]> {
-  return prisma.product.findMany({
-    select: productCardSelect,
-    where: { featured: true, deletedAt: null },
-    orderBy: { createdAt: "desc" },
-  });
-}
-
-export async function getProductsByCategory(
-  category: string
-): Promise<ProductCard[]> {
-  return prisma.product.findMany({
-    select: productCardSelect,
-    where: { category, deletedAt: null },
-    orderBy: { createdAt: "desc" },
-  });
-}
+export const getPrimaryImage = (images?: ProductImage[]) =>
+  images?.[0]?.url ?? "/fallback-product.jpg";

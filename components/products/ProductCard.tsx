@@ -1,115 +1,38 @@
-import Image from "next/image";
-import Link from "next/link";
-import AddToCartButton from "@/components/cart/AddToCartButton";
+"use client";
 
-export interface ProductCardProps {
-  id: string;
-  name: string;
-  slug: string;
-  priceNaira: number;
-  salePriceNaira?: number;
-  images?: { url: string }[];
-  isNew?: boolean;
-  isOnSale?: boolean;
-  stock?: number;
+import Image from "next/image";
+import Button from "@/components/ui/Button";
+import { ProductCard as ProductCardType, getCurrentPrice, getPrimaryImage } from "@/lib/types/products";
+
+interface Props extends ProductCardType {
+  onAddToCart?: () => void;
 }
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(value);
-
 export default function ProductCard({
-  id,
-  name,
-  slug,
-  priceNaira,
-  salePriceNaira,
-  images = [],
-  isNew = false,
-  isOnSale = false,
-  stock = 0,
-}: ProductCardProps) {
+  id, name, slug, priceNaira, salePriceNaira,
+  images, stock = 0, isNew, isOnSale, onAddToCart,
+}: Props) {
+  const price = getCurrentPrice({ priceNaira, salePriceNaira });
+  const imageUrl = getPrimaryImage(images);
   const outOfStock = stock <= 0;
-  const discounted = isOnSale && salePriceNaira != null;
-  const currentPrice = discounted ? salePriceNaira! : priceNaira;
-  const imageUrl = images[0]?.url ?? "/fallback-product.jpg";
-
-  const stockMessage = outOfStock
-    ? "Out of stock"
-    : stock <= 10
-    ? `Only ${stock} left`
-    : "In stock";
 
   return (
-    <article className="card group relative flex flex-col" data-product-id={id}>
+    <article className="relative flex flex-col rounded-lg bg-[var(--color-bg-surface)] shadow-card overflow-hidden group transition-all hover:-translate-y-1 hover:shadow-lg">
       {/* Badges */}
-      <div className="absolute top-2 left-2 z-10 flex gap-2">
-        {isNew && (
-          <span className="label bg-success-500 text-white px-2 py-1 rounded-sm">
-            New
-          </span>
-        )}
-        {discounted && (
-          <span className="label bg-accent-500 text-white px-2 py-1 rounded-sm">
-            Sale
-          </span>
-        )}
+      <div className="absolute top-2 left-2 flex gap-2 z-10">
+        {isNew && <span className="px-2 py-1 text-xs rounded-md bg-[var(--color-success-500)] text-white">New</span>}
+        {isOnSale && <span className="px-2 py-1 text-xs rounded-md bg-[var(--color-accent-500)] text-white">Sale</span>}
       </div>
 
-      {/* Out of stock overlay */}
-      {outOfStock && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 text-white font-semibold pointer-events-none">
-          Out of stock
-        </div>
-      )}
-
       {/* Image */}
-      <Link href={`/products/${slug}`} prefetch={false} className="block w-full overflow-hidden rounded-xl">
-        <div className="relative aspect-[3/4]">
-          <Image
-            src={imageUrl}
-            alt={name}
-            fill
-            className="object-cover transition-transform duration-300 ease-out group-hover:scale-105"
-          />
-        </div>
-      </Link>
+      <a href={`/products/${encodeURIComponent(slug)}`} className="relative w-full aspect-[3/4] overflow-hidden bg-neutral-100">
+        <Image src={imageUrl} alt={name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
+      </a>
 
-      {/* Content */}
-      <div className="card-body flex flex-col flex-1">
-        <header>
-          <Link href={`/products/${slug}`}>
-            <h3 className="heading-3 truncate hover:underline">{name}</h3>
-          </Link>
-        </header>
-
-        {/* Price */}
-        <section className="mt-2 flex items-baseline gap-2">
-          <p className="text-body font-semibold text-accent-500">{formatCurrency(currentPrice)}</p>
-          {discounted && (
-            <p className="text-body line-through text-text-muted">{formatCurrency(priceNaira)}</p>
-          )}
-        </section>
-
-        {/* Stock */}
-        <p className="text-small mt-1 text-text-muted">{stockMessage}</p>
-
-        {/* Add to Cart */}
-        <footer className="mt-auto">
-          <AddToCartButton
-            product={{
-              id,
-              name,
-              price: priceNaira,
-              salePrice: salePriceNaira ?? null,
-              stock,
-              images: images[0] ? [{ url: images[0].url, position: 0 }] : [],
-            }}
-          />
-        </footer>
+      <div className="flex flex-col flex-1 p-4">
+        <h3 className="text-sm font-semibold truncate">{name}</h3>
+        <p className="mt-2 font-semibold text-[var(--color-primary-500)]">{price.toLocaleString("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 })}</p>
+        <Button onClick={onAddToCart} disabled={outOfStock} className="w-full mt-3">Add to Cart</Button>
       </div>
     </article>
   );

@@ -1,94 +1,115 @@
-"use client";
+import React, { Suspense, useState, useEffect } from "react";
+import { prisma } from "@/lib/db";
+import ProductGrid, { Product } from "@/components/products/ProductGrid";
+import Loading from "@/components/products/Loading";
+import { cache } from "react";
 
-import React, { useMemo } from "react";
-import Skeleton from "@/components/ui/Skeleton";
-import Spinner from "@/components/ui/Spinner";
-import clsx from "clsx";
+// -------------------------
+// Server-side fetch + ISR
+// -------------------------
+const getAllProducts = cache(async (): Promise<Product[]> => {
+  const products = await prisma.product.findMany({
+    where: { deletedAt: null },
+    include: { images: { orderBy: { position: "asc" } } },
+    orderBy: { createdAt: "desc" },
+    take: 50, // initial batch
+  });
 
-export interface LoadingProps {
-  count?: number;
-  showSpinner?: boolean;
-  message?: string | null;
-  variant?: "grid" | "list" | "compact";
-  className?: string;
+  return products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    priceNaira: p.priceNaira,
+    salePriceNaira: p.salePriceNaira ?? undefined,
+    images: p.images?.map((img) => ({ url: img.url })) ?? [],
+    isNew: p.isNew ?? false,
+    isOnSale: p.salePriceNaira != null,
+    stock: p.stock,
+  }));
+});
+
+export const revalidate = 300; // 5 min ISR
+
+// -------------------------
+// Infinite Scroll Hook
+// -------------------------
+function useInfiniteProducts(initial: Product[]) {
+  const [products, setProducts] = useState(initial);
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const fetchMore = async () => {
+    setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/products?page=${page + 1}`);
+      const newProducts: Product[] = await res.json();
+      if (newProducts.length > 0) {
+        setProducts((prev) => [...prev, ...newProducts]);
+        setPage((prev) => prev + 1);
+      }
+    } catch (err) {
+      console.error("Failed to load more products:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  return { products, fetchMore, loadingMore };
 }
 
-export default function Loading({
-  count = 8,
-  showSpinner = true,
-  message = null,
-  variant = "grid",
-  className,
-}: LoadingProps) {
-  // Configure layouts per variant
-  const variantConfig = useMemo(() => {
-    return {
-      grid: {
-        container: "grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4",
-        image: "aspect-[3/4] w-full rounded-lg",
-        extra: true,
-      },
-      list: {
-        container: "flex flex-col gap-4",
-        image: "h-24 w-24 rounded-md",
-        extra: false,
-      },
-      compact: {
-        container: "grid grid-cols-3 gap-4 sm:grid-cols-4",
-        image: "h-20 w-full rounded-md",
-        extra: false,
-      },
-    }[variant];
-  }, [variant]);
+// -------------------------
+// Infinite Scroll Trigger
+// -------------------------
+function InfiniteScrollTrigger({ onInView }: { onInView: () => void }) {
+  const ref = React.useRef<HTMLDivElement>(null);
 
-  // Generate skeletons
-  const skeletons = useMemo(
-    () =>
-      Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="flex flex-col gap-2 animate-pulse motion-reduce:animate-none transition-opacity duration-300 opacity-80"
-          role="presentation"
-        >
-          <Skeleton className={variantConfig.image} />
-          <Skeleton className="w-3/4 h-4" />
-          <Skeleton className="w-1/2 h-4" />
-          {variantConfig.extra && <Skeleton className="w-full h-10 rounded-md" />}
-        </div>
-      )),
-    [count, variantConfig]
-  );
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) onInView();
+    });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [onInView]);
+
+  return <div ref={ref} className="h-8" />;
+}
+
+// -------------------------
+// Page Component
+// -------------------------
+export default async function ProductsPage() {
+  const initialProducts = await getAllProducts();
 
   return (
-    <div
-      className={clsx("flex flex-col items-center", className)}
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-    >
-      {/* Skeleton Grid/List */}
-      <div
-        className={clsx("w-full mb-4", variantConfig.container)}
-        aria-hidden="true"
-      >
-        {skeletons}
-      </div>
+    <main className="max-w-7xl mx-auto px-4 py-8">
+      <h1 className="heading-2 mb-6">All Products</h1>
 
-      {/* Optional message */}
-      {message ? (
-        <p className="text-sm text-[var(--color-text-secondary)] mb-2">{message}</p>
-      ) : (
-        <span className="sr-only">Loading content</span>
-      )}
+      <Suspense fallback={<Loading count={8} message="Loading products..." />}>
+        <ClientProductGrid initialProducts={initialProducts} />
+      </Suspense>
+    </main>
+  );
+}
 
-      {/* Optional spinner */}
-      {showSpinner && (
-        <Spinner
-          size="md"
-          color="primary"
-          aria-hidden={message ? true : undefined}
-        />
+// -------------------------
+// Client-Side Product Grid
+// -------------------------
+function ClientProductGrid({ initialProducts }: { initialProducts: Product[] }) {
+  const { products, fetchMore, loadingMore } = useInfiniteProducts(initialProducts);
+
+  return (
+    <>
+      <ProductGrid products={products} skeletonCount={8} loading={loadingMore} />
+
+      {/* Infinite Scroll Trigger */}
+      <InfiniteScrollTrigger onInView={fetchMore} />
+
+      {loadingMore && (
+        <div className="mt-4 flex justify-center">
+          <Loading count={4} showSpinner message="Loading more products..." />
+        </div>
       )}
-    </div>
+    </>
   );
 }
