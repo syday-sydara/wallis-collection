@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/db";
-import { PaymentMethod, InventoryReason } from "@prisma/client";
+import { PaymentMethod } from "@prisma/client";
 import { NextResponse } from "next/server";
-import { calculateCartTotal } from "@/lib/cart"; // Import shared logic
+import { calculateCartTotal } from "@/lib/cart/cart";
+import { assertStockAvailable } from "@/lib/inventory";
+import { ApiError } from "@/lib/errors";
 import nodemailer from "nodemailer";
 
 export async function POST(req: Request) {
@@ -9,57 +11,44 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { items, email, phone, fullName, address, city, state, paymentMethod } = body;
 
-    // 1. Validation
-    if (!items?.length) {
-      return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
-    }
+    // 1. Basic Validation
+    if (!items?.length) throw ApiError.badRequest("Cart is empty");
     if (!email || !phone || !fullName || !address) {
-      return NextResponse.json({ error: "Missing shipping details" }, { status: 400 });
+      throw ApiError.badRequest("Missing required shipping information");
     }
 
-    // 2. Re-calculate total on backend to prevent client-side tampering
+    // 2. Pricing Integrity
     const total = calculateCartTotal(items);
-    if (total <= 0) {
-      return NextResponse.json({ error: "Invalid cart total" }, { status: 400 });
-    }
+    if (total <= 0) throw ApiError.badRequest("Invalid cart total");
 
-    // 3. Database Transaction
+    // 3. Atomic Order Processing
     const result = await prisma.$transaction(async (tx) => {
-      // A. Check stock for all items first
+      // Step A: Validate stock for all items using your inventory utility
       for (const item of items) {
-        const product = await tx.product.findUnique({ 
-          where: { id: item.productId } 
-        });
-
-        if (!product) throw new Error(`Product ${item.name} not found`);
-        if (product.stock < item.quantity) {
-          throw new Error(`Insufficient stock for ${item.name}. Available: ${product.stock}`);
-        }
+        await assertStockAvailable(item.productId, item.quantity);
       }
 
-      // B. Create Order with Items and Variants
-      const order = await tx.order.create({
-        data: {
-          email,
-          phone,
-          total,
-          paymentMethod,
-          paymentStatus: "PENDING",
-          orderStatus: "PENDING",
-          cartSnapshot: items, // Save full JSON for audit trail
-          items: {
-            create: items.map((i: any) => ({
-              productId: i.productId,
-              quantity: i.quantity,
-              price: i.price, // Uses the price at time of purchase
-              variants: i.variants || {}, // Ensure your schema has a Json field for variants
-            })),
-          },
+      // Step B: Create the Order
+    const order = await tx.order.create({
+      data: {
+        email,
+        phone,
+        total,
+        paymentMethod,
+        cartSnapshot: items, // This will now be recognized as a valid property
+        items: {
+          create: items.map((i: any) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            price: i.price,
+            variants: i.variants || {},
+          })),
         },
-      });
-
-      // C. Update Inventory
+      },
+    });
+      // Step C: Update Inventory levels and record movements
       for (const item of items) {
+        // Decrease stock and create InventoryMovement record
         await tx.product.update({
           where: { id: item.productId },
           data: { stock: { decrement: item.quantity } },
@@ -69,7 +58,7 @@ export async function POST(req: Request) {
           data: {
             productId: item.productId,
             change: -item.quantity,
-            reason: InventoryReason.SALE,
+            reason: "SALE",
             reference: order.id,
           },
         });
@@ -78,10 +67,10 @@ export async function POST(req: Request) {
       return order;
     });
 
-    // 4. Payment Provider Integration (Example: Paystack)
+    // 4. Payment Gateway Handshake (Paystack Example)
     let paymentUrl = "";
     if (paymentMethod === PaymentMethod.PAYSTACK) {
-      const response = await fetch("https://api.paystack.co/transaction/initialize", {
+      const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
@@ -89,38 +78,56 @@ export async function POST(req: Request) {
         },
         body: JSON.stringify({
           email,
-          amount: result.total * 100, // Paystack expects Kobo
+          amount: Math.round(result.total * 100), // Naira to Kobo
           reference: result.id,
           callback_url: `${process.env.NEXT_PUBLIC_URL}/checkout/verify`,
         }),
       });
-      const data = await response.json();
-      paymentUrl = data.data.authorization_url;
+
+      const paystackData = await paystackRes.json();
+      if (!paystackData.status) throw new Error("Payment initialization failed");
+      paymentUrl = paystackData.data.authorization_url;
     }
 
-    // 5. Async Email Confirmation
-    // (In production, consider moving this to a background job/webhook)
+    // 5. Send Notification Email
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT),
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
     });
 
-    await transporter.sendMail({
+    // Non-blocking email send
+    transporter.sendMail({
       from: `"Wallis Collection" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: `Order Confirmed: #${result.id.slice(-6).toUpperCase()}`,
-      html: `<h1>Thanks for your order, ${fullName}!</h1>
-             <p>Your total is ₦${result.total.toLocaleString()}.</p>
-             <p>We will notify you once your package ships to ${address}, ${city}.</p>`,
+      subject: `Order Received - #${result.id.slice(-6).toUpperCase()}`,
+      html: `<div style="font-family: sans-serif;">
+              <h2>Thank you for your order, ${fullName}</h2>
+              <p>We've received your order and are processing it.</p>
+              <p><b>Order ID:</b> ${result.id}</p>
+              <p><b>Total Amount:</b> ₦${result.total.toLocaleString()}</p>
+            </div>`,
+    }).catch(err => console.error("Email failed to send:", err));
+
+    return NextResponse.json({ 
+      success: true, 
+      orderId: result.id, 
+      paymentUrl 
     });
 
-    return NextResponse.json({ orderId: result.id, paymentUrl });
-
   } catch (error: any) {
-    console.error("Checkout API Error:", error);
+    console.error("Checkout Error:", error);
+    
+    // Use your standardized error formatting if it's an ApiError
+    if (error instanceof ApiError) {
+      return NextResponse.json(
+        { success: false, error: error.message }, 
+        { status: error.status }
+      );
+    }
+
     return NextResponse.json(
-      { error: error.message || "Failed to process order" }, 
+      { success: false, error: "Internal server error" }, 
       { status: 500 }
     );
   }

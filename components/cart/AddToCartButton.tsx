@@ -2,62 +2,46 @@
 
 import { useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
-import { CartItem } from "@/lib/types/types";
+import { toCartItem } from "@/lib/cart";
 
 interface AddToCartButtonProps {
-  id: string;
-  name: string;
-  price: number;
-  image?: string;
-  variants?: Record<string, string>; // e.g., { size: "M", color: "Black" }
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    salePrice: number | null;
+    stock: number;
+    images: { url: string; position: number; }[];
+  };
+  variants?: Record<string, string>;
   quantity?: number;
 }
 
 export default function AddToCartButton({
-  id,
-  name,
-  price,
-  image,
+  product,
   variants = {},
   quantity = 1,
 }: AddToCartButtonProps) {
   const { addItem } = useCart();
   const [loading, setLoading] = useState(false);
 
-  // Create unique key for product + variant combination
-  const variantKey =
-    Object.entries(variants)
-      .map(([k, v]) => `${k}:${v}`)
-      .join("|") || "default";
-
-  const uniqueKey = `${id}-${variantKey}`;
-
   const handleAdd = () => {
     setLoading(true);
 
-    const item: CartItem = {
-      productId: id,
-      name,
-      price,
-      image: image ?? "",
-      quantity,
-      variants,
-      key: uniqueKey,
-      addedAt: new Date(),
-    };
+    // Use the utility function to ensure consistent key generation
+    const item = toCartItem(product, quantity, variants);
 
     addItem(item);
-
-    setTimeout(() => setLoading(false), 300); // simple UI feedback
+    setTimeout(() => setLoading(false), 300);
   };
 
   return (
     <button
       onClick={handleAdd}
-      disabled={loading}
-      className="btn btn-primary w-full flex items-center justify-center"
+      disabled={loading || product.stock < 1}
+      className="btn btn-primary w-full flex items-center justify-center disabled:opacity-50"
     >
-      {loading ? "Adding..." : "Add to Cart"}
+      {product.stock < 1 ? "Out of Stock" : loading ? "Adding..." : "Add to Cart"}
     </button>
   );
 }
