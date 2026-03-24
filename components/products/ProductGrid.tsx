@@ -2,21 +2,11 @@
 
 import React from "react";
 import Link from "next/link";
-import ProductCard from "./ProductCard";
+import ProductCard, { ProductCardProps } from "./ProductCard";
 import Loading from "@/components/products/Loading";
 import Skeleton from "@/components/ui/Skeleton";
 
-export interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  priceNaira: number;
-  salePriceNaira?: number;
-  images?: { url: string }[];
-  isNew?: boolean;
-  isOnSale?: boolean;
-  stock?: number;
-}
+export interface Product extends Omit<ProductCardProps, "onAddToCart"> {}
 
 interface ProductGridProps {
   products?: Product[] | null;
@@ -36,6 +26,7 @@ export default function ProductGrid({
   const gridClasses =
     "grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
 
+  // Loading placeholders
   if (loading) {
     return (
       <Loading
@@ -46,7 +37,8 @@ export default function ProductGrid({
     );
   }
 
-  if (products === undefined) {
+  // Skeleton fallback when products undefined
+  if (!products) {
     return (
       <div
         className={gridClasses}
@@ -55,11 +47,7 @@ export default function ProductGrid({
         aria-busy="true"
       >
         {Array.from({ length: skeletonCount }).map((_, i) => (
-          <div
-            key={`skeleton-${i}`}
-            role="presentation"
-            className="space-y-2"
-          >
+          <div key={`skeleton-${i}`} role="presentation" className="space-y-2">
             <Skeleton className="w-full aspect-[3/4] rounded-lg" />
             <Skeleton className="w-3/4 h-4" />
             <Skeleton className="w-1/2 h-4" />
@@ -69,13 +57,14 @@ export default function ProductGrid({
     );
   }
 
+  // No products state
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-[var(--color-text-secondary)]">
         <p className="text-center">{emptyMessage}</p>
         <Link
           href="/"
-          className="mt-4 text-[var(--color-primary-500)] hover:underline"
+          className="mt-4 text-[var(--color-accent-500)] hover:underline"
         >
           Return to homepage
         </Link>
@@ -83,6 +72,7 @@ export default function ProductGrid({
     );
   }
 
+  // Product grid
   return (
     <div className={gridClasses} role="list" aria-label="Product grid">
       {products.map((product) => (

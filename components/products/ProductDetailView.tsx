@@ -1,19 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
-import { formatPrice } from "@/lib/formatters";
 
-const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1520975918318-3a4e6e791f6b?q=80&w=1200&auto=format&fit=crop";
+const FALLBACK_IMAGE = "/fallback-product.jpg";
 
-function ZoomModal({ src, alt, open, onClose }) {
+function ZoomModal({ src, alt, open, onClose }: { src: string; alt: string; open: boolean; onClose: () => void }) {
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => e.key === "Escape" && onClose();
+    const handler = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
@@ -24,95 +21,71 @@ function ZoomModal({ src, alt, open, onClose }) {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
       onClick={onClose}
     >
-      <img
-        src={src}
-        alt={alt}
-        className="max-w-full max-h-full object-contain touch-none"
-      />
+      <Image src={src} alt={alt} width={1200} height={1200} className="object-contain pointer-events-none" />
     </div>
   );
 }
 
-export default function ProductDetailView({ product }) {
+export default function ProductDetailView({ product }: { product: any }) {
   const { addItem } = useCart();
-
-  // Check if the product data is valid
-  if (!product) {
-    return <p className="text-center text-lg text-red-500">Product not found.</p>;
-  }
-
-  const images = product.images ?? [];
+  const images = product?.images ?? [];
   const [selectedImage, setSelectedImage] = useState(images[0]?.url || FALLBACK_IMAGE);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [stickyVisible, setStickyVisible] = useState(false);
 
-  // Check if the product is on sale
+  if (!product) return <p className="text-center text-lg text-danger-500">Product not found.</p>;
+
   const discounted = product.salePriceNaira != null;
-  const priceKobo = Math.round((discounted ? product.salePriceNaira : product.priceNaira) * 100);
+  const currentPrice = discounted ? product.salePriceNaira : product.priceNaira;
   const isOutOfStock = product.stock <= 0;
 
-  // Add to cart function
   const handleAddToCart = useCallback(() => {
     if (isOutOfStock) return;
-
     const variantKey = selectedSize ? `size:${selectedSize}` : "default";
-
     addItem({
       productId: product.id,
       name: product.name,
-      price: priceKobo, // In Kobo (100 kobo = 1 naira)
+      price: currentPrice,
       quantity: 1,
       image: selectedImage,
       variants: { size: selectedSize ?? "Default" },
       key: `${product.id}-${variantKey}`,
       addedAt: new Date(),
     });
-
     window.dispatchEvent(new CustomEvent("open-cart"));
-  }, [product, priceKobo, selectedImage, selectedSize, isOutOfStock, addItem]);
-
-  // If images exist, allow for zoom interaction
-  const [stickyVisible, setStickyVisible] = useState(false);
-  const buttonRef = useRef(null);
+  }, [product, currentPrice, selectedImage, selectedSize, isOutOfStock, addItem]);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => setStickyVisible(!entry.isIntersecting),
-      { threshold: 0 }
-    );
-
+    const observer = new IntersectionObserver(([entry]) => setStickyVisible(!entry.isIntersecting), { threshold: 0 });
     if (buttonRef.current) observer.observe(buttonRef.current);
     return () => observer.disconnect();
   }, []);
 
   return (
     <>
-      <ZoomModal
-        src={selectedImage}
-        alt={product.name}
-        open={zoomOpen}
-        onClose={() => setZoomOpen(false)}
-      />
+      <ZoomModal src={selectedImage} alt={product.name} open={zoomOpen} onClose={() => setZoomOpen(false)} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Left: Images */}
+        {/* Images */}
         <div className="space-y-4">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-gray-50">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-xl card">
             <Image
               src={selectedImage}
               alt={product.name}
               fill
-              className="object-cover cursor-zoom-in transition-opacity duration-300"
-              priority
+              className="object-cover cursor-zoom-in transition-transform duration-300"
               onClick={() => setZoomOpen(true)}
             />
           </div>
+
           {images.length > 1 && (
             <div className="flex gap-4 overflow-x-auto pb-2">
-              {images.map((img) => (
+              {images.map((img: any) => (
                 <button
                   key={img.id}
                   onClick={() => setSelectedImage(img.url)}
@@ -127,7 +100,7 @@ export default function ProductDetailView({ product }) {
           )}
         </div>
 
-        {/* Right: Product Info */}
+        {/* Product Info */}
         <div className="flex flex-col gap-6">
           <div>
             <h1 className="heading-1">{product.name}</h1>
@@ -135,7 +108,7 @@ export default function ProductDetailView({ product }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <p className="text-3xl font-semibold text-accent-500">{formatPrice(priceKobo / 100)}</p>
+            <p className="text-3xl font-semibold text-accent-500">{formatPrice(currentPrice)}</p>
             {discounted && (
               <p className="text-xl text-text-muted line-through">{formatPrice(product.priceNaira)}</p>
             )}
@@ -144,7 +117,7 @@ export default function ProductDetailView({ product }) {
           {/* Sizes */}
           {product.sizes?.length > 0 && (
             <div className="space-y-3">
-              <span className="text-sm font-medium uppercase tracking-wider">Select Size</span>
+              <span className="text-small font-medium uppercase tracking-wider">Select Size</span>
               <div className="flex flex-wrap gap-2">
                 {product.sizes.map((size: string) => {
                   const isSizeOutOfStock = product.stockBySize?.[size] <= 0;
@@ -167,13 +140,13 @@ export default function ProductDetailView({ product }) {
             </div>
           )}
 
-          <p className="prose prose-sm text-text-secondary">{product.description}</p>
+          <p className="text-body text-text-secondary">{product.description}</p>
 
           <Button
             ref={buttonRef}
             variant="primary"
             onClick={handleAddToCart}
-            disabled={isOutOfStock || !selectedSize}
+            disabled={isOutOfStock || (product.sizes?.length && !selectedSize)}
             className="w-full py-4 text-lg"
           >
             {isOutOfStock ? "Out of Stock" : "Add to Cart"}
@@ -181,12 +154,10 @@ export default function ProductDetailView({ product }) {
         </div>
       </div>
 
-      {/* Sticky Cart Bar */}
+      {/* Sticky mobile cart bar */}
       {stickyVisible && !isOutOfStock && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex items-center justify-between lg:hidden z-40 shadow-lg">
-          <p className="font-semibold text-accent-500">
-            {formatPrice(priceKobo / 100)}
-          </p>
+        <div className="fixed bottom-0 left-0 right-0 z-40 p-4 flex items-center justify-between bg-bg-surface border-t shadow-lg lg:hidden">
+          <p className="font-semibold text-accent-500">{formatPrice(currentPrice)}</p>
           <Button variant="primary" onClick={handleAddToCart}>
             Add to Cart
           </Button>
