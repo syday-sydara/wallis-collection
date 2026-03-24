@@ -15,6 +15,7 @@ export default function CartDrawer() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Open cart"
+        aria-expanded={open}
         className="fixed bottom-4 right-4 z-50 rounded-full bg-[var(--color-primary-500)] text-white px-4 py-3 shadow-lg hover:scale-105 transition-transform"
       >
         Cart ({itemCount})
@@ -24,10 +25,10 @@ export default function CartDrawer() {
         <Dialog as="div" className="relative z-50" onClose={setOpen}>
           <Transition.Child
             as={Fragment}
-            enter="transition-opacity duration-300"
+            enter="transition-opacity ease-linear duration-300"
             enterFrom="opacity-0"
             enterTo="opacity-100"
-            leave="transition-opacity duration-300"
+            leave="transition-opacity ease-linear duration-300"
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
@@ -48,17 +49,27 @@ export default function CartDrawer() {
                 >
                   <Dialog.Panel className="pointer-events-auto w-screen max-w-md bg-[var(--color-bg-surface)] shadow-xl flex flex-col">
                     <div className="flex items-center justify-between p-6 border-b border-[var(--color-border)]">
-                      <Dialog.Title className="text-lg font-medium">Shopping Cart</Dialog.Title>
-                      <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-gray-700">
+                      <Dialog.Title className="text-lg font-medium">
+                        Shopping Cart
+                      </Dialog.Title>
+                      <button
+                        className="text-gray-500 hover:text-gray-700"
+                        onClick={() => setOpen(false)}
+                        aria-label="Close cart"
+                      >
                         <X size={20} />
                       </button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
                       {isEmpty ? (
-                        <p className="text-[var(--color-text-secondary)] text-center mt-10">Your cart is empty.</p>
+                        <p className="text-[var(--color-text-secondary)] text-center mt-10">
+                          Your cart is empty.
+                        </p>
                       ) : (
-                        items.map((item) => <CartItemRow key={item.key} item={item} />)
+                        items.map((item) => (
+                          <CartItemRow key={item.key} item={item} />
+                        ))
                       )}
                     </div>
 
@@ -66,11 +77,19 @@ export default function CartDrawer() {
                       <div className="border-t border-[var(--color-border)] p-6">
                         <div className="flex justify-between mb-4">
                           <span className="font-medium">Subtotal:</span>
-                          <span className="font-semibold">₦{total.toLocaleString()}</span>
+                          <span className="font-semibold">
+                            ₦{total.toLocaleString()}
+                          </span>
                         </div>
+
                         <div className="flex flex-col gap-2">
-                          <button className="btn btn-primary w-full">Checkout</button>
-                          <button onClick={clearCart} className="btn w-full bg-gray-200 hover:bg-gray-300 text-[var(--color-text-primary)]">
+                          <button className="btn btn-primary w-full">
+                            Checkout
+                          </button>
+                          <button
+                            className="btn w-full bg-gray-200 hover:bg-gray-300 text-[var(--color-text-primary)]"
+                            onClick={clearCart}
+                          >
                             Clear Cart
                           </button>
                         </div>

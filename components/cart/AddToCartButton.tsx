@@ -6,7 +6,7 @@ import { useCart } from "./CartProvider";
 interface AddToCartButtonProps {
   id: string;
   name: string;
-  price: number;           // in Naira
+  price: number;
   image?: string;
   variants?: Record<string, string>;
   quantity?: number;
@@ -23,16 +23,23 @@ export default function AddToCartButton({
   const { addItem } = useCart();
   const [loading, setLoading] = useState(false);
 
-  const variantKey = Object.entries(variants)
-    .map(([k, v]) => `${k}:${v}`)
-    .join("|") || "default";
-
+  const variantKey =
+    Object.entries(variants).map(([k, v]) => `${k}:${v}`).join("|") || "default";
   const uniqueKey = `${id}-${variantKey}`;
 
   const handleAdd = () => {
     setLoading(true);
-    addItem({ id, name, price, image, variants, quantity, key: uniqueKey });
-    setTimeout(() => setLoading(false), 200);
+    addItem({
+      id,
+      name,
+      price,
+      image,
+      variants,
+      quantity,
+      key: uniqueKey,
+      addedAt: new Date(),
+    });
+    setTimeout(() => setLoading(false), 300);
   };
 
   return (

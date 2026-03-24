@@ -1,15 +1,16 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 export interface CartItem {
   id: string;
   name: string;
-  price: number;       // in Naira
+  price: number; // in Naira
   quantity: number;
   image?: string;
   variants?: Record<string, string>;
-  key: string;         // unique for product+variant
+  key: string; // unique for variant combination
+  addedAt: Date;
 }
 
 interface CartContextType {
@@ -26,16 +27,16 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  // load from localStorage
+  // Load cart from localStorage
   useEffect(() => {
     const stored = localStorage.getItem("cart");
     if (stored) setItems(JSON.parse(stored));
   }, []);
 
-  // save to localStorage
+  // Persist cart
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(items));
   }, [items]);
@@ -66,7 +67,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const removeItem = (key: string) => setItems((prev) => prev.filter((i) => i.key !== key));
+  const removeItem = (key: string) => {
+    setItems((prev) => prev.filter((i) => i.key !== key));
+  };
 
   const clearCart = () => setItems([]);
 
@@ -76,7 +79,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, itemCount, total, isEmpty, addItem, increment, decrement, removeItem, clearCart }}
+      value={{
+        items,
+        itemCount,
+        total,
+        isEmpty,
+        addItem,
+        increment,
+        decrement,
+        removeItem,
+        clearCart,
+      }}
     >
       {children}
     </CartContext.Provider>
