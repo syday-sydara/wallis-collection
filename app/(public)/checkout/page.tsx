@@ -1,4 +1,5 @@
-// app/checkout/page.tsx
+"use client";
+
 import React from "react";
 import { useForm } from "react-hook-form";
 import { FormContextProvider, InputField, SelectField, CheckboxField, SubmitButton } from "@/components/ui/form";
@@ -28,10 +29,12 @@ export default function CheckoutPage() {
       address: "",
       city: "",
       state: "",
-      paymentMethod: "COD",
+      paymentMethod: PaymentMethod.COD,
       terms: false,
     },
   });
+
+  const formatPrice = (value: number) => `₦${value.toLocaleString()}`;
 
   const onSubmit = async (data: CheckoutFormValues) => {
     if (!items.length) return alert("Your cart is empty.");
@@ -107,22 +110,30 @@ export default function CheckoutPage() {
         {/* Order Summary */}
         <div className="space-y-4 p-6 border rounded-lg bg-[var(--color-bg-surface)]">
           <h2 className="heading-3 mb-4">Order Summary</h2>
-          {items.map((item) => (
-            <div key={item.key} className="flex justify-between text-sm">
-              <span>{item.name} × {item.quantity}</span>
-              <span>₦{(item.price * item.quantity).toLocaleString()}</span>
-            </div>
-          ))}
+
+          {items.length === 0 ? (
+            <p className="text-[var(--color-text-secondary)] text-sm">Your cart is empty.</p>
+          ) : (
+            items.map((item) => (
+              <div key={item.key} className="flex justify-between text-sm">
+                <span>{item.name} × {item.quantity}</span>
+                <span>{formatPrice(item.price * item.quantity)}</span>
+              </div>
+            ))
+          )}
+
           <div className="flex justify-between text-lg font-semibold border-t pt-4">
             <span>Total</span>
-            <span>₦{total.toLocaleString()}</span>
+            <span>{formatPrice(total)}</span>
           </div>
         </div>
 
         {/* Terms & Conditions */}
         <CheckboxField name="terms" label="I agree to the Terms & Conditions" rules={{ required: true }} />
 
-        <SubmitButton className="w-full">Place Order</SubmitButton>
+        <SubmitButton className="w-full" disabled={items.length === 0}>
+          Place Order
+        </SubmitButton>
       </FormContextProvider>
     </div>
   );

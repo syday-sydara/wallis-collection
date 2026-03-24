@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
-import { toCartItem } from "@/lib/cart";
+import { toCartItem } from "@/lib/cart/cart";
 
 interface AddToCartButtonProps {
   product: {
@@ -11,7 +11,7 @@ interface AddToCartButtonProps {
     price: number;
     salePrice: number | null;
     stock: number;
-    images: { url: string; position: number; }[];
+    images?: { url: string; position: number }[];
   };
   variants?: Record<string, string>;
   quantity?: number;
@@ -26,14 +26,23 @@ export default function AddToCartButton({
   const [loading, setLoading] = useState(false);
 
   const handleAdd = () => {
+    if (loading || product.stock < 1) return;
+
     setLoading(true);
 
-    // Use the utility function to ensure consistent key generation
     const item = toCartItem(product, quantity, variants);
-
     addItem(item);
+
+    // Reset loading after short delay
     setTimeout(() => setLoading(false), 300);
   };
+
+  // Show price label based on stock
+  const label = product.stock < 1
+    ? "Out of Stock"
+    : loading
+    ? "Adding..."
+    : "Add to Cart";
 
   return (
     <button
@@ -41,7 +50,7 @@ export default function AddToCartButton({
       disabled={loading || product.stock < 1}
       className="btn btn-primary w-full flex items-center justify-center disabled:opacity-50"
     >
-      {product.stock < 1 ? "Out of Stock" : loading ? "Adding..." : "Add to Cart"}
+      {label}
     </button>
   );
 }

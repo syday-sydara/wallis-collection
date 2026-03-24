@@ -286,3 +286,13 @@ model Event {
   createdAt DateTime  @default(now())
   user      User?     @relation(fields: [userId], references: [id])
 }
+
+model Toast {
+  id        String   @id @default(cuid())
+  message   String
+  type      String   @default("info") // Could be "success", "error", "info"
+  actionLabel String?
+  onAction  Json?    // Store a callback function (e.g., as a stringified function or a command)
+
+  createdAt DateTime @default(now())
+}

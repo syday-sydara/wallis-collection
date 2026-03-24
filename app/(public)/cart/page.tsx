@@ -4,15 +4,12 @@ import Link from "next/link";
 import { useCart } from "@/components/cart/CartProvider";
 import Button from "@/components/ui/Button";
 import CartItemRow from "@/components/cart/CartItemRow";
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function CartPage() {
-  const {
-    items,
-    clearCart,
-    total,
-    itemCount,
-    isEmpty,
-  } = useCart();
+  const { items, clearCart, total, itemCount, isEmpty } = useCart();
+
+  const formatPrice = (value: number) => `₦${value.toLocaleString()}`;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
@@ -43,23 +40,33 @@ export default function CartPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Cart Items List */}
           <div className="lg:col-span-2 space-y-4">
-            {items.map((item) => (
-              <CartItemRow 
-                key={item.key} 
-                item={item} 
-                variant="full" 
-              />
-            ))}
+            <AnimatePresence>
+              {items.map((item) => (
+                <motion.div
+                  key={item.key}
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <CartItemRow item={item} variant="full" />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
 
           {/* Order Summary Card */}
-          <div className="p-6 border border-[var(--color-border)] rounded-lg h-fit space-y-6 bg-[var(--color-bg-surface)]">
+          <motion.div
+            layout
+            className="p-6 border border-[var(--color-border)] rounded-lg h-fit space-y-6 bg-[var(--color-bg-surface)]"
+          >
             <h2 className="heading-3">Order Summary</h2>
 
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-[var(--color-text-secondary)]">Items ({itemCount})</span>
-                <span>₦{total.toLocaleString()}</span>
+                <span>{formatPrice(total)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--color-text-secondary)]">Shipping</span>
@@ -69,7 +76,7 @@ export default function CartPage() {
 
             <div className="flex justify-between text-lg font-semibold border-t pt-4">
               <span>Total</span>
-              <span>₦{total.toLocaleString()}</span>
+              <span>{formatPrice(total)}</span>
             </div>
 
             <div className="space-y-3 pt-2">
@@ -77,15 +84,15 @@ export default function CartPage() {
                 <Link href="/checkout/shipping">Proceed to Checkout</Link>
               </Button>
 
-              <Button 
-                variant="subtle" 
-                className="w-full text-[var(--color-text-muted)] hover:text-[var(--color-danger-500)]" 
+              <Button
+                variant="subtle"
+                className="w-full text-[var(--color-text-muted)] hover:text-[var(--color-danger-500)]"
                 onClick={clearCart}
               >
                 Clear Cart
               </Button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>
