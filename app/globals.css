@@ -266,3 +266,11 @@
     100% { background-position: -200% 0; }
   }
 }
+
+@keyframes pulse-on-add {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+.animate-pulse-on-add {
+  animation: pulse-on-add 0.3s ease-in-out;
+}

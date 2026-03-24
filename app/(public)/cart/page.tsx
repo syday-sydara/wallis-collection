@@ -1,100 +1,97 @@
 "use client";
 
-import Link from "next/link";
 import { useCart } from "@/components/cart/CartProvider";
-import Button from "@/components/ui/Button";
+import CartDrawer from "@/components/cart/CartDrawer";
 import CartItemRow from "@/components/cart/CartItemRow";
-import { AnimatePresence, motion } from "framer-motion";
+import Button from "@/components/ui/Button";
+import { formatPrice } from "@/lib/formatters";
+import { useState } from "react";
 
 export default function CartPage() {
-  const { items, clearCart, total, itemCount, isEmpty } = useCart();
+  const { items, itemCount, total, clearCart } = useCart();
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
-  const formatPrice = (value: number) => `₦${value.toLocaleString()}`;
+  const handleCheckout = async () => {
+    if (!items.length) return;
+
+    setCheckoutLoading(true);
+
+    try {
+      const res = await fetch("/api/cart/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items,
+          email: "test@example.com", // replace with actual user info
+          phone: "08012345678",
+          fullName: "John Doe",
+          address: "123 Example St",
+          city: "Lagos",
+          state: "Lagos",
+          paymentMethod: "PAYSTACK", // or MONNIFY
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        window.location.href = data.paymentUrl;
+      } else {
+        alert(data.error || "Checkout failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An unexpected error occurred.");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
-      <h1 className="heading-1 text-center">Your Cart</h1>
+    <div className="min-h-screen bg-[var(--color-bg-primary)] p-6 lg:p-12">
+      <h1 className="text-2xl font-bold mb-6">Your Cart ({itemCount})</h1>
 
-      {/* Shopping Link / Empty State */}
-      <div className="text-center">
-        {isEmpty ? (
-          <div className="py-20">
-            <p className="text-lg text-[var(--color-text-secondary)] mb-6">
-              Your cart is empty.
-            </p>
-            <Button asChild variant="primary">
-              <Link href="/products">Browse Products</Link>
+      {items.length === 0 ? (
+        <div className="text-center text-[var(--color-text-secondary)] mt-12">
+          Your cart is empty.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4 lg:max-w-4xl lg:mx-auto">
+          {/* Cart Items */}
+          {items.map((item) => (
+            <CartItemRow key={item.key} item={item} variant="full" />
+          ))}
+
+          {/* Cart Summary */}
+          <div className="flex justify-between items-center mt-6 p-4 bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-md">
+            <span className="font-medium text-lg">Total:</span>
+            <span className="font-bold text-xl">{formatPrice(total)}</span>
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-col lg:flex-row gap-4 mt-6">
+            <Button
+              variant="primary"
+              className="flex-1"
+              onClick={handleCheckout}
+              disabled={checkoutLoading || items.length === 0}
+            >
+              {checkoutLoading ? "Processing..." : "Proceed to Checkout"}
+            </Button>
+
+            <Button
+              variant="subtle"
+              className="flex-1"
+              onClick={clearCart}
+            >
+              Clear Cart
             </Button>
           </div>
-        ) : (
-          <Link
-            href="/products"
-            className="text-primary underline text-sm hover:opacity-80"
-          >
-            Continue Shopping
-          </Link>
-        )}
-      </div>
-
-      {!isEmpty && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Cart Items List */}
-          <div className="lg:col-span-2 space-y-4">
-            <AnimatePresence>
-              {items.map((item) => (
-                <motion.div
-                  key={item.key}
-                  layout
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <CartItemRow item={item} variant="full" />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-
-          {/* Order Summary Card */}
-          <motion.div
-            layout
-            className="p-6 border border-[var(--color-border)] rounded-lg h-fit space-y-6 bg-[var(--color-bg-surface)]"
-          >
-            <h2 className="heading-3">Order Summary</h2>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-[var(--color-text-secondary)]">Items ({itemCount})</span>
-                <span>{formatPrice(total)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--color-text-secondary)]">Shipping</span>
-                <span className="text-[var(--color-success-500)]">Calculated at checkout</span>
-              </div>
-            </div>
-
-            <div className="flex justify-between text-lg font-semibold border-t pt-4">
-              <span>Total</span>
-              <span>{formatPrice(total)}</span>
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <Button asChild variant="primary" className="w-full">
-                <Link href="/checkout/shipping">Proceed to Checkout</Link>
-              </Button>
-
-              <Button
-                variant="subtle"
-                className="w-full text-[var(--color-text-muted)] hover:text-[var(--color-danger-500)]"
-                onClick={clearCart}
-              >
-                Clear Cart
-              </Button>
-            </div>
-          </motion.div>
         </div>
       )}
+
+      {/* Mobile Cart Drawer */}
+      <CartDrawer />
     </div>
   );
 }
