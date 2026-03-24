@@ -1,90 +1,55 @@
-// app/(public)/products/[slug]/page.tsx
 import { prisma } from "@/lib/db";
+import { notFound } from "next/navigation";
 import ProductDetailView from "@/components/products/ProductDetailView";
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { cache } from "react";
+import { ProductImage } from "@/lib/types/product";
+import ProductOgImage from "./opengraph-image";
 
-interface ProductPageProps {
+interface Props {
   params: { slug: string };
 }
 
-async function getProduct(slug: string) {
-  try {
-    return await prisma.product.findUnique({
-      where: { slug },
-      include: { images: true, reviews: true },
-    });
-  } catch (err) {
-    console.error("Product fetch error:", err);
-    return null; // Returning null if error occurs.
-  }
-}
+const getProduct = cache(async (slug: string) => {
+  return prisma.product.findUnique({
+    where: {
+      slug,
+      deletedAt: null,
+    },
+    include: {
+      images: {
+        orderBy: { position: "asc" },
+      },
+    },
+  });
+});
 
-export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+export const revalidate = 300;
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await getProduct(params.slug);
 
-  if (!product || product.deletedAt) {
-    return {
-      title: "Product not found",
-      description: "This product does not exist.",
-      robots: { index: false, follow: false }, // Ensuring search engines don't index this page.
-    };
-  }
-
-  const fallbackImage =
-    "https://images.unsplash.com/photo-1520975918318-3a4e6e791f6b?q=80&w=1200&auto=format&fit=crop";
-
-  const ogImages =
-    product.images?.length > 0
-      ? product.images.map((img) => ({
-          url: img.url,
-          width: 1200,
-          height: 630,
-          alt: product.name,
-        }))
-      : [
-          {
-            url: fallbackImage,
-            width: 1200,
-            height: 630,
-            alt: product.name,
-          },
-        ];
-
-  const description =
-    product.description?.slice(0, 200) ??
-    "Premium Northern Nigerian fashion crafted with elegance and heritage.";
+  if (!product) return { title: "Product Not Found" };
 
   return {
-    title: product.name,
-    description,
-    alternates: {
-      canonical: `https://walliscollection.com/products/${product.slug}`,
-    },
+    title: `${product.name} | Wallis Collection`,
+    description: product.description,
     openGraph: {
-      title: product.name,
-      description,
-      url: `https://walliscollection.com/products/${product.slug}`,
-      type: "product",
-      siteName: "Wallis Collection",
-      images: ogImages,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: product.name,
-      description,
-      images: ogImages.map((img) => img.url),
+      images: product.images?.length
+        ? [product.images[0].url]
+        : ["/fallback-product.jpg"],
     },
   };
 }
 
-export default async function ProductDetailPage({ params }: ProductPageProps) {
+export default async function ProductDetailPage({ params }: Props) {
   const product = await getProduct(params.slug);
 
-  if (!product || product.deletedAt) {
-    // If the product is not found or deleted, show a custom 404 page
-    notFound();
-  }
+  if (!product) notFound();
 
-  return <ProductDetailView product={product} />;
+  return (
+    <main className="max-w-7xl mx-auto px-4 py-8">
+      <ProductDetailView product={ProductOgImage(product)} />
+    </main>
+  );
 }
