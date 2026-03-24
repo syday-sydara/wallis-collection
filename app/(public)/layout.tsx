@@ -5,20 +5,18 @@ import CartDrawer from "@/components/cart/CartDrawer";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
+interface PublicLayoutProps {
+  children: React.ReactNode;
+}
+
+export default function PublicLayout({ children }: PublicLayoutProps) {
   return (
     <CartProvider>
-      <div
-        className="
-          min-h-screen flex flex-col
-          bg-[var(--color-bg-primary)]
-          text-[var(--color-text-primary)]
-        "
-      >
+      <div className="flex flex-col min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
         {/* Global Header */}
         <Header />
 
-        {/* Cart Drawer (always mounted) */}
+        {/* Cart Drawer (always mounted for quick access) */}
         <CartDrawer />
 
         {/* Main Content */}
