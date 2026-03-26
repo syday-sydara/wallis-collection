@@ -14,9 +14,6 @@ interface PublicLayoutProps {
   children: React.ReactNode;
 }
 
-/**
- * Layout wrapper for public pages
- */
 export default function PublicLayout({ children }: PublicLayoutProps) {
   return (
     <CartProvider>
@@ -27,30 +24,27 @@ export default function PublicLayout({ children }: PublicLayoutProps) {
   );
 }
 
-/**
- * Internal component to handle scroll lock and layout effects
- */
 function LayoutContent({ children }: { children: React.ReactNode }) {
-  const { isCartOpen } = useCart();
+  const { isCartOpen, isHydrated } = useCart();
   const [scrollLocked, setScrollLocked] = useState(false);
 
   // Lock scroll when cart drawer is open
   useEffect(() => {
-    if (isCartOpen) {
-      document.body.style.overflow = "hidden";
-      setScrollLocked(true);
-    } else {
-      document.body.style.overflow = "";
-      setScrollLocked(false);
-    }
-  }, [isCartOpen]);
+    if (!isHydrated) return; // wait for hydration
+    const originalOverflow = document.body.style.overflow;
+
+    if (isCartOpen) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = originalOverflow;
+
+    setScrollLocked(isCartOpen);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isCartOpen, isHydrated]);
 
   return (
-    <div
-      className={`flex flex-col min-h-screen bg-bg-primary text-text-primary ${
-        scrollLocked ? "pointer-events-none" : ""
-      }`}
-    >
+    <div className="flex flex-col min-h-screen bg-bg-primary text-text-primary">
       {/* Header */}
       <Suspense fallback={<div className="h-20 flex items-center justify-center">Loading header...</div>}>
         <Header />
@@ -74,13 +68,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Simple cart loading fallback */
 function CartFallback() {
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center bg-black/50 z-[9999]"
-      aria-label="Loading cart"
-    >
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[9999]" aria-label="Loading cart">
       <div className="bg-white p-6 rounded shadow-md animate-pulse">Loading Cart...</div>
     </div>
   );

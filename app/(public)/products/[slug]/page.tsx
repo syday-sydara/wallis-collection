@@ -3,16 +3,16 @@ import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import ProductDetailView from "@/components/products/ProductDetailView";
 
-/* --------------------------
-   Product Page
--------------------------- */
 export default async function ProductPage({ params }: { params: { slug: string } }) {
   // Fetch product from DB
   const product = await prisma.product.findUnique({
     where: { slug: params.slug, deletedAt: null },
     include: {
       images: { orderBy: { position: "asc" } },
-      reviews: { include: { user: { select: { id: true; name: true } } }, orderBy: { createdAt: "desc" } },
+      reviews: {
+        include: { user: { select: { id: true, name: true } } },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
 
@@ -50,7 +50,6 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-8">
-      {/* Inject JSON-LD invisibly for SEO */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

@@ -1,6 +1,6 @@
 // File: lib/types/product.ts
 import { Prisma } from "@prisma/client";
-import { formatKobo } from "./formatters";
+import { formatKobo } from "../formatters";
 
 /* -------------------------- */
 /* Product Image Type          */

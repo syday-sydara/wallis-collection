@@ -6,7 +6,7 @@ import { spaceGrotesk } from "./metadata";
 import { CartProvider, useCart } from "@/components/cart/CartProvider";
 import { ToastProvider } from "@/components/toast/ToastProvider";
 
-// Lazy load heavy components (client-only)
+// Lazy load client-only components
 const CartDrawer = dynamic(() => import("@/components/cart/CartDrawer"), { ssr: false });
 const Header = dynamic(() => import("@/components/layout/header"), { ssr: false });
 const Footer = dynamic(() => import("@/components/layout/footer"), { ssr: false });
@@ -17,11 +17,7 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html
-      lang="en"
-      className={`${spaceGrotesk.variable} scroll-smooth`}
-      suppressHydrationWarning
-    >
+    <html lang="en" className={`${spaceGrotesk.variable} scroll-smooth`} suppressHydrationWarning>
       <body className="min-h-screen flex flex-col bg-bg-primary text-text-primary antialiased transition-colors duration-300 [text-rendering:optimizeLegibility]">
         <CartProvider>
           <ToastProvider>
@@ -33,23 +29,27 @@ export default function RootLayout({ children }: RootLayoutProps) {
   );
 }
 
-/** Internal layout content to handle scroll lock when cart is open */
 function LayoutContent({ children }: { children: ReactNode }) {
-  const { isCartOpen } = useCart();
-  const [scrollLocked, setScrollLocked] = useState(false);
+  const { isCartOpen, isHydrated } = useCart();
+  const [originalOverflow, setOriginalOverflow] = useState<string>("");
 
+  // Lock scroll only after hydration
   useEffect(() => {
-    if (isCartOpen) {
-      document.body.style.overflow = "hidden";
-      setScrollLocked(true);
-    } else {
-      document.body.style.overflow = "";
-      setScrollLocked(false);
-    }
-  }, [isCartOpen]);
+    if (!isHydrated) return;
+
+    const prevOverflow = document.body.style.overflow;
+    setOriginalOverflow(prevOverflow);
+
+    if (isCartOpen) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = prevOverflow;
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isCartOpen, isHydrated]);
 
   return (
-    <div className={`flex flex-col min-h-screen ${scrollLocked ? "pointer-events-none" : ""}`}>
+    <div className="flex flex-col min-h-screen">
       {/* Header */}
       <Suspense fallback={<div className="h-20 flex items-center justify-center">Loading header...</div>}>
         <Header />
@@ -71,13 +71,9 @@ function LayoutContent({ children }: { children: ReactNode }) {
   );
 }
 
-/** Simple cart loading fallback */
 function CartFallback() {
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center bg-black/50 z-[9999]"
-      aria-label="Loading cart"
-    >
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[9999]" aria-label="Loading cart">
       <div className="bg-white p-6 rounded shadow-md animate-pulse">Loading Cart...</div>
     </div>
   );

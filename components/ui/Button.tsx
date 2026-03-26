@@ -4,7 +4,6 @@ import React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 import Spinner from "@/components/ui/Spinner";
-import { Slot } from "@radix-ui/react-slot";
 
 const buttonStyles = cva(
   "inline-flex items-center justify-center font-medium transition-all duration-200 ease-out disabled:opacity-50 disabled:pointer-events-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]",
@@ -42,55 +41,25 @@ const buttonStyles = cva(
 
 type ButtonVariants = VariantProps<typeof buttonStyles>;
 
-interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLElement>,
-    ButtonVariants {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, ButtonVariants {
   loading?: boolean;
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
-  asChild?: boolean;
 }
 
-const Button = React.forwardRef<HTMLElement, ButtonProps>(
-  (
-    {
-      children,
-      variant,
-      size,
-      fullWidth,
-      rounded,
-      loading = false,
-      iconLeft,
-      iconRight,
-      className,
-      disabled,
-      asChild = false,
-      onKeyDown,
-      ...props
-    },
-    ref
-  ) => {
-    const Comp = asChild ? Slot : "button";
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ children, variant, size, fullWidth, rounded, loading = false, iconLeft, iconRight, className, disabled, ...props }, ref) => {
     const isDisabled = disabled || loading;
 
     return (
-      <Comp
+      <button
         ref={ref}
         className={clsx(buttonStyles({ variant, size, fullWidth, rounded }), className)}
-        disabled={!asChild ? isDisabled : undefined}
+        disabled={isDisabled}
         aria-busy={loading || undefined}
         data-variant={variant}
         data-size={size}
         data-loading={loading}
-        tabIndex={asChild && !isDisabled ? 0 : undefined}
-        role={asChild ? "button" : undefined}
-        onKeyDown={(e) => {
-          if (asChild && !isDisabled && (e.key === "Enter" || e.key === " ")) {
-            e.preventDefault();
-            props.onClick?.(e as any);
-          }
-          onKeyDown?.(e);
-        }}
         {...props}
       >
         <span className="relative inline-flex items-center">
@@ -100,10 +69,7 @@ const Button = React.forwardRef<HTMLElement, ButtonProps>(
             </span>
           )}
 
-          <span
-            className={clsx("inline-flex items-center gap-2 transition-opacity", loading ? "opacity-0" : "opacity-100")}
-            aria-hidden={loading}
-          >
+          <span className={clsx("inline-flex items-center gap-2 transition-opacity", loading ? "opacity-0" : "opacity-100")} aria-hidden={loading}>
             {iconLeft}
             {children}
             {iconRight}
@@ -111,7 +77,7 @@ const Button = React.forwardRef<HTMLElement, ButtonProps>(
 
           {loading && <span className="sr-only">Loading…</span>}
         </span>
-      </Comp>
+      </button>
     );
   }
 );
