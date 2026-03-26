@@ -1,29 +1,38 @@
+// File: components/products/ProductDetailView.tsx
 "use client";
 
 import { useState } from "react";
 import Image from "next/image";
+import clsx from "clsx";
 import { useCart } from "@/components/cart/CartProvider";
 import Button from "@/components/ui/Button";
 import { getPrimaryImage, getCurrentPrice } from "@/lib/types/product";
 
+/* ------------------------------------------------
+   ProductDetailView Component
+------------------------------------------------ */
 export default function ProductDetailView({ product }: { product: any }) {
   const { addItem } = useCart();
 
-  const [mainImage, setMainImage] = useState(
-    getPrimaryImage(product.images)
-  );
+  // Main displayed image
+  const [mainImage, setMainImage] = useState(getPrimaryImage(product.images));
 
+  // Selected size state
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [showSizeError, setShowSizeError] = useState(false);
 
   const hasSizes = product.sizes && product.sizes.length > 0;
   const outOfStock = product.stock <= 0;
 
+  // Correct: getCurrentPrice returns a number
   const finalPrice = getCurrentPrice({
     price: product.price,
     salePrice: product.salePrice,
   });
 
+  /* ------------------------------------------------
+     Add to Cart Handler
+  ------------------------------------------------ */
   const handleAddToCart = () => {
     if (hasSizes && !selectedSize) {
       setShowSizeError(true);
@@ -44,7 +53,7 @@ export default function ProductDetailView({ product }: { product: any }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-      {/* Gallery */}
+      {/* ---------------- Gallery ---------------- */}
       <div className="space-y-4">
         <div className="aspect-[3/4] relative overflow-hidden rounded-xl bg-[var(--color-bg-surface)]">
           <Image
@@ -80,7 +89,7 @@ export default function ProductDetailView({ product }: { product: any }) {
         </div>
       </div>
 
-      {/* Info */}
+      {/* ---------------- Info ---------------- */}
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="heading-1">{product.name}</h1>
@@ -93,14 +102,13 @@ export default function ProductDetailView({ product }: { product: any }) {
           {product.description}
         </div>
 
-        {/* Size Selection */}
+        {/* ---------------- Size Selection ---------------- */}
         {hasSizes && (
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium uppercase tracking-wider">
                 Select Size
               </span>
-
               {showSizeError && (
                 <span className="text-sm text-[var(--color-danger-500)] font-medium">
                   Please select a size
@@ -108,14 +116,9 @@ export default function ProductDetailView({ product }: { product: any }) {
               )}
             </div>
 
-            <div
-              className="flex gap-3"
-              role="radiogroup"
-              aria-label="Select size"
-            >
+            <div className="flex gap-3" role="radiogroup" aria-label="Select size">
               {product.sizes.map((size: string) => {
                 const isSelected = selectedSize === size;
-
                 return (
                   <button
                     key={size}
@@ -143,6 +146,7 @@ export default function ProductDetailView({ product }: { product: any }) {
           </div>
         )}
 
+        {/* ---------------- Add to Cart Button ---------------- */}
         <Button
           variant="primary"
           size="lg"
