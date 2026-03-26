@@ -1,37 +1,71 @@
-// File: components/products/ClientProductGrid.tsx
+// File: app/products/ClientProductGrid.tsx
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
-import { ProductCard } from "@/lib/types/product";
+import { useState } from "react";
+import ProductGrid from "@/components/products/ProductGrid";
+import ProductCard from "@/components/products/ProductCard";
+import Loading from "@/components/products/Loading";
 
-interface ClientProductGridProps {
-  products: (ProductCard & { formattedPrice?: string })[];
+interface ProductWithFormattedPrice {
+  id: string;
+  name: string;
+  slug: string;
+  images: any[];
+  stock: number;
+  isNew?: boolean;
+  isOnSale?: boolean;
+  formattedPrice: string;
+  formattedSalePrice?: string | null;
 }
 
-export default function ClientProductGrid({ products }: ClientProductGridProps) {
+export default function ClientProductGrid({ initialProducts }: { initialProducts: ProductWithFormattedPrice[] }) {
+  const [products, setProducts] = useState(initialProducts);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const fetchMore = async () => {
+    setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/products?page=${Math.ceil(products.length / 50) + 1}`);
+      const data = await res.json();
+      if (data?.data?.length) {
+        setProducts((prev) => [...prev, ...data.data]);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-      {products.map((product) => (
-        <Link key={product.id} href={`/products/${product.slug}`}>
-          <div className="group relative rounded-lg overflow-hidden border hover:shadow-lg transition">
-            <div className="aspect-[3/4] relative">
-              <Image
-                src={product.images[0]?.url ?? "/fallback-product.jpg"}
-                alt={product.name}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform"
-              />
-            </div>
-            <div className="p-3">
-              <h3 className="text-sm font-medium">{product.name}</h3>
-              <p className="mt-1 text-sm text-[var(--color-accent-500)] font-semibold">
-                {product.formattedPrice ?? `₦${(product.salePrice ?? product.price / 100).toLocaleString()}`}
-              </p>
-            </div>
-          </div>
-        </Link>
-      ))}
-    </div>
+    <>
+      <ProductGrid
+        products={products.map((p) => (
+          <ProductCard
+            key={p.id}
+            {...p}
+            onAddToCart={() => console.log("Add to cart", p.id)}
+          />
+        ))}
+        skeletonCount={8}
+        loading={loadingMore}
+      />
+
+      {/* Infinite Scroll Trigger */}
+      <div
+        style={{ height: 8 }}
+        ref={(el) => {
+          if (!el) return;
+          const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) fetchMore();
+          });
+          observer.observe(el);
+        }}
+      />
+
+      {loadingMore && (
+        <div className="mt-4 flex justify-center">
+          <Loading count={4} showSpinner message="Loading more products..." />
+        </div>
+      )}
+    </>
   );
 }

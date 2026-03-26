@@ -1,13 +1,11 @@
+// File: components/products/ProductCard.tsx
 "use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
-import {
-  ProductCard as ProductCardType,
-  getCurrentPrice,
-  getPrimaryImage,
-} from "@/lib/types/product";
+import { ProductCard as ProductCardType, getPrimaryImage } from "@/lib/types/product";
+import { formatPrice } from "@/lib/formatters";
 
 interface Props extends ProductCardType {
   onAddToCart?: () => void;
@@ -17,25 +15,24 @@ export default function ProductCard({
   id,
   name,
   slug,
-  price,
-  salePrice,
   images,
   stock = 0,
   isNew,
   isOnSale,
+  price,
+  salePrice,
   onAddToCart,
 }: Props) {
-  const finalPrice = getCurrentPrice({ price, salePrice });
   const imageUrl = getPrimaryImage(images);
   const outOfStock = stock <= 0;
 
+  // Formatted prices
+  const formattedPrice = formatPrice(price);
+  const formattedSalePrice = salePrice ? formatPrice(salePrice) : null;
+
   return (
     <article
-      className="
-        relative flex flex-col rounded-lg bg-[var(--color-bg-surface)]
-        shadow-card overflow-hidden group transition-all
-        hover:-translate-y-1 hover:shadow-soft
-      "
+      className="relative flex flex-col rounded-lg bg-[var(--color-bg-surface)] shadow-card overflow-hidden group transition-all hover:-translate-y-1 hover:shadow-soft"
       data-product-id={id}
       data-out-of-stock={outOfStock}
       data-on-sale={isOnSale}
@@ -80,14 +77,21 @@ export default function ProductCard({
           {name}
         </h3>
 
+        {/* Price with optional Sale */}
         <p className="mt-2 font-semibold text-[var(--color-accent-500)]">
-          {finalPrice.toLocaleString("en-NG", {
-            style: "currency",
-            currency: "NGN",
-            maximumFractionDigits: 0,
-          })}
+          {formattedSalePrice ? (
+            <>
+              <span className="line-through text-[var(--color-text-secondary)] mr-2">
+                {formattedPrice}
+              </span>
+              <span>{formattedSalePrice}</span>
+            </>
+          ) : (
+            formattedPrice
+          )}
         </p>
 
+        {/* Add to Cart */}
         <Button
           onClick={onAddToCart}
           disabled={outOfStock}

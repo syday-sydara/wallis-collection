@@ -4,30 +4,36 @@
 import { useState } from "react";
 import Image from "next/image";
 import clsx from "clsx";
-import { useCart } from "@/components/cart/CartProvider";
 import Button from "@/components/ui/Button";
+import { useCart } from "@/components/cart/CartProvider";
+import { ProductDetail, getPrimaryImage } from "@/lib/types/product";
+import { formatPrice } from "@/lib/formatters";
 
-/* ------------------------------------------------
-   ProductDetailView Component
------------------------------------------------- */
-export default function ProductDetailView({ product }: { product: any }) {
+interface Props {
+  product: ProductDetail & {
+    priceNaira?: number;
+    salePriceNaira?: number;
+    formattedPrice?: string;
+    formattedSalePrice?: string;
+  };
+}
+
+export default function ProductDetailView({ product }: Props) {
   const { addItem } = useCart();
 
-  // Main displayed image
-  const [mainImage, setMainImage] = useState(
-    product.images?.[0]?.url ?? "/fallback-product.jpg"
+  // Auto-select size if only one option
+  const [selectedSize, setSelectedSize] = useState<string | null>(
+    product.sizes?.length === 1 ? product.sizes[0] : null
   );
-
-  // Selected size state
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [showSizeError, setShowSizeError] = useState(false);
 
   const hasSizes = product.sizes && product.sizes.length > 0;
   const outOfStock = product.stock <= 0;
 
-  /* ------------------------------------------------
-     Add to Cart Handler
-  ------------------------------------------------ */
+  const mainImage = getPrimaryImage(product.images);
+
+  const finalPrice = product.salePriceNaira ?? product.priceNaira ?? 0;
+
   const handleAddToCart = () => {
     if (hasSizes && !selectedSize) {
       setShowSizeError(true);
@@ -37,7 +43,7 @@ export default function ProductDetailView({ product }: { product: any }) {
     addItem({
       id: product.id,
       name: product.name,
-      price: product.salePriceNaira ?? product.priceNaira,
+      price: finalPrice,
       image: mainImage,
       variants: { size: selectedSize || "Default" },
       key: `${product.id}-${selectedSize || "Default"}`,
@@ -61,13 +67,13 @@ export default function ProductDetailView({ product }: { product: any }) {
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-2">
-          {product.images?.map((img: any) => (
+          {product.images?.map((img) => (
             <button
               key={img.url}
-              onClick={() => setMainImage(img.url)}
+              onClick={() => {}}
               className={clsx(
                 "relative w-20 h-24 flex-shrink-0 rounded-md overflow-hidden border-2 transition",
-                mainImage === img.url
+                img.url === mainImage
                   ? "border-[var(--color-accent-500)]"
                   : "border-transparent hover:border-[var(--color-border)]"
               )}
@@ -88,8 +94,19 @@ export default function ProductDetailView({ product }: { product: any }) {
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="heading-1">{product.name}</h1>
+
+          {/* Price with Sale */}
           <p className="text-2xl font-semibold mt-2 text-[var(--color-accent-500)]">
-            {product.formattedPrice}
+            {product.salePriceNaira ? (
+              <>
+                <span className="line-through text-[var(--color-text-secondary)] mr-2">
+                  {formatPrice(product.priceNaira)}
+                </span>
+                <span>{formatPrice(product.salePriceNaira)}</span>
+              </>
+            ) : (
+              formatPrice(product.priceNaira)
+            )}
           </p>
         </div>
 
@@ -112,7 +129,7 @@ export default function ProductDetailView({ product }: { product: any }) {
             </div>
 
             <div className="flex gap-3" role="radiogroup" aria-label="Select size">
-              {product.sizes.map((size: string) => {
+              {product.sizes.map((size) => {
                 const isSelected = selectedSize === size;
                 return (
                   <button

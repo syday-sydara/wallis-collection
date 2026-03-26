@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { productCardSelect } from "@/lib/types/product";
 import { mapProductToCard } from "@/lib/mappers/product";
-import { formatPrice } from "@/lib/formatters";
+import { formatKobo } from "@/lib/formatters";
 
 export const revalidate = 60;
 
@@ -15,10 +15,16 @@ export async function GET() {
       select: productCardSelect,
     });
 
-    const mapped = products.map((p) => ({
-      ...mapProductToCard(p),
-      formattedPrice: formatPrice(p.salePrice ?? p.price),
-    }));
+    const mapped = products.map((product) => {
+      const card = mapProductToCard(product);
+
+      // Add formatted prices
+      return {
+        ...card,
+        formattedPrice: formatKobo(card.price, false),
+        formattedSalePrice: card.salePrice ? formatKobo(card.salePrice, false) : null,
+      };
+    });
 
     return NextResponse.json(
       { success: true, data: mapped, count: mapped.length },
@@ -33,7 +39,10 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to fetch products",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch products",
       },
       { status: 500 }
     );
