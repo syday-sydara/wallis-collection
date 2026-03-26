@@ -6,7 +6,6 @@ import Image from "next/image";
 import clsx from "clsx";
 import { useCart } from "@/components/cart/CartProvider";
 import Button from "@/components/ui/Button";
-import { getPrimaryImage, getCurrentPrice } from "@/lib/types/product";
 
 /* ------------------------------------------------
    ProductDetailView Component
@@ -14,25 +13,15 @@ import { getPrimaryImage, getCurrentPrice } from "@/lib/types/product";
 export default function ProductDetailView({ product }: { product: any }) {
   const { addItem } = useCart();
 
-  // Main displayed image
-  const [mainImage, setMainImage] = useState(getPrimaryImage(product.images));
-
-  // Selected size state
+  const [mainImage, setMainImage] = useState(
+    product.images?.[0]?.url ?? "/fallback-product.jpg"
+  );
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [showSizeError, setShowSizeError] = useState(false);
 
   const hasSizes = product.sizes && product.sizes.length > 0;
   const outOfStock = product.stock <= 0;
 
-  // Correct: getCurrentPrice returns a number
-  const finalPrice = getCurrentPrice({
-    price: product.price,
-    salePrice: product.salePrice,
-  });
-
-  /* ------------------------------------------------
-     Add to Cart Handler
-  ------------------------------------------------ */
   const handleAddToCart = () => {
     if (hasSizes && !selectedSize) {
       setShowSizeError(true);
@@ -42,7 +31,7 @@ export default function ProductDetailView({ product }: { product: any }) {
     addItem({
       id: product.id,
       name: product.name,
-      price: finalPrice,
+      price: product.salePrice ?? product.price,
       image: mainImage,
       variants: { size: selectedSize || "Default" },
       key: `${product.id}-${selectedSize || "Default"}`,
@@ -77,13 +66,7 @@ export default function ProductDetailView({ product }: { product: any }) {
                   : "border-transparent hover:border-[var(--color-border)]"
               )}
             >
-              <Image
-                src={img.url}
-                alt=""
-                fill
-                loading="lazy"
-                className="object-cover"
-              />
+              <Image src={img.url} alt="" fill loading="lazy" className="object-cover" />
             </button>
           ))}
         </div>
@@ -94,7 +77,7 @@ export default function ProductDetailView({ product }: { product: any }) {
         <div>
           <h1 className="heading-1">{product.name}</h1>
           <p className="text-2xl font-semibold mt-2 text-[var(--color-accent-500)]">
-            ₦{finalPrice.toLocaleString()}
+            {product.formattedPrice}
           </p>
         </div>
 
@@ -102,13 +85,10 @@ export default function ProductDetailView({ product }: { product: any }) {
           {product.description}
         </div>
 
-        {/* ---------------- Size Selection ---------------- */}
         {hasSizes && (
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium uppercase tracking-wider">
-                Select Size
-              </span>
+              <span className="text-sm font-medium uppercase tracking-wider">Select Size</span>
               {showSizeError && (
                 <span className="text-sm text-[var(--color-danger-500)] font-medium">
                   Please select a size
@@ -146,18 +126,13 @@ export default function ProductDetailView({ product }: { product: any }) {
           </div>
         )}
 
-        {/* ---------------- Add to Cart Button ---------------- */}
         <Button
           variant="primary"
           size="lg"
           className="w-full md:w-64"
           onClick={handleAddToCart}
           disabled={outOfStock}
-          aria-label={
-            outOfStock
-              ? `${product.name} is out of stock`
-              : `Add ${product.name} to cart`
-          }
+          aria-label={outOfStock ? `${product.name} is out of stock` : `Add ${product.name} to cart`}
         >
           {outOfStock ? "Out of Stock" : "Add to Cart"}
         </Button>

@@ -1,27 +1,47 @@
-// File: app/api/products/[slug]/route.ts
+// File: app/api/product/[slug]/route.ts
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { mapProductToDetail } from "@/lib/mappers/product";
+import { formatPrice } from "@/lib/formatters";
 
-export async function GET(req: Request, { params }: { params: { slug: string } }) {
-  if (!params?.slug) return NextResponse.json({ success: false, error: "Invalid slug" }, { status: 400 });
+export async function GET(
+  req: Request,
+  { params }: { params: { slug: string } }
+) {
+  if (!params?.slug) {
+    return NextResponse.json(
+      { success: false, error: "Invalid slug" },
+      { status: 400 }
+    );
+  }
 
   try {
     const product = await prisma.product.findFirst({
       where: { slug: params.slug, deletedAt: null },
       include: {
         images: { orderBy: { position: "asc" } },
-        reviews: { include: { user: { select: { id: true, name: true } } }, orderBy: { createdAt: "desc" } },
+        reviews: { include: { user: { select: { id: true; name: true } } }, orderBy: { createdAt: "desc" } },
       },
     });
 
-    if (!product) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
+    if (!product) {
+      return NextResponse.json(
+        { success: false, error: "Product not found" },
+        { status: 404 }
+      );
+    }
 
-    const mappedProduct = mapProductToDetail(product);
-
-    return NextResponse.json({ success: true, data: mappedProduct });
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...product,
+        formattedPrice: formatPrice(product.salePrice ?? product.price),
+      },
+    });
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json({ success: false, error: "Failed to fetch product" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch product" },
+      { status: 500 }
+    );
   }
 }

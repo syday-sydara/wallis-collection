@@ -1,3 +1,4 @@
+// File: lib/types/product.ts
 import { Prisma } from "@prisma/client";
 
 /* -------------------------- */
@@ -73,6 +74,4 @@ export const getPrimaryImage = (images?: ProductImage[]) =>
   "/fallback-product.jpg";
 
 export const getStock = (product: ProductCard | ProductDetail) =>
-  "stock" in product
-    ? product.stock
-    : product.inventory?.quantity ?? 0;
+  "stock" in product ? product.stock : product.inventory?.quantity ?? 0;

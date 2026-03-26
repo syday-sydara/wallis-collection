@@ -1,37 +1,33 @@
+// File: app/products/page.tsx
 import { Suspense } from "react";
 import { prisma } from "@/lib/db";
-import ClientProductGrid from "./ClientProductGrid";
+import ClientProductGrid from "../../../components/products/ClientProductGrid";
 import Loading from "@/components/products/Loading";
 import { cache } from "react";
+import { formatPrice } from "@/lib/formatters";
 
-/**
- * Fetch products from Prisma with caching.
- * Uses `cache` for React Server Components (RSC) optimization.
- */
 const getAllProducts = cache(async () => {
   const products = await prisma.product.findMany({
     where: { deletedAt: null },
-    include: {
-      images: { orderBy: { position: "asc" } },
-    },
+    include: { images: { orderBy: { position: "asc" } } },
     orderBy: { createdAt: "desc" },
-    take: 50, // Limit for performance
+    take: 50,
   });
 
   return products.map((p) => ({
     id: p.id,
     name: p.name,
     slug: p.slug,
-    price: p.priceNaira, // Ensure correct currency field
-    salePrice: p.salePriceNaira ?? undefined,
+    price: p.price,
+    salePrice: p.salePrice ?? undefined,
     images: p.images?.map((img) => ({ url: img.url })) ?? [],
     isNew: p.isNew ?? false,
-    isOnSale: p.salePriceNaira != null,
+    isOnSale: p.salePrice != null,
     stock: p.stock,
+    formattedPrice: formatPrice(p.salePrice ?? p.price), // Use formatted price here
   }));
 });
 
-// Revalidate every 5 minutes
 export const revalidate = 300;
 
 export default async function ProductsPage() {
@@ -39,9 +35,7 @@ export default async function ProductsPage() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="heading-2 mb-6 text-center md:text-left">
-        All Products
-      </h1>
+      <h1 className="heading-2 mb-6">All Products</h1>
 
       <Suspense fallback={<Loading count={8} message="Loading products..." />}>
         <ClientProductGrid initialProducts={initialProducts} />
