@@ -21,11 +21,8 @@ const BRAND = {
   font: "Space Grotesk, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI'",
 };
 
-export const size = {
-  width: 1200,
-  height: 630,
-};
-
+// Image dimensions
+export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 interface ProductOgImageProps {
@@ -37,24 +34,24 @@ async function getProduct(slug: string) {
   try {
     const product = await prisma.product.findUnique({
       where: { slug },
-      include: { images: true },
+      include: { images: { orderBy: { position: "asc" } } },
     });
-    return product || null;
+    return product ?? null;
   } catch (err) {
     console.error("OG Image Prisma Error:", err);
     return null;
   }
 }
 
-// Open Graph image generation
+// OG Image generation
 export default async function ProductOgImage({ params }: ProductOgImageProps) {
   const product = await getProduct(params.slug);
 
-  // Use fallback data if product is not found or missing information
+  // Fallback data
   const imageUrl = product?.images?.[0]?.url ?? FALLBACK_IMAGE;
   const title = product?.name ?? FALLBACK_TITLE;
-  const price = product?.priceNaira
-    ? `₦${product.priceNaira.toLocaleString("en-NG")}`
+  const price = product?.price
+    ? `₦${product.price.toLocaleString("en-NG")}`
     : FALLBACK_PRICE;
   const description = product?.description?.slice(0, 180) ?? FALLBACK_DESCRIPTION;
 
@@ -62,38 +59,35 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
     (
       <div
         style={{
+          display: "flex",
           width: "100%",
           height: "100%",
-          display: "flex",
-          background: BRAND.primary,
-          color: BRAND.textPrimary,
           fontFamily: BRAND.font,
+          color: BRAND.textPrimary,
+          background: BRAND.primary,
         }}
       >
         {/* Left: Product image */}
-        <div style={{ flex: 1, height: "100%", overflow: "hidden" }}>
+        <div style={{ flex: 1, overflow: "hidden" }}>
           <img
             src={imageUrl}
             alt={title}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         </div>
 
-        {/* Right: Text */}
+        {/* Right: Text panel */}
         <div
           style={{
             flex: 1,
-            padding: "48px",
+            padding: 48,
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
             background: BRAND.surface,
           }}
         >
+          {/* Product info */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div
               style={{
@@ -148,6 +142,7 @@ export default async function ProductOgImage({ params }: ProductOgImageProps) {
             </div>
           </div>
 
+          {/* Footer */}
           <div
             style={{
               fontSize: 18,
