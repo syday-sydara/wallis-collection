@@ -38,26 +38,12 @@ enum OrderStatus {
   CANCELLED
 }
 
-enum InventoryReason {
-  SALE
-  RESTOCK
-  REFUND
-  MANUAL_ADJUSTMENT
-}
-
 enum ShipmentStatus {
   PROCESSING
   SHIPPED
   IN_TRANSIT
   DELIVERED
   FAILED
-}
-
-enum EventType {
-  PRODUCT_VIEW
-  ADD_TO_CART
-  CHECKOUT_STARTED
-  ORDER_PLACED
 }
 
 enum AddressType {
@@ -86,14 +72,13 @@ model User {
   id        String   @id @default(cuid())
   name      String?
   email     String   @unique
-  phone     String?
+  phone     String?  @db.VarChar(20)
   password  String?
   role      Role     @default(USER)
 
   orders    Order[]
   reviews   Review[]
   addresses Address[]
-  events    Event[]
 
   createdAt DateTime @default(now())
 }
@@ -107,7 +92,6 @@ model Product {
   price       Int
   salePrice   Int?
 
-  stock       Int      @default(0)
   category    String?
   brand       String?
 
@@ -122,15 +106,14 @@ model Product {
 
   images      ProductImage[]
   reviews     Review[]
-  inventory   InventoryMovement[]
   orderItems  OrderItem[]
   variants    ProductVariant[]
 
-  @@index([slug])
   @@index([isNew])
-  @@index([isOnSale])
+  @@index([isOnSale, createdAt])
   @@index([featured])
   @@index([deletedAt])
+  @@index([createdAt])
 }
 
 model ProductVariant {
@@ -162,7 +145,7 @@ model Order {
   user           User?         @relation(fields: [userId], references: [id])
 
   email          String
-  phone          String?
+  phone          String?       @db.VarChar(20)
 
   paymentMethod  PaymentMethod
   paymentStatus  PaymentStatus @default(PENDING)
@@ -171,7 +154,7 @@ model Order {
   providerRef    String?       @unique
 
   total          Int
-  currency       String        @default("NGN")
+  currency       String        @default("NGN") @db.VarChar(3)
 
   cartSnapshot   Json?
 
@@ -181,7 +164,6 @@ model Order {
   items          OrderItem[]
   shipments      Shipment[]
   refundRequests RefundRequest[]
-  fraudSignals   FraudSignal[]
   paymentEvents  PaymentEvent[]
 
   @@index([userId])
@@ -194,17 +176,17 @@ model Order {
 model OrderItem {
   id         String  @id @default(cuid())
   orderId    String
-  productId  String
+  productId  String?   // now optional (important fix)
 
   quantity   Int
   price      Int
 
-  // Product snapshot
+  // Snapshot (source of truth)
   productName  String
   productImage String?
 
   order      Order   @relation(fields: [orderId], references: [id])
-  product    Product @relation(fields: [productId], references: [id])
+  product    Product? @relation(fields: [productId], references: [id])
 
   @@index([orderId])
   @@index([productId])
@@ -215,7 +197,7 @@ model Address {
   userId    String?
 
   fullName  String
-  phone     String
+  phone     String      @db.VarChar(20)
   state     String
   city      String
   lga       String?
@@ -232,7 +214,7 @@ model Address {
 model Review {
   id        String   @id @default(cuid())
   productId String
-  userId    String?
+  userId    String   // now required (fixes constraint issue)
 
   rating    Int
   comment   String?
@@ -240,7 +222,7 @@ model Review {
   createdAt DateTime @default(now())
 
   product   Product  @relation(fields: [productId], references: [id])
-  user      User?    @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, productId])
 }
@@ -260,24 +242,10 @@ model RefundRequest {
   @@index([orderId])
 }
 
-model FraudSignal {
-  id        String   @id @default(cuid())
-  orderId   String
-
-  score     Int
-  details   Json?
-
-  createdAt DateTime @default(now())
-
-  order     Order    @relation(fields: [orderId], references: [id])
-
-  @@index([orderId])
-}
-
 model PaymentEvent {
   id        String           @id @default(cuid())
   orderId   String
-  reference String           @unique
+  reference String           // removed @unique
   type      PaymentEventType
   payload   Json?
 
@@ -286,21 +254,7 @@ model PaymentEvent {
   order     Order    @relation(fields: [orderId], references: [id])
 
   @@index([orderId])
-}
-
-model InventoryMovement {
-  id        String          @id @default(cuid())
-  productId String
-
-  change    Int
-  reason    InventoryReason
-  reference String?
-
-  createdAt DateTime @default(now())
-
-  product   Product @relation(fields: [productId], references: [id])
-
-  @@index([productId])
+  @@index([reference]) // safer
 }
 
 model Shipment {
@@ -334,23 +288,6 @@ model ShipmentUpdate {
   @@index([shipmentId])
 }
 
-model Event {
-  id        String    @id @default(cuid())
-  userId    String?
-
-  type      EventType
-  data      Json?
-  ip        String?
-  userAgent String?
-  sessionId String?
-
-  createdAt DateTime  @default(now())
-
-  user      User?     @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-}
-
 model DeliveryZone {
   id      String @id @default(cuid())
   state   String
@@ -359,14 +296,4 @@ model DeliveryZone {
 
   @@index([state])
   @@index([lga])
-}
-
-model Toast {
-  id        String   @id @default(cuid())
-  message   String
-  type      String   @default("info")
-  actionLabel String?
-  onAction  Json?
-
-  createdAt DateTime @default(now())
 }
