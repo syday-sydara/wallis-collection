@@ -4,13 +4,32 @@
 import Image from "next/image";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
-import { ProductCard as ProductCardType, getPrimaryImage } from "@/lib/types/product";
+import { getPrimaryImage } from "@/lib/types/product";
 import { formatPrice } from "@/lib/formatters";
 
-interface Props extends ProductCardType {
+/* ------------------------------------------------------------
+   Dedicated UI Props (cleaner + safer)
+------------------------------------------------------------- */
+export interface ProductCardProps {
+  id: string;
+  name: string;
+  slug: string;
+
+  images: { url: string }[];
+  stock: number;
+
+  isNew: boolean;
+  isOnSale: boolean;
+
+  price: number;
+  salePrice?: number | null;
+
   onAddToCart?: () => void;
 }
 
+/* ------------------------------------------------------------
+   Component
+------------------------------------------------------------- */
 export default function ProductCard({
   id,
   name,
@@ -22,17 +41,21 @@ export default function ProductCard({
   price,
   salePrice,
   onAddToCart,
-}: Props) {
+}: ProductCardProps) {
   const imageUrl = getPrimaryImage(images);
   const outOfStock = stock <= 0;
 
-  // Formatted prices
   const formattedPrice = formatPrice(price);
   const formattedSalePrice = salePrice ? formatPrice(salePrice) : null;
 
   return (
     <article
-      className="relative flex flex-col rounded-lg bg-[var(--color-bg-surface)] shadow-card overflow-hidden group transition-all hover:-translate-y-1 hover:shadow-soft"
+      className="
+        relative flex flex-col rounded-lg bg-[var(--color-bg-surface)]
+        shadow-card overflow-hidden group transition-all duration-300
+        hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)]
+        hover:ring-1 hover:ring-[var(--color-border)]
+      "
       data-product-id={id}
       data-out-of-stock={outOfStock}
       data-on-sale={isOnSale}
@@ -77,7 +100,6 @@ export default function ProductCard({
           {name}
         </h3>
 
-        {/* Price with optional Sale */}
         <p className="mt-2 font-semibold text-[var(--color-accent-500)]">
           {formattedSalePrice ? (
             <>
@@ -91,12 +113,13 @@ export default function ProductCard({
           )}
         </p>
 
-        {/* Add to Cart */}
         <Button
           onClick={onAddToCart}
           disabled={outOfStock}
           className="w-full mt-3"
-          aria-label={outOfStock ? `${name} is out of stock` : `Add ${name} to cart`}
+          aria-label={
+            outOfStock ? `${name} is out of stock` : `Add ${name} to cart`
+          }
         >
           {outOfStock ? "Out of Stock" : "Add to Cart"}
         </Button>

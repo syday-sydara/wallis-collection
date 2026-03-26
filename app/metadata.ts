@@ -2,7 +2,7 @@ import { Space_Grotesk } from "next/font/google";
 import type { Metadata, Viewport } from "next";
 
 /* ------------------------------------------------
-   FONT
+   FONT — Editorial, Premium
 ------------------------------------------------ */
 export const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -13,22 +13,25 @@ export const spaceGrotesk = Space_Grotesk({
 });
 
 /* ------------------------------------------------
-   VIEWPORT (Next.js 14 standard)
+   VIEWPORT — Mobile-first, Safe-area aware
 ------------------------------------------------ */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  viewportFit: "cover", // ✅ better for mobile safe areas
+  viewportFit: "cover",
+  themeColor: "#272B36",
 };
 
 /* ------------------------------------------------
-   METADATA
+   METADATA — Fermine Edition
 ------------------------------------------------ */
 export const metadata: Metadata = {
   metadataBase: new URL("https://walliscollection.com"),
 
   applicationName: "Wallis Collection",
+  creator: "Wallis Collection",
+  publisher: "Wallis Collection",
 
   title: {
     default: "Wallis Collection",
@@ -36,16 +39,20 @@ export const metadata: Metadata = {
   },
 
   description:
-    "Shop premium Nigerian fashion including wax prints, super-wax, abayas, ankara, hollands, and luxury lace fabrics crafted with elegance and heritage.",
+    "Wallis Collection curates premium Nigerian fashion — wax prints, super-wax, ankara, abayas, hollands, and luxury lace fabrics crafted with elegance, heritage, and modern sophistication.",
 
   keywords: [
     "Wallis Collection",
     "Nigerian fashion",
     "African fashion",
     "wax prints",
+    "super-wax",
     "ankara",
     "abayas",
     "lace fabrics",
+    "hollands",
+    "luxury fabrics",
+    "African textiles",
   ],
 
   category: "fashion",
@@ -78,9 +85,9 @@ export const metadata: Metadata = {
   },
 
   openGraph: {
-    title: "Wallis Collection",
+    title: "Wallis Collection — Premium Nigerian Fashion",
     description:
-      "Discover curated Nigerian fashion: wax prints, ankara, abayas, and luxury lace fabrics.",
+      "Discover curated Nigerian fashion: wax prints, super-wax, ankara, abayas, hollands, and luxury lace fabrics.",
     url: "https://walliscollection.com",
     siteName: "Wallis Collection",
     type: "website",
@@ -98,9 +105,9 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "Wallis Collection",
+    title: "Wallis Collection — Premium Nigerian Fashion",
     description:
-      "Explore premium Nigerian fashion: wax prints, ankara, abayas, and luxury lace fabrics.",
+      "Explore curated Nigerian fashion: wax prints, ankara, abayas, hollands, and luxury lace fabrics.",
     images: [
       "https://images.unsplash.com/photo-1520975918318-3a4e6e791f6b?q=80&w=1200&auto=format&fit=crop",
     ],

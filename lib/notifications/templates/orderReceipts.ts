@@ -11,24 +11,30 @@ export function orderReceiptTemplate({
   subtotal: number;
 }) {
   return `
-Thank you for your order!
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #222;">
+      <h2 style="margin-bottom: 10px;">Order Confirmation</h2>
 
-Order Number: ${orderId}
+      <p>Thank you for your order! Your order <strong>${orderId}</strong> has been received successfully.</p>
 
-Items:
-${items
-    .map(
-      (item) =>
-        `• ${item.name} × ${item.quantity} — ₦${item.price.toLocaleString()}`
-    )
-    .join("\n")}
+      <h3 style="margin-top: 20px;">Items</h3>
+      <ul style="padding-left: 16px;">
+        ${items
+          .map(
+            (item) =>
+              `<li>${item.name} × ${item.quantity} — ₦${item.price.toLocaleString()}</li>`
+          )
+          .join("")}
+      </ul>
 
-Total: ₦${subtotal.toLocaleString()}
+      <p style="margin-top: 10px;"><strong>Total:</strong> ₦${subtotal.toLocaleString()}</p>
 
-We’ll notify you as soon as your order ships.
-Thank you for shopping with Wallis Collection.
+      <p style="margin-top: 20px;">We’ll notify you as soon as your order ships.</p>
+
+      <p style="margin-top: 20px;">Thank you for choosing <strong>Wallis Collection</strong>.</p>
+    </div>
   `;
 }
+
 
 export function orderReceiptSMS({
   orderId,
@@ -39,6 +45,7 @@ export function orderReceiptSMS({
 }) {
   return `Wallis Collection: Your order ${orderId} is confirmed. Total: ₦${subtotal.toLocaleString()}. Thank you for shopping with us.`;
 }
+
 
 export function orderReceiptWhatsApp({
   orderId,

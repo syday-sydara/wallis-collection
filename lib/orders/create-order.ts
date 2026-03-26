@@ -2,9 +2,10 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { ApiError, handleError } from "@/lib/errors";
-import { decreaseStock } from "@/lib/inventory";
+import { ApiError, handleError } from "@/lib/api/response";
+import { decreaseVariantStock } from "@/lib/orders/inventory";
 import { notifyOrderReceipt } from "@/lib/notifications/dispatchers/order";
+import { formatKobo } from "@/lib/formatters";
 
 export async function createOrder(data: {
   email: string;
@@ -14,34 +15,37 @@ export async function createOrder(data: {
   address?: string;
   city?: string;
   state?: string;
-  postalCode?: string;
-  courierPhone?: string;
-  trackingNumber?: string;
+  landmark?: string;
 
-  paymentMethod: "CARD" | "BANK_TRANSFER" | "PAY_ON_DELIVERY";
+  paymentMethod: "PAYSTACK" | "MONNIFY" | "BANK_TRANSFER" | "COD";
 
   items: {
-    id: string;
+    productId: string;
+    variantId: string;
     name: string;
-    priceCents: number;
+    variantLabel?: string; // e.g., "Size M"
+    priceKobo: number;
     quantity: number;
-    image: string | null;
+    image?: string | null;
   }[];
-
-  subtotal: number;
 }) {
   try {
-    if (!data.email) {
-      throw ApiError.badRequest("Email is required");
-    }
+    if (!data.email) throw ApiError.badRequest("Email is required");
+    if (!data.items?.length) throw ApiError.badRequest("Order must contain at least one item");
 
-    if (!data.items?.length) {
-      throw ApiError.badRequest("Order must contain at least one item");
-    }
+    /* ------------------------------------------------------------
+       1. Recalculate subtotal server-side (never trust client)
+    ------------------------------------------------------------- */
+    const subtotal = data.items.reduce(
+      (sum, item) => sum + item.priceKobo * item.quantity,
+      0
+    );
 
-    const total = data.subtotal;
+    const total = subtotal; // Add shipping fee later if needed
 
-    // 1. Create the order
+    /* ------------------------------------------------------------
+       2. Create order + items
+    ------------------------------------------------------------- */
     const order = await prisma.order.create({
       data: {
         email: data.email,
@@ -51,48 +55,51 @@ export async function createOrder(data: {
         address: data.address,
         city: data.city,
         state: data.state,
-        postalCode: data.postalCode,
-        courierPhone: data.courierPhone,
-        trackingNumber: data.trackingNumber,
+        landmark: data.landmark,
 
         paymentMethod: data.paymentMethod,
         paymentStatus: "PENDING",
         orderStatus: "PENDING",
 
-        subtotal: data.subtotal,
         total,
+        currency: "NGN",
 
         items: {
           create: data.items.map((item) => ({
-            productId: item.id,
-            name: item.name,
-            price: item.priceCents,
+            productId: item.productId,
+            variantId: item.variantId,
+            productName: item.name,
+            variantLabel: item.variantLabel,
+            productImage: item.image ?? undefined,
+            price: item.priceKobo,
             quantity: item.quantity,
-            image: item.image ?? undefined,
           })),
         },
       },
-      include: {
-        items: true,
-      },
+      include: { items: true },
     });
 
-    // 2. Decrease stock for each item
+    /* ------------------------------------------------------------
+       3. Decrease stock for each variant
+    ------------------------------------------------------------- */
     for (const item of order.items) {
-      await decreaseStock(item.productId, item.quantity, "SALE", order.id);
+      await decreaseVariantStock(item.variantId!, item.quantity, "SALE", order.id);
     }
 
-    // 3. Send order receipt notifications
+    /* ------------------------------------------------------------
+       4. Send order receipt notification
+    ------------------------------------------------------------- */
     await notifyOrderReceipt({
       id: order.id,
       email: order.email,
       phone: order.phone ?? undefined,
       items: order.items.map((i) => ({
-        name: i.name,
+        name: i.productName,
+        variant: i.variantLabel,
         quantity: i.quantity,
-        price: i.price,
+        price: formatKobo(i.price),
       })),
-      subtotal: order.subtotal,
+      subtotal: formatKobo(order.total),
     });
 
     return order.id;

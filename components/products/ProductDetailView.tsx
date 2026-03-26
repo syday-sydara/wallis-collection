@@ -7,32 +7,31 @@ import clsx from "clsx";
 import Button from "@/components/ui/Button";
 import { useCart } from "@/components/cart/CartProvider";
 import { ProductDetail, getPrimaryImage } from "@/lib/types/product";
-import { formatPrice } from "@/lib/formatters";
+import { formatPrice } from "@/lib/formatters/";
 
 interface Props {
   product: ProductDetail & {
-    priceNaira?: number;
-    salePriceNaira?: number;
-    formattedPrice?: string;
-    formattedSalePrice?: string;
+    sizes: string[];
+    stock: number;
+    priceNaira: number;
+    salePriceNaira: number | null;
+    formattedPrice: string;
   };
 }
 
 export default function ProductDetailView({ product }: Props) {
   const { addItem } = useCart();
 
-  // Auto-select size if only one option
+  const [mainImage, setMainImage] = useState(getPrimaryImage(product.images));
   const [selectedSize, setSelectedSize] = useState<string | null>(
-    product.sizes?.length === 1 ? product.sizes[0] : null
+    product.sizes.length === 1 ? product.sizes[0] : null
   );
   const [showSizeError, setShowSizeError] = useState(false);
 
-  const hasSizes = product.sizes && product.sizes.length > 0;
+  const hasSizes = product.sizes.length > 0;
   const outOfStock = product.stock <= 0;
 
-  const mainImage = getPrimaryImage(product.images);
-
-  const finalPrice = product.salePriceNaira ?? product.priceNaira ?? 0;
+  const finalPrice = product.salePriceNaira ?? product.priceNaira;
 
   const handleAddToCart = () => {
     if (hasSizes && !selectedSize) {
@@ -54,7 +53,7 @@ export default function ProductDetailView({ product }: Props) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-      {/* ---------------- Gallery ---------------- */}
+      {/* Gallery */}
       <div className="space-y-4">
         <div className="aspect-[3/4] relative overflow-hidden rounded-xl bg-[var(--color-bg-surface)]">
           <Image
@@ -62,15 +61,15 @@ export default function ProductDetailView({ product }: Props) {
             alt={`${product.name} product image`}
             fill
             priority
-            className="object-cover will-change-transform"
+            className="object-cover"
           />
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-2">
-          {product.images?.map((img) => (
+          {product.images.map((img) => (
             <button
               key={img.url}
-              onClick={() => {}}
+              onClick={() => setMainImage(img.url)}
               className={clsx(
                 "relative w-20 h-24 flex-shrink-0 rounded-md overflow-hidden border-2 transition",
                 img.url === mainImage
@@ -78,24 +77,17 @@ export default function ProductDetailView({ product }: Props) {
                   : "border-transparent hover:border-[var(--color-border)]"
               )}
             >
-              <Image
-                src={img.url}
-                alt=""
-                fill
-                loading="lazy"
-                className="object-cover"
-              />
+              <Image src={img.url} alt="" fill className="object-cover" />
             </button>
           ))}
         </div>
       </div>
 
-      {/* ---------------- Info ---------------- */}
+      {/* Info */}
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="heading-1">{product.name}</h1>
 
-          {/* Price with Sale */}
           <p className="text-2xl font-semibold mt-2 text-[var(--color-accent-500)]">
             {product.salePriceNaira ? (
               <>
@@ -114,7 +106,7 @@ export default function ProductDetailView({ product }: Props) {
           {product.description}
         </div>
 
-        {/* ---------------- Size Selection ---------------- */}
+        {/* Size Selection */}
         {hasSizes && (
           <div className="space-y-3">
             <div className="flex justify-between items-center">
@@ -128,15 +120,12 @@ export default function ProductDetailView({ product }: Props) {
               )}
             </div>
 
-            <div className="flex gap-3" role="radiogroup" aria-label="Select size">
+            <div className="flex gap-3">
               {product.sizes.map((size) => {
                 const isSelected = selectedSize === size;
                 return (
                   <button
                     key={size}
-                    role="radio"
-                    aria-checked={isSelected}
-                    aria-label={`Select size ${size}`}
                     onClick={() => {
                       setSelectedSize(size);
                       setShowSizeError(false);
@@ -145,8 +134,6 @@ export default function ProductDetailView({ product }: Props) {
                       "px-4 py-2 text-sm border rounded-md transition-all",
                       isSelected
                         ? "bg-[var(--color-gray-900)] text-white border-[var(--color-gray-900)]"
-                        : showSizeError
-                        ? "border-[var(--color-danger-500)] bg-[var(--color-danger-500)]/10"
                         : "border-[var(--color-border)] hover:border-[var(--color-gray-900)]"
                     )}
                   >
@@ -158,18 +145,12 @@ export default function ProductDetailView({ product }: Props) {
           </div>
         )}
 
-        {/* ---------------- Add to Cart Button ---------------- */}
         <Button
           variant="primary"
           size="lg"
           className="w-full md:w-64"
           onClick={handleAddToCart}
           disabled={outOfStock}
-          aria-label={
-            outOfStock
-              ? `${product.name} is out of stock`
-              : `Add ${product.name} to cart`
-          }
         >
           {outOfStock ? "Out of Stock" : "Add to Cart"}
         </Button>

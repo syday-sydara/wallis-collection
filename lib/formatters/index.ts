@@ -1,4 +1,4 @@
-// File: lib/formatters.ts
+// File: lib/formatters/index.ts
 
 const formatterWithDecimals = new Intl.NumberFormat("en-NG", {
   style: "currency",
@@ -54,7 +54,7 @@ export function formatPrice(
  */
 export function formatKobo(
   priceKobo: number,
-  withDecimals: boolean = false
+  withDecimals: boolean = true
 ): string {
   return formatPrice(priceKobo / 100, withDecimals);
 }

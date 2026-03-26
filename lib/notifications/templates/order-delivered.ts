@@ -2,21 +2,27 @@
 
 export function orderDeliveredEmail({ orderId }: { orderId: string }) {
   return `
-Your order ${orderId} has been delivered!
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #222;">
+      <h2 style="margin-bottom: 10px;">Your Order Has Been Delivered</h2>
 
-We hope you love your purchase. If you have any questions or need assistance, we're here to help.
+      <p>Your order <strong>${orderId}</strong> has arrived successfully.</p>
 
-Thank you for choosing Wallis Collection.
+      <p>We hope you absolutely love your items. If you have any questions or need assistance, our team is always here to help.</p>
+
+      <p style="margin-top: 20px;">Thank you for choosing <strong>Wallis Collection</strong>.</p>
+    </div>
   `;
 }
 
+
 export function orderDeliveredSMS({ orderId }: { orderId: string }) {
-  return `Wallis Collection: Your order ${orderId} has been delivered. Thank you!`;
+  return `Wallis Collection: Your order ${orderId} has been delivered. Thank you for shopping with us.`;
 }
+
 
 export function orderDeliveredWhatsApp({ orderId }: { orderId: string }) {
   return `
-📬 *Wallis Collection – Order Delivered*
+📦 *Wallis Collection – Order Delivered*
 
 Your order *${orderId}* has been delivered successfully.
 

@@ -1,7 +1,7 @@
 // File: app/api/product/[slug]/route.ts
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { formatPrice } from "@/lib/formatters";
+import { formatPrice } from "@/lib/formatters/formatters";
 
 export async function GET(
   req: Request,

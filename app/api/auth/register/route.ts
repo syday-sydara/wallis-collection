@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { hashPassword } from "@/lib/hash";
+import { hashPassword } from "@/lib/auth/hash";
 import { ApiError, handleError, handleSuccess } from "@/lib/errors";
 
 export async function POST(req: Request) {

@@ -1,12 +1,32 @@
-// PATH: lib/paystack.ts
-// NAME: paystack.ts
+// PATH: lib/payments/paystack.ts
 
-const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!;
+const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 const PAYSTACK_BASE_URL = "https://api.paystack.co";
 
-/* ---------------------------------- */
-/* Initialize Paystack Payment        */
-/* ---------------------------------- */
+if (!PAYSTACK_SECRET) {
+  throw new Error("Missing PAYSTACK_SECRET_KEY environment variable");
+}
+
+/* ------------------------------------------------------------
+   Helper: Safe fetch with timeout
+------------------------------------------------------------- */
+async function safeFetch(url: string, options: RequestInit, timeout = 10000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch (err) {
+    clearTimeout(id);
+    throw new Error("Paystack request timed out or failed");
+  }
+}
+
+/* ------------------------------------------------------------
+   Initialize Paystack Payment
+------------------------------------------------------------- */
 export async function initializePaystackPayment({
   email,
   amount,
@@ -18,7 +38,7 @@ export async function initializePaystackPayment({
   orderId: string;
   callbackUrl: string;
 }) {
-  const res = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
+  const res = await safeFetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${PAYSTACK_SECRET}`,
@@ -26,7 +46,7 @@ export async function initializePaystackPayment({
     },
     body: JSON.stringify({
       email,
-      amount: amount * 100, // Paystack expects kobo
+      amount: Math.round(amount * 100), // convert to kobo safely
       reference: orderId,
       callback_url: callbackUrl,
       currency: "NGN",
@@ -36,7 +56,7 @@ export async function initializePaystackPayment({
   const data = await res.json();
 
   if (!data.status) {
-    throw new Error(`Paystack init failed: ${data.message}`);
+    throw new Error(`Paystack init failed: ${data.message || "Unknown error"}`);
   }
 
   return {
@@ -46,11 +66,11 @@ export async function initializePaystackPayment({
   };
 }
 
-/* ---------------------------------- */
-/* Verify Paystack Payment            */
-/* ---------------------------------- */
+/* ------------------------------------------------------------
+   Verify Paystack Payment
+------------------------------------------------------------- */
 export async function verifyPaystackPayment(reference: string) {
-  const res = await fetch(
+  const res = await safeFetch(
     `${PAYSTACK_BASE_URL}/transaction/verify/${reference}`,
     {
       method: "GET",
@@ -63,8 +83,24 @@ export async function verifyPaystackPayment(reference: string) {
   const data = await res.json();
 
   if (!data.status) {
-    throw new Error(`Paystack verification failed: ${data.message}`);
+    throw new Error(
+      `Paystack verification failed: ${data.message || "Unknown error"}`
+    );
   }
 
   return data.data;
+}
+
+/* ------------------------------------------------------------
+   Verify Paystack Webhook Signature
+------------------------------------------------------------- */
+import crypto from "crypto";
+
+export function verifyPaystackSignature(rawBody: string, signature: string) {
+  const computed = crypto
+    .createHmac("sha512", PAYSTACK_SECRET!)
+    .update(rawBody)
+    .digest("hex");
+
+  return computed === signature;
 }

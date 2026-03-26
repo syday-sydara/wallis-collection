@@ -1,80 +1,156 @@
-// File: lib/types/product.ts
-import { Prisma } from "@prisma/client";
-import { formatKobo } from "../formatters";
+// PATH: lib/types/product.ts
+
+import { PaymentMethod, PaymentStatus, OrderStatus } from "@prisma/client";
 
 /* -------------------------- */
-/* Product Image Type          */
+/* Product Type (UI Layer)    */
 /* -------------------------- */
-export type ProductImage = {
+export interface Product {
   id: string;
-  url: string;
-  position: number;
-};
+  name: string;
+  slug: string;
+
+  price: number;
+  salePrice?: number | null;
+
+  images: { url: string }[];
+
+  isNew: boolean;
+  isOnSale: boolean;
+
+  stock: number;
+  sizes?: string[];
+}
 
 /* -------------------------- */
-/* Product Review Type         */
+/* Helper: Get Primary Image  */
 /* -------------------------- */
-export type ProductReview = {
-  id: string;
-  rating: number;
-  comment: string | null;
-  createdAt: string; // ISO string
-  user: { id: string; name: string } | null;
-};
-
-/* -------------------------- */
-/* Product Card Type           */
-/* -------------------------- */
-export const productCardSelect = Prisma.validator<Prisma.ProductSelect>()({
-  id: true,
-  slug: true,
-  name: true,
-  price: true,
-  salePrice: true,
-  category: true,
-  stock: true,
-  isNew: true,
-  isOnSale: true,
-  featured: true,
-  images: { select: { id: true, url: true, position: true }, orderBy: { position: "asc" } },
-});
-
-export type ProductCard = Prisma.ProductGetPayload<{
-  select: typeof productCardSelect;
-}>;
-
-/* -------------------------- */
-/* Product Detail Type         */
-/* -------------------------- */
-export const productDetailInclude = Prisma.validator<Prisma.ProductInclude>()({
-  images: { orderBy: { position: "asc" } },
-  reviews: { include: { user: { select: { id: true, name: true } } } },
-  inventory: true,
-});
-
-export type ProductDetail = Prisma.ProductGetPayload<{
-  include: typeof productDetailInclude;
-}>;
-
-/* -------------------------- */
-/* Helpers                     */
-/* -------------------------- */
-export const getCurrentPrice = (product: { price: number; salePrice?: number | null }) =>
-  product.salePrice ?? product.price;
-
-export const getPrimaryImage = (images?: ProductImage[]) =>
-  images?.sort((a, b) => a.position - b.position)[0]?.url ?? "/fallback-product.jpg";
-
-export const getStock = (product: ProductCard | ProductDetail) =>
-  "stock" in product ? product.stock : product.inventory?.quantity ?? 0;
-
 /**
- * Return formatted NGN price strings
+ * Returns the first product image or a fallback placeholder.
+ * This keeps your UI components clean and avoids null checks everywhere.
  */
-export const getFormattedPrice = (product: { price: number; salePrice?: number | null }) => {
-  const mainPrice = formatKobo(product.price);
-  if (product.salePrice && product.salePrice < product.price) {
-    return { price: mainPrice, salePrice: formatKobo(product.salePrice) };
+export function getPrimaryImage(
+  images: { url: string }[] | undefined | null
+): string {
+  if (!images || images.length === 0) {
+    return "/placeholder.png"; // fallback image
   }
-  return { price: mainPrice };
-};
+  return images[0].url;
+}
+
+/* -------------------------- */
+/* Cart Types                 */
+/* -------------------------- */
+export interface CartItem {
+  productId: string;
+  name: string;
+  price: number;
+  image?: string;
+  quantity: number;
+  variants?: Record<string, string>;
+  key: string;
+  addedAt: string;
+}
+
+/* -------------------------- */
+/* Cart Snapshot (for orders) */
+/* -------------------------- */
+export interface CartItemSnapshot {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+  variants?: Record<string, string>;
+}
+
+/* -------------------------- */
+/* Order Types                */
+/* -------------------------- */
+export interface OrderItem {
+  productId: string;
+  name: string;
+  image?: string;
+  quantity: number;
+  price: number;
+}
+
+export interface OrderSnapshot {
+  items: CartItemSnapshot[];
+  total: number;
+}
+
+export interface CheckoutBody {
+  items: CartItemSnapshot[];
+  email: string;
+  phone: string;
+  paymentMethod: PaymentMethod;
+  total: number;
+}
+
+export interface OrderResponse {
+  orderId: string;
+  paymentUrl: string;
+  cartSnapshot?: CartItemSnapshot[];
+}
+
+export interface Order {
+  id: string;
+  userId?: string;
+  email: string;
+  phone?: string;
+
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  orderStatus: OrderStatus;
+
+  total: number;
+  currency: string;
+
+  cartSnapshot?: CartItemSnapshot[];
+
+  createdAt: Date;
+  updatedAt: Date;
+
+  items: OrderItem[];
+}
+
+/* ------------------------------------------------------------
+   Product Detail Props (UI Layer)
+------------------------------------------------------------- */
+export interface ProductDetailProps {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+
+  images: { url: string }[];
+
+  price: number;
+  salePrice?: number | null;
+  isOnSale: boolean;
+
+  isNew: boolean;
+
+  stock: number;
+
+  variants: {
+    id: string;
+    size: string | null;
+    color: string | null;
+    stock: number;
+  }[];
+
+  sizes: string[];
+
+  reviews: {
+    id: string;
+    rating: number;
+    comment: string | null;
+    createdAt: Date;
+    user: {
+      id: string;
+      name: string | null;
+    } | null;
+  }[];
+}

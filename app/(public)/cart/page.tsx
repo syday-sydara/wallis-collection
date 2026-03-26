@@ -1,7 +1,7 @@
 "use client";
 
 import { useCart } from "@/components/cart/CartProvider";
-import { formatPrice } from "@/lib/formatters";
+import { formatPrice } from "@/lib/formatters/formatters";
 import { useState } from "react";
 
 export default function CartPage() {

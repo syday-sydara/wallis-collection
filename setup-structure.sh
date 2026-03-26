@@ -1,321 +1,211 @@
 #!/bin/bash
 
-echo "🚀 Creating production-ready Nigerian ecommerce store structure..."
+echo "🌿 Creating Wallis Collection — Fermine Edition (Safe Mode: Skip Existing Files)..."
 
 ###############################################
-# APP ROUTER STRUCTURE
+# HELPERS
 ###############################################
 
-# Public-facing pages
-mkdir -p "app/(public)"
-mkdir -p "app/(public)/products"
-mkdir -p "app/(public)/products/[slug]"
-mkdir -p "app/(public)/categories/[slug]"
-mkdir -p "app/(public)/cart"
-mkdir -p "app/(public)/checkout"
-mkdir -p "app/(public)/track-order"
-mkdir -p "app/(public)/search"
+# Create directories only if missing
+create_dirs() {
+  for dir in "$@"; do
+    if [ ! -d "$dir" ]; then
+      mkdir -p "$dir"
+      echo "📁 Created: $dir"
+    else
+      echo "⏭️ Skipped (exists): $dir"
+    fi
+  done
+}
 
-# Auth routes
-mkdir -p "app/(auth)/login"
-mkdir -p "app/(auth)/register"
+# Create placeholder page only if missing
+create_placeholder() {
+  local path="$2/page.tsx"
+  if [ ! -f "$path" ]; then
+    echo "export default function Page(){return <div>$1</div>}" > "$path"
+    echo "📝 Created page: $path"
+  else
+    echo "⏭️ Skipped page (exists): $path"
+  fi
+}
 
-# Customer dashboard
-mkdir -p "app/(customer)/account"
-mkdir -p "app/(customer)/account/orders"
-mkdir -p "app/(customer)/account/addresses"
-mkdir -p "app/(customer)/account/settings"
+# Create API route only if missing
+create_api_route() {
+  local path="app/api/$1/route.ts"
+  if [ ! -f "$path" ]; then
+    mkdir -p "app/api/$1"
+    echo "export async function POST(){return Response.json({ ok: true })}" > "$path"
+    echo "🔌 Created API route: $path"
+  else
+    echo "⏭️ Skipped API route (exists): $path"
+  fi
+}
 
-# Admin dashboard
-mkdir -p "app/(admin)/dashboard"
-mkdir -p "app/(admin)/products"
-mkdir -p "app/(admin)/orders"
-mkdir -p "app/(admin)/customers"
-mkdir -p "app/(admin)/inventory"
-mkdir -p "app/(admin)/coupons"
-mkdir -p "app/(admin)/reviews"
-mkdir -p "app/(admin)/analytics"
-mkdir -p "app/(admin)/fraud"
-mkdir -p "app/(admin)/refunds"
+# Create file only if missing
+create_file() {
+  local path="$1"
+  local content="$2"
+  if [ ! -f "$path" ]; then
+    echo "$content" > "$path"
+    echo "📄 Created file: $path"
+  else
+    echo "⏭️ Skipped file (exists): $path"
+  fi
+}
+
+###############################################
+# ROUTE GROUPS
+###############################################
+
+echo "📁 Setting up App Router structure..."
+
+PUBLIC_ROUTES=(
+  "app/(public)"
+  "app/(public)/products/[slug]"
+  "app/(public)/categories/[slug]"
+  "app/(public)/cart"
+  "app/(public)/checkout"
+  "app/(public)/track-order"
+  "app/(public)/search"
+)
+
+AUTH_ROUTES=(
+  "app/(auth)/login"
+  "app/(auth)/register"
+)
+
+ACCOUNT_ROUTES=(
+  "app/(account)"
+  "app/(account)/orders"
+  "app/(account)/addresses"
+  "app/(account)/settings"
+)
+
+ADMIN_ROUTES=(
+  "app/(admin)/dashboard"
+  "app/(admin)/products"
+  "app/(admin)/orders"
+  "app/(admin)/customers"
+  "app/(admin)/inventory"
+  "app/(admin)/coupons"
+  "app/(admin)/reviews"
+  "app/(admin)/analytics"
+  "app/(admin)/fraud"
+  "app/(admin)/refunds"
+)
+
+create_dirs "${PUBLIC_ROUTES[@]}" "${AUTH_ROUTES[@]}" "${ACCOUNT_ROUTES[@]}" "${ADMIN_ROUTES[@]}"
 
 ###############################################
 # API ROUTES
 ###############################################
 
-mkdir -p "app/api/auth"
-mkdir -p "app/api/products"
-mkdir -p "app/api/cart"
-mkdir -p "app/api/orders"
-mkdir -p "app/api/orders/lookup"
+echo "🔌 Creating API routes..."
 
-mkdir -p "app/api/paystack/initialize"
-mkdir -p "app/api/paystack/webhook"
+API_ROUTES=(
+  "auth"
+  "products"
+  "cart"
+  "orders"
+  "orders/lookup"
+  "paystack/initialize"
+  "paystack/webhook"
+  "monnify/create-account"
+  "monnify/webhook"
+  "coupons/validate"
+  "reviews/create"
+  "refunds/request"
+  "push/subscribe"
+)
 
-mkdir -p "app/api/monnify/create-account"
-mkdir -p "app/api/monnify/webhook"
-
-mkdir -p "app/api/coupons/validate"
-mkdir -p "app/api/reviews/create"
-mkdir -p "app/api/refunds/request"
-
-mkdir -p "app/api/push/subscribe"
+for route in "${API_ROUTES[@]}"; do
+  create_api_route "$route"
+done
 
 ###############################################
 # COMPONENTS
 ###############################################
 
-mkdir -p components/ui
-mkdir -p components/layout
-mkdir -p components/product
-mkdir -p components/cart
-mkdir -p components/checkout
-mkdir -p components/payments
-mkdir -p components/admin
-mkdir -p components/reviews
+echo "🧩 Creating component structure..."
+
+COMPONENT_DIRS=(
+  "components/ui"
+  "components/layout"
+  "components/product"
+  "components/cart"
+  "components/checkout"
+  "components/admin"
+)
+
+create_dirs "${COMPONENT_DIRS[@]}"
 
 ###############################################
 # LIBRARIES
 ###############################################
 
-mkdir -p lib/payments
-mkdir -p lib/fraud
-mkdir -p lib/shipping
-mkdir -p lib/cart
-mkdir -p lib/analytics
+echo "📚 Creating lib structure..."
+
+LIB_DIRS=(
+  "lib/payments"
+  "lib/fraud"
+  "lib/shipping"
+  "lib/cart"
+  "lib/analytics"
+)
+
+create_dirs "${LIB_DIRS[@]}"
 
 ###############################################
 # CORE LIB FILES
 ###############################################
 
-echo "// Prisma client" > lib/db.ts
-echo "// Authentication logic" > lib/auth.ts
+create_file "lib/db.ts" "// Prisma client"
+create_file "lib/auth.ts" "// Authentication logic"
 
-echo "// Paystack integration" > lib/payments/paystack.ts
-echo "// Monnify integration" > lib/payments/monnify.ts
+create_file "lib/payments/paystack.ts" "// Paystack integration"
+create_file "lib/payments/monnify.ts" "// Monnify integration"
 
-echo "// Shipping rules (Nigeria states)" > lib/shipping/shipping.ts
+create_file "lib/shipping/nigeria.ts" "// Shipping rules (Nigeria states)"
 
-echo "// Cart helpers" > lib/cart/cart.ts
+create_file "lib/cart/index.ts" "// Cart helpers"
 
-echo "// Fraud rules engine" > lib/fraud/rules.ts
-echo "// AI fraud detection" > lib/fraud/ai.ts
-echo "// Fraud score combiner" > lib/fraud/compute.ts
+create_file "lib/fraud/rules.ts" "// Fraud rules engine"
+create_file "lib/fraud/ai.ts" "// AI fraud detection"
+create_file "lib/fraud/compute.ts" "// Fraud score combiner"
 
-echo "// Analytics tracking" > lib/analytics/events.ts
-
-###############################################
-# BASIC PLACEHOLDER PAGES
-###############################################
-
-for page in page login register; do
-  echo "export default function Page(){return <div>${page^}</div>}" > "app/(public)/$page/page.tsx"
-done
-
-echo "export default function Page(){return <div>Cart</div>}" > "app/(public)/cart/page.tsx"
-echo "export default function Page(){return <div>Checkout</div>}" > "app/(public)/checkout/page.tsx"
-echo "export default function Page(){return <div>Track Order</div>}" > "app/(public)/track-order/page.tsx"
+create_file "lib/analytics/events.ts" "// Analytics tracking"
 
 ###############################################
-# PLACEHOLDER API ROUTES
+# PLACEHOLDER PAGES
 ###############################################
 
-ROUTES=(
-  "paystack/initialize"
-  "paystack/webhook"
-  "monnify/create-account"
-  "monnify/webhook"
-  "orders/lookup"
-  "refunds/request"
-  "coupons/validate"
-  "reviews/create"
-  "push/subscribe"
-)
+echo "📝 Creating placeholder pages..."
 
-for route in "${ROUTES[@]}"; do
-  mkdir -p "app/api/$route"
-  echo "export async function POST(){return Response.json({ok:true})}" > "app/api/$route/route.ts"
-done
+create_placeholder "Home" "app/(public)"
+create_placeholder "Login" "app/(auth)/login"
+create_placeholder "Register" "app/(auth)/register"
+create_placeholder "Cart" "app/(public)/cart"
+create_placeholder "Checkout" "app/(public)/checkout"
+create_placeholder "Track Order" "app/(public)/track-order"
 
 ###############################################
 # PRISMA SCHEMA
 ###############################################
 
-mkdir -p prisma
-cat << 'EOF' > prisma/schema.prisma
-generator client {
-  provider = "prisma-client-js"
-}
+echo "🗄️ Checking Prisma schema..."
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-enum Role { ADMIN USER }
-enum PaymentMethod { PAYSTACK MONNIFY COD }
-enum OrderStatus { PENDING PAID FAILED SHIPPED DELIVERED REFUNDED CANCELLED }
-enum InventoryReason { SALE RESTOCK REFUND MANUAL_ADJUSTMENT }
-enum ShipmentStatus { PROCESSING SHIPPED IN_TRANSIT DELIVERED FAILED }
-enum EventType { PRODUCT_VIEW ADD_TO_CART CHECKOUT_STARTED ORDER_PLACED }
-
-model User {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String   @unique
-  phone     String?
-  password  String?
-  role      Role     @default(USER)
-  orders    Order[]
-  reviews   Review[]
-  addresses Address[]
-  events    Event[]
-  createdAt DateTime @default(now())
-}
-
-model Product {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String?
-  priceNaira  Int
-  salePriceNaira Int?
-  stock       Int @default(0)
-  category    String?
-  brand       String?
-  sizes       String[]
-  colors      String[]
-  isNew       Boolean @default(false)
-  isOnSale    Boolean @default(false)
-  featured    Boolean @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  images      ProductImage[]
-  reviews     Review[]
-  inventory   InventoryMovement[]
-}
-
-model ProductImage {
-  id        String @id @default(cuid())
-  productId String
-  url       String
-  position  Int
-  product Product @relation(fields: [productId], references: [id])
-}
-
-model Order {
-  id            String      @id @default(cuid())
-  userId        String?
-  user          User?       @relation(fields: [userId], references: [id])
-  email         String
-  phone         String?
-  status        OrderStatus @default(PENDING)
-  paymentMethod PaymentMethod
-  providerRef   String?
-  totalCents    Int
-  currency      String      @default("NGN")
-  trackingStatus String     @default("Processing")
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  items         OrderItem[]
-  shipments     Shipment[]
-}
-
-model OrderItem {
-  id         String  @id @default(cuid())
-  orderId    String
-  productId  String
-  quantity   Int
-  priceCents Int
-  order   Order   @relation(fields: [orderId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
-}
-
-model Address {
-  id        String @id @default(cuid())
-  userId    String?
-  fullName  String
-  phone     String
-  state     String
-  city      String
-  address   String
-  user      User? @relation(fields: [userId], references: [id])
-}
-
-model Review {
-  id        String @id @default(cuid())
-  productId String
-  userId    String?
-  rating    Int
-  comment   String?
-  createdAt DateTime @default(now())
-  product Product @relation(fields: [productId], references: [id])
-  user    User?   @relation(fields: [userId], references: [id])
-}
-
-model RefundRequest {
-  id        String @id @default(cuid())
-  orderId   String
-  reason    String
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
-}
-
-model FraudSignal {
-  id        String @id @default(cuid())
-  orderId   String
-  score     Int
-  details   Json?
-  createdAt DateTime @default(now())
-}
-
-model PushSubscription {
-  id        String @id @default(cuid())
-  userId    String?
-  endpoint  String
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now())
-}
-
-model InventoryMovement {
-  id        String   @id @default(cuid())
-  productId String
-  change    Int
-  reason    InventoryReason
-  reference String?
-  createdAt DateTime @default(now())
-  product Product @relation(fields: [productId], references: [id])
-}
-
-model Shipment {
-  id             String          @id @default(cuid())
-  orderId        String
-  courier        String?
-  trackingNumber String?
-  status         ShipmentStatus
-  createdAt      DateTime @default(now())
-  order   Order           @relation(fields: [orderId], references: [id])
-  updates ShipmentUpdate[]
-}
-
-model ShipmentUpdate {
-  id         String   @id @default(cuid())
-  shipmentId String
-  status     String
-  note       String?
-  createdAt  DateTime @default(now())
-  shipment Shipment @relation(fields: [shipmentId], references: [id])
-}
-
-model Event {
-  id        String   @id @default(cuid())
-  userId    String?
-  type      EventType
-  data      Json?
-  createdAt DateTime @default(now())
-  user User? @relation(fields: [userId], references: [id])
-}
+if [ ! -f "prisma/schema.prisma" ]; then
+  mkdir -p prisma
+  cat << 'EOF' > prisma/schema.prisma
+<your existing Prisma schema here — unchanged>
 EOF
+  echo "🗄️ Created Prisma schema."
+else
+  echo "⏭️ Skipped Prisma schema (exists): prisma/schema.prisma"
+fi
 
-echo "🎉 Project skeleton with complete Prisma schema created successfully!"
+###############################################
+# DONE
+###############################################
+
+echo "🎉 Fermine‑optimized scaffold created successfully (Safe Mode: No overwrites)!"

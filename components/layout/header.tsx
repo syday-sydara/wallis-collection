@@ -1,3 +1,4 @@
+// File: components/layout/Header.tsx
 "use client";
 
 import Link from "next/link";
@@ -10,7 +11,6 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const { itemCount } = useCart();
 
-  // Trigger the cart drawer via a custom event
   const openCart = () => {
     window.dispatchEvent(new CustomEvent("open-cart"));
   };
@@ -22,6 +22,7 @@ export default function Header() {
         {/* Logo */}
         <Link
           href="/"
+          prefetch={false}
           className="text-xl font-heading font-semibold tracking-wide text-[var(--color-text-primary)]"
         >
           Wallis
@@ -40,6 +41,7 @@ export default function Header() {
 
           {/* Search Button */}
           <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-search"))}
             className="p-2 rounded-md hover:text-[var(--color-primary-500)] transition-colors"
             aria-label="Search"
           >
@@ -63,8 +65,9 @@ export default function Header() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setOpen(!open)}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
             className="md:hidden p-2 rounded-md hover:text-[var(--color-primary-500)] transition-colors"
-            aria-label={open ? "Close menu" : "Open menu"}
           >
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -73,12 +76,13 @@ export default function Header() {
 
       {/* Mobile Menu */}
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 ${open ? "max-h-96" : "max-h-0"}`}
+        id="mobile-menu"
+        className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+          open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        }`}
       >
         <nav className="flex flex-col p-4 space-y-4 text-sm bg-[var(--color-bg-surface)] border-t border-[var(--color-border)]">
-          <MobileNavLink href="/shop" onClick={() => setOpen(false)}>Shop</MobileNavLink>
-          <MobileNavLink href="/collections" onClick={() => setOpen(false)}>Collections</MobileNavLink>
-          <MobileNavLink href="/about" onClick={() => setOpen(false)}>About</MobileNavLink>
+          <MobileNavLink href="/products" onClick={() => setOpen(false)}>Shop</MobileNavLink>
           <MobileNavLink href="/contact" onClick={() => setOpen(false)}>Contact</MobileNavLink>
 
           <Button className="w-full" onClick={openCart}>
@@ -94,7 +98,9 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   return (
     <Link
       href={href}
-      className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] transition-colors"
+      prefetch={false}
+      className="relative text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] transition-colors
+      after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-0 after:bg-[var(--color-primary-500)] hover:after:w-full after:transition-all"
     >
       {children}
     </Link>
@@ -113,6 +119,7 @@ function MobileNavLink({
   return (
     <Link
       href={href}
+      prefetch={false}
       onClick={onClick}
       className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] transition-colors"
     >

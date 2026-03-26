@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { formatPrice } from "@/lib/formatters";
+import { formatPrice } from "@/lib/formatters/formatters";
 import Link from "next/link";
 import Spinner from "@/components/ui/Spinner";
 import type { Order, OrderItem, Shipment, ShipmentUpdate } from "@prisma/client";

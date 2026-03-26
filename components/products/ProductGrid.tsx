@@ -1,13 +1,14 @@
+// File: components/products/ProductGrid.tsx
 "use client";
 
 import ProductCard from "./ProductCard";
 import Loading from "@/components/products/Loading";
-import { ProductCard as ProductCardType } from "@/lib/types/product";
+import { ProductCardProps } from "@/components/products/ProductCard";
 
 interface Props {
-  products?: ProductCardType[];
+  products?: ProductCardProps[];
   loading?: boolean;
-  onAddToCart?: (product: ProductCardType) => void;
+  onAddToCart?: (product: ProductCardProps) => void;
 }
 
 export default function ProductGrid({ products, loading, onAddToCart }: Props) {
@@ -31,20 +32,28 @@ export default function ProductGrid({ products, loading, onAddToCart }: Props) {
     <div
       className="
         grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
-        gap-[var(--spacing-md)]
+        gap-4 sm:gap-6 lg:gap-8
       "
       data-grid="product-grid"
       data-count={products.length}
     >
-      {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          {...product}
-          onAddToCart={
-            onAddToCart ? () => onAddToCart(product) : undefined
-          }
-        />
-      ))}
+      {products.map((product) => {
+        // Safety check: ensure product.id exists
+        if (!product.id) {
+          console.error("Product missing id:", product);
+        }
+
+        // Remove any accidental `key` field from product object
+        const { key, ...safeProduct } = product as any;
+
+        return (
+          <ProductCard
+            key={product.id} // React key MUST be direct
+            {...safeProduct}
+            onAddToCart={onAddToCart ? () => onAddToCart(product) : undefined}
+          />
+        );
+      })}
     </div>
   );
 }

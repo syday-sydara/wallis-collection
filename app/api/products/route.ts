@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { productCardSelect } from "@/lib/types/product";
 import { mapProductToCard } from "@/lib/mappers/product";
-import { formatKobo } from "@/lib/formatters";
+import { formatKobo } from "@/lib/formatters/formatters";
 
 export const revalidate = 60;
 

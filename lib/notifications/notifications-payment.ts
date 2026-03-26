@@ -1,111 +1,59 @@
 // PATH: lib/notifications-payment.ts
-// NAME: notifications-payment.ts
 
-import { sendNotification } from "@/lib/notifications/notifications";
+import { sendNotification } from "@/lib/notifications";
+import {
+  paymentConfirmationEmail,
+  paymentConfirmationSMS,
+  paymentConfirmationWhatsApp,
+} from "@/lib/notifications/templates/payment-confirmation";
 
-/* ---------------------------------- */
-/* Email Template                     */
-/* ---------------------------------- */
-export function paymentConfirmationEmail({
-  orderId,
-  total,
-}: {
-  orderId: string;
-  total: number;
-}) {
-  return `
-Your payment for Order ${orderId} has been confirmed.
-
-💰 Total Paid: ₦${total.toLocaleString()}
-
-We’re now processing your order and will notify you once it ships.
-
-Thank you for shopping with Wallis Collection.
-  `;
-}
-
-/* ---------------------------------- */
-/* SMS Template                       */
-/* ---------------------------------- */
-export function paymentConfirmationSMS({
-  orderId,
-  total,
-}: {
-  orderId: string;
-  total: number;
-}) {
-  return `Wallis Collection: Payment confirmed for order ${orderId}. Amount: ₦${total.toLocaleString()}. Thank you.`;
-}
-
-/* ---------------------------------- */
-/* WhatsApp Template                  */
-/* ---------------------------------- */
-export function paymentConfirmationWhatsApp({
-  orderId,
-  total,
-}: {
-  orderId: string;
-  total: number;
-}) {
-  return `
-🧾 *Wallis Collection – Payment Confirmed*
-
-Your payment for *Order ${orderId}* has been successfully received.
-
-💰 *Amount Paid:* ₦${total.toLocaleString()}
-
-Your order is now being processed. We’ll notify you once it ships.
-  `;
-}
-
-/* ---------------------------------- */
-/* Main Notification Helper           */
-/* ---------------------------------- */
 export async function notifyPaymentConfirmed(order: {
   id: string;
   email: string;
   phone?: string | null;
   total: number;
 }) {
-  // Email
+  /* ---------------------------------- */
+  /* EMAIL                              */
+  /* ---------------------------------- */
   await sendNotification("EMAIL", {
     to: order.email,
     subject: `Payment Confirmed – Order ${order.id}`,
-    message: paymentConfirmationEmail({
-      orderId: order.id,
-      total: order.total,
-    }),
-    html: paymentConfirmationEmail({
-      orderId: order.id,
-      total: order.total,
-    }),
+    message: paymentConfirmationEmail(order.id, order.total),
+    html: paymentConfirmationEmail(order.id, order.total),
   });
 
-  // SMS
+  /* ---------------------------------- */
+  /* SMS                                */
+  /* ---------------------------------- */
   if (order.phone) {
     await sendNotification("SMS", {
       to: order.phone,
-      message: paymentConfirmationSMS({
-        orderId: order.id,
-        total: order.total,
-      }),
+      message: paymentConfirmationSMS(order.id, order.total),
     });
   }
 
-  // WhatsApp
+  /* ---------------------------------- */
+  /* WHATSAPP                           */
+  /* ---------------------------------- */
   if (order.phone) {
     await sendNotification("WHATSAPP", {
       to: order.phone,
-      message: paymentConfirmationWhatsApp({
-        orderId: order.id,
-        total: order.total,
-      }),
+      message: paymentConfirmationWhatsApp(order.id, order.total),
     });
   }
 
-  // Admin alert
+  /* ---------------------------------- */
+  /* ADMIN ALERT                        */
+  /* ---------------------------------- */
   await sendNotification("ADMIN", {
     to: "admin",
-    message: `Payment confirmed for order ${order.id} — ₦${order.total.toLocaleString()}`,
+    message: `
+Payment confirmed for Order ${order.id}
+Amount: ₦${order.total.toLocaleString()}
+Customer: ${order.email}
+Phone: ${order.phone ?? "N/A"}
+Time: ${new Date().toLocaleString()}
+    `.trim(),
   });
 }

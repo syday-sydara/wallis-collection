@@ -2,13 +2,15 @@
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import ProductDetailView from "@/components/products/ProductDetailView";
+import { ProductDetailProps } from "@/lib/types/product";
+import { mapProductDetail } from "@/lib/mappers/product";
 
 export default async function ProductPage({ params }: { params: { slug: string } }) {
-  // Fetch product from DB
   const product = await prisma.product.findUnique({
     where: { slug: params.slug, deletedAt: null },
     include: {
       images: { orderBy: { position: "asc" } },
+      variants: true,
       reviews: {
         include: { user: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
@@ -18,33 +20,26 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
   if (!product) notFound();
 
-  // Format prices in Naira and add a formattedPrice field
-  const formattedProduct = {
-    ...product,
-    priceNaira: product.price / 100,
-    salePriceNaira: product.salePrice ? product.salePrice / 100 : null,
-    formattedPrice: product.salePrice
-      ? `₦${(product.salePrice / 100).toLocaleString("en-NG")}`
-      : `₦${(product.price / 100).toLocaleString("en-NG")}`,
-  };
+  const mapped = mapProductDetail(product);
 
-  // Google Structured Data (JSON-LD)
+  // JSON-LD for SEO (Nigeria market)
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: product.name,
-    image: product.images[0]?.url ?? "/fallback-product.jpg",
-    description: product.description,
+    name: mapped.name,
+    image: mapped.images[0]?.url ?? "/fallback-product.jpg",
+    description: mapped.description,
     brand: { "@type": "Brand", name: "Wallis Collection" },
     offers: {
       "@type": "Offer",
-      url: `${process.env.NEXT_PUBLIC_URL}/products/${product.slug}`,
+      url: `${process.env.NEXT_PUBLIC_URL}/products/${mapped.slug}`,
       priceCurrency: "NGN",
-      price: formattedProduct.salePriceNaira || formattedProduct.priceNaira,
+      price: mapped.salePrice ?? mapped.price,
       itemCondition: "https://schema.org/NewCondition",
-      availability: product.stock > 0
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
+      availability:
+        mapped.stock > 0
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
     },
   };
 
@@ -54,7 +49,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ProductDetailView product={formattedProduct} />
+      <ProductDetailView product={mapped} />
     </main>
   );
 }

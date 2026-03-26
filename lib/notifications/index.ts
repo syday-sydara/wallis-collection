@@ -1,15 +1,23 @@
 // PATH: lib/notifications/index.ts
+
 import { sendEmail } from "./channels/email";
 import { sendWhatsApp } from "./channels/whatsapp";
 import { sendAdminAlert } from "./channels/admin";
+import { sendSMS } from "./channels/sms";
 
-export type NotificationChannel = "EMAIL" | "SMS" | "WHATSAPP" | "ADMIN";
+export enum NotificationChannel {
+  EMAIL = "EMAIL",
+  SMS = "SMS",
+  WHATSAPP = "WHATSAPP",
+  ADMIN = "ADMIN",
+}
 
 export interface NotificationPayload {
   to: string;
   subject?: string;
-  message: string;
+  message?: string;
   html?: string;
+  meta?: any;
 }
 
 export async function sendNotification(
@@ -17,13 +25,19 @@ export async function sendNotification(
   payload: NotificationPayload
 ) {
   switch (channel) {
-    case "EMAIL":
+    case NotificationChannel.EMAIL:
       return sendEmail(payload);
-    case "SMS":
+
+    case NotificationChannel.SMS:
       return sendSMS(payload);
-    case "WHATSAPP":
+
+    case NotificationChannel.WHATSAPP:
       return sendWhatsApp(payload);
-    case "ADMIN":
+
+    case NotificationChannel.ADMIN:
       return sendAdminAlert(payload);
+
+    default:
+      throw new Error(`Unknown notification channel: ${channel}`);
   }
 }

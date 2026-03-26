@@ -1,5 +1,8 @@
+// File: app/products/[slug]/opengraph-image.tsx
 import { ImageResponse } from "next/og";
 import { prisma } from "@/lib/db";
+
+export const runtime = "nodejs"; // Prisma requires Node runtime
 
 // Constants
 const FALLBACK_IMAGE =
@@ -32,11 +35,10 @@ interface ProductOgImageProps {
 // Fetch product data using Prisma
 async function getProduct(slug: string) {
   try {
-    const product = await prisma.product.findUnique({
+    return await prisma.product.findUnique({
       where: { slug },
       include: { images: { orderBy: { position: "asc" } } },
     });
-    return product ?? null;
   } catch (err) {
     console.error("OG Image Prisma Error:", err);
     return null;
@@ -47,13 +49,16 @@ async function getProduct(slug: string) {
 export default async function ProductOgImage({ params }: ProductOgImageProps) {
   const product = await getProduct(params.slug);
 
-  // Fallback data
+  // Convert kobo → naira
+  const nairaPrice = product?.price ? product.price / 100 : null;
+
   const imageUrl = product?.images?.[0]?.url ?? FALLBACK_IMAGE;
   const title = product?.name ?? FALLBACK_TITLE;
-  const price = product?.price
-    ? `₦${product.price.toLocaleString("en-NG")}`
+  const price = nairaPrice
+    ? `₦${nairaPrice.toLocaleString("en-NG")}`
     : FALLBACK_PRICE;
-  const description = product?.description?.slice(0, 180) ?? FALLBACK_DESCRIPTION;
+  const description =
+    product?.description?.slice(0, 180) ?? FALLBACK_DESCRIPTION;
 
   return new ImageResponse(
     (

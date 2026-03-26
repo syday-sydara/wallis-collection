@@ -4,7 +4,7 @@ import { useCart } from "@/components/cart/CartProvider";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import CheckoutProgress from "@/components/checkout/CheckoutProgress";
-import { formatPrice } from "@/lib/formatters";
+import { formatPrice } from "@/lib/formatters/formatters";
 import { useRouter } from "next/navigation";
 import { useCheckout } from "./checkoutProvider";
 import { useState } from "react";
