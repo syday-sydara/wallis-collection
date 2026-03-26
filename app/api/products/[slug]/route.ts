@@ -1,7 +1,8 @@
 // File: app/api/product/[slug]/route.ts
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { formatPrice } from "@/lib/formatters/formatters";
+import { mapProductDetail } from "@/lib/mappers/product";
+import { formatPrice } from "@/lib/formatters";
 
 export async function GET(
   req: Request,
@@ -15,11 +16,22 @@ export async function GET(
   }
 
   try {
-    const product = await prisma.product.findFirst({
-      where: { slug: params.slug, deletedAt: null },
+    const product = await prisma.product.findUnique({
+      where: {
+        slug_deletedAt: {
+          slug: params.slug,
+          deletedAt: null,
+        },
+      },
       include: {
         images: { orderBy: { position: "asc" } },
-        reviews: { include: { user: { select: { id: true; name: true } } }, orderBy: { createdAt: "desc" } },
+        variants: true,
+        reviews: {
+          include: {
+            user: { select: { id: true, name: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 
@@ -30,11 +42,14 @@ export async function GET(
       );
     }
 
+    // Map to UI-ready detail object
+    const mapped = mapProductDetail(product);
+
     return NextResponse.json({
       success: true,
       data: {
-        ...product,
-        formattedPrice: formatPrice(product.salePrice ?? product.price),
+        ...mapped,
+        formattedPrice: formatPrice(mapped.salePrice ?? mapped.price),
       },
     });
   } catch (error) {

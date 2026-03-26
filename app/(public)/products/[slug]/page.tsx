@@ -1,18 +1,28 @@
-// File: app/products/[slug]/page.tsx
+// File: app/(public)/products/[slug]/page.tsx
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
-import ProductDetailView from "@/components/products/ProductDetailView";
-import { ProductDetailProps } from "@/lib/types/product";
 import { mapProductDetail } from "@/lib/mappers/product";
+import ClientProductDetail from "./ClientProductDetail";
+
+export const revalidate = 60;
 
 export default async function ProductPage({ params }: { params: { slug: string } }) {
+  if (!params.slug) notFound();
+
   const product = await prisma.product.findUnique({
-    where: { slug: params.slug, deletedAt: null },
+    where: {
+      slug_deletedAt: {
+        slug: params.slug,
+        deletedAt: null,
+      },
+    },
     include: {
       images: { orderBy: { position: "asc" } },
       variants: true,
       reviews: {
-        include: { user: { select: { id: true, name: true } } },
+        include: {
+          user: { select: { id: true, name: true } },
+        },
         orderBy: { createdAt: "desc" },
       },
     },
@@ -22,7 +32,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
   const mapped = mapProductDetail(product);
 
-  // JSON-LD for SEO (Nigeria market)
+  // JSON-LD for SEO
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -49,7 +59,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ProductDetailView product={mapped} />
+      <ClientProductDetail product={mapped} />
     </main>
   );
 }

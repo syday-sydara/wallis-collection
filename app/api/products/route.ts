@@ -1,9 +1,8 @@
 // File: app/api/products/route.ts
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { productCardSelect } from "@/lib/types/product";
-import { mapProductToCard } from "@/lib/mappers/product";
-import { formatKobo } from "@/lib/formatters/formatters";
+import { mapProductCard } from "@/lib/mappers/product";
+import { formatKobo } from "@/lib/formatters";
 
 export const revalidate = 60;
 
@@ -12,17 +11,21 @@ export async function GET() {
     const products = await prisma.product.findMany({
       where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
-      select: productCardSelect,
+      include: {
+        images: true,
+        variants: true,
+      },
     });
 
     const mapped = products.map((product) => {
-      const card = mapProductToCard(product);
+      const card = mapProductCard(product);
 
-      // Add formatted prices
       return {
         ...card,
         formattedPrice: formatKobo(card.price, false),
-        formattedSalePrice: card.salePrice ? formatKobo(card.salePrice, false) : null,
+        formattedSalePrice: card.salePrice
+          ? formatKobo(card.salePrice, false)
+          : null,
       };
     });
 

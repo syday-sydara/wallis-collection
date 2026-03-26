@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import { spaceGrotesk } from "./metadata";
 import { CartProvider, useCart } from "@/components/cart/CartProvider";
 import { ToastProvider } from "@/components/toast/ToastProvider";
+import AppAsyncBoundary from "@/components/common/AppAsyncBoundary";
+import { StructuredData } from "./structured-data";
 
 const CartDrawer = dynamic(() => import("@/components/cart/CartDrawer"), { ssr: false });
 const Header = dynamic(() => import("@/components/layout/header"), { ssr: false });
@@ -22,10 +24,17 @@ export default function RootLayout({ children }: RootLayoutProps) {
       className={`${spaceGrotesk.variable} scroll-smooth`}
       suppressHydrationWarning
     >
+      <head>
+        {/* Global structured data */}
+        <StructuredData />
+      </head>
+
       <body className="min-h-screen flex flex-col bg-bg-primary text-text-primary antialiased transition-colors duration-300 [text-rendering:optimizeLegibility]">
         <CartProvider>
           <ToastProvider>
-            <ClientLayout>{children}</ClientLayout>
+            <AppAsyncBoundary message="Loading storefront…">
+              <ClientLayout>{children}</ClientLayout>
+            </AppAsyncBoundary>
           </ToastProvider>
         </CartProvider>
       </body>
@@ -56,7 +65,7 @@ function ClientLayout({ children }: { children: ReactNode }) {
         <Header />
       </Suspense>
 
-      {/* Main Content — no padding here */}
+      {/* Main Content */}
       <main className="flex-1 w-full">
         {children}
       </main>

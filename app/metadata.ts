@@ -24,7 +24,7 @@ export const viewport: Viewport = {
 };
 
 /* ------------------------------------------------
-   METADATA — Fermine Edition
+   METADATA — Fermine Edition (Enhanced)
 ------------------------------------------------ */
 export const metadata: Metadata = {
   metadataBase: new URL("https://walliscollection.com"),
@@ -32,6 +32,13 @@ export const metadata: Metadata = {
   applicationName: "Wallis Collection",
   creator: "Wallis Collection",
   publisher: "Wallis Collection",
+
+  authors: [
+    {
+      name: "Wallis Collection",
+      url: "https://walliscollection.com",
+    },
+  ],
 
   title: {
     default: "Wallis Collection",
@@ -84,6 +91,27 @@ export const metadata: Metadata = {
     },
   },
 
+  /* ------------------------------------------------
+     APPLE WEB APP — Native iOS Feel
+  ------------------------------------------------ */
+  appleWebApp: {
+    capable: true,
+    title: "Wallis Collection",
+    statusBarStyle: "black-translucent",
+  },
+
+  /* ------------------------------------------------
+     VERIFICATION — SEO Tools (Optional)
+  ------------------------------------------------ */
+  verification: {
+    google: "",
+    pinterest: "",
+    yandex: "",
+  },
+
+  /* ------------------------------------------------
+     OPEN GRAPH — Social Sharing
+  ------------------------------------------------ */
   openGraph: {
     title: "Wallis Collection — Premium Nigerian Fashion",
     description:
@@ -103,6 +131,9 @@ export const metadata: Metadata = {
     ],
   },
 
+  /* ------------------------------------------------
+     TWITTER — Social Cards
+  ------------------------------------------------ */
   twitter: {
     card: "summary_large_image",
     title: "Wallis Collection — Premium Nigerian Fashion",
@@ -113,6 +144,9 @@ export const metadata: Metadata = {
     ],
   },
 
+  /* ------------------------------------------------
+     ICONS & MANIFEST
+  ------------------------------------------------ */
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
@@ -121,8 +155,20 @@ export const metadata: Metadata = {
 
   manifest: "/site.webmanifest",
 
+  /* ------------------------------------------------
+     THEME COLORS — Light & Dark
+  ------------------------------------------------ */
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#272B36" },
     { media: "(prefers-color-scheme: dark)", color: "#0f1115" },
   ],
+
+  /* ------------------------------------------------
+     OTHER — Brand Metadata
+  ------------------------------------------------ */
+  other: {
+    "brand:name": "Wallis Collection",
+    "brand:theme": "Fermine",
+    "brand:version": "1.0.0",
+  },
 };

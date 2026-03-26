@@ -2,43 +2,80 @@
 export function StructuredData() {
   const data = {
     "@context": "https://schema.org",
-    "@type": "Store",
-    name: "Wallis Collection",
-    url: "https://walliscollection.com",
-    description:
-      "Premium Nigerian fashion including wax prints, super-wax, ankara, abayas, hollands, and luxury lace fabrics.",
-    image:
-      "https://images.unsplash.com/photo-1520975918318-3a4e6e791f6b?q=80&w=1200&auto=format&fit=crop",
+    "@graph": [
+      /* ------------------------------------------------
+         1. Store Schema — Your business identity
+      ------------------------------------------------ */
+      {
+        "@type": "Store",
+        "@id": "https://walliscollection.com/#store",
+        name: "Wallis Collection",
+        url: "https://walliscollection.com",
+        description:
+          "Premium Nigerian fashion including wax prints, super-wax, ankara, abayas, hollands, and luxury lace fabrics.",
+        image:
+          "https://images.unsplash.com/photo-1520975918318-3a4e6e791f6b?q=80&w=1200&auto=format&fit=crop",
 
-    // Brand identity
-    brand: {
-      "@type": "Brand",
-      name: "Wallis Collection",
-      logo: "https://walliscollection.com/logo.png",
-    },
+        brand: {
+          "@type": "Brand",
+          name: "Wallis Collection",
+          logo: "https://walliscollection.com/logo.png",
+        },
 
-    // Country-only address (no physical store yet)
-    address: {
-      "@type": "PostalAddress",
-      addressCountry: "NG",
-    },
+        address: {
+          "@type": "PostalAddress",
+          addressCountry: "NG",
+        },
 
-    // Helps Google understand your business category
-    department: "Fashion & Apparel",
+        department: "Fashion & Apparel",
 
-    // Helps with search enhancements
-    sameAs: [
-      "https://www.instagram.com/walliscollection",
-      "https://www.facebook.com/walliscollection",
-      "https://www.tiktok.com/@walliscollection",
+        sameAs: [
+          "https://www.instagram.com/walliscollection",
+          "https://www.facebook.com/walliscollection",
+          "https://www.tiktok.com/@walliscollection",
+        ],
+
+        potentialAction: {
+          "@type": "SearchAction",
+          target:
+            "https://walliscollection.com/search?q={search_term_string}",
+          "query-input": "required name=search_term_string",
+        },
+      },
+
+      /* ------------------------------------------------
+         2. Organization Schema — Helps Google understand
+            your brand as a business entity
+      ------------------------------------------------ */
+      {
+        "@type": "Organization",
+        "@id": "https://walliscollection.com/#organization",
+        name: "Wallis Collection",
+        url: "https://walliscollection.com",
+        logo: "https://walliscollection.com/logo.png",
+        sameAs: [
+          "https://www.instagram.com/walliscollection",
+          "https://www.facebook.com/walliscollection",
+          "https://www.tiktok.com/@walliscollection",
+        ],
+      },
+
+      /* ------------------------------------------------
+      3. Website Schema — Helps with Sitelinks Search Box
+      ------------------------------------------------ */
+      {
+        "@type": "WebSite",
+        "@id": "https://walliscollection.com/#website",
+        url: "https://walliscollection.com",
+        name: "Wallis Collection",
+        potentialAction: {
+          "@type": "SearchAction",
+          target:
+            "https://walliscollection.com/search?q={search_term_string}",
+          "query-input": "required name=search_term_string",
+        },
+      },
     ],
-
-    // Helps Google understand your site structure
-    potentialAction: {
-      "@type": "SearchAction",
-      target: "https://walliscollection.com/search?q={search_term_string}",
-      "query-input": "required name=search_term_string",
-    },
   };
 
   return (
