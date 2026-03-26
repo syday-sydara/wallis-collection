@@ -1,3 +1,4 @@
+// File: ClientProductGrid.tsx
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -5,32 +6,35 @@ import ProductGrid from "@/components/products/ProductGrid";
 import Loading from "@/components/products/Loading";
 import { Product } from "@/components/products/ProductGrid";
 
-/**
- * Custom hook for infinite scrolling products
- */
+interface PaginatedResponse {
+  data: Product[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+}
+
 function useInfiniteProducts(initial: Product[]) {
-  const [products, setProducts] = useState<Product[]>(initial);
+  const [products, setProducts] = useState(initial);
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(true); // new flag
 
   const fetchMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return; // prevent duplicate fetch
+    if (loadingMore || !hasMore) return; // prevent unnecessary calls
     setLoadingMore(true);
 
     try {
       const res = await fetch(`/api/products?page=${page + 1}`);
-      if (!res.ok) throw new Error("Failed to fetch products");
+      const json: PaginatedResponse = await res.json();
 
-      const newProducts: Product[] = await res.json();
-      if (newProducts.length === 0) {
-        setHasMore(false);
+      if (json.data.length > 0) {
+        setProducts((prev) => [...prev, ...json.data]);
+        setPage(json.page);
+        setHasMore(json.hasMore);
       } else {
-        setProducts((prev) => [...prev, ...newProducts]);
-        setPage((prev) => prev + 1);
+        setHasMore(false);
       }
-    } catch (err) {
-      console.error("Error loading more products:", err);
     } finally {
       setLoadingMore(false);
     }
@@ -39,20 +43,16 @@ function useInfiniteProducts(initial: Product[]) {
   return { products, fetchMore, loadingMore, hasMore };
 }
 
-/**
- * IntersectionObserver trigger component
- */
 function InfiniteScrollTrigger({ onInView }: { onInView: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!ref.current) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) onInView();
-      },
-      { rootMargin: "200px" } // prefetch before reaching bottom
-    );
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) onInView();
+    });
+
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, [onInView]);
@@ -60,9 +60,6 @@ function InfiniteScrollTrigger({ onInView }: { onInView: () => void }) {
   return <div ref={ref} className="h-8" />;
 }
 
-/**
- * Client-side product grid with infinite scroll
- */
 export default function ClientProductGrid({
   initialProducts,
 }: {
@@ -81,12 +78,6 @@ export default function ClientProductGrid({
         <div className="mt-4 flex justify-center">
           <Loading count={4} showSpinner message="Loading more products..." />
         </div>
-      )}
-
-      {!hasMore && products.length > 0 && (
-        <p className="text-center text-sm text-gray-500 mt-6">
-          You’ve reached the end of the catalog
-        </p>
       )}
     </>
   );
