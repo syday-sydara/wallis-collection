@@ -1,13 +1,17 @@
 import { PrismaClient } from "@prisma/client";
 import argon2 from "argon2";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ["error", "warn"],
+});
 
 async function main() {
-  console.log("🌱 Seeding database with Argon2 password hashing...");
+  console.log("🌱 Seeding database...");
 
-  // Create admin user
-  const adminPassword = await argon2.hash("admin123");
+  // Admin user (idempotent)
+  const adminPassword = await argon2.hash(
+    process.env.ADMIN_PASSWORD || "admin123"
+  );
 
   const admin = await prisma.user.upsert({
     where: { email: "admin@shop.com" },
@@ -20,11 +24,13 @@ async function main() {
     },
   });
 
-  console.log("👤 Admin user created:", admin.email);
+  console.log("👤 Admin:", admin.email);
 
-  // Sample product
-  const product1 = await prisma.product.create({
-    data: {
+  // Product (idempotent)
+  const product1 = await prisma.product.upsert({
+    where: { slug: "classic-leather-bag" },
+    update: {},
+    create: {
       name: "Classic Leather Bag",
       slug: "classic-leather-bag",
       price: 35000,
@@ -51,31 +57,38 @@ async function main() {
     },
   });
 
-  console.log("👜 Sample product created:", product1.name);
+  console.log("👜 Product:", product1.name);
 
-  // Delivery zones (Nigeria‑specific)
+  // Delivery zones (safe)
   await prisma.deliveryZone.createMany({
     data: [
       { state: "Lagos", lga: "Ikeja", fee: 1500 },
       { state: "Lagos", lga: "Lekki", fee: 2000 },
       { state: "Abuja", lga: "Garki", fee: 2500 },
     ],
+    skipDuplicates: true,
   });
 
   console.log("🚚 Delivery zones seeded");
 
-  // Inventory movement
-  await prisma.inventoryMovement.create({
-    data: {
-      productId: product1.id,
-      change: 20,
-      reason: "RESTOCK",
-    },
+  // Inventory (avoid duplication)
+  const existingInventory = await prisma.inventoryMovement.findFirst({
+    where: { productId: product1.id },
   });
 
-  console.log("📦 Inventory movement logged");
+  if (!existingInventory) {
+    await prisma.inventoryMovement.create({
+      data: {
+        productId: product1.id,
+        change: 20,
+        reason: "RESTOCK",
+      },
+    });
 
-  console.log("🌱 Seed completed successfully!");
+    console.log("📦 Inventory logged");
+  }
+
+  console.log("✅ Seed completed!");
 }
 
 main()

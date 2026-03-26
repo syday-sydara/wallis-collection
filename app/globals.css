@@ -4,50 +4,38 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------ */
-/* THEME (Tokens & Semantic Colors)                */
+/* THEME (Expose tokens to Tailwind)                */
+/* ------------------------------------------------ */
+@theme {
+  --color-primary: #272b36;
+  --color-surface: #fafafa;
+  --color-accent: #a08a81;
+
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+/* ------------------------------------------------ */
+/* ROOT TOKENS                                      */
 /* ------------------------------------------------ */
 :root {
-  /* Primitive Colors */
-  --color-gray-0: #ffffff;
-  --color-gray-50: #fafafa;
-  --color-gray-300: #b7b8bb;
-  --color-gray-600: #595d66;
-  --color-gray-900: #272b36;
+  /* Base Colors */
+  --color-bg-primary: #ffffff;
+  --color-bg-surface: #fafafa;
 
-  --color-accent-500: #a08a81;
-  --color-success-500: #4caf50;
-  --color-danger-500: #c94f4f;
+  --color-text-primary: #272b36;
+  --color-text-secondary: #595d66;
+  --color-text-muted: #b7b8bb;
 
-  /* Semantic Colors */
-  --color-bg-primary: var(--color-gray-0);
-  --color-bg-surface: var(--color-gray-50);
+  --color-border: #b7b8bb;
+  --color-border-strong: #1a1d24;
 
-  --color-text-primary: var(--color-gray-900);
-  --color-text-secondary: var(--color-gray-600);
-  --color-text-muted: var(--color-gray-300);
-
-  --color-border: var(--color-gray-300);
-  --color-border-strong: #1a1d24; /* Added for Card strong border */
-
-  --color-button-primary: var(--color-gray-900);
+  --color-button-primary: #272b36;
   --color-button-primary-text: #ffffff;
 
-  --focus-ring: var(--color-accent-500);
+  --focus-ring: #a08a81;
 
-  /* Spacing Tokens */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-
-  /* Card Spacing (used by CVA) */
-  --spacing-sm: var(--space-3);
-  --spacing-md: var(--space-4);
-  --spacing-lg: var(--space-6);
-
-  /* Border Radius */
-  --radius-sm: 6px;
+  /* Radius */
   --radius-md: 10px;
   --radius-lg: 14px;
 
@@ -55,7 +43,7 @@
   --font-body: system-ui, sans-serif;
   --font-heading: system-ui, sans-serif;
 
-  /* Container */
+  /* Layout */
   --container-max: 1280px;
 }
 
@@ -106,7 +94,7 @@
   select {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    padding: var(--space-2);
+    padding: 8px;
     font-family: inherit;
     font-size: 0.95rem;
     outline: none;
@@ -117,7 +105,7 @@
     outline-offset: 2px;
   }
 
-  .container {
+  .app-container {
     max-width: var(--container-max);
     margin: 0 auto;
     padding-inline: clamp(12px, 4vw, 20px);
@@ -132,9 +120,9 @@
   /* ---------------- BUTTON ---------------- */
   .btn {
     @apply inline-flex items-center justify-center font-medium transition duration-200 ease-in-out;
-    padding: var(--space-2) var(--space-4);
+    padding: 8px 16px;
     border-radius: var(--radius-md);
-    min-height: 44px; /* Mobile-first tap target */
+    min-height: 44px;
   }
 
   .btn-primary {
@@ -154,18 +142,6 @@
     color: var(--color-text-primary);
   }
 
-  .btn-sm {
-    padding: var(--space-1) var(--space-3);
-    font-size: 0.875rem;
-    min-height: 40px;
-  }
-
-  .btn-lg {
-    padding: var(--space-3) var(--space-6);
-    font-size: 1.125rem;
-    min-height: 48px;
-  }
-
   .btn:active {
     transform: scale(0.97);
     opacity: 0.9;
@@ -176,50 +152,44 @@
     cursor: not-allowed;
   }
 
-  .btn:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
   /* ---------------- CARD ---------------- */
   .card {
     background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     overflow: hidden;
   }
 
   .card-body {
-    padding: var(--space-4);
-  }
-
-  .card-lg {
-    padding: var(--space-6);
+    padding: 16px;
   }
 
   /* ---------------- SKELETON ---------------- */
   .skeleton {
     width: 100%;
-    border-radius: var(--radius-sm);
+    border-radius: 6px;
     background: linear-gradient(
       90deg,
-      rgba(183, 184, 187, 0.12),
-      rgba(183, 184, 187, 0.24),
-      rgba(183, 184, 187, 0.12)
+      color-mix(in srgb, var(--color-border) 20%, transparent),
+      color-mix(in srgb, var(--color-border) 40%, transparent),
+      color-mix(in srgb, var(--color-border) 20%, transparent)
     );
     background-size: 200% 100%;
     animation: shimmer 1.6s infinite linear;
-    will-change: background-position;
   }
 
   .skeleton-sm {
     height: 1rem;
   }
+
   .skeleton-md {
     height: 1.5rem;
   }
+
   .skeleton-lg {
     height: 2.5rem;
   }
+
   .skeleton-block {
     aspect-ratio: 3/4;
   }
@@ -305,6 +275,9 @@
   }
 }
 
+/* ------------------------------------------------ */
+/* MICRO ANIMATION                                  */
+/* ------------------------------------------------ */
 @keyframes pulse-on-add {
   0%,
   100% {
