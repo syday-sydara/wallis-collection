@@ -1,12 +1,40 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import { v4 as uuidv4 } from "uuid";
 import { CartItem } from "@/lib/types/types";
 
-// ... (keep your existing interfaces)
+interface CartContextValue {
+  items: CartItem[];
+  itemCount: number;
+  total: number;
+  isEmpty: boolean;
+  isHydrated: boolean;
+  addItem: (item: CartItem) => void;
+  increment: (key: string) => void;
+  decrement: (key: string) => void;
+  removeItem: (key: string) => void;
+  clearCart: () => void;
+}
 
-export function CartProvider({ children }) {
-  // Lazy load cart to avoid hydration flicker
+const CartContext = createContext<CartContextValue | null>(null);
+
+export const useCart = () => {
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error("useCart must be used within CartProvider");
+  return ctx;
+};
+
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Lazy load cart
   const [items, setItems] = useState<CartItem[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -16,6 +44,11 @@ export function CartProvider({ children }) {
     }
   });
 
+  // Mark hydration complete
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
   // Persist to localStorage
   useEffect(() => {
     if (isHydrated) {
@@ -24,15 +57,15 @@ export function CartProvider({ children }) {
   }, [items, isHydrated]);
 
   const addItem = useCallback((item: CartItem) => {
-    setItems(prev => {
-      const existing = prev.find(i => i.productId === item.productId);
+    setItems((prev) => {
+      const existing = prev.find((i) => i.productId === item.productId);
 
       const safeQty = Math.max(1, Number(item.quantity) || 1);
       const safeStock = item.stock ?? Infinity;
 
       if (existing) {
         const newQty = Math.min(existing.quantity + safeQty, safeStock);
-        return prev.map(i =>
+        return prev.map((i) =>
           i.productId === item.productId ? { ...i, quantity: newQty } : i
         );
       }
@@ -49,8 +82,8 @@ export function CartProvider({ children }) {
   }, []);
 
   const increment = useCallback((key: string) => {
-    setItems(prev =>
-      prev.map(i =>
+    setItems((prev) =>
+      prev.map((i) =>
         i.key === key
           ? { ...i, quantity: Math.min(i.quantity + 1, i.stock ?? Infinity) }
           : i
@@ -59,15 +92,17 @@ export function CartProvider({ children }) {
   }, []);
 
   const decrement = useCallback((key: string) => {
-    setItems(prev =>
+    setItems((prev) =>
       prev
-        .map(i => (i.key === key ? { ...i, quantity: i.quantity - 1 } : i))
-        .filter(i => i.quantity > 0)
+        .map((i) =>
+          i.key === key ? { ...i, quantity: i.quantity - 1 } : i
+        )
+        .filter((i) => i.quantity > 0)
     );
   }, []);
 
   const removeItem = useCallback(
-    (key: string) => setItems(prev => prev.filter(i => i.key !== key)),
+    (key: string) => setItems((prev) => prev.filter((i) => i.key !== key)),
     []
   );
 
@@ -88,6 +123,7 @@ export function CartProvider({ children }) {
         itemCount,
         total,
         isEmpty,
+        isHydrated,
         addItem,
         increment,
         decrement,

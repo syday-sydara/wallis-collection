@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { X, Minus, Plus } from "lucide-react";
 import { useCart } from "./CartProvider";
-import Button from "@/components/ui/Button";
+import clsx from "clsx";
 
 interface CartItemRowProps {
   item: {
@@ -26,60 +26,64 @@ export default function CartItemRow({
 }: CartItemRowProps) {
   const { increment, decrement, removeItem } = useCart();
 
-  const handleIncrement = () => increment(item.key);
-  const handleDecrement = () => decrement(item.key);
-  const handleRemove = () => removeItem(item.key);
-
   const isCompact = variant === "compact";
 
   return (
     <div
-      className={`flex gap-4 border-b border-border pb-4 ${
+      className={clsx(
+        "flex gap-4 pb-4 border-b border-[var(--color-border)]",
         isCompact ? "items-start" : "items-center"
-      }`}
+      )}
+      data-cart-item
+      data-product-id={item.productId}
     >
       {/* Product Image */}
-      <div className="relative w-20 h-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+      <div className="relative w-20 h-20 rounded-md overflow-hidden bg-[var(--color-bg-surface)] flex-shrink-0">
         {item.image ? (
           <Image
             src={item.image}
             alt={item.name}
             fill
+            loading="lazy"
             className="object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-gray-200 animate-pulse" />
+          <div className="w-full h-full bg-[var(--color-border)]/30 animate-pulse" />
         )}
       </div>
 
       {/* Product Info */}
       <div className="flex flex-col flex-1">
         <div className="flex justify-between items-start">
-          <h3 className="font-medium text-sm text-text-primary leading-tight">
+          <h3 className="font-medium text-sm text-[var(--color-text-primary)] leading-tight">
             {item.name}
           </h3>
 
           {/* Remove Button */}
           <button
-            onClick={handleRemove}
+            onClick={() => removeItem(item.key)}
             aria-label="Remove item"
-            className="text-text-muted hover:text-danger-500 transition-colors"
+            className="text-[var(--color-text-muted)] hover:text-[var(--color-danger-500)] transition-colors"
           >
             <X size={16} />
           </button>
         </div>
 
         {/* Price */}
-        <p className="text-sm font-semibold mt-1">
+        <p className="text-sm font-semibold mt-1 text-[var(--color-text-primary)]">
           ₦{(item.price * item.quantity).toLocaleString()}
         </p>
 
         {/* Quantity Controls */}
         <div className="flex items-center gap-3 mt-3">
           <button
-            onClick={handleDecrement}
+            onClick={() => decrement(item.key)}
             aria-label="Decrease quantity"
-            className="p-1 rounded border border-border hover:bg-gray-100 transition"
+            className="
+              p-1 rounded border border-[var(--color-border)]
+              hover:bg-[var(--color-bg-surface)]
+              transition
+            "
           >
             <Minus size={14} />
           </button>
@@ -89,10 +93,14 @@ export default function CartItemRow({
           </span>
 
           <button
-            onClick={handleIncrement}
+            onClick={() => increment(item.key)}
             aria-label="Increase quantity"
             disabled={item.quantity >= maxStock}
-            className="p-1 rounded border border-border hover:bg-gray-100 disabled:opacity-40 transition"
+            className="
+              p-1 rounded border border-[var(--color-border)]
+              hover:bg-[var(--color-bg-surface)]
+              disabled:opacity-40 transition
+            "
           >
             <Plus size={14} />
           </button>
@@ -100,7 +108,10 @@ export default function CartItemRow({
 
         {/* Stock Warning */}
         {item.quantity >= maxStock && (
-          <p className="text-xs text-danger-500 mt-1">
+          <p
+            className="text-xs text-[var(--color-danger-500)] mt-1"
+            aria-live="polite"
+          >
             Maximum stock reached
           </p>
         )}

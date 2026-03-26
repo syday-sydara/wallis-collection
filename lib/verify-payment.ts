@@ -1,8 +1,19 @@
 // lib/verify-payment.ts
 
-/**
- * Calls Paystack's API to verify the true status of a transaction reference.
- */
+interface PaystackVerifyResponse {
+  status: boolean;
+  message: string;
+  data?: {
+    status: string;
+    reference: string;
+    amount: number;
+    currency: string;
+    paid_at: string;
+    channel: string;
+    metadata?: any;
+  };
+}
+
 export async function verifyPaystackPayment(reference: string) {
   try {
     const response = await fetch(
@@ -13,15 +24,23 @@ export async function verifyPaystackPayment(reference: string) {
           Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
           "Content-Type": "application/json",
         },
-        // Ensure Next.js doesn't cache this highly dynamic request
-        cache: "no-store", 
+        cache: "no-store",
       }
     );
 
-    const data = await response.json();
-    return data;
+    if (!response.ok) {
+      throw new Error(`Paystack responded with ${response.status}`);
+    }
+
+    const data: PaystackVerifyResponse = await response.json();
+
+    if (!data.status) {
+      throw new Error(`Paystack verification failed: ${data.message}`);
+    }
+
+    return data.data;
   } catch (error) {
     console.error("Paystack API verification error:", error);
-    throw new Error("Failed to communicate with Paystack.");
+    throw new Error("Failed to verify payment with Paystack");
   }
 }

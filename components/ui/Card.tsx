@@ -54,10 +54,10 @@ type CVAProps = VariantProps<typeof card>;
 interface CardProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, keyof CVAProps>,
     CVAProps {
-  asChild?: boolean; // if true, caller renders a different element (e.g., <a> or <button>)
+  as?: keyof JSX.IntrinsicElements | React.ComponentType<any>;
 }
 
-const Card = React.forwardRef<HTMLDivElement, CardProps>(function Card(
+const Card = React.forwardRef<HTMLElement, CardProps>(function Card(
   {
     children,
     shadow,
@@ -67,41 +67,48 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(function Card(
     rounded,
     clickable = false,
     className,
-    asChild = false,
+    as: Comp = "div",
     ...props
   },
   ref
 ) {
   const baseClass = card({ shadow, size, hoverEffect, border, rounded, clickable });
+
   const focusableProps = clickable
     ? {
         tabIndex: props.tabIndex ?? 0,
         role: props.role ?? "button",
-        onKeyDown:
-          props.onKeyDown ??
-          ((e: React.KeyboardEvent) => {
-            if (e.key === "Enter" || e.key === " ") {
-              const target = e.currentTarget as HTMLElement;
-              target.click();
-              e.preventDefault();
-            }
-          }),
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (["A", "BUTTON"].includes((e.target as HTMLElement).tagName)) return;
+          if (e.key === "Enter" || e.key === " ") {
+            (e.currentTarget as HTMLElement).click();
+            e.preventDefault();
+          }
+          props.onKeyDown?.(e);
+        },
       }
     : {};
 
-  // If asChild is used, we still render a div by default; consumers can implement a Slot pattern later.
   return (
-    <div
+    <Comp
       ref={ref}
-      className={clsx(baseClass, className, clickable && "focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]")}
+      className={clsx(
+        baseClass,
+        className,
+        clickable && "focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
+      )}
+      data-shadow={shadow}
+      data-size={size}
+      data-hover={hoverEffect}
+      data-clickable={clickable}
       {...focusableProps}
       {...props}
     >
       {children}
-    </div>
+    </Comp>
   );
 });
 
 Card.displayName = "Card";
 
-export default Card;
+export default React.memo(Card);

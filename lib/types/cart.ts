@@ -1,8 +1,9 @@
 export interface CartItemSnapshot {
-  id: string;
+  productId: string;
   name: string;
   price: number;
   quantity: number;
+  image?: string;
   variants?: Record<string, string>;
-  key: string;
+  addedAt: string; // ISO string for safe serialization
 }

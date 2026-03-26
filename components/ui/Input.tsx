@@ -13,6 +13,7 @@ interface TextFieldProps
   required?: boolean;
   hideLabel?: boolean;
   variant?: InputProps["variant"];
+  wrapperClassName?: string;
 }
 
 export default function TextField({
@@ -20,9 +21,10 @@ export default function TextField({
   hint,
   error,
   id,
-  required,
+  required = false,
   hideLabel = false,
   className,
+  wrapperClassName,
   variant,
   ...inputProps
 }: TextFieldProps) {
@@ -35,13 +37,14 @@ export default function TextField({
   const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className={clsx("space-y-1", className)}>
+    <div
+      className={clsx("space-y-2", wrapperClassName)}
+      data-error={!!error}
+      data-required={required}
+    >
       <label
         htmlFor={inputId}
-        className={clsx(
-          "block text-sm font-medium",
-          hideLabel && "sr-only"
-        )}
+        className={clsx("block text-sm font-medium", hideLabel && "sr-only")}
       >
         {label}
         {required && (
@@ -55,8 +58,10 @@ export default function TextField({
         id={inputId}
         aria-describedby={describedBy}
         aria-invalid={!!error}
-        variant={error ? "error" : variant ?? "default"}
+        aria-required={required}
         required={required}
+        variant={error ? "error" : variant}
+        className={className}
         {...inputProps}
       />
 
@@ -71,10 +76,7 @@ export default function TextField({
       )}
 
       {!error && hint && (
-        <p
-          id={hintId}
-          className="text-sm text-[var(--color-text-secondary)]"
-        >
+        <p id={hintId} className="text-sm text-[var(--color-text-secondary)]">
           {hint}
         </p>
       )}

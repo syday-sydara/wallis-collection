@@ -32,24 +32,28 @@ export default function ProductCard({
   return (
     <article
       className="
-        relative flex flex-col rounded-lg bg-bg-surface shadow-card overflow-hidden
-        group transition-all hover:-translate-y-1 hover:shadow-lg
+        relative flex flex-col rounded-lg bg-[var(--color-bg-surface)]
+        shadow-card overflow-hidden group transition-all
+        hover:-translate-y-1 hover:shadow-soft
       "
+      data-product-id={id}
+      data-out-of-stock={outOfStock}
+      data-on-sale={isOnSale}
     >
       {/* Badges */}
       <div className="absolute top-2 left-2 flex gap-2 z-10">
         {isNew && (
-          <span className="px-2 py-1 text-xs rounded-md bg-success-500 text-white">
+          <span className="px-2 py-1 text-xs rounded-md bg-[var(--color-success-500)] text-white">
             New
           </span>
         )}
         {isOnSale && (
-          <span className="px-2 py-1 text-xs rounded-md bg-accent-500 text-white">
+          <span className="px-2 py-1 text-xs rounded-md bg-[var(--color-accent-500)] text-white">
             Sale
           </span>
         )}
         {outOfStock && (
-          <span className="px-2 py-1 text-xs rounded-md bg-danger-500 text-white">
+          <span className="px-2 py-1 text-xs rounded-md bg-[var(--color-danger-500)] text-white">
             Out of Stock
           </span>
         )}
@@ -58,24 +62,25 @@ export default function ProductCard({
       {/* Image */}
       <Link
         href={`/products/${encodeURIComponent(slug)}`}
-        className="relative w-full aspect-[3/4] overflow-hidden bg-gray-100"
+        className="relative w-full aspect-[3/4] overflow-hidden bg-[var(--color-bg-surface)]"
       >
         <Image
           src={imageUrl}
-          alt={name}
+          alt={`${name} product image`}
           fill
+          loading="lazy"
           sizes="(max-width: 768px) 50vw, 25vw"
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          className="object-cover transition-transform duration-300 group-hover:scale-105 will-change-transform"
         />
       </Link>
 
       {/* Content */}
       <div className="flex flex-col flex-1 p-4">
-        <h3 className="text-sm font-semibold truncate text-text-primary">
+        <h3 className="text-sm font-semibold truncate text-[var(--color-text-primary)]">
           {name}
         </h3>
 
-        <p className="mt-2 font-semibold text-accent-500">
+        <p className="mt-2 font-semibold text-[var(--color-accent-500)]">
           {finalPrice.toLocaleString("en-NG", {
             style: "currency",
             currency: "NGN",
@@ -87,6 +92,7 @@ export default function ProductCard({
           onClick={onAddToCart}
           disabled={outOfStock}
           className="w-full mt-3"
+          aria-label={outOfStock ? `${name} is out of stock` : `Add ${name} to cart`}
         >
           {outOfStock ? "Out of Stock" : "Add to Cart"}
         </Button>

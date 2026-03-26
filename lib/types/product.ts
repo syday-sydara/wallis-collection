@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 /* Product Image Type          */
 /* -------------------------- */
 export type ProductImage = {
-  id?: string;
+  id: string;
   url: string;
   position: number;
 };
@@ -16,7 +16,7 @@ export type ProductReview = {
   id: string;
   rating: number;
   comment: string | null;
-  createdAt: Date;
+  createdAt: string; // serialized ISO string
   user: { id: string; name: string } | null;
 };
 
@@ -34,7 +34,10 @@ export const productCardSelect = Prisma.validator<Prisma.ProductSelect>()({
   isNew: true,
   isOnSale: true,
   featured: true,
-  images: { select: { id: true, url: true, position: true }, orderBy: { position: "asc" } },
+  images: {
+    select: { id: true, url: true, position: true },
+    orderBy: { position: "asc" },
+  },
 });
 
 export type ProductCard = Prisma.ProductGetPayload<{
@@ -45,8 +48,10 @@ export type ProductCard = Prisma.ProductGetPayload<{
 /* Product Detail Type         */
 /* -------------------------- */
 export const productDetailInclude = Prisma.validator<Prisma.ProductInclude>()({
-  images: true,
-  reviews: { include: { user: { select: { id: true, name: true } } } },
+  images: { orderBy: { position: "asc" } },
+  reviews: {
+    include: { user: { select: { id: true, name: true } } },
+  },
   inventory: true,
 });
 
@@ -57,8 +62,17 @@ export type ProductDetail = Prisma.ProductGetPayload<{
 /* -------------------------- */
 /* Helpers                     */
 /* -------------------------- */
-export const getCurrentPrice = (product: ProductCard | ProductDetail) =>
-  (product.salePrice ?? product.price) / 100; // Naira conversion
+export const getCurrentPrice = (price: number, salePrice?: number) =>
+  (salePrice ?? price) / 100;
+
+export const getProductPrice = (product: ProductCard | ProductDetail) =>
+  getCurrentPrice(product.price, product.salePrice);
 
 export const getPrimaryImage = (images?: ProductImage[]) =>
-  images?.[0]?.url ?? "/fallback-product.jpg";
+  images?.sort((a, b) => a.position - b.position)[0]?.url ??
+  "/fallback-product.jpg";
+
+export const getStock = (product: ProductCard | ProductDetail) =>
+  "stock" in product
+    ? product.stock
+    : product.inventory?.quantity ?? 0;

@@ -14,11 +14,25 @@ export default function CartDrawer() {
 
   const closeDrawer = useCallback(() => setOpen(false), []);
 
-  // Listen for global "open-cart" event from Header
+  // Listen for global "open-cart" event
   useEffect(() => {
     const handler = () => setOpen(true);
     window.addEventListener("open-cart", handler);
     return () => window.removeEventListener("open-cart", handler);
+  }, []);
+
+  // Prevent background scroll when drawer is open
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+  }, [open]);
+
+  // Close on Escape for desktop sidebar
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 
   return (
@@ -50,23 +64,32 @@ export default function CartDrawer() {
               leaveFrom="translate-x-0"
               leaveTo="translate-x-full"
             >
-              <Dialog.Panel className="w-full max-w-sm bg-bg-primary h-full shadow-xl flex flex-col border-l border-border">
+              <Dialog.Panel
+                className="
+                  w-full max-w-sm h-full flex flex-col shadow-xl border-l
+                  bg-[var(--color-bg-primary)] border-[var(--color-border)]
+                "
+                data-cart-open={open}
+              >
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-border">
+                <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
                   <Dialog.Title className="text-lg font-semibold">
                     Shopping Cart
                   </Dialog.Title>
                   <button
                     onClick={closeDrawer}
                     aria-label="Close cart"
-                    className="text-text-secondary hover:text-text-primary transition"
+                    className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition"
                   >
                     <X size={22} />
                   </button>
                 </div>
 
                 {/* Items */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div
+                  className="flex-1 overflow-y-auto p-4 space-y-4"
+                  aria-live="polite"
+                >
                   {isEmpty ? (
                     <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
                       <p>Your cart is empty.</p>
@@ -75,19 +98,15 @@ export default function CartDrawer() {
                       </Button>
                     </div>
                   ) : (
-                    items.map(item => (
-                      <CartItemRow
-                        key={item.key}
-                        item={item}
-                        variant="compact"
-                      />
+                    items.map((item) => (
+                      <CartItemRow key={item.key} item={item} variant="compact" />
                     ))
                   )}
                 </div>
 
                 {/* Footer */}
                 {!isEmpty && (
-                  <div className="border-t border-border p-4 bg-bg-surface">
+                  <div className="border-t border-[var(--color-border)] p-4 bg-[var(--color-bg-surface)]">
                     <div className="flex justify-between mb-4">
                       <span className="text-sm">
                         Subtotal ({itemCount} items)
@@ -116,21 +135,28 @@ export default function CartDrawer() {
 
       {/* ---------------- DESKTOP SIDEBAR ---------------- */}
       {open && (
-        <div className="hidden lg:flex lg:flex-col lg:w-96 lg:fixed lg:inset-y-0 lg:right-0 bg-bg-primary border-l border-border z-[9999]">
+        <div
+          className="
+            hidden lg:flex lg:flex-col lg:w-96 lg:fixed lg:inset-y-0 lg:right-0
+            bg-[var(--color-bg-primary)] border-l border-[var(--color-border)]
+            z-[9999] animate-slide-in
+          "
+          data-cart-open={open}
+        >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-border">
+          <div className="flex items-center justify-between p-6 border-b border-[var(--color-border)]">
             <h2 className="text-lg font-semibold">Shopping Cart</h2>
             <button
               onClick={closeDrawer}
               aria-label="Close cart"
-              className="text-text-secondary hover:text-text-primary transition"
+              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition"
             >
               <X size={20} />
             </button>
           </div>
 
           {/* Items */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4" aria-live="polite">
             {isEmpty ? (
               <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
                 <p>Your cart is empty.</p>
@@ -139,19 +165,15 @@ export default function CartDrawer() {
                 </Button>
               </div>
             ) : (
-              items.map(item => (
-                <CartItemRow
-                  key={item.key}
-                  item={item}
-                  variant="compact"
-                />
+              items.map((item) => (
+                <CartItemRow key={item.key} item={item} variant="compact" />
               ))
             )}
           </div>
 
           {/* Footer */}
           {!isEmpty && (
-            <div className="border-t border-border p-6 bg-bg-surface">
+            <div className="border-t border-[var(--color-border)] p-6 bg-[var(--color-bg-surface)]">
               <div className="flex justify-between mb-6">
                 <span>Subtotal ({itemCount})</span>
                 <span className="font-bold text-lg">

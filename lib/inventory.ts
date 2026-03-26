@@ -1,13 +1,11 @@
-// PATH: lib/inventory.ts
-// NAME: inventory.ts
+// lib/inventory.ts
 
 import { prisma } from "@/lib/db";
 import { ApiError } from "@/lib/errors";
 import { InventoryReason } from "@prisma/client";
 
 /**
- * Decrease stock for a product and record an inventory movement.
- * Uses an interactive transaction to guarantee atomicity.
+ * Atomically decrease stock and record an inventory movement.
  */
 export async function decreaseStock(
   productId: string,
@@ -15,14 +13,30 @@ export async function decreaseStock(
   reason: InventoryReason = "SALE",
   reference?: string
 ) {
-  await assertStockAvailable(productId, quantity);
-
   return prisma.$transaction(async (tx) => {
+    // Lock row and fetch stock
+    const product = await tx.product.findUnique({
+      where: { id: productId },
+      select: { stock: true, name: true },
+    });
+
+    if (!product) {
+      throw ApiError.notFound("Product not found");
+    }
+
+    if (product.stock < quantity) {
+      throw ApiError.badRequest(
+        `Insufficient stock for ${product.name}. Available: ${product.stock}, requested: ${quantity}`
+      );
+    }
+
+    // Decrement stock
     const updated = await tx.product.update({
       where: { id: productId },
       data: { stock: { decrement: quantity } },
     });
 
+    // Record movement
     await tx.inventoryMovement.create({
       data: {
         productId,
@@ -34,25 +48,4 @@ export async function decreaseStock(
 
     return updated;
   });
-}
-
-/**
- * Ensure the product has enough stock before decreasing.
- * Throws ApiError if insufficient stock.
- */
-export async function assertStockAvailable(productId: string, quantity: number) {
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
-    select: { stock: true, name: true },
-  });
-
-  if (!product) {
-    throw ApiError.notFound("Product not found");
-  }
-
-  if (product.stock < quantity) {
-    throw ApiError.badRequest(
-      `Insufficient stock for ${product.name}. Available: ${product.stock}, requested: ${quantity}`
-    );
-  }
 }

@@ -4,113 +4,99 @@ import React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 
-const divider = cva(
-  "transition-colors duration-200",
-  {
-    variants: {
-      orientation: {
-        horizontal: "w-full border-t",
-        vertical: "h-full border-l inline-block align-middle",
-      },
-      thickness: {
-        thin: "border-[1px]",
-        thick: "border-2",
-      },
-      style: {
-        solid: "border-solid",
-        dashed: "border-dashed",
-        dotted: "border-dotted",
-      },
-      margin: {
-        sm: "my-[var(--spacing-sm)]",
-        md: "my-[var(--spacing-md)]",
-        lg: "my-[var(--spacing-lg)]",
-      },
-      hoverEffect: {
-        none: "",
-        accent: "hover:border-[var(--color-accent-500)]",
-      },
-      visible: {
-        default: "border-[var(--color-border)]",
-        high: "border-[var(--color-border-strong)]/90", // higher contrast option
-        subtle: "border-[var(--color-border)]/50",
-      },
+const divider = cva("transition-colors duration-200", {
+  variants: {
+    orientation: {
+      horizontal: "w-full border-t",
+      vertical: "border-l inline-block align-middle",
     },
-    defaultVariants: {
-      orientation: "horizontal",
-      thickness: "thin",
-      style: "solid",
-      margin: "md",
-      hoverEffect: "accent",
-      visible: "default",
+    thickness: {
+      thin: "border-[1px]",
+      thick: "border-2",
     },
-  }
-);
+    style: {
+      solid: "border-solid",
+      dashed: "border-dashed",
+      dotted: "border-dotted",
+    },
+    margin: {
+      sm: "my-[var(--spacing-sm)]",
+      md: "my-[var(--spacing-md)]",
+      lg: "my-[var(--spacing-lg)]",
+    },
+    hoverEffect: {
+      none: "",
+      accent: "hover:border-[var(--color-accent-500)]",
+    },
+    visible: {
+      default: "border-[var(--color-border)]",
+      high: "border-[var(--color-border-strong)]/90",
+      subtle: "border-[var(--color-border)]/50",
+    },
+  },
+  defaultVariants: {
+    orientation: "horizontal",
+    thickness: "thin",
+    style: "solid",
+    margin: "md",
+    hoverEffect: "none",
+    visible: "default",
+  },
+});
 
-type CVAProps = VariantProps<typeof divider>;
+type DividerVariants = VariantProps<typeof divider>;
 
 interface DividerProps
-  extends Omit<React.HTMLAttributes<HTMLElement>, keyof CVAProps>,
-    CVAProps {
-  as?: "hr" | "div"; // choose semantic element; vertical recommended as div
+  extends Omit<React.HTMLAttributes<HTMLElement>, keyof DividerVariants>,
+    DividerVariants {
+  as?: keyof JSX.IntrinsicElements;
 }
 
-/**
- * Accessible Divider supporting horizontal <hr> and vertical <div>.
- * - Use visible="high" for low-contrast themes.
- * - For vertical orientation, prefer as="div" to avoid invalid HTML.
- */
-const Divider = React.forwardRef<HTMLElement, DividerProps>(function Divider(
-  {
-    orientation = "horizontal",
-    thickness,
-    style,
-    margin,
-    hoverEffect,
-    visible = "default",
-    className,
-    as,
-    role,
-    ...props
-  },
-  ref
-) {
-  const element = as ?? (orientation === "vertical" ? "div" : "hr");
-  const sharedClass = clsx(divider({ orientation, thickness, style, margin, hoverEffect, visible }), className);
+const Divider = React.forwardRef<HTMLElement, DividerProps>(
+  (
+    {
+      orientation = "horizontal",
+      thickness,
+      style,
+      margin,
+      hoverEffect,
+      visible,
+      className,
+      as,
+      role,
+      ...props
+    },
+    ref
+  ) => {
+    const Element = as ?? (orientation === "vertical" ? "div" : "hr");
 
-  // Accessibility props
-  const accessibilityProps: Record<string, any> =
-    orientation === "vertical"
-      ? {
-          role: role ?? "separator",
-          "aria-orientation": "vertical",
-          "aria-hidden": props["aria-hidden"] ?? false,
-        }
-      : {
-          role: role ?? undefined,
-          "aria-hidden": props["aria-hidden"] ?? true,
-        };
+    const classes = clsx(
+      divider({ orientation, thickness, style, margin, hoverEffect, visible }),
+      className
+    );
 
-  if (element === "hr") {
+    const accessibilityProps =
+      orientation === "vertical"
+        ? {
+            role: role ?? "separator",
+            "aria-orientation": "vertical",
+            "aria-hidden": props["aria-hidden"] ?? true,
+          }
+        : {
+            role: role ?? undefined,
+            "aria-hidden": props["aria-hidden"] ?? true,
+          };
+
     return (
-      <hr
-        ref={ref as React.LegacyRef<HTMLHRElement>}
-        className={sharedClass}
+      <Element
+        ref={ref as any}
+        className={classes}
         {...accessibilityProps}
-        {...(props as React.HTMLAttributes<HTMLHRElement>)}
+        {...props}
       />
     );
   }
-
-  return (
-    <div
-      ref={ref as React.LegacyRef<HTMLDivElement>}
-      className={sharedClass}
-      {...accessibilityProps}
-      {...(props as React.HTMLAttributes<HTMLDivElement>)}
-    />
-  );
-});
+);
 
 Divider.displayName = "Divider";
 

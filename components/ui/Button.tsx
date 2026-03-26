@@ -16,9 +16,9 @@ const buttonStyles = cva(
         subtle: "text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)]",
       },
       size: {
-        sm: "px-3 py-1 text-xs rounded-md",
-        md: "px-6 py-2 text-sm rounded-md",
-        lg: "px-8 py-3 text-base rounded-lg",
+        sm: "px-3 py-2 text-xs rounded-md min-h-[40px]",
+        md: "px-6 py-3 text-sm rounded-md min-h-[44px]",
+        lg: "px-8 py-4 text-base rounded-lg min-h-[48px]",
       },
       fullWidth: {
         true: "w-full",
@@ -43,7 +43,7 @@ const buttonStyles = cva(
 type ButtonVariants = VariantProps<typeof buttonStyles>;
 
 interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends React.ButtonHTMLAttributes<HTMLElement>,
     ButtonVariants {
   loading?: boolean;
   iconLeft?: React.ReactNode;
@@ -51,7 +51,7 @@ interface ButtonProps
   asChild?: boolean;
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+const Button = React.forwardRef<HTMLElement, ButtonProps>(
   (
     {
       children,
@@ -65,28 +65,38 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       className,
       disabled,
       asChild = false,
-      "aria-label": ariaLabel,
+      onKeyDown,
       ...props
     },
     ref
   ) => {
     const Comp = asChild ? Slot : "button";
-    const isPrimary = variant === "primary";
+    const isDisabled = disabled || loading;
 
     return (
       <Comp
         ref={ref}
         className={clsx(buttonStyles({ variant, size, fullWidth, rounded }), className)}
-        disabled={disabled || loading}
+        disabled={!asChild ? isDisabled : undefined}
         aria-busy={loading || undefined}
-        aria-disabled={disabled || loading || undefined}
-        aria-label={ariaLabel}
+        data-variant={variant}
+        data-size={size}
+        data-loading={loading}
+        tabIndex={asChild && !isDisabled ? 0 : undefined}
+        role={asChild ? "button" : undefined}
+        onKeyDown={(e) => {
+          if (asChild && !isDisabled && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            props.onClick?.(e as any);
+          }
+          onKeyDown?.(e);
+        }}
         {...props}
       >
         <span className="relative inline-flex items-center">
           {loading && (
             <span className="absolute inset-0 flex items-center justify-center">
-              <Spinner size="sm" color={isPrimary ? "white" : "primary"} />
+              <Spinner size="sm" />
             </span>
           )}
 
@@ -108,4 +118,4 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
 Button.displayName = "Button";
 
-export default Button;
+export default React.memo(Button);

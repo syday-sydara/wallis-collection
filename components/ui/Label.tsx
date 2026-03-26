@@ -18,6 +18,7 @@ interface TextFieldProps
   labelWeight?: "normal" | "medium" | "semibold";
   hideLabel?: boolean;
   variant?: InputProps["variant"];
+  wrapperClassName?: string;
 }
 
 export default function TextField({
@@ -32,6 +33,7 @@ export default function TextField({
   labelVariant = "default",
   labelWeight = "medium",
   className,
+  wrapperClassName,
   variant,
   ...inputProps
 }: TextFieldProps) {
@@ -44,7 +46,12 @@ export default function TextField({
   const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className={clsx("space-y-1", className)}>
+    <div
+      className={clsx("space-y-2", wrapperClassName)}
+      data-error={!!error}
+      data-disabled={disabled}
+      data-required={required}
+    >
       <Label
         htmlFor={inputId}
         size={labelSize}
@@ -61,16 +68,18 @@ export default function TextField({
         id={inputId}
         aria-describedby={describedBy}
         aria-invalid={!!error}
+        aria-required={required}
         disabled={disabled}
         required={required}
-        variant={error ? "error" : variant ?? "default"}
+        variant={error ? "error" : variant}
+        className={className}
         {...inputProps}
       />
 
       {error && (
         <p
           id={errorId}
-          className="text-sm text-[var(--color-danger-500)]"
+          className="text-small text-[var(--color-danger-500)]"
           role="alert"
         >
           {error}
@@ -78,10 +87,7 @@ export default function TextField({
       )}
 
       {!error && hint && (
-        <p
-          id={hintId}
-          className="text-sm text-[var(--color-text-secondary)]"
-        >
+        <p id={hintId} className="text-small text-[var(--color-text-secondary)]">
           {hint}
         </p>
       )}
