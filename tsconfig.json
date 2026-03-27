@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "types": ["vitest"],
+    "types": ["@playwright/test"],
     "lib": [
       "DOM",
       "DOM.Iterable",
