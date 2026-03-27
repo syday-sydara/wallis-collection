@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface: #ffffff;
+  --text: #111111;
+  --color-muted: #e5e5e5;
+
+  --brand-50: #fdf7f2;
+  --brand-100: #f8e7d6;
+  --brand-200: #f0cfad;
+  --brand-300: #e5ae7a;
+  --brand-400: #d98b4a;
+  --brand-500: #c96b24;
+  --brand-600: #a5521a;
+  --brand-700: #7f3c14;
+  --brand-800: #5a2910;
+  --brand-900: #3c1a0a;
+}
+
+body {
+  background: var(--surface);
+  color: var(--text);
+}
