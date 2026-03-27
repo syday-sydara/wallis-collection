@@ -175,8 +175,11 @@ function PaymentMethodSelect({ form, update }: any) {
         defaultValue={form.paymentMethod}
         onChange={(e) => update("paymentMethod", e.target.value)}
       >
-        <option value="PAYSTACK">Paystack</option>
-        <option value="MONNIFY">Monnify</option>
+        {PAYMENT_METHODS.map((m) => (
+          <option key={m.value} value={m.value}>
+            {m.label}
+          </option>
+        ))}
       </select>
     </div>
   );

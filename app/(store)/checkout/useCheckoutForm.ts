@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { CheckoutPayloadSchema } from "@/lib/checkout/schema";
+import { validateExpressAddress } from "@/lib/checkout/shipping";
 
 const ClientSchema = CheckoutPayloadSchema.omit({ items: true });
 const STORAGE_KEY = "wallis_checkout_form";
@@ -72,12 +73,28 @@ export function useCheckoutForm(serverErrors: Record<string, string[] | undefine
     setClientErrors((prev) => ({ ...prev, [key]: undefined }));
   }
 
-  function validateClient() {
+   function validateClient() {
     const parsed = ClientSchema.safeParse(form);
     if (!parsed.success) {
       setClientErrors(parsed.error.flatten().fieldErrors);
       return false;
     }
+
+    const expressError = validateExpressAddress({
+      shippingType: form.shippingType,
+      address: form.address,
+      city: form.city,
+      state: form.state
+    });
+
+    if (expressError) {
+      setClientErrors((prev) => ({
+        ...prev,
+        address: [expressError]
+      }));
+      return false;
+    }
+
     setClientErrors({});
     return true;
   }
