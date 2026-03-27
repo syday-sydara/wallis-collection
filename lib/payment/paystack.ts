@@ -1,7 +1,7 @@
 // lib/payments/paystack.ts
 export async function createPaystackSession(params: {
   email: string;
-  amount: number;
+  amountKobo: number;
   orderId: string;
 }) {
   const res = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -12,7 +12,7 @@ export async function createPaystackSession(params: {
     },
     body: JSON.stringify({
       email: params.email,
-      amount: params.amount * 100,
+      amount: params.amountKobo,
       reference: params.orderId,
       callback_url: `${process.env.NEXT_PUBLIC_URL}/checkout/verify?orderId=${params.orderId}`
     })
@@ -21,5 +21,5 @@ export async function createPaystackSession(params: {
   const data = await res.json();
   if (!data.status) throw new Error("Paystack init failed");
 
-  return data.data.authorization_url;
+  return data.data.authorization_url as string;
 }

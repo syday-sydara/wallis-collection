@@ -1,11 +1,18 @@
+/* app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
+  --font-inter: "Inter", sans-serif;
+
   --surface: #ffffff;
+  --surface-muted: #fafafa;
+
   --text: #111111;
-  --color-muted: #e5e5e5;
+  --text-muted: #666666;
+
+  --border-subtle: #e5e5e5;
 
   --brand-50: #fdf7f2;
   --brand-100: #f8e7d6;
@@ -20,6 +27,16 @@
 }
 
 body {
+  font-family: var(--font-inter);
   background: var(--surface);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.bg-surface {
+  background-color: var(--surface);
+}
+
+.text-text {
   color: var(--text);
 }

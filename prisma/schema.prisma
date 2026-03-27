@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,12 +6,6 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
-//
-// ─────────────────────────────────────────────────────────────
-// USERS & AUTH
-// ─────────────────────────────────────────────────────────────
-//
 
 model User {
   id         String   @id @default(cuid())
@@ -59,24 +51,21 @@ model SecurityEvent {
   userId    String
   type      String
   message   String
+  ip        String?
+  userAgent String?
   createdAt DateTime @default(now())
 
   @@index([userId])
 }
-
-//
-// ─────────────────────────────────────────────────────────────
-// PRODUCTS & CATALOG
-// ─────────────────────────────────────────────────────────────
-//
 
 model Product {
   id          String    @id @default(cuid())
   name        String
   slug        String    @unique
   description String?
-  basePrice   Int
+  basePrice   Int       // in Kobo
   stock       Int       @default(0)
+  isArchived  Boolean   @default(false)
   deletedAt   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -86,6 +75,7 @@ model Product {
   inventory   InventoryMovement[]
 
   @@index([deletedAt])
+  @@index([isArchived])
 }
 
 model ProductImage {
@@ -100,7 +90,7 @@ model ProductVariant {
   id        String   @id @default(cuid())
   name      String
   sku       String   @unique
-  price     Int
+  price     Int      // in Kobo
   product   Product  @relation(fields: [productId], references: [id])
   productId String
 }
@@ -115,22 +105,18 @@ model InventoryMovement {
   createdAt DateTime @default(now())
 }
 
-//
-// ─────────────────────────────────────────────────────────────
-// ORDERS & CHECKOUT
-// ─────────────────────────────────────────────────────────────
-//
-
 model Order {
   id                String   @id @default(cuid())
   email             String
   phone             String
   fullName          String
-  total             Int
+  total             Int      // in Kobo
   paymentMethod     String
   paymentStatus     String
   orderStatus       String
   shippingType      String
+  shippingState     String
+  shippingCost      Int      // in Kobo
   address           String?
   city              String?
   state             String?
@@ -150,8 +136,8 @@ model OrderItem {
   image     String?
   variants  Json
   quantity  Int
-  price     Int
-  order     Order  @relation(fields: [orderId], references: [id])
+  price     Int     // in Kobo
+  order     Order   @relation(fields: [orderId], references: [id])
   orderId   String
   product   Product @relation(fields: [productId], references: [id])
   productId String

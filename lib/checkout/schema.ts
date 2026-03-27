@@ -1,6 +1,8 @@
 // lib/checkout/schema.ts
 import { z } from "zod";
 
+const nigeriaPhoneRegex = /^(?:\+234|0)(70|80|81|90|91)\d{8}$/;
+
 export const CheckoutItemSchema = z.object({
   productId: z.string().min(1),
   quantity: z.number().int().positive(),
@@ -9,7 +11,7 @@ export const CheckoutItemSchema = z.object({
 
 export const CheckoutPayloadSchema = z.object({
   email: z.string().email(),
-  phone: z.string().min(7),
+  phone: z.string().regex(nigeriaPhoneRegex, "Enter a valid Nigerian phone number"),
   fullName: z.string().min(2),
   paymentMethod: z.enum(["PAYSTACK", "MONNIFY"]),
   shippingType: z.enum(["STANDARD", "EXPRESS"]),
