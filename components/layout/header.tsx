@@ -1,6 +1,4 @@
 // File: components/layout/Header.tsx
-"use client";
-
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X, ShoppingCart, Search } from "lucide-react";
@@ -31,8 +29,6 @@ export default function Header() {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8 text-sm">
           <NavLink href="/shop">Shop</NavLink>
-          <NavLink href="/collections">Collections</NavLink>
-          <NavLink href="/about">About</NavLink>
           <NavLink href="/contact">Contact</NavLink>
         </nav>
 

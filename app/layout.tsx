@@ -1,6 +1,4 @@
 // File: app/layout.tsx
-"use client";
-
 import { ReactNode, Suspense, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { spaceGrotesk } from "./metadata";
