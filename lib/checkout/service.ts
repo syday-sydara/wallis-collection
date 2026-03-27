@@ -3,19 +3,34 @@ import { prisma } from "@/lib/db";
 import type { CheckoutPayload } from "./schema";
 import { logSecurityEvent } from "@/lib/security/events";
 import { getSessionUser } from "@/lib/auth/session";
+import { createPaystackSession } from "../payment/paystack";
+import { createMonnifySession } from "@/lib/payment/monnify";
 
 type CheckoutResult = {
   orderId: string;
   paymentUrl: string | null;
 };
 
-async function createPaymentSession(
-  payload: CheckoutPayload & { orderId: string }
-): Promise<string | null> {
-  // TODO: integrate Paystack/Monnify here.
-  // For now, return null or a fake URL.
+async function createPaymentSession(payload: CheckoutPayload & { orderId: string }) {
+  if (payload.paymentMethod === "PAYSTACK") {
+    return createPaystackSession({
+      email: payload.email,
+      amount: payload.items.reduce((sum, i) => sum + i.quantity * 1, 0), // replaced by real total
+      orderId: payload.orderId
+    });
+  }
+
+  if (payload.paymentMethod === "MONNIFY") {
+    return createMonnifySession({
+      email: payload.email,
+      amount: payload.items.reduce((sum, i) => sum + i.quantity * 1, 0),
+      orderId: payload.orderId
+    });
+  }
+
   return null;
 }
+
 
 export async function processCheckout(
   payload: CheckoutPayload
