@@ -1,10 +1,11 @@
-// lib/checkout/shipping.ts
-const STATE_SHIPPING: Record<string, number> = {
-  Lagos: 1500_00,
-  FCT: 1500_00,
-  default: 2500_00
-};
+export function getShippingPreview(state: string, shippingType: string) {
+  if (!state) return null;
 
-export function getShippingCost(state: string) {
-  return STATE_SHIPPING[state] ?? STATE_SHIPPING.default;
+  const base = ["Lagos", "FCT"].includes(state) ? 1500 : 2500;
+  const extra = shippingType === "EXPRESS" ? 1000 : 0;
+
+  return {
+    cost: base + extra,
+    eta: shippingType === "EXPRESS" ? "1–2 business days" : "3–5 business days"
+  };
 }
