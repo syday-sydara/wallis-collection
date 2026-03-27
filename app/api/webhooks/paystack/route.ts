@@ -1,29 +1,83 @@
 // app/api/webhooks/paystack/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
+import { logEvent } from "@/lib/logger";
+import { startTimer } from "@/lib/metrics";
+import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
-import { logSecurityEvent } from "@/lib/security/events";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  // TODO: verify signature
+  const endTimer = startTimer("webhook_paystack");
 
-  if (body.event === "charge.success") {
-    const reference = body.data.reference as string;
+  try {
+    const signature = req.headers.get("x-paystack-signature");
+    const body = await req.json();
 
-    const updated = await prisma.order.updateMany({
-      where: { id: reference, paymentStatus: "PENDING" },
-      data: { paymentStatus: "PAID", orderStatus: "CONFIRMED" }
+    // TODO: verify signature properly
+    const isValidSignature = Boolean(signature);
+
+    if (!isValidSignature) {
+      logEvent(
+        "webhook_invalid_signature",
+        {
+          provider: "paystack"
+        },
+        "warn"
+      );
+
+      endTimer();
+      return NextResponse.json({ ok: false }, { status: 400 });
+    }
+
+    const reference = body?.data?.reference as string | undefined;
+
+    if (!reference) {
+      logEvent(
+        "webhook_missing_reference",
+        { provider: "paystack" },
+        "warn"
+      );
+      endTimer();
+      return NextResponse.json({ ok: false }, { status: 400 });
+    }
+
+    logEvent("webhook_received", {
+      provider: "paystack",
+      reference
     });
 
-    if (updated > 0) {
-      const order = await prisma.order.findUnique({ where: { id: reference } });
-      await logSecurityEvent({
-        userId: order?.userId,
-        type: "PAYMENT_CONFIRMED_WEBHOOK",
-        message: `Payment confirmed via webhook for order ${reference}`
-      });
-    }
-  }
+    const dbTimer = startTimer("db.order.update_from_webhook");
 
-  return NextResponse.json({ received: true });
+    const order = await prisma.order.update({
+      where: { id: reference },
+      data: { paymentStatus: "PAID" }
+    });
+
+    dbTimer();
+
+    logEvent("webhook_order_marked_paid", {
+      provider: "paystack",
+      orderId: order.id
+    });
+
+    endTimer();
+
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    Sentry.captureException(err);
+
+    logEvent(
+      "webhook_unexpected_error",
+      {
+        provider: "paystack",
+        message: err?.message,
+        stack: err?.stack
+      },
+      "error"
+    );
+
+    endTimer();
+
+    return NextResponse.json({ ok: false }, { status: 500 });
+  }
 }
