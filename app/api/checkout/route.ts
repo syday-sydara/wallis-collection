@@ -21,6 +21,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("Checkout error:", err);
-    return serverError("Unable to process checkout");
+    return serverError("Unable to process checkout", err);
   }
 }
