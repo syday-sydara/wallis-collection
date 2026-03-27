@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { submitCheckout } from "@/app/(store)/checkout/actions";
+import { submitCheckoutImpl } from "@/lib/checkout/submitCheckout";
 import * as service from "@/lib/checkout/service";
 
-vi.mock("@/lib/checkout/service");
+vi.mock("@prisma/client");          // prevents DB initialization
+vi.mock("@/lib/checkout/service");  // prevents real checkout logic
 
 describe("Checkout Integration", () => {
   it("handles full checkout flow", async () => {
@@ -22,7 +23,7 @@ describe("Checkout Integration", () => {
     fd.append("state", "Lagos");
     fd.append("items", JSON.stringify([{ productId: "abc", quantity: 1 }]));
 
-    const result = await submitCheckout(
+    const result = await submitCheckoutImpl(
       { success: null, message: null, fieldErrors: {} },
       fd
     );

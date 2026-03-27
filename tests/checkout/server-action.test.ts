@@ -1,16 +1,17 @@
 import { describe, it, expect, vi } from "vitest";
-import { submitCheckout } from "@/app/(store)/checkout/actions";
+import { submitCheckoutImpl } from "@/lib/checkout/submitCheckout";
 import * as service from "@/lib/checkout/service";
 
-vi.mock("@/lib/checkout/service");
+vi.mock("@prisma/client");          // prevents DB initialization
+vi.mock("@/lib/checkout/service");  // prevents real checkout logic
 
-describe("submitCheckout", () => {
+describe("submitCheckoutImpl", () => {
   it("returns field errors for invalid payload", async () => {
     const fd = new FormData();
     fd.append("email", "invalid");
     fd.append("items", JSON.stringify([]));
 
-    const result = await submitCheckout(
+    const result = await submitCheckoutImpl(
       { success: null, message: null, fieldErrors: {} },
       fd
     );
@@ -36,7 +37,7 @@ describe("submitCheckout", () => {
     fd.append("state", "Lagos");
     fd.append("items", JSON.stringify([{ productId: "abc", quantity: 1 }]));
 
-    const result = await submitCheckout(
+    const result = await submitCheckoutImpl(
       { success: null, message: null, fieldErrors: {} },
       fd
     );
