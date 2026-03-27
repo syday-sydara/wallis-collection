@@ -8,6 +8,7 @@ import { useCheckout } from "./checkoutProvider";
 import { useCart } from "@/components/cart/CartProvider";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import clsx from "clsx";
 
 export default function PaymentForm() {
   const { payment, setPayment } = useCheckout();
@@ -18,46 +19,48 @@ export default function PaymentForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleContinue = () => {
-    // Reset the error before validating
     setError("");
 
-    // Validate Payment Method
     if (!payment.method) {
       setError("Please select a payment method");
       return;
     }
 
-    // If Paystack or Monnify is selected, validate card fields
-    if (payment.method === "PAYSTACK" || payment.method === "MONNIFY") {
-      if (payment.method === "PAYSTACK" && (!payment.cardNumber || !payment.expiry || !payment.cvv)) {
+    if (payment.method === "PAYSTACK") {
+      if (!payment.cardNumber || !payment.expiry || !payment.cvv) {
         setError("Please fill in all card details.");
         return;
       }
-      // Monnify doesn’t require card details, so we don’t need to validate them here
     }
 
     setIsSubmitting(true);
 
-    // Proceed to review page after validation
     setTimeout(() => {
       router.push("/checkout/review");
-    }, 500); // Simulating network delay if needed, you can replace this with an API call
+    }, 500);
   };
 
   return (
     <div className="space-y-12">
       <CheckoutProgress step={3} />
 
-      <h1 className="heading-1 text-primary">Payment</h1>
+      <h1 className="heading-1 text-[var(--color-text-primary)]">Payment</h1>
 
       <Card className="space-y-6 p-6">
         {/* Payment Method */}
         <div className="space-y-2">
-          <label className="text-sm text-primary font-medium">Payment Method</label>
+          <label className="text-sm font-medium text-[var(--color-text-primary)]">
+            Payment Method
+          </label>
+
           <select
             value={payment.method || ""}
             onChange={(e) => setPayment({ method: e.target.value as any })}
-            className="w-full px-4 py-2 rounded-lg border border-neutral/30 text-sm focus:ring-2 focus:ring-primary/40 outline-none"
+            className={clsx(
+              "w-full px-4 py-2 rounded-[var(--radius-md)] text-sm outline-none",
+              "border border-[var(--color-border)] bg-[var(--color-bg-surface)]",
+              "focus:ring-2 focus:ring-[var(--color-primary)]/40 transition"
+            )}
           >
             <option value="">Select a payment method</option>
             <option value="PAYSTACK">Paystack</option>
@@ -66,7 +69,7 @@ export default function PaymentForm() {
           </select>
         </div>
 
-        {/* Card Fields (only if card-based method is selected) */}
+        {/* Card Fields */}
         {payment.method === "PAYSTACK" && (
           <>
             <Input
@@ -95,26 +98,28 @@ export default function PaymentForm() {
 
         {/* Bank Transfer Info */}
         {payment.method === "MONNIFY" && (
-          <div className="p-4 bg-neutral/10 rounded-lg text-sm text-neutral">
+          <div className="p-4 rounded-[var(--radius-md)] text-sm bg-[var(--color-border)]/20 text-[var(--color-text-secondary)]">
             You will be redirected to Monnify to complete your bank transfer.
           </div>
         )}
 
-        {/* Pay on Delivery Info */}
+        {/* Cash on Delivery Info */}
         {payment.method === "COD" && (
-          <div className="p-4 bg-neutral/10 rounded-lg text-sm text-neutral">
+          <div className="p-4 rounded-[var(--radius-md)] text-sm bg-[var(--color-border)]/20 text-[var(--color-text-secondary)]">
             You will pay in cash when your order is delivered.
           </div>
         )}
 
         {/* Error Message */}
-        {error && <p className="text-danger text-sm">{error}</p>}
+        {error && (
+          <p className="text-sm text-[var(--color-danger-500)]">{error}</p>
+        )}
 
         {/* Continue Button */}
         <Button
           className="w-full mt-4"
           onClick={handleContinue}
-          disabled={isSubmitting} // Disable while submitting
+          disabled={isSubmitting}
         >
           {isSubmitting ? "Processing..." : "Review Order"}
         </Button>

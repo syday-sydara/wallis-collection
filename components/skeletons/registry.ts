@@ -1,12 +1,16 @@
-import ProductCardSkeleton from "./ProductCardSkeleton";
-import ProductDetailSkeleton from "./ProductDetailSkeleton";
-import CartPageSkeleton from "./CartPageSkeleton";
+// components/skeletons/registry.ts
+"use client";
+
+import dynamic from "next/dynamic";
+import FallbackSkeleton from "./FallbackSkeleton";
 
 export const SkeletonRegistry = {
-  ProductCard: ProductCardSkeleton,
-  ProductDetail: ProductDetailSkeleton,
-  CartPage: CartPageSkeleton,
-  // Add more as needed
-};
+  ProductCard: dynamic(() => import("./ProductCardSkeleton"), { ssr: false }),
+  ProductDetail: dynamic(() => import("./ProductDetailSkeleton"), { ssr: false }),
+  CartPage: dynamic(() => import("./CartPageSkeleton"), { ssr: false }),
+
+  // Fallback (not exposed as a key)
+  _fallback: FallbackSkeleton,
+} as const;
 
 export type SkeletonKey = keyof typeof SkeletonRegistry;

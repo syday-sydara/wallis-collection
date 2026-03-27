@@ -1,8 +1,15 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useMemo,
+  ReactNode,
+  useCallback,
+} from "react";
 import { useCart } from "@/components/cart/CartProvider";
-import type { PaymentMethod } from "@prisma/client"; 
+import type { PaymentMethod } from "@prisma/client";
 
 type ShippingType = "DELIVERY" | "PICKUP";
 
@@ -28,49 +35,73 @@ interface CheckoutContextType {
   setShipping: (data: Partial<ShippingInfo>) => void;
   payment: PaymentInfo;
   setPayment: (data: Partial<PaymentInfo>) => void;
-  isValidCheckout: () => boolean; // New function for validation
+  isValidCheckout: () => boolean;
 }
 
-const CheckoutContext = createContext<CheckoutContextType | undefined>(undefined);
+const CheckoutContext = createContext<CheckoutContextType | undefined>(
+  undefined
+);
 
 export function CheckoutProvider({ children }: { children: ReactNode }) {
+  const { items } = useCart();
+
+  /* ------------------------------------------------
+     State
+  ------------------------------------------------ */
   const [shipping, setShippingState] = useState<ShippingInfo>({
     type: "DELIVERY",
   });
 
   const [payment, setPaymentState] = useState<PaymentInfo>({});
 
-  const { items } = useCart(); // useful for validation later
+  /* ------------------------------------------------
+     Safe merging helpers
+  ------------------------------------------------ */
+  const setShipping = useCallback(
+    (data: Partial<ShippingInfo>) =>
+      setShippingState((prev) => ({ ...prev, ...data })),
+    []
+  );
 
-  const setShipping = (data: Partial<ShippingInfo>) =>
-    setShippingState((prev) => ({ ...prev, ...data }));
+  const setPayment = useCallback(
+    (data: Partial<PaymentInfo>) =>
+      setPaymentState((prev) => ({ ...prev, ...data })),
+    []
+  );
 
-  const setPayment = (data: Partial<PaymentInfo>) =>
-    setPaymentState((prev) => ({ ...prev, ...data }));
+  /* ------------------------------------------------
+     Validation
+  ------------------------------------------------ */
+  const isValidCheckout = useCallback(() => {
+    if (items.length === 0) return false;
 
-  // Validation logic to ensure cart has items and essential details are filled
-  const isValidCheckout = () => {
-    if (items.length === 0) {
-      return false; // No items in cart
+    if (shipping.type === "DELIVERY") {
+      if (!shipping.address || !shipping.city || !shipping.state) {
+        return false;
+      }
     }
 
-    if (shipping.type === "DELIVERY" && !shipping.address) {
-      return false; // Address is required for delivery
-    }
+    if (!payment.method) return false;
 
-    if (!payment.method) {
-      return false; // Payment method must be selected
-    }
+    return true;
+  }, [items, shipping, payment]);
 
-    // Add further validation if necessary (e.g., check card info if payment method is card)
-
-    return true; // All checks passed
-  };
+  /* ------------------------------------------------
+     Memoized context value
+  ------------------------------------------------ */
+  const value = useMemo(
+    () => ({
+      shipping,
+      setShipping,
+      payment,
+      setPayment,
+      isValidCheckout,
+    }),
+    [shipping, payment, setShipping, setPayment, isValidCheckout]
+  );
 
   return (
-    <CheckoutContext.Provider
-      value={{ shipping, setShipping, payment, setPayment, isValidCheckout }}
-    >
+    <CheckoutContext.Provider value={value}>
       {children}
     </CheckoutContext.Provider>
   );
@@ -78,6 +109,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
 
 export function useCheckout() {
   const ctx = useContext(CheckoutContext);
-  if (!ctx) throw new Error("useCheckout must be used inside CheckoutProvider");
+  if (!ctx)
+    throw new Error("useCheckout must be used inside CheckoutProvider");
   return ctx;
 }

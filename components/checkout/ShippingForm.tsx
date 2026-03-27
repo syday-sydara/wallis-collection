@@ -7,6 +7,7 @@ import CheckoutProgress from "@/components/checkout/CheckoutProgress";
 import { useCheckout } from "./checkoutProvider";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import clsx from "clsx";
 
 export default function ShippingForm() {
   const { shipping, setShipping } = useCheckout();
@@ -14,18 +15,20 @@ export default function ShippingForm() {
   const [error, setError] = useState<string | null>(null);
 
   const handleContinue = () => {
-    // Basic validation
     if (shipping.type === "DELIVERY") {
-      // Ensure all required delivery fields are filled in
-      if (!shipping.address || !shipping.city || !shipping.state || !shipping.postalCode || !shipping.courierPhone) {
+      if (
+        !shipping.address ||
+        !shipping.city ||
+        !shipping.state ||
+        !shipping.postalCode ||
+        !shipping.courierPhone
+      ) {
         setError("Please fill in all required delivery details.");
         return;
       }
     }
 
-    setError(null); // Clear any existing errors
-
-    // Navigate to payment page
+    setError(null);
     router.push("/checkout/payment");
   };
 
@@ -33,16 +36,27 @@ export default function ShippingForm() {
     <div className="space-y-12">
       <CheckoutProgress step={2} />
 
-      <h1 className="heading-1 text-primary">Shipping Details</h1>
+      <h1 className="heading-1 text-[var(--color-text-primary)]">
+        Shipping Details
+      </h1>
 
-      <Card className="space-y-6">
+      <Card className="space-y-6 p-6">
         {/* Shipping Method */}
         <div className="space-y-2">
-          <label className="text-sm text-primary font-medium">Shipping Method</label>
+          <label className="text-sm font-medium text-[var(--color-text-primary)]">
+            Shipping Method
+          </label>
+
           <select
             value={shipping.type}
-            onChange={(e) => setShipping({ type: e.target.value as "DELIVERY" | "PICKUP" })}
-            className="w-full px-4 py-2 rounded-lg border border-neutral/30 text-sm focus:ring-2 focus:ring-primary/40 outline-none"
+            onChange={(e) =>
+              setShipping({ type: e.target.value as "DELIVERY" | "PICKUP" })
+            }
+            className={clsx(
+              "w-full px-4 py-2 rounded-[var(--radius-md)] text-sm outline-none",
+              "border border-[var(--color-border)] bg-[var(--color-bg-surface)]",
+              "focus:ring-2 focus:ring-[var(--color-primary)]/40 transition"
+            )}
           >
             <option value="DELIVERY">Delivery</option>
             <option value="PICKUP">Pickup</option>
@@ -87,16 +101,22 @@ export default function ShippingForm() {
 
         {/* Pickup Info */}
         {shipping.type === "PICKUP" && (
-          <p className="text-neutral text-sm">
+          <p className="p-4 rounded-[var(--radius-md)] text-sm bg-[var(--color-border)]/20 text-[var(--color-text-secondary)]">
             You will receive a WhatsApp message when your order is ready for pickup.
           </p>
         )}
 
         {/* Error Message */}
-        {error && <p className="text-danger text-sm">{error}</p>}
+        {error && (
+          <p className="text-sm text-[var(--color-danger-500)]">{error}</p>
+        )}
 
         {/* Continue Button */}
-        <Button className="w-full mt-4" onClick={handleContinue} disabled={shipping.type === ""}>
+        <Button
+          className="w-full mt-4"
+          onClick={handleContinue}
+          disabled={shipping.type === ""}
+        >
           Continue to Payment
         </Button>
       </Card>

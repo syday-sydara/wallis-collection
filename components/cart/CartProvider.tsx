@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { CartItem } from "@/lib/types/types";
@@ -34,7 +35,9 @@ export const useCart = () => {
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Lazy load cart
+  /* ------------------------------------------------
+     Lazy load cart from localStorage
+  ------------------------------------------------ */
   const [items, setItems] = useState<CartItem[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -44,17 +47,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
-  // Mark hydration complete
+  /* ------------------------------------------------
+     Mark hydration complete
+  ------------------------------------------------ */
   useEffect(() => {
     setIsHydrated(true);
   }, []);
 
-  // Persist to localStorage
+  /* ------------------------------------------------
+     Persist cart (debounced)
+  ------------------------------------------------ */
   useEffect(() => {
-    if (isHydrated) {
+    if (!isHydrated) return;
+
+    const id = setTimeout(() => {
       localStorage.setItem("cart", JSON.stringify(items));
-    }
+      window.dispatchEvent(new CustomEvent("cart-updated"));
+    }, 150);
+
+    return () => clearTimeout(id);
   }, [items, isHydrated]);
+
+  /* ------------------------------------------------
+     Helpers
+  ------------------------------------------------ */
+  const clampStock = (qty: number, stock?: number) =>
+    Math.min(qty, stock ?? Infinity);
 
   const addItem = useCallback((item: CartItem) => {
     setItems((prev) => {
@@ -64,7 +82,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const safeStock = item.stock ?? Infinity;
 
       if (existing) {
-        const newQty = Math.min(existing.quantity + safeQty, safeStock);
+        const newQty = clampStock(existing.quantity + safeQty, safeStock);
         return prev.map((i) =>
           i.productId === item.productId ? { ...i, quantity: newQty } : i
         );
@@ -75,7 +93,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         {
           ...item,
           key: uuidv4(),
-          quantity: Math.min(safeQty, safeStock),
+          quantity: clampStock(safeQty, safeStock),
         },
       ];
     });
@@ -85,7 +103,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) =>
       prev.map((i) =>
         i.key === key
-          ? { ...i, quantity: Math.min(i.quantity + 1, i.stock ?? Infinity) }
+          ? { ...i, quantity: clampStock(i.quantity + 1, i.stock) }
           : i
       )
     );
@@ -108,12 +126,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = useCallback(() => setItems([]), []);
 
-  // Derived values
-  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
-  const total = items.reduce(
-    (sum, i) => sum + Math.max(0, Number(i.price) || 0) * i.quantity,
-    0
+  /* ------------------------------------------------
+    Derived values (memoized)
+  ------------------------------------------------ */
+  const itemCount = useMemo(
+    () => items.reduce((sum, i) => sum + i.quantity, 0),
+    [items]
   );
+
+  const total = useMemo(
+    () =>
+      items.reduce(
+        (sum, i) => sum + (Number(i.price) || 0) * i.quantity,
+        0
+      ),
+    [items]
+  );
+
   const isEmpty = items.length === 0;
 
   return (

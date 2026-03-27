@@ -1,9 +1,11 @@
+// components/skeletons/SkeletonRenderer.tsx
 "use client";
 
+import clsx from "clsx";
 import { SkeletonRegistry, SkeletonKey } from "./registry";
 
 interface SkeletonRendererProps {
-  type: SkeletonKey;
+  type: SkeletonKey | string;
   variant?: string;
   className?: string;
 }
@@ -13,11 +15,19 @@ export default function SkeletonRenderer({
   variant,
   className,
 }: SkeletonRendererProps) {
-  const Component = SkeletonRegistry[type];
+  const Component =
+    SkeletonRegistry[type as SkeletonKey] ?? SkeletonRegistry._fallback;
 
-  if (!Component) {
-    return null;
+  if (!SkeletonRegistry[type as SkeletonKey] && process.env.NODE_ENV === "development") {
+    console.warn(
+      `[SkeletonRenderer] Unknown skeleton type "${type}". Using fallback skeleton.`
+    );
   }
 
-  return <Component variant={variant} className={className} />;
+  return (
+    <Component
+      variant={variant}
+      className={clsx("animate-pulse opacity-80", className)}
+    />
+  );
 }

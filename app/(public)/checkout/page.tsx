@@ -26,15 +26,17 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-12 py-10">
       <CheckoutProgress step={1} />
 
-      <h1 className="heading-1 text-primary">Checkout</h1>
+      <h1 className="heading-1 text-[var(--color-text-primary)]">
+        Checkout
+      </h1>
 
-      <div className="space-y-4">
-        <p className="text-neutral">
-          You are about to complete your order. Please follow the steps to
-          confirm your shipping and payment details.
+      <div className="space-y-4 max-w-xl">
+        <p className="text-[var(--color-text-secondary)] leading-relaxed">
+          You are about to complete your order. Follow the steps to confirm your
+          shipping and payment details.
         </p>
 
         <Button onClick={() => goToNextStep(1)} className="w-full">

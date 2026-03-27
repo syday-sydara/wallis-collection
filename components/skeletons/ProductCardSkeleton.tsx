@@ -20,7 +20,7 @@ export default function ProductCardSkeleton({
   return (
     <div
       className={clsx(
-        "bg-[var(--color-bg)] border border-[var(--color-neutral)]/20 rounded-[var(--radius-xl)] overflow-hidden shadow-soft animate-pulse transition-opacity duration-300 opacity-80",
+        "bg-[var(--color-bg-surface)] border border-[var(--color-border)]/40 rounded-[var(--radius-lg)] overflow-hidden shadow-card animate-pulse transition-opacity duration-300 opacity-80",
         className
       )}
       role="status"
@@ -30,18 +30,18 @@ export default function ProductCardSkeleton({
       {/* Image placeholder */}
       <div
         className={clsx(
-          "bg-[var(--color-neutral)]/10 skeleton-shimmer",
+          "bg-[var(--color-border)]/30 skeleton",
           imageClass
         )}
       />
 
       {/* Text placeholders */}
       <div className="p-4 space-y-4">
-        <div className="h-4 w-4/5 bg-[var(--color-neutral)]/20 rounded-[var(--radius-sm)] skeleton-shimmer" />
-        <div className="h-4 w-1/3 bg-[var(--color-neutral)]/20 rounded-[var(--radius-sm)] skeleton-shimmer" />
+        <div className="h-4 w-4/5 bg-[var(--color-border)]/40 rounded-[var(--radius-md)] skeleton" />
+        <div className="h-4 w-1/3 bg-[var(--color-border)]/40 rounded-[var(--radius-md)] skeleton" />
 
         {variant !== "compact" && (
-          <div className="h-3 w-1/4 bg-[var(--color-neutral)]/20 rounded-[var(--radius-sm)] skeleton-shimmer" />
+          <div className="h-3 w-1/4 bg-[var(--color-border)]/40 rounded-[var(--radius-md)] skeleton" />
         )}
       </div>
     </div>

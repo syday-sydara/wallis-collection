@@ -1,34 +1,58 @@
 "use client";
 
 import React from "react";
+import clsx from "clsx";
 
 interface CheckoutProgressProps {
   step: number;
-  steps?: string[]; // Allow custom step labels
+  steps?: string[];
 }
 
-export default function CheckoutProgress({ step, steps = ["Cart", "Shipping", "Payment", "Review"] }: CheckoutProgressProps) {
+export default function CheckoutProgress({
+  step,
+  steps = ["Cart", "Shipping", "Payment", "Review"],
+}: CheckoutProgressProps) {
   return (
-    <div className="flex items-center justify-between mb-10">
+    <div
+      className="flex items-center justify-between mb-10"
+      role="list"
+      aria-label="Checkout progress"
+    >
       {steps.map((label, i) => {
-        const active = i + 1 <= step;
-        const isCurrentStep = i + 1 === step; // Check if it's the current step
+        const index = i + 1;
+        const isActive = index <= step;
+        const isCurrent = index === step;
 
         return (
-          <div key={label} className="flex items-center gap-3">
+          <div
+            key={label}
+            className="flex items-center gap-3"
+            role="listitem"
+          >
+            {/* Step Circle */}
             <div
-              className={`
-                w-8 h-8 rounded-full flex items-center justify-center
-                text-sm font-semibold
-                ${active ? "bg-primary text-bg" : "bg-neutral/20 text-neutral"}
-                ${isCurrentStep ? "border-2 border-primary" : ""} // Highlight current step with a border
-              `}
-              aria-current={isCurrentStep ? "step" : undefined} // Accessibility improvement
+              className={clsx(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors",
+                isActive
+                  ? "bg-[var(--color-primary)] text-[var(--color-bg-primary)]"
+                  : "bg-[var(--color-border)]/30 text-[var(--color-text-muted)]",
+                isCurrent &&
+                  "ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-bg-primary)]"
+              )}
+              aria-current={isCurrent ? "step" : undefined}
             >
-              {i + 1}
+              {index}
             </div>
 
-            <span className={`text-sm ${active ? "text-primary" : "text-neutral"}`}>
+            {/* Step Label */}
+            <span
+              className={clsx(
+                "text-sm transition-colors",
+                isActive
+                  ? "text-[var(--color-primary)]"
+                  : "text-[var(--color-text-muted)]"
+              )}
+            >
               {label}
             </span>
           </div>

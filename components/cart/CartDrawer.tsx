@@ -7,6 +7,7 @@ import { useCart } from "./CartProvider";
 import CartItemRow from "./CartItemRow";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
+import clsx from "clsx";
 
 export default function CartDrawer() {
   const { items, isEmpty, clearCart, total, itemCount } = useCart();
@@ -14,19 +15,25 @@ export default function CartDrawer() {
 
   const closeDrawer = useCallback(() => setOpen(false), []);
 
-  // Listen for global "open-cart" event
+  /* ------------------------------------------------
+     Global "open-cart" event
+  ------------------------------------------------ */
   useEffect(() => {
     const handler = () => setOpen(true);
     window.addEventListener("open-cart", handler);
     return () => window.removeEventListener("open-cart", handler);
   }, []);
 
-  // Prevent background scroll when drawer is open
+  /* ------------------------------------------------
+     Scroll lock
+  ------------------------------------------------ */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
   }, [open]);
 
-  // Close on Escape for desktop sidebar
+  /* ------------------------------------------------
+     Escape key closes drawer
+  ------------------------------------------------ */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -57,18 +64,18 @@ export default function CartDrawer() {
           <div className="fixed inset-0 flex justify-end">
             <Transition.Child
               as={Fragment}
-              enter="transform transition ease-out duration-300"
+              enter="transform ease-out duration-300"
               enterFrom="translate-x-full"
               enterTo="translate-x-0"
-              leave="transform transition ease-in duration-200"
+              leave="transform ease-in duration-200"
               leaveFrom="translate-x-0"
               leaveTo="translate-x-full"
             >
               <Dialog.Panel
-                className="
-                  w-full max-w-sm h-full flex flex-col shadow-xl border-l
-                  bg-[var(--color-bg-primary)] border-[var(--color-border)]
-                "
+                className={clsx(
+                  "w-full max-w-sm h-full flex flex-col shadow-xl border-l",
+                  "bg-[var(--color-bg-primary)] border-[var(--color-border)]"
+                )}
                 data-cart-open={open}
               >
                 {/* Header */}
@@ -86,10 +93,7 @@ export default function CartDrawer() {
                 </div>
 
                 {/* Items */}
-                <div
-                  className="flex-1 overflow-y-auto p-4 space-y-4"
-                  aria-live="polite"
-                >
+                <div className="flex-1 overflow-y-auto p-4 space-y-4" aria-live="polite">
                   {isEmpty ? (
                     <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
                       <p>Your cart is empty.</p>
@@ -108,9 +112,7 @@ export default function CartDrawer() {
                 {!isEmpty && (
                   <div className="border-t border-[var(--color-border)] p-4 bg-[var(--color-bg-surface)]">
                     <div className="flex justify-between mb-4">
-                      <span className="text-sm">
-                        Subtotal ({itemCount} items)
-                      </span>
+                      <span className="text-sm">Subtotal ({itemCount} items)</span>
                       <span className="font-bold text-lg">
                         ₦{total.toLocaleString()}
                       </span>
@@ -136,11 +138,11 @@ export default function CartDrawer() {
       {/* ---------------- DESKTOP SIDEBAR ---------------- */}
       {open && (
         <div
-          className="
-            hidden lg:flex lg:flex-col lg:w-96 lg:fixed lg:inset-y-0 lg:right-0
-            bg-[var(--color-bg-primary)] border-l border-[var(--color-border)]
-            z-[9999] animate-slide-in
-          "
+          className={clsx(
+            "hidden lg:flex lg:flex-col lg:w-96 lg:fixed lg:inset-y-0 lg:right-0",
+            "bg-[var(--color-bg-primary)] border-l border-[var(--color-border)]",
+            "z-[9999] animate-slide-in"
+          )}
           data-cart-open={open}
         >
           {/* Header */}

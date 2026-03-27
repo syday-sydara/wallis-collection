@@ -25,7 +25,6 @@ export default function CartItemRow({
   maxStock = item.stock ?? Infinity,
 }: CartItemRowProps) {
   const { increment, decrement, removeItem } = useCart();
-
   const isCompact = variant === "compact";
 
   return (
@@ -38,7 +37,12 @@ export default function CartItemRow({
       data-product-id={item.productId}
     >
       {/* Product Image */}
-      <div className="relative w-20 h-20 rounded-md overflow-hidden bg-[var(--color-bg-surface)] flex-shrink-0">
+      <div
+        className={clsx(
+          "relative rounded-[var(--radius-md)] overflow-hidden flex-shrink-0 bg-[var(--color-bg-surface)]",
+          isCompact ? "w-20 h-20" : "w-24 h-24"
+        )}
+      >
         {item.image ? (
           <Image
             src={item.image}
@@ -80,7 +84,7 @@ export default function CartItemRow({
             onClick={() => decrement(item.key)}
             aria-label="Decrease quantity"
             className="
-              p-1 rounded border border-[var(--color-border)]
+              p-1 rounded-[var(--radius-sm)] border border-[var(--color-border)]
               hover:bg-[var(--color-bg-surface)]
               transition
             "
@@ -97,9 +101,10 @@ export default function CartItemRow({
             aria-label="Increase quantity"
             disabled={item.quantity >= maxStock}
             className="
-              p-1 rounded border border-[var(--color-border)]
+              p-1 rounded-[var(--radius-sm)] border border-[var(--color-border)]
               hover:bg-[var(--color-bg-surface)]
-              disabled:opacity-40 transition
+              disabled:opacity-40 disabled:cursor-not-allowed
+              transition
             "
           >
             <Plus size={14} />

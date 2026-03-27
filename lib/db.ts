@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+  prisma?: PrismaClient;
 };
 
 export const prisma =
@@ -10,6 +10,11 @@ export const prisma =
     log: ["query", "error", "warn"],
   });
 
+// Prevent multiple instances in development
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
+
+prisma.$connect().catch(() => {
+  console.error("Failed to connect to Prisma");
+});

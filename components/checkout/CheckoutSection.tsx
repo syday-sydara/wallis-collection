@@ -23,33 +23,42 @@ export function CheckoutSection({
 }: CheckoutSectionProps) {
   const headingId = `${title.replace(/\s+/g, "-").toLowerCase()}-heading`;
 
-  // Construct dynamic classes based on the variant prop and other customizations
   const sectionClasses = clsx(
-    "space-y-5", // Default spacing between elements
+    "space-y-5",
     className,
     {
-      "p-6 bg-[color:var(--color-surface)] shadow-card rounded-lg": variant === "card",
-      "p-4 bg-[color:var(--color-accent-500)/10] rounded-md": variant === "highlight"
+      // Card variant — matches your card components
+      "p-6 bg-[var(--color-bg-surface)] shadow-card rounded-[var(--radius-lg)] border border-[var(--color-border)]":
+        variant === "card",
+
+      // Highlight variant — subtle accent background
+      "p-4 bg-[var(--color-accent-500)]/10 rounded-[var(--radius-md)]":
+        variant === "highlight",
     }
   );
 
   return (
     <section aria-labelledby={headingId} className={sectionClasses} {...props}>
       <div className="space-y-1">
-        {/* Heading for the section */}
-        <h2 id={headingId} className="heading-3 text-primary">
+        <h2
+          id={headingId}
+          className="heading-3 text-[var(--color-text-primary)]"
+        >
           {title}
         </h2>
 
-        {/* Optional description text */}
-        {description && <p className="text-sm text-neutral leading-relaxed">{description}</p>}
+        {description && (
+          <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+            {description}
+          </p>
+        )}
       </div>
 
-      {/* Content of the section (children) */}
       <div className="space-y-4">{children}</div>
 
-      {/* Optional divider */}
-      {showDivider && <div className="border-b border-neutral/20 pt-4" />}
+      {showDivider && (
+        <div className="border-b border-[var(--color-border)]/40 pt-4" />
+      )}
     </section>
   );
 }

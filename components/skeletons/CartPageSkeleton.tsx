@@ -16,7 +16,7 @@ export default function CartPageSkeleton({
   return (
     <div
       className={clsx(
-        "animate-pulse transition-opacity duration-300 opacity-80 container py-20 space-y-16",
+        "animate-pulse transition-opacity duration-300 opacity-80 app-container py-20 space-y-16",
         className
       )}
       role="status"
@@ -24,7 +24,7 @@ export default function CartPageSkeleton({
       aria-busy="true"
     >
       {/* Page Title */}
-      <div className="h-10 w-48 bg-[var(--color-neutral)]/20 rounded-[var(--radius-md)] skeleton-shimmer" />
+      <div className="h-10 w-48 bg-[var(--color-border)]/40 rounded-[var(--radius-md)] skeleton" />
 
       <div className="grid lg:grid-cols-3 gap-16">
         {/* Cart Items */}
@@ -32,28 +32,28 @@ export default function CartPageSkeleton({
           {Array.from({ length: itemCount }).map((_, i) => (
             <div
               key={i}
-              className="flex gap-6 border-b border-[var(--color-neutral)]/20 pb-10"
+              className="flex gap-6 border-b border-[var(--color-border)]/40 pb-10"
             >
               {/* Image Placeholder */}
-              <div className="w-28 h-28 bg-[var(--color-neutral)]/10 rounded-[var(--radius-lg)] skeleton-shimmer" />
+              <div className="w-28 h-28 bg-[var(--color-border)]/30 rounded-[var(--radius-lg)] skeleton" />
 
               {/* Text + Controls */}
               <div className="flex-1 space-y-5">
-                <div className="h-4 w-2/3 bg-[var(--color-neutral)]/20 rounded-[var(--radius-sm)] skeleton-shimmer" />
-                <div className="h-4 w-1/3 bg-[var(--color-neutral)]/20 rounded-[var(--radius-sm)] skeleton-shimmer" />
-                <div className="h-10 w-40 bg-[var(--color-neutral)]/10 rounded-[var(--radius-md)] skeleton-shimmer" />
+                <div className="h-4 w-2/3 bg-[var(--color-border)]/40 rounded-[var(--radius-md)] skeleton" />
+                <div className="h-4 w-1/3 bg-[var(--color-border)]/40 rounded-[var(--radius-md)] skeleton" />
+                <div className="h-10 w-40 bg-[var(--color-border)]/30 rounded-[var(--radius-md)] skeleton" />
               </div>
             </div>
           ))}
         </div>
 
         {/* Summary Card */}
-        <div className="border border-[var(--color-neutral)]/20 rounded-[var(--radius-xl)] p-6 shadow-soft space-y-8 h-fit">
-          <div className="h-6 w-1/3 bg-[var(--color-neutral)]/20 rounded-[var(--radius-sm)] skeleton-shimmer" />
-          <div className="h-4 w-full bg-[var(--color-neutral)]/20 rounded-[var(--radius-sm)] skeleton-shimmer" />
-          <div className="h-4 w-3/4 bg-[var(--color-neutral)]/20 rounded-[var(--radius-sm)] skeleton-shimmer" />
-          <div className="h-4 w-1/2 bg-[var(--color-neutral)]/20 rounded-[var(--radius-sm)] skeleton-shimmer" />
-          <div className="h-12 w-full bg-[var(--color-neutral)]/20 rounded-[var(--radius-md)] skeleton-shimmer" />
+        <div className="border border-[var(--color-border)]/40 rounded-[var(--radius-lg)] p-6 shadow-card space-y-8 h-fit bg-[var(--color-bg-surface)]">
+          <div className="h-6 w-1/3 bg-[var(--color-border)]/40 rounded-[var(--radius-md)] skeleton" />
+          <div className="h-4 w-full bg-[var(--color-border)]/40 rounded-[var(--radius-md)] skeleton" />
+          <div className="h-4 w-3/4 bg-[var(--color-border)]/40 rounded-[var(--radius-md)] skeleton" />
+          <div className="h-4 w-1/2 bg-[var(--color-border)]/40 rounded-[var(--radius-md)] skeleton" />
+          <div className="h-12 w-full bg-[var(--color-border)]/40 rounded-[var(--radius-md)] skeleton" />
         </div>
       </div>
     </div>
