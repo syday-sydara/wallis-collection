@@ -1,3 +1,4 @@
+// app/(store)/checkout/useCheckoutForm.ts
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -33,7 +34,9 @@ export function useCheckoutForm(serverErrors: Record<string, string[] | undefine
     if (saved) {
       try {
         setForm((prev) => ({ ...prev, ...JSON.parse(saved) }));
-      } catch {}
+      } catch {
+        // ignore
+      }
     }
   }, []);
 
@@ -73,7 +76,7 @@ export function useCheckoutForm(serverErrors: Record<string, string[] | undefine
     setClientErrors((prev) => ({ ...prev, [key]: undefined }));
   }
 
-   function validateClient() {
+  function validateClient() {
     const parsed = ClientSchema.safeParse(form);
     if (!parsed.success) {
       setClientErrors(parsed.error.flatten().fieldErrors);

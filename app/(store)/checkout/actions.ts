@@ -3,21 +3,34 @@
 
 import { CheckoutPayloadSchema } from "@/lib/checkout/schema";
 import { processCheckout } from "@/lib/checkout/service";
-import { type CheckoutActionState } from "./types";
 import * as Sentry from "@sentry/nextjs";
+
+export type CheckoutActionState = {
+  success: boolean | null;
+  message: string | null;
+  fieldErrors: Record<string, string[] | undefined>;
+  orderId?: string;
+  paymentUrl?: string;
+};
+
+const initialState: CheckoutActionState = {
+  success: null,
+  message: null,
+  fieldErrors: {}
+};
+
+export { initialState as checkoutInitialState };
 
 export async function submitCheckout(
   prevState: CheckoutActionState,
   formData: FormData
 ): Promise<CheckoutActionState> {
   try {
-    // 1. Normalize FormData → plain object
     const raw: Record<string, any> = {};
     formData.forEach((value, key) => {
       raw[key] = typeof value === "string" ? value.trim() : value;
     });
 
-    // 2. Parse items (required)
     let items;
     try {
       items = JSON.parse(raw.items);
@@ -29,7 +42,6 @@ export async function submitCheckout(
       };
     }
 
-    // 3. Build full payload
     const payload = {
       email: raw.email,
       phone: raw.phone,
@@ -42,7 +54,6 @@ export async function submitCheckout(
       items
     };
 
-    // 4. Validate with Zod (strict enums, phone, items, etc.)
     const parsed = CheckoutPayloadSchema.safeParse(payload);
 
     if (!parsed.success) {
@@ -53,7 +64,6 @@ export async function submitCheckout(
       };
     }
 
-    // 5. Process checkout (DB transaction, stock, order, payment session)
     const result = await processCheckout(parsed.data);
 
     return {
@@ -64,9 +74,7 @@ export async function submitCheckout(
       paymentUrl: result.paymentUrl
     };
   } catch (err) {
-    // 6. Internal logging
     Sentry.captureException(err);
-
     return {
       success: false,
       message: "Unexpected error occurred. Please try again.",

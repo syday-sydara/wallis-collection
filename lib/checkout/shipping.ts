@@ -1,3 +1,5 @@
+// lib/checkout/shipping.ts
+
 export type ShippingType = "STANDARD" | "EXPRESS";
 
 export function getShippingPreview(state: string, shippingType: ShippingType) {
