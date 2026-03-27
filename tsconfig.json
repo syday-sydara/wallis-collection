@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    "types": ["@playwright/test"],
     "lib": [
       "DOM",
       "DOM.Iterable",
