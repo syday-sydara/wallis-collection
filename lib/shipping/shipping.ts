@@ -1,1 +1,0 @@
-// Shipping rules (Nigeria states)

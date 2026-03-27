@@ -1,276 +1,179 @@
-# Wallis Collection
+# 🛍️ Wallis Collection  
+A premium, mobile‑first Nigerian fashion storefront built with a modern, secure, server‑first architecture.
 
-Wallis Collection is a modern **mobile-first full-stack e-commerce platform** built with **Next.js 14, Prisma, PostgreSQL, and Paystack**.
+## 🚀 Tech Stack
 
-It is designed specifically for **emerging markets like Nigeria**, focusing on:
-
-* low-bandwidth performance
-* reliable payments
-* simple checkout experience
-* scalable architecture
-
----
-
-# Tech Stack
-
-## Frontend
-
-* Next.js 14 (App Router)
-* React
-* TailwindCSS v4
-* Minimal Framer Motion (lightweight interactions only)
-
-## Backend
-
-* Next.js Server Actions
-* Route Handlers (for webhooks & external APIs)
-* Prisma ORM
-* PostgreSQL
-* Zod validation
-
-## Authentication
-
-* NextAuth (Credentials Provider)
-* Prisma Adapter
-* bcrypt password hashing
-
-## Payments
-
-* Paystack (primary)
-* Monnify (bank transfers)
-* Cash on Delivery (COD)
+- **Next.js 16** (App Router, Server Components, Streaming, Server Actions)
+- **React 18**
+- **Tailwind CSS v4** (CSS variables, design tokens)
+- **Prisma ORM** (PostgreSQL)
+- **pnpm** (workspace‑friendly package manager)
+- **Zod** (validation)
+- **Paystack / Monnify** (payments)
+- **Nodemailer** (email)
+- **TypeScript** (strict mode)
 
 ---
 
-# Architecture
+# 🧱 Architecture Overview
 
-The application follows a **server-first architecture**:
+Wallis Collection uses a **server‑first, security‑hardened architecture**:
 
-* Server Components for data fetching
-* Server Actions for mutations (cart, checkout, refunds)
-* Route Handlers only for external services (webhooks)
-* Prisma as the single database access layer
-
-This minimizes client-side JavaScript and improves performance on low-end devices.
-
----
-
-# Mobile-First Design
-
-Wallis Collection is optimized for **Nigerian mobile users**:
-
-* Designed for **3G networks and low-end Android devices**
-* Minimal JavaScript shipped to the client
-* Optimized images using `next/image`
-* Single-column layouts for all critical flows
-* Large touch-friendly buttons
-* Simple and fast checkout experience
+- All sensitive logic runs on the **server**
+- No hidden IDs or client‑trusted fields
+- Strict RBAC + feature flags
+- Suspense streaming for fast UX
+- Strict data exposure (allow‑listed Prisma selects)
+- On‑demand revalidation for real‑time product updates
+- Tailwind v4 tokens for consistent branding
+- Optimized images with `next/image`
 
 ---
 
-# Features
-
-## Customer Features
-
-* Browse products
-* View product details
-* Add items to cart
-* Fast checkout (mobile optimized)
-* Pay via Paystack or bank transfer
-* Cash on Delivery support
-* Track order status
-* Request refunds
-* Account dashboard
-
----
-
-## Admin Features
-
-* Admin dashboard
-* Order management
-* Inventory tracking
-* Refund approval system
-* Fraud monitoring (rule-based)
-
----
-
-## Payments
-
-The platform integrates:
-
-* Paystack (card, bank, USSD)
-* Monnify (bank transfers)
-
-### Key Capabilities
-
-* Secure payment verification via webhooks
-* Idempotent transaction handling (prevents duplicate charges)
-* Automatic order status updates
-* Support for COD orders
-
----
-
-## Fraud Detection
-
-A lightweight **rule-based fraud system** is implemented:
-
-* High-value order detection
-* Suspicious email patterns
-* Missing user data signals
-
-Flagged orders can be reviewed manually.
-
----
-
-# Project Structure
-
+# 📁 Folder Structure
 ```
 app/
- ├ (public)
- │   ├ products/
- │   ├ categories/
- │   ├ cart/
- │   ├ checkout/
- │   └ track-order/
- │
- ├ (auth)
- │   ├ login/
- │   └ register/
- │
- ├ (customer)
- │   └ account/
- │       └ orders/
- │
- ├ (admin)
- │   ├ dashboard/
- │   ├ orders/
- │   ├ refunds/
- │   ├ fraud/
- │   ├ inventory/
- │   └ _components/
- │
- └ api/
-     ├ paystack/webhook/
-     ├ monnify/webhook/
-     └ orders/lookup/
+(store)/
+products/
+product/[slug]/
+checkout/
+success/
+verify/
+security-center/
+panels/
+api/
+checkout/
+revalidate/
+auth/
+login/
+logout/
+security/
+events/
+sessions/
+devices/
+layout.tsx
+globals.css
 
 components/
- ├ ui/
- ├ shared/
- ├ product/
- └ cart/
+ui/
+skeletons/
+security/
 
 lib/
- ├ auth.ts
- ├ db.ts
- ├ env.ts
- ├ utils.ts
- ├ payments/
- │   └ index.ts
- ├ shipping/
- ├ inventory.ts
- └ fraud/
-     └ index.ts
+auth/
+security/
+mappers/
+format/
+api/
+db.ts
+rate-limit.ts
+utils.ts
 
 prisma/
- ├ schema.prisma
- └ seed.ts
+schema.prisma
+migrations/
+
+public/
+og/
+images/
+
+scripts/
+setup.ts
+
 ```
 
 ---
 
-# API Endpoints
+# 🔐 Security Model
 
-Only essential endpoints are exposed:
+### ✔ Server‑only session resolution  
+`getSessionUser()` reads encrypted cookies and resolves the user **without trusting the client**.
 
-## Webhooks
+### ✔ RBAC + Feature Flags  
+`hasPermission(user, "VIEW_SECURITY_CENTER")`  
+Roles can evolve without rewriting conditionals.
 
-```
-POST /api/paystack/webhook
-POST /api/monnify/webhook
-```
+### ✔ No hidden IDs  
+All server actions derive userId from the session.
 
-## Orders
+### ✔ Risk Engine Isolation  
+All risk logic lives in `lib/security/risk.ts` and is never exposed to the client.
 
-```
-POST /api/orders/lookup
-```
-
----
-
-# Server Actions
-
-Used for:
-
-* Cart management
-* Checkout
-* Refund requests
-* User interactions
-
-This replaces most traditional API routes.
+### ✔ Middleware Protection  
+Routes like `/security-center` are protected at the edge.
 
 ---
 
-# Getting Started
+# 🛡️ Security Center
 
-## 1. Clone the repository
+The Security Center is a streaming, server‑rendered dashboard with:
 
-```bash
-git clone https://github.com/your-username/wallis-collection.git
-cd wallis-collection
-```
+- Recent Alerts  
+- Risk Score  
+- Active Sessions  
+- Trusted Devices  
+
+Each panel is a **server component** wrapped in `<Suspense>` for instant shell rendering.
+
+ARIA live regions announce real‑time security events for accessibility.
 
 ---
 
-## 2. Install dependencies
+# 💳 Checkout System
 
-```bash
+The checkout flow is:
+
+1. Validate cart + customer info  
+2. Prisma transaction  
+3. Stock validation  
+4. Inventory movement logging  
+5. Payment initialization (Paystack/Monnify)  
+6. Return `paymentUrl` + `orderId`  
+
+No client‑side trust.  
+No hidden IDs.  
+No duplicate orders.
+
+---
+
+# 🛒 Product Catalog Loader
+
+- Strict Prisma selects  
+- Rate limiting  
+- On‑demand revalidation (`revalidateTag("products")`)  
+- Suspense streaming  
+- Tailwind v4 skeletons  
+- `next/image` optimization  
+
+---
+
+# 🧪 Development
+
+### Install dependencies
+```sh
 pnpm install
-```
-
----
-
-## 3. Configure environment variables
-
-Create a `.env` file:
-
-```
-DATABASE_URL="postgresql://user:password@localhost:5432/wallis"
-NEXTAUTH_SECRET=your_secret
-PAYSTACK_SECRET_KEY=your_key
-MONNIFY_SECRET_KEY=your_key
-```
-
----
-
-## 4. Run Prisma migrations
-
-```bash
-npx prisma migrate dev
-```
-
----
-
-## 5. Seed the database
-
-```bash
-npx prisma db seed
-```
-
----
-
-## 6. Start development server
-
-```bash
+Run dev server
 pnpm dev
+pnpm prisma:generate
+pnpm prisma:migrate
+pnpm build
 ```
 
-App runs on:
+🧭 Roadmap
+Admin dashboard
 
-```
-http://localhost:3000
-```
+Product management
 
----
+Inventory analytics
 
-#
+Customer accounts
+
+Order tracking
+
+Webhooks (Paystack/Monnify)
+
+Device fingerprinting for risk scoring
+
+🏁 License
+Private — All rights reserved.
+
