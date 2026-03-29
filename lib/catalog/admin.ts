@@ -1,63 +1,17 @@
+// lib/catalog/admin.ts
+
 import { prisma } from "@/lib/db";
-
-/* ---------------------------------------------
-   BASIC LIST (no pagination)
---------------------------------------------- */
-
-export async function adminListProducts() {
-  return prisma.product.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      images: { orderBy: { sortOrder: "asc" } },
-      variants: true
-    }
-  });
-}
-
-/* ---------------------------------------------
-   PAGINATED LIST (with search, filters, sorting)
---------------------------------------------- */
 
 export async function adminListProductsPaginated(args: {
   cursor?: string;
   limit?: number;
-  search?: string;
-  archived?: boolean;
-  categoryId?: string;
-  sort?: "createdAt" | "updatedAt" | "name" | "basePrice";
-  direction?: "asc" | "desc";
 }) {
-  const {
-    cursor,
-    limit = 20,
-    search,
-    archived,
-    categoryId,
-    sort = "createdAt",
-    direction = "desc"
-  } = args;
-
+  const { cursor, limit = 20 } = args;
   const items = await prisma.product.findMany({
     take: limit + 1,
     skip: cursor ? 1 : 0,
     cursor: cursor ? { id: cursor } : undefined,
-
-    orderBy: { [sort]: direction },
-
-    where: {
-      ...(search
-        ? { name: { contains: search, mode: "insensitive" } }
-        : {}),
-
-      ...(archived !== undefined
-        ? { isArchived: archived }
-        : {}),
-
-      ...(categoryId
-        ? { categoryId }
-        : {})
-    },
-
+    orderBy: { createdAt: "desc" },
     select: {
       id: true,
       name: true,
@@ -65,18 +19,7 @@ export async function adminListProductsPaginated(args: {
       basePrice: true,
       stock: true,
       isArchived: true,
-      updatedAt: true,
-
-      // First image thumbnail
-      images: {
-        orderBy: { sortOrder: "asc" },
-        take: 1,
-        select: {
-          id: true,
-          url: true,
-          alt: true
-        }
-      }
+      updatedAt: true
     }
   });
 
@@ -86,10 +29,6 @@ export async function adminListProductsPaginated(args: {
 
   return { items: data, nextCursor };
 }
-
-/* ---------------------------------------------
-   GET PRODUCT (full details)
---------------------------------------------- */
 
 export async function adminGetProduct(id: string) {
   return prisma.product.findUnique({
@@ -105,24 +44,11 @@ export async function adminGetProduct(id: string) {
   });
 }
 
-/* ---------------------------------------------
-   GET PRODUCT + PAGINATED INVENTORY
---------------------------------------------- */
-
 export async function adminGetProductWithInventory(
   id: string,
   inventoryCursor?: string,
-  limit = 20,
-  options?: {
-    search?: string;
-    type?: "increase" | "decrease" | "all";
-    sort?: "createdAt" | "change";
-    direction?: "asc" | "desc";
-  }
+  limit = 20
 ) {
-  const { search, type = "all", sort = "createdAt", direction = "desc" } =
-    options ?? {};
-
   const product = await prisma.product.findUnique({
     where: { id },
     include: {
@@ -130,29 +56,14 @@ export async function adminGetProductWithInventory(
       variants: true
     }
   });
-
   if (!product) return null;
 
   const movements = await prisma.inventoryMovement.findMany({
-    where: {
-      productId: id,
-
-      ...(search
-        ? { reason: { contains: search, mode: "insensitive" } }
-        : {}),
-
-      ...(type === "increase"
-        ? { change: { gt: 0 } }
-        : type === "decrease"
-        ? { change: { lt: 0 } }
-        : {})
-    },
-
+    where: { productId: id },
     take: limit + 1,
     skip: inventoryCursor ? 1 : 0,
     cursor: inventoryCursor ? { id: inventoryCursor } : undefined,
-
-    orderBy: { [sort]: direction }
+    orderBy: { createdAt: "desc" }
   });
 
   const hasMore = movements.length > limit;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateVariant, deleteVariant } from "../action";
+import { updateVariant, deleteVariant } from "../../actions";
 
 export default function VariantItem({ variant }: { variant: any }) {
   const [errors, setErrors] = useState<Record<string, string[] | undefined>>({});

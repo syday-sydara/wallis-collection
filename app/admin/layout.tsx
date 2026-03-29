@@ -1,5 +1,10 @@
+// app/admin/layout.tsx
+"use client";
+
 import type { ReactNode } from "react";
-import AdminNav from "./AdminNav";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {AdminNav} from "./AdminNav";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
@@ -10,10 +15,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <AdminNav />
         </div>
       </header>
-
-      <main className="mx-auto max-w-6xl px-4 py-6">
-        {children}
-      </main>
+      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
     </div>
   );
 }

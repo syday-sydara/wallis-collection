@@ -12,7 +12,7 @@ export function buildRiskContext(args: {
   shippingState: string;
 }): RiskContext {
   const emailDomain = args.email.split("@")[1] ?? "";
-  const phoneRegion = args.phone.slice(0, 4); // e.g. +234 / 0801 etc.
+  const phoneRegion = args.phone.slice(0, 4);
 
   return {
     ip: args.ip,

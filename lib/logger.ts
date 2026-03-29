@@ -20,6 +20,5 @@ export function logEvent(
     ...data
   };
 
-  // Single line JSON for log aggregation
   console.log(JSON.stringify(payload));
 }

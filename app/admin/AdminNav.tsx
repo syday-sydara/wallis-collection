@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function AdminNav() {
+
+function AdminNav() {
   const pathname = usePathname();
   const isProducts = pathname.startsWith("/admin/products");
 

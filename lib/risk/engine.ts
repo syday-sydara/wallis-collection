@@ -11,7 +11,6 @@ export type RiskResult = {
 };
 
 export async function calculateRiskScore(context: RiskContext): Promise<RiskResult> {
-  // Load all enabled rules from DB
   const rules = (await prisma.fraudRule.findMany({
     where: { enabled: true }
   })) as unknown as FraudRuleRecord[];
@@ -22,7 +21,6 @@ export async function calculateRiskScore(context: RiskContext): Promise<RiskResu
   for (const rule of rules) {
     try {
       const matched = evaluateRule(rule.condition, context);
-
       if (matched) {
         score += rule.weight;
         triggered.push(rule);
@@ -30,11 +28,7 @@ export async function calculateRiskScore(context: RiskContext): Promise<RiskResu
     } catch (err: any) {
       logEvent(
         "risk_rule_evaluation_error",
-        {
-          ruleId: rule.id,
-          name: rule.name,
-          message: err?.message
-        },
+        { ruleId: rule.id, name: rule.name, message: err?.message },
         "error"
       );
     }

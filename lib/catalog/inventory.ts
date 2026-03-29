@@ -11,10 +11,21 @@ export async function adjustProductStock(args: {
   const { productId, change, reason, reference } = args;
 
   return prisma.$transaction(async (tx) => {
+    const current = await tx.product.findUnique({
+      where: { id: productId },
+      select: { stock: true }
+    });
+    if (!current) throw new Error("Product not found");
+
+    const newStock = current.stock + change;
+    if (newStock < 0) {
+      throw new Error("Stock cannot be negative");
+    }
+
     const product = await tx.product.update({
       where: { id: productId },
       data: {
-        stock: { increment: change }
+        stock: newStock
       }
     });
 
