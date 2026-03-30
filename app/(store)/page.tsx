@@ -1,40 +1,180 @@
-import { listProducts } from "@/lib/catalog/service";
+// app/store/page.tsx
+"use client";
 
-export default async function StorePage({
-  searchParams
+import { useState, useEffect, Suspense } from "react";
+import { formatCurrency } from "@/lib/utils/formatters/currency";
+import { cn } from "@/lib/utils/";
+import { ProductWithRelations, ProductListParams } from "@/lib/catalog/types";
+import { listProducts } from "@/lib/catalog/listProducts";
+
+import ProductGrid from "@/components/products/ProductGrid";
+import ProductGridSkeleton from "@/components/products/ProductGridSkeleton";
+import ResultHeader from "@/components/products/ResultHeader";
+import EmptyState from "@/components/ui/EmptyState";
+
+// --- Form controls ---
+function SearchBar({
+  search,
+  setSearch,
 }: {
-  searchParams: { q?: string; min?: string; max?: string };
+  search: string;
+  setSearch: (s: string) => void;
 }) {
-  const products = await listProducts({
-    search: searchParams.q,
-    minPrice: searchParams.min ? Number(searchParams.min) : undefined,
-    maxPrice: searchParams.max ? Number(searchParams.max) : undefined
-  });
+  return (
+    <input
+      type="text"
+      placeholder="Search products..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="w-full rounded-md border border-border p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+    />
+  );
+}
+
+function PriceFilter({
+  minPrice,
+  maxPrice,
+  setMinPrice,
+  setMaxPrice,
+}: {
+  minPrice: string;
+  maxPrice: string;
+  setMinPrice: (v: string) => void;
+  setMaxPrice: (v: string) => void;
+}) {
+  return (
+    <div className="flex gap-2">
+      <input
+        type="number"
+        placeholder="Min (₦)"
+        value={minPrice}
+        onChange={(e) => setMinPrice(e.target.value)}
+        className="w-1/2 rounded-md border border-border p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+      />
+      <input
+        type="number"
+        placeholder="Max (₦)"
+        value={maxPrice}
+        onChange={(e) => setMaxPrice(e.target.value)}
+        className="w-1/2 rounded-md border border-border p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+      />
+    </div>
+  );
+}
+
+function IncludeArchivedToggle({
+  includeArchived,
+  setIncludeArchived,
+}: {
+  includeArchived: boolean;
+  setIncludeArchived: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center gap-2 text-sm">
+      <input
+        type="checkbox"
+        checked={includeArchived}
+        onChange={(e) => setIncludeArchived(e.target.checked)}
+        className="h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary"
+      />
+      Include archived
+    </label>
+  );
+}
+
+// --- Main StorePage ---
+export default function StorePage() {
+  const [search, setSearch] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [includeArchived, setIncludeArchived] = useState(false);
+  const [products, setProducts] = useState<ProductWithRelations[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProducts = async (cursor?: string) => {
+    setLoading(true);
+    setError(null);
+
+    const params: ProductListParams = {
+      search: search || undefined,
+      minPrice: minPrice ? parseInt(minPrice) * 100 : undefined, // naira -> kobo
+      maxPrice: maxPrice ? parseInt(maxPrice) * 100 : undefined,
+      includeArchived,
+      limit: 24,
+      cursor,
+    };
+
+    try {
+      const result = await listProducts(params);
+      if (cursor) {
+        setProducts((prev) => [...prev, ...result.items]);
+      } else {
+        setProducts(result.items);
+      }
+      setNextCursor(result.nextCursor);
+    } catch (err) {
+      console.error("listProducts failed", err);
+      setError("Failed to load products");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // fetch on filter change
+  useEffect(() => {
+    fetchProducts();
+  }, [search, minPrice, maxPrice, includeArchived]);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <section className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {products.map((product) => (
-          <article key={product.id} className="space-y-2">
-            <a href={`/product/${product.slug}`}>
-              <div className="aspect-[3/4] overflow-hidden bg-neutral-100">
-                {product.images[0] && (
-                  // replace with next/image in your codebase
-                  <img
-                    src={product.images[0].url}
-                    alt={product.images[0].alt ?? product.name}
-                    className="h-full w-full object-cover"
-                  />
+    <main className="mx-auto max-w-6xl px-4 py-6">
+      {/* Filters */}
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <SearchBar search={search} setSearch={setSearch} />
+        <PriceFilter
+          minPrice={minPrice}
+          maxPrice={maxPrice}
+          setMinPrice={setMinPrice}
+          setMaxPrice={setMaxPrice}
+        />
+        <IncludeArchivedToggle
+          includeArchived={includeArchived}
+          setIncludeArchived={setIncludeArchived}
+        />
+      </div>
+
+      {error && (
+        <div className="mb-4 text-center text-danger">{error}</div>
+      )}
+
+      {loading && !products.length ? (
+        <ProductGridSkeleton />
+      ) : products.length === 0 ? (
+        <EmptyState
+          title="No products found"
+          description="Try changing your search or price filters."
+        />
+      ) : (
+        <>
+          <ResultHeader count={products.length} />
+          <ProductGrid products={products} />
+
+          {nextCursor && (
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={() => fetchProducts(nextCursor!)}
+                className={cn(
+                  "rounded-md bg-primary px-4 py-2 text-white hover:bg-primary-hover",
+                  loading ? "opacity-50 pointer-events-none" : ""
                 )}
-              </div>
-              <h2 className="mt-2 text-sm font-medium">{product.name}</h2>
-              <p className="text-sm text-neutral-600">
-                ₦{(product.basePrice / 100).toLocaleString("en-NG")}
-              </p>
-            </a>
-          </article>
-        ))}
-      </section>
+              >
+                {loading ? "Loading..." : "Load more"}
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </main>
   );
 }

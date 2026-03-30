@@ -1,12 +1,8 @@
-// app/layout.tsx
 import "./globals.css";
 import { inter } from "./fonts";
 
 export const metadata = {
-  title: {
-    default: "Wallis Collection",
-    template: "%s — Wallis Collection"
-  },
+  title: { default: "Wallis Collection", template: "%s — Wallis Collection" },
   description: "Premium Nigerian fashion, mobile-first and editorial."
 };
 

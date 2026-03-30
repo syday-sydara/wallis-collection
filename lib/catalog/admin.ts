@@ -1,12 +1,38 @@
 // lib/catalog/admin.ts
 
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@prisma/client";
+
+// --- Types for clarity
+export type AdminProductSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  basePrice: number;
+  stock: number;
+  isArchived: boolean;
+  updatedAt: Date;
+};
+
+export type AdminProductDetail = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  basePrice: number;
+  stock: number;
+  isArchived: boolean;
+  updatedAt: Date;
+  images: { id: string; url: string; alt: string | null; sortOrder: number }[];
+  variants: { id: string; name: string; sku: string; price: number }[];
+};
 
 export async function adminListProductsPaginated(args: {
   cursor?: string;
   limit?: number;
-}) {
+}): Promise<{ items: AdminProductSummary[]; nextCursor: string | null }> {
   const { cursor, limit = 20 } = args;
+
   const items = await prisma.product.findMany({
     take: limit + 1,
     skip: cursor ? 1 : 0,
@@ -30,7 +56,7 @@ export async function adminListProductsPaginated(args: {
   return { items: data, nextCursor };
 }
 
-export async function adminGetProduct(id: string) {
+export async function adminGetProduct(id: string): Promise<AdminProductDetail | null> {
   return prisma.product.findUnique({
     where: { id },
     include: {
@@ -48,7 +74,11 @@ export async function adminGetProductWithInventory(
   id: string,
   inventoryCursor?: string,
   limit = 20
-) {
+): Promise<{
+  product: AdminProductDetail;
+  movements: Prisma.InventoryMovementGetPayload<{}>[];
+  nextCursor: string | null;
+} | null> {
   const product = await prisma.product.findUnique({
     where: { id },
     include: {
@@ -56,6 +86,7 @@ export async function adminGetProductWithInventory(
       variants: true
     }
   });
+
   if (!product) return null;
 
   const movements = await prisma.inventoryMovement.findMany({
