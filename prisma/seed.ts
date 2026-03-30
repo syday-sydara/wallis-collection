@@ -9,133 +9,111 @@ async function main() {
   // ---------------------------
   // Users
   // ---------------------------
-  const alice = await prisma.user.upsert({
-    where: { email: "alice@example.com" },
-    update: {},
-    create: {
-      email: "alice@example.com",
-      name: "Alice Johnson",
-      role: "USER"
-    }
-  });
+  const users = [
+    { email: "alice@example.com", name: "Alice Johnson", role: "USER" },
+    { email: "bob@example.com", name: "Bob Smith", role: "USER" },
+  ];
 
-  const bob = await prisma.user.upsert({
-    where: { email: "bob@example.com" },
-    update: {},
-    create: {
-      email: "bob@example.com",
-      name: "Bob Smith",
-      role: "USER"
-    }
-  });
-
-  console.log("Created users:", [alice.email, bob.email]);
+  for (const user of users) {
+    await prisma.user.upsert({
+      where: { email: user.email },
+      update: {},
+      create: user,
+    });
+  }
+  console.log("✅ Users seeded");
 
   // ---------------------------
   // Products
   // ---------------------------
-  const product1 = await prisma.product.upsert({
-    where: { slug: "classic-tshirt" },
-    update: {},
-    create: {
-      name: "Classic T-Shirt",
+  const products = [
+    {
       slug: "classic-tshirt",
+      name: "Classic T-Shirt",
       basePrice: 2500, // in Kobo (₦25)
       stock: 100,
       description: "Comfortable cotton t-shirt.",
-      images: {
-        create: [
-          { url: "/images/products/tshirt1.jpg", alt: "Classic T-Shirt Front" },
-          { url: "/images/products/tshirt2.jpg", alt: "Classic T-Shirt Back" }
-        ]
-      },
-      variants: {
-        create: [
-          { name: "Small / White", sku: "TSHIRT-S-WHITE", price: 2500 },
-          { name: "Medium / White", sku: "TSHIRT-M-WHITE", price: 2500 },
-          { name: "Large / White", sku: "TSHIRT-L-WHITE", price: 2500 }
-        ]
-      }
-    }
-  });
-
-  const product2 = await prisma.product.upsert({
-    where: { slug: "denim-jeans" },
-    update: {},
-    create: {
-      name: "Denim Jeans",
+      images: [
+        { url: "/images/products/tshirt1.jpg", alt: "Classic T-Shirt Front" },
+        { url: "/images/products/tshirt2.jpg", alt: "Classic T-Shirt Back" },
+      ],
+      variants: [
+        { name: "Small / White", sku: "TSHIRT-S-WHITE", price: 2500 },
+        { name: "Medium / White", sku: "TSHIRT-M-WHITE", price: 2500 },
+        { name: "Large / White", sku: "TSHIRT-L-WHITE", price: 2500 },
+      ],
+    },
+    {
       slug: "denim-jeans",
+      name: "Denim Jeans",
       basePrice: 7500, // ₦75
       stock: 50,
       description: "Slim-fit denim jeans.",
-      images: {
-        create: [
-          { url: "/images/products/jeans1.jpg", alt: "Denim Jeans Front" },
-          { url: "/images/products/jeans2.jpg", alt: "Denim Jeans Back" }
-        ]
-      },
-      variants: {
-        create: [
-          { name: "32 / Blue", sku: "JEANS-32-BLUE", price: 7500 },
-          { name: "34 / Blue", sku: "JEANS-34-BLUE", price: 7500 }
-        ]
-      }
-    }
-  });
+      images: [
+        { url: "/images/products/jeans1.jpg", alt: "Denim Jeans Front" },
+        { url: "/images/products/jeans2.jpg", alt: "Denim Jeans Back" },
+      ],
+      variants: [
+        { name: "32 / Blue", sku: "JEANS-32-BLUE", price: 7500 },
+        { name: "34 / Blue", sku: "JEANS-34-BLUE", price: 7500 },
+      ],
+    },
+  ];
 
-  console.log("Created products:", [product1.name, product2.name]);
+  for (const product of products) {
+    await prisma.product.upsert({
+      where: { slug: product.slug },
+      update: {},
+      create: {
+        name: product.name,
+        slug: product.slug,
+        basePrice: product.basePrice,
+        stock: product.stock,
+        description: product.description,
+        images: { create: product.images },
+        variants: { create: product.variants },
+      },
+    });
+  }
+  console.log("✅ Products seeded");
 
   // ---------------------------
   // Fraud Rules
   // ---------------------------
-  await prisma.fraudRule.createMany({
-    data: [
-      {
-        name: "high_risk_ip",
-        description: "IP address is in a known high-risk list",
-        weight: 30,
-        condition: {
-          type: "ip_in_list",
-          list: ["41.190.3.22", "102.89.44.10"]
-        }
-      },
-      {
-        name: "email_phone_mismatch",
-        description: "Email domain does not match phone region",
-        weight: 20,
-        condition: {
-          type: "email_phone_mismatch"
-        }
-      },
-      {
-        name: "too_many_attempts",
-        description: "User has exceeded safe number of checkout attempts",
-        weight: 40,
-        condition: {
-          type: "numeric_threshold",
-          metric: "attempts",
-          operator: ">",
-          value: 3
-        }
-      },
-      {
-        name: "suspicious_user_agent",
-        description: "User agent string is unusually short",
-        weight: 10,
-        condition: {
-          type: "min_user_agent_length",
-          value: 10
-        }
-      }
-    ]
-  });
+  const fraudRules = [
+    {
+      name: "high_risk_ip",
+      description: "IP address is in a known high-risk list",
+      weight: 30,
+      condition: { type: "ip_in_list", list: ["41.190.3.22", "102.89.44.10"] },
+    },
+    {
+      name: "email_phone_mismatch",
+      description: "Email domain does not match phone region",
+      weight: 20,
+      condition: { type: "email_phone_mismatch" },
+    },
+    {
+      name: "too_many_attempts",
+      description: "User has exceeded safe number of checkout attempts",
+      weight: 40,
+      condition: { type: "numeric_threshold", metric: "attempts", operator: ">", value: 3 },
+    },
+    {
+      name: "suspicious_user_agent",
+      description: "User agent string is unusually short",
+      weight: 10,
+      condition: { type: "min_user_agent_length", value: 10 },
+    },
+  ];
 
-  console.log("Fraud rules seeded ✅");
+  await prisma.fraudRule.createMany({ data: fraudRules });
+  console.log("✅ Fraud rules seeded");
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error("❌ Seed failed", e);
     process.exit(1);
   })
   .finally(async () => {
