@@ -1,70 +1,122 @@
-// scripts/setup.ts
-import { execSync } from "node:child_process";
+#!/usr/bin/env tsx
+import "dotenv/config";
+import { Command } from "commander";
+import chalk from "chalk";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
 import fs from "node:fs";
+import readline from "node:readline/promises";
+import { z } from "zod";
 
-function run(cmd: string, label?: string) {
-  try {
-    if (label) console.log(`\n🔧 ${label}`);
-    console.log(`> ${cmd}`);
-    execSync(cmd, { stdio: "inherit" });
-  } catch (err) {
-    console.error(`❌ Failed: ${cmd}`);
-    process.exit(1);
-  }
-}
+const run = promisify(exec);
 
-function checkEnv() {
-  console.log("\n🔍 Validating environment variables...");
+const log = {
+  info: (msg: string) => console.log(chalk.blue("ℹ️  " + msg)),
+  success: (msg: string) => console.log(chalk.green("✔️  " + msg)),
+  warn: (msg: string) => console.log(chalk.yellow("⚠️  " + msg)),
+  error: (msg: string) => console.log(chalk.red("❌ " + msg)),
+};
 
-  const required = [
-    "DATABASE_URL",
-    "NEXT_PUBLIC_URL",
-    "PAYSTACK_SECRET_KEY",
-    "MONNIFY_AUTH",
-    "SMTP_HOST",
-    "SMTP_PORT",
-    "SMTP_USER",
-    "SMTP_PASS"
-  ];
+const requiredEnv = z.object({
+  DATABASE_URL: z.string().url(),
+  NEXT_PUBLIC_URL: z.string().url(),
+  PAYSTACK_SECRET_KEY: z.string().min(10),
+  MONNIFY_AUTH: z.string().min(10),
+  SMTP_HOST: z.string(),
+  SMTP_PORT: z.string().regex(/^\d+$/, "SMTP_PORT must be a number"),
+  SMTP_USER: z.string(),
+  SMTP_PASS: z.string(),
+});
 
-  const missing = required.filter((key) => !process.env[key]);
-
-  if (missing.length > 0) {
-    console.warn(
-      `⚠️  Missing environment variables:\n${missing
-        .map((m) => ` - ${m}`)
-        .join("\n")}`
-    );
-    console.warn("Setup will continue, but some features may not work.");
-  } else {
-    console.log("✅ All required environment variables are set.");
-  }
+async function confirm(question: string) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const answer = await rl.question(question);
+  rl.close();
+  return answer.toLowerCase().startsWith("y");
 }
 
 function ensureEnvFile() {
   if (!fs.existsSync(".env")) {
-    console.log("⚠️  No .env file found. Creating one from .env.example...");
+    log.warn("No .env file found. Creating one from .env.example...");
     if (fs.existsSync(".env.example")) {
       fs.copyFileSync(".env.example", ".env");
-      console.log("📄 Created .env from .env.example");
+      log.success("Created .env from .env.example");
     } else {
-      console.warn("⚠️  No .env.example found. Skipping.");
+      log.warn("No .env.example found. Skipping.");
     }
   }
 }
 
+function validateEnv() {
+  log.info("Validating environment variables...");
+
+  const result = requiredEnv.safeParse(process.env);
+
+  if (!result.success) {
+    log.warn("Some environment variables are missing or invalid:");
+    for (const issue of result.error.issues) {
+      console.log(" - " + issue.path.join(".") + ": " + issue.message);
+    }
+    log.warn("Setup will continue, but some features may not work.");
+  } else {
+    log.success("All required environment variables are valid.");
+  }
+}
+
+async function runCommand(cmd: string, label: string) {
+  log.info(label);
+  try {
+    const { stdout, stderr } = await run(cmd);
+    if (stdout) process.stdout.write(stdout);
+    if (stderr) process.stderr.write(stderr);
+  } catch (err) {
+    log.error(`Command failed: ${cmd}`);
+    process.exit(1);
+  }
+}
+
 async function main() {
-  console.log("🚀 Starting Wallis Collection setup...");
+  const program = new Command();
+
+  program
+    .name("wallis-setup")
+    .description("Setup CLI for Wallis Collection project")
+    .option("--skip-install", "Skip dependency installation")
+    .option("--skip-migrate", "Skip Prisma migrations")
+    .option("--force", "Run without confirmation prompts")
+    .parse(process.argv);
+
+  const opts = program.opts();
+
+  console.log(chalk.magenta("\n🚀 Starting Wallis Collection setup...\n"));
 
   ensureEnvFile();
-  checkEnv();
+  validateEnv();
 
-  run("pnpm install", "Installing dependencies");
-  run("pnpm prisma:generate", "Generating Prisma client");
-  run("pnpm prisma:migrate", "Running Prisma migrations");
+  if (!opts.skipInstall) {
+    await runCommand("pnpm install", "Installing dependencies");
+  } else {
+    log.warn("Skipping dependency installation");
+  }
 
-  console.log("\n✨ Setup complete! Your environment is ready.");
-  console.log("➡️  Run `pnpm dev` to start the development server.\n");
+  await runCommand("pnpm prisma:generate", "Generating Prisma client");
+
+  if (!opts.skipMigrate) {
+    const shouldMigrate =
+      opts.force || (await confirm("Run Prisma migrations? (y/N) "));
+
+    if (shouldMigrate) {
+      await runCommand("pnpm prisma:migrate", "Running Prisma migrations");
+    } else {
+      log.warn("Skipping Prisma migrations");
+    }
+  }
+
+  console.log(chalk.green("\n✨ Setup complete! Your environment is ready."));
+  console.log(chalk.blue("➡️  Run `pnpm dev` to start the development server.\n"));
 }
 
 main();
