@@ -2,10 +2,14 @@
 "use server";
 
 import * as Sentry from "@sentry/nextjs";
+import { headers } from "next/headers";
 import { CheckoutPayloadSchema } from "@/lib/checkout/schema";
 import { processCheckout } from "@/lib/checkout/service";
 import { logEvent } from "@/lib/logger";
 import { startTimer } from "@/lib/metrics";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { getIdempotentResponse, saveIdempotentResponse } from "@/lib/idempotency";
+import { buildRiskContext } from "@/lib/risk/context";
 
 export type CheckoutActionState = {
   success: boolean | null;
@@ -32,6 +36,35 @@ export async function submitCheckout(
     async () => {
       const endTimer = startTimer("checkout_server_action");
 
+      const hdrs = headers();
+      const ip = hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+      const userAgent = hdrs.get("user-agent") ?? "unknown";
+
+      const rate = checkRateLimit(`checkout:${ip}`);
+      if (!rate.allowed) {
+        logEvent("checkout_rate_limited", { ip, userAgent }, "warn");
+        endTimer();
+        return {
+          success: false,
+          message: "Too many attempts. Please wait a moment and try again.",
+          fieldErrors: {}
+        };
+      }
+
+      const idempotencyKey =
+        hdrs.get("x-idempotency-key") ??
+        (formData.get("idempotencyKey") as string | null) ??
+        null;
+
+      if (idempotencyKey) {
+        const cached = getIdempotentResponse(idempotencyKey);
+        if (cached) {
+          logEvent("checkout_idempotent_reuse", { idempotencyKey, ip });
+          endTimer();
+          return cached;
+        }
+      }
+
       try {
         const raw: Record<string, any> = {};
         formData.forEach((value, key) => {
@@ -44,7 +77,6 @@ export async function submitCheckout(
         } catch {
           logEvent("checkout_invalid_items_json", { rawItems: raw.items }, "warn");
           endTimer();
-
           return {
             success: false,
             message: "Invalid cart data",
@@ -65,17 +97,13 @@ export async function submitCheckout(
         };
 
         const parsed = CheckoutPayloadSchema.safeParse(payload);
-
         if (!parsed.success) {
           const flattened = parsed.error.flatten().fieldErrors;
-
           logEvent("checkout_validation_failed", {
             email: payload.email,
             fieldErrors: flattened
           });
-
           endTimer();
-
           return {
             success: false,
             message: "Please correct the highlighted fields",
@@ -90,7 +118,23 @@ export async function submitCheckout(
           paymentMethod: parsed.data.paymentMethod
         });
 
-        const result = await processCheckout(parsed.data);
+        const cartValue =
+          parsed.data.items.reduce(
+            (sum, item) => sum + (item.unitPrice ?? 0) * item.quantity,
+            0
+          ) ?? 0;
+
+        const riskContext = buildRiskContext({
+          ip,
+          email: parsed.data.email,
+          phone: parsed.data.phone,
+          userAgent,
+          attempts: rate.remaining,
+          cartValue,
+          shippingState: parsed.data.state
+        });
+
+        const result = await processCheckout(parsed.data, riskContext);
 
         logEvent("checkout_success", {
           email: parsed.data.email,
@@ -98,29 +142,28 @@ export async function submitCheckout(
           hasPaymentUrl: Boolean(result.paymentUrl)
         });
 
-        endTimer();
-
-        return {
+        const response: CheckoutActionState = {
           success: true,
           message: null,
           fieldErrors: {},
           orderId: result.orderId,
           paymentUrl: result.paymentUrl ?? null
         };
-      } catch (err: any) {
-        Sentry.captureException(err);
 
-        logEvent(
-          "checkout_unexpected_error",
-          {
-            message: err?.message,
-            stack: err?.stack
-          },
-          "error"
-        );
+        if (idempotencyKey) {
+          saveIdempotentResponse(idempotencyKey, response);
+        }
 
         endTimer();
-
+        return response;
+      } catch (err: any) {
+        Sentry.captureException(err);
+        logEvent(
+          "checkout_unexpected_error",
+          { message: err?.message, stack: err?.stack },
+          "error"
+        );
+        endTimer();
         return {
           success: false,
           message: "Unexpected error occurred. Please try again.",

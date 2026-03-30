@@ -5,7 +5,7 @@ type Entry = {
   response: any;
 };
 
-const IDEMPOTENCY_TTL_MS = 10 * 60_000; // 10 minutes
+const IDEMPOTENCY_TTL_MS = 10 * 60_000;
 const idempotencyStore = new Map<string, Entry>();
 
 export function getIdempotentResponse(key: string) {

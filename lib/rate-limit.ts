@@ -1,6 +1,6 @@
 // lib/rate-limit.ts
 
-const WINDOW_MS = 60_000; // 1 minute
+const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 10;
 
 const store = new Map<string, { count: number; resetAt: number }>();

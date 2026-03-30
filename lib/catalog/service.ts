@@ -37,7 +37,7 @@ export async function listProducts(
     cursor: cursor ? { id: cursor } : undefined,
     orderBy: { createdAt: "desc" },
     include: {
-      images: true,
+      images: { orderBy: { sortOrder: "asc" } },
       variants: true
     }
   });
@@ -49,7 +49,7 @@ export async function getProductBySlug(
   return prisma.product.findUnique({
     where: { slug, deletedAt: null },
     include: {
-      images: true,
+      images: { orderBy: { sortOrder: "asc" } },
       variants: true
     }
   });
@@ -59,7 +59,7 @@ export async function getProductById(id: string) {
   return prisma.product.findUnique({
     where: { id, deletedAt: null },
     include: {
-      images: true,
+      images: { orderBy: { sortOrder: "asc" } },
       variants: true
     }
   });
