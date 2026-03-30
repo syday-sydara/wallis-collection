@@ -114,10 +114,7 @@ export function ImagesManager({
       </div>
 
       <form
-        action={async (formData) => {
-          "use server";
-          await addProductImage(productId, formData);
-        }}
+        action={(formData) => addProductImage(productId, formData)}
         className="mt-2 flex gap-2 text-xs"
       >
         <input
