@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "types": ["@playwright/test"],
     "lib": [
       "DOM",
       "DOM.Iterable",
@@ -15,20 +14,24 @@
     "esModuleInterop": true,
     "jsx": "preserve",
     "incremental": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": [
+      "node"
+    ],
     "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
       ]
     },
-    "allowJs": true,
-    "noEmit": true,
-    "isolatedModules": true,
     "plugins": [
       {
         "name": "next"
       }
-    ]
+    ],
+    "allowJs": true
   },
   "include": [
     "next-env.d.ts",
