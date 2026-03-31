@@ -1,51 +1,60 @@
-"use client";
+import type { ProductCardVM } from "@/lib/catalog/types";
 
-import Image from "next/image";
-import Link from "next/link";
-import { useState } from "react";
-import { formatCurrency } from "@/lib/utils";
-
-type Product = {
-  id: string;
-  name: string;
-  slug: string;
-  image?: string;
-  price: number; // in kobo
+type ProductCardProps = {
+  product: ProductCardVM;
 };
 
-export default function ProductCard({ product }: { product: Product }) {
-  const [imgError, setImgError] = useState(false);
-
+export default function ProductCard({ product }: ProductCardProps) {
   return (
-    <Link
-      href={`/products/${product.slug}`}
-      className="group block rounded-lg border border-border bg-surface p-3 shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    <div
+      className="
+        flex flex-col rounded-lg border border-border bg-surface
+        shadow-sm overflow-hidden transition-all duration-150
+        hover:shadow-md hover:bg-surface-hover
+        active:shadow-lg active:bg-surface-active
+      "
     >
-      <div className="aspect-square w-full overflow-hidden rounded-md bg-surface-muted">
-        {product.image && !imgError ? (
-          <Image
-            src={product.image}
-            alt={product.name}
-            width={400}
-            height={400}
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            onError={() => setImgError(true)}
-            className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+      {/* =========================
+           PRODUCT IMAGE
+      ========================= */}
+      <div className="relative aspect-square w-full overflow-hidden bg-surface-muted">
+        {product.images?.[0] ? (
+          <img
+            src={product.images[0].url}
+            alt={product.images[0].alt || product.name}
+            className="h-full w-full object-cover transition-transform duration-150 ease-in-out hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-text-subtle">
+          <div className="flex h-full items-center justify-center bg-surface-muted text-text-muted">
             No image
           </div>
         )}
       </div>
 
-      <h3 className="mt-2 line-clamp-2 text-sm font-medium text-text">
-        {product.name}
-      </h3>
+      {/* =========================
+           PRODUCT INFO
+      ========================= */}
+      <div className="flex flex-1 flex-col p-3">
+        <h3 className="text-sm font-medium text-text line-clamp-2">
+          {product.name}
+        </h3>
 
-      <p className="mt-1 text-base font-semibold text-primary">
-        {product.price > 0 ? formatCurrency(product.price) : "—"}
-      </p>
-    </Link>
+        <p className="mt-1 text-sm font-semibold text-text">
+          ₦{(product.minPrice / 100).toLocaleString()}
+          {product.minPrice !== product.maxPrice &&
+            ` - ₦${(product.maxPrice / 100).toLocaleString()}`}
+        </p>
+
+        {product.inStock ? (
+          <span className="mt-1 text-xs font-medium text-success">
+            In stock
+          </span>
+        ) : (
+          <span className="mt-1 text-xs font-medium text-danger">
+            Out of stock
+          </span>
+        )}
+      </div>
+    </div>
   );
 }

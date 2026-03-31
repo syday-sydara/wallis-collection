@@ -15,10 +15,11 @@ export default function LoadingState({
       aria-live="polite"
       className="flex flex-col items-center justify-center py-16 px-4 text-center max-w-md mx-auto"
     >
-      <div className="mb-4 text-text-subtle">
+      {/* Spinner */}
+      <div className="mb-4 text-text-muted">
         {spinner || (
           <svg
-            className="w-10 h-10 animate-spin text-text-subtle"
+            className="w-10 h-10 animate-spin text-text-muted"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -40,9 +41,11 @@ export default function LoadingState({
         )}
       </div>
 
-      <p className="text-lg font-medium text-text">{title}</p>
+      {/* Title */}
+      <p className="text-lg font-semibold text-text">{title}</p>
 
-      <p className="mt-1 text-sm text-text-muted">{description}</p>
+      {/* Description */}
+      <p className="mt-2 text-sm text-text-muted">{description}</p>
     </div>
   );
 }

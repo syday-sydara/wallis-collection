@@ -8,7 +8,7 @@ export type ProductListParams = {
   minPrice?: number;       // minimum price in kobo
   maxPrice?: number;       // maximum price in kobo
   includeArchived?: boolean;
-  limit?: number;          // page size, default to 24 or similar
+  limit?: number;          // page size, default to 24
   cursor?: string;         // for cursor-based pagination
 };
 
@@ -21,7 +21,7 @@ export type ProductWithRelations = {
   slug: string;
   description: string | null;
   basePrice: number;       // in kobo
-  stock: number;
+  stock: number;           // currently unused (O(1) service)
   isArchived: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -31,7 +31,7 @@ export type ProductWithRelations = {
     id: string;
     url: string;
     alt: string | null;
-    sortOrder?: number;     // optional if used for ordering
+    sortOrder?: number;
   }[];
   variants: {
     id: string;
