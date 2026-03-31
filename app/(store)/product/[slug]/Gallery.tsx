@@ -2,28 +2,42 @@
 
 import { useState } from "react";
 
-export default function Gallery({
-  images,
-}: {
-  images: { url: string }[];
-}) {
+type Image = {
+  id?: string;
+  url: string;
+  alt?: string | null;
+};
+
+type Props = {
+  images: Image[];
+};
+
+export default function Gallery({ images }: Props) {
   const [active, setActive] = useState(images[0]?.url);
+
+  if (!images.length) return null; // graceful fallback
 
   return (
     <div className="space-y-4">
       <img
         src={active}
-        alt=""
+        alt={images.find((img) => img.url === active)?.alt ?? "Product image"}
         className="w-full rounded-lg object-cover"
       />
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto">
         {images.map((img) => (
-          <button key={img.url} onClick={() => setActive(img.url)}>
+          <button
+            key={img.url}
+            onClick={() => setActive(img.url)}
+            className={`border rounded-md focus:outline-none focus:ring-2 ${
+              active === img.url ? "border-primary ring-primary" : "border-border-subtle"
+            }`}
+          >
             <img
               src={img.url}
-              className="w-16 h-16 object-cover rounded-md border border-border-subtle"
-              alt=""
+              alt={img.alt ?? ""}
+              className="w-16 h-16 object-cover rounded-md"
             />
           </button>
         ))}

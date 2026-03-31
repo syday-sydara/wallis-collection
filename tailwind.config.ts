@@ -13,16 +13,13 @@ const config: Config = {
     container: {
       center: true,
       padding: {
-        DEFAULT: "0.75rem", // tighter for mobile
+        DEFAULT: "0.75rem",
         sm: "1rem",
         lg: "2rem",
       },
     },
 
     extend: {
-      /* =========================
-         COLOR SYSTEM
-      ========================= */
       colors: {
         surface: "rgb(var(--surface) / <alpha-value>)",
         "surface-muted": "rgb(var(--surface-muted) / <alpha-value>)",
@@ -35,17 +32,11 @@ const config: Config = {
 
         border: "rgb(var(--border) / <alpha-value>)",
 
+        /* Simplified brand scale */
         brand: {
-          50: "rgb(var(--brand-50) / <alpha-value>)",
-          100: "rgb(var(--brand-100) / <alpha-value>)",
-          200: "rgb(var(--brand-200) / <alpha-value>)",
-          300: "rgb(var(--brand-300) / <alpha-value>)",
-          400: "rgb(var(--brand-400) / <alpha-value>)",
           500: "rgb(var(--brand-500) / <alpha-value>)",
           600: "rgb(var(--brand-600) / <alpha-value>)",
           700: "rgb(var(--brand-700) / <alpha-value>)",
-          800: "rgb(var(--brand-800) / <alpha-value>)",
-          900: "rgb(var(--brand-900) / <alpha-value>)",
         },
 
         primary: {
@@ -70,20 +61,10 @@ const config: Config = {
           foreground: "#111111",
         },
 
-        /* UX-driven tokens */
-        skeleton: "rgb(229 231 235 / <alpha-value>)",
+        skeleton: "rgb(var(--skeleton) / <alpha-value>)",
         disabled: "rgb(156 163 175 / <alpha-value>)",
-
-        /* Commerce-specific */
-        cta: {
-          DEFAULT: "rgb(var(--color-primary) / <alpha-value>)",
-          text: "#ffffff",
-        },
       },
 
-      /* =========================
-         TYPOGRAPHY
-      ========================= */
       fontFamily: {
         sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
       },
@@ -91,16 +72,13 @@ const config: Config = {
       fontSize: {
         xs: ["0.75rem", { lineHeight: "1rem" }],
         sm: ["0.875rem", { lineHeight: "1.3rem" }],
-        base: ["1rem", { lineHeight: "1.6rem" }], // improved readability
+        base: ["1rem", { lineHeight: "1.6rem" }],
         lg: ["1.125rem", { lineHeight: "1.7rem" }],
         xl: ["1.25rem", { lineHeight: "1.8rem" }],
         "2xl": ["1.5rem", { lineHeight: "2rem" }],
         "3xl": ["1.875rem", { lineHeight: "2.2rem" }],
       },
 
-      /* =========================
-         RADII & SHADOWS
-      ========================= */
       borderRadius: {
         sm: "var(--radius-sm)",
         md: "var(--radius-md)",
@@ -113,9 +91,6 @@ const config: Config = {
         lg: "var(--shadow-lg)",
       },
 
-      /* =========================
-         Z-INDEX
-      ========================= */
       zIndex: {
         header: "10",
         dropdown: "20",
@@ -124,9 +99,6 @@ const config: Config = {
         toast: "50",
       },
 
-      /* =========================
-         INTERACTION
-      ========================= */
       ringColor: {
         primary: "rgb(var(--color-primary) / <alpha-value>)",
       },

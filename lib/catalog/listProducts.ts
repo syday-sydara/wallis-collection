@@ -1,7 +1,13 @@
-// lib/catalog/service.ts
+// lib/catalog/listProducts.ts
+import { prisma } from "@/lib/db";
+import type { ProductWithRelations, ProductListParams, ProductListResult } from "./types";
+
+/**
+ * List products with optional filters and pagination
+ */
 export async function listProducts(
   params: ProductListParams = {}
-): Promise<ProductWithRelations[]> {
+): Promise<ProductListResult> {
   const { search, minPrice, maxPrice, includeArchived = false, limit = 24, cursor } = params;
 
   const products = await prisma.product.findMany({
@@ -37,24 +43,30 @@ export async function listProducts(
     nextCursor = nextItem!.id;
   }
 
-  // Map to ProductWithRelations
-  return products.slice(0, limit).map((p) => ({
-    id: p.id,
-    name: p.name,
-    slug: p.slug,
-    description: p.description,
-    basePrice: p.basePrice,
-    stock: p.stock,
-    isArchived: p.isArchived,
-    createdAt: p.createdAt,
-    updatedAt: p.updatedAt,
-    images: p.images.map((img) => ({
-      id: img.id,
-      url: img.url,
-      alt: img.alt,
-      sortOrder: img.sortOrder,
+  return {
+    items: products.slice(0, limit).map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      description: p.description,
+      basePrice: p.basePrice,
+      stock: p.variants.reduce((sum, v) => sum + v.price, 0),
+      isArchived: p.isArchived,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      images: p.images.map((img) => ({
+        id: img.id,
+        url: img.url,
+        alt: img.alt,
+        sortOrder: img.sortOrder,
+      })),
+      variants: p.variants.map((v) => ({
+        id: v.id,
+        name: v.name,
+        sku: v.sku,
+        price: v.price,
+      })),
     })),
-    variants: p.variants,
     nextCursor,
-  }));
+  };
 }

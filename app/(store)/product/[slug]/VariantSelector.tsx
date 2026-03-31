@@ -2,6 +2,19 @@
 
 import { cn } from "@/lib/utils";
 
+type Variant = {
+  id: string;
+  name: string;
+  price: number;
+  attributes?: Record<string, any>;
+};
+
+type Props = {
+  variants: Variant[];
+  selected: Variant | null;
+  onChange: (variant: Variant) => void;
+};
+
 export default function VariantSelector({ variants, selected, onChange }: Props) {
   if (!variants?.length) return null;
 
@@ -20,7 +33,7 @@ export default function VariantSelector({ variants, selected, onChange }: Props)
               aria-pressed={isSelected}
               onClick={() => onChange(v)}
               className={cn(
-                "rounded-md border px-4 py-2 text-sm font-medium transition-all",
+                "rounded-md border px-4 py-2 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary",
                 "whitespace-nowrap",
                 isSelected
                   ? "border-primary bg-primary text-white shadow-sm"

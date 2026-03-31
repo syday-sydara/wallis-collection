@@ -1,132 +1,50 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ADD THIS TO :root */
+--skeleton: 229 231 235;
 
-/* =========================
-   DESIGN TOKENS
-========================= */
+/* DARK MODE */
+.dark {
+  --surface: 17 24 39;
+  --surface-muted: 31 41 55;
+  --surface-card: 31 41 55;
 
-:root {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --text: 243 244 246;
+  --text-muted: 156 163 175;
 
-  --surface: 255 255 255;
-  --surface-muted: 249 250 251;
-  --surface-card: 255 255 255;
+  --border: 55 65 81;
 
-  --text: 17 24 39;
-  --text-muted: 107 114 128;
+  --skeleton: 55 65 81;
 
-  --border: 229 231 235;
-
-  --brand-500: 34 197 94;
-  --brand-600: 22 163 74;
-  --brand-700: 21 128 61;
-
-  --color-primary: var(--brand-500);
-  --color-primary-hover: var(--brand-600);
-  --color-primary-active: var(--brand-700);
-
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 3px 8px rgba(0,0,0,0.08);
-  --shadow-lg: 0 6px 16px rgba(0,0,0,0.12);
-
-  --surface-active: 0 0 0 / 0.06;
-
-  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --surface-active: 255 255 255 / 0.08;
 }
 
-/* =========================
-   BASE
-========================= */
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html {
-  -webkit-tap-highlight-color: transparent;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
-}
-
-body {
-  font-family: var(--font-sans);
-  background: rgb(var(--surface));
-  color: rgb(var(--text));
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeSpeed;
-}
-
-/* =========================
-   MOBILE UX IMPROVEMENTS
-========================= */
-
-button,
-a {
-  touch-action: manipulation;
-}
-
-.tap-target {
-  min-height: 44px;
-  min-width: 44px;
-}
-
-.pressable {
-  transition: background-color 0.15s var(--ease-standard);
-}
-
-.pressable:active {
-  background: rgb(var(--surface-active));
-}
-
-/* =========================
-   COMPONENT LAYER
-========================= */
-
-.btn {
-  @apply inline-flex items-center justify-center px-4 py-2 rounded-md font-medium tap-target;
-}
-
-.btn-primary {
-  @apply bg-primary text-white;
+/* BUTTON IMPROVEMENTS */
+.btn:disabled {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .btn-primary:active {
   @apply bg-primary-active;
+  transform: scale(0.98);
 }
 
-.card {
-  @apply bg-surface border border-border rounded-md shadow-sm;
-}
-
+/* INPUT IMPROVEMENT */
 .input {
-  @apply w-full px-3 py-2 border border-border rounded-md bg-surface;
+  @apply w-full px-3 py-2 text-base border border-border rounded-md bg-surface;
 }
 
-/* =========================
-   COMMERCE HELPERS
-========================= */
-
+/* STICKY CTA SAFE AREA */
 .sticky-cta {
   position: fixed;
-  bottom: 0;
+  bottom: env(safe-area-inset-bottom);
   width: 100%;
   background: rgb(var(--surface));
   border-top: 1px solid rgb(var(--border));
   padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
 }
 
+/* WHATSAPP FAB IMPROVED */
 .whatsapp-fab {
   position: fixed;
   bottom: 16px;
@@ -135,19 +53,9 @@ a {
   color: white;
   border-radius: 9999px;
   padding: 12px 16px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   box-shadow: var(--shadow-lg);
-}
-
-/* =========================
-   ACCESSIBILITY
-========================= */
-
-:focus-visible {
-  outline: 2px solid rgb(var(--color-primary));
-  outline-offset: 2px;
-}
-
-::selection {
-  background: rgb(var(--color-primary));
-  color: white;
 }

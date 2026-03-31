@@ -111,19 +111,22 @@ model Product {
   slug        String   @unique
   description String?
 
+  basePrice   Int
+
   isArchived  Boolean  @default(false)
   deletedAt   DateTime?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  images    ProductImage[]
-  variants  ProductVariant[]
-  inventory InventoryMovement[]
+  images     ProductImage[]
+  variants   ProductVariant[]
+  inventory  InventoryMovement[]
   orderItems OrderItem[]
 
   @@index([isArchived])
   @@index([deletedAt])
+  @@index([createdAt, id])
 }
 
 model ProductImage {
@@ -144,10 +147,12 @@ model ProductVariant {
   name       String
   sku        String  @unique
 
-  price      Int     // minor units
+  price      Int
   currency   String  @default("NGN")
 
-  attributes Json    // { size: "L", color: "Black" }
+  stock      Int     @default(0)
+
+  attributes Json
 
   createdAt  DateTime @default(now())
 
@@ -155,7 +160,7 @@ model ProductVariant {
 }
 
 //////////////////////
-// INVENTORY (SOURCE OF TRUTH)
+// INVENTORY (AUDIT LOG)
 //////////////////////
 
 model InventoryMovement {
@@ -164,14 +169,20 @@ model InventoryMovement {
   productId String
   product   Product  @relation(fields: [productId], references: [id])
 
-  change    Int      // +10, -2
+  // ✅ NEW: track exact variant
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+
+  change    Int
   reason    String
   reference String?
 
   createdAt DateTime @default(now())
 
   @@index([productId])
+  @@index([variantId])
   @@index([createdAt])
+  @@index([productId, createdAt, id])
 }
 
 //////////////////////
@@ -185,12 +196,14 @@ model Order {
   phone         String
   fullName      String
 
-  total         Int           // minor units
+  total         Int
   currency      String        @default("NGN")
 
   paymentMethod String
   paymentStatus PaymentStatus
   orderStatus   OrderStatus
+
+  currentStatusUpdatedAt DateTime?
 
   shippingType  String
   shippingCost  Int
@@ -212,6 +225,7 @@ model Order {
   statusHistory OrderStatusHistory[]
 
   @@index([email])
+  @@index([phone])
   @@index([createdAt])
   @@index([userId])
 }
@@ -227,12 +241,14 @@ model OrderItem {
 
   name      String
   image     String?
-  variants  Json
+
+  attributes Json
 
   quantity  Int
   price     Int
 
   @@index([orderId])
+  @@index([productId]) // ✅ NEW
 }
 
 model OrderStatusHistory {
@@ -245,6 +261,7 @@ model OrderStatusHistory {
   createdAt DateTime    @default(now())
 
   @@index([orderId])
+  @@index([orderId, createdAt])
 }
 
 //////////////////////
@@ -257,6 +274,7 @@ model Address {
   fullName  String
   line1     String
   line2     String?
+  landmark  String?
   city      String
   state     String
   postalCode String?
@@ -268,23 +286,8 @@ model Address {
 }
 
 //////////////////////
-// FRAUD ENGINE
+// FRAUD
 //////////////////////
-
-model FraudRule {
-  id          String   @id @default(cuid())
-
-  name        String
-  description String?
-
-  weight      Int
-  enabled     Boolean  @default(true)
-
-  condition   Json     // structured rule config
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
 
 model FraudEvent {
   id        String   @id @default(cuid())

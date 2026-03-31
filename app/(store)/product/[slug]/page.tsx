@@ -1,32 +1,32 @@
 // app/product/[slug]/page.tsx
 import { notFound } from "next/navigation";
-import { getProductBySlug } from "@/lib/catalog/service";
+import { getProductDetailWithRecommendations } from "@/lib/catalog/service";
 import ProductClient from "./ProductClient";
 
 export const revalidate = 60;
 
 export default async function Page({ params }: { params: { slug: string } }) {
-  const product = await getProductBySlug(params.slug).catch(() => null);
+  const data = await getProductDetailWithRecommendations(params.slug).catch(() => null);
 
-  if (!product || product.isArchived || product.deletedAt) {
-    return notFound();
-  }
+  if (!data) return notFound();
 
-  const stock = product.inventory.reduce((sum, m) => sum + m.change, 0);
-  const prices = product.variants.map((v) => v.price);
-  const minPrice = prices.length ? Math.min(...prices) : 0;
-  const maxPrice = prices.length ? Math.max(...prices) : 0;
+  const { product, recommendations } = data;
+
+  // Calculate stock
+  const stock = product.variants.reduce((sum, v) => sum + v.price, 0);
+
+  // Calculate min/max prices
+  const prices = product.variants.map(v => v.price);
+  const minPrice = prices.length ? Math.min(...prices) : product.basePrice;
+  const maxPrice = prices.length ? Math.max(...prices) : product.basePrice;
 
   const viewModel = {
-    id: product.id,
-    name: product.name,
-    description: product.description ?? "",
-    images: product.images,
-    variants: product.variants,
+    ...product,
     stock,
     minPrice,
     maxPrice,
     inStock: stock > 0,
+    recommended: recommendations
   };
 
   return <ProductClient product={viewModel} slug={params.slug} />;

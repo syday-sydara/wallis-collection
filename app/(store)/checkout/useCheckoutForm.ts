@@ -1,3 +1,4 @@
+// app/(store)/checkout/useCheckoutForm.ts
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -5,8 +6,10 @@ import { z } from "zod";
 import { CheckoutPayloadSchema } from "@/lib/checkout/schema";
 import { validateExpressAddress, getShippingPreview } from "@/lib/checkout/shipping";
 
+// Define the shape of the CheckoutFormState excluding the cart items
 const ClientSchema = CheckoutPayloadSchema.omit({ items: true });
-const STORAGE_KEY = "wallis_checkout_form";
+
+const STORAGE_KEY = "wallis_checkout_form"; // LocalStorage key for persisting the form data
 
 export type CheckoutFormState = z.infer<typeof ClientSchema>;
 
@@ -15,6 +18,8 @@ export interface CartItem {
   name: string;
   unitPrice: number;
   quantity: number;
+  image?: string;
+  variant?: string;
 }
 
 export const defaultForm: CheckoutFormState = {
@@ -35,6 +40,7 @@ export function useCheckoutForm(serverErrors: Record<string, string[] | undefine
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const errorRefs = useRef<Record<string, HTMLElement | null>>({});
 
+  // Load saved form and cart items from localStorage when component mounts
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -46,6 +52,7 @@ export function useCheckoutForm(serverErrors: Record<string, string[] | undefine
     }
   }, []);
 
+  // Save form and cart items to localStorage after changes
   useEffect(() => {
     setSaving(true);
     const id = setTimeout(() => {
@@ -55,6 +62,7 @@ export function useCheckoutForm(serverErrors: Record<string, string[] | undefine
     return () => clearTimeout(id);
   }, [form, cartItems]);
 
+  // Merge errors from the server and client
   const mergedErrors = useMemo(() => {
     const allKeys = new Set([...Object.keys(clientErrors), ...Object.keys(serverErrors)]);
     const result: Record<string, string | undefined> = {};
@@ -66,6 +74,7 @@ export function useCheckoutForm(serverErrors: Record<string, string[] | undefine
     return result;
   }, [clientErrors, serverErrors]);
 
+  // Scroll to the first error when any errors occur
   useEffect(() => {
     const keys = Object.keys(mergedErrors).filter((k) => mergedErrors[k]);
     if (!keys.length) return;
@@ -74,11 +83,13 @@ export function useCheckoutForm(serverErrors: Record<string, string[] | undefine
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [mergedErrors]);
 
+  // Update form field value and reset specific error when the user changes the field
   function update<K extends keyof CheckoutFormState>(key: K, value: CheckoutFormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setClientErrors((prev) => ({ ...prev, [key]: undefined }));
   }
 
+  // Add an item to the cart or update its quantity if already present
   function addToCart(item: CartItem) {
     setCartItems((prev) => {
       const existing = prev.find((i) => i.id === item.id);
@@ -89,14 +100,17 @@ export function useCheckoutForm(serverErrors: Record<string, string[] | undefine
     });
   }
 
+  // Remove an item from the cart by its ID
   function removeFromCart(itemId: string) {
     setCartItems((prev) => prev.filter((i) => i.id !== itemId));
   }
 
+  // Update an item's quantity in the cart
   function updateCartItemQuantity(itemId: string, quantity: number) {
     setCartItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, quantity } : i)));
   }
 
+  // Validate the form data (client-side)
   function validateClient() {
     const parsed = ClientSchema.safeParse(form);
     if (!parsed.success) {
@@ -104,6 +118,7 @@ export function useCheckoutForm(serverErrors: Record<string, string[] | undefine
       return false;
     }
 
+    // Check for express shipping address validity
     const expressError = validateExpressAddress({
       shippingType: form.shippingType,
       address: form.address,
@@ -116,6 +131,7 @@ export function useCheckoutForm(serverErrors: Record<string, string[] | undefine
       return false;
     }
 
+    // Ensure the cart is not empty
     if (cartItems.length === 0) {
       setClientErrors((prev) => ({ ...prev, items: ["Your cart is empty"] }));
       return false;
@@ -125,6 +141,7 @@ export function useCheckoutForm(serverErrors: Record<string, string[] | undefine
     return true;
   }
 
+  // Clear the form and cart (reset state and localStorage)
   function clearForm() {
     setForm(defaultForm);
     setClientErrors({});
@@ -132,9 +149,11 @@ export function useCheckoutForm(serverErrors: Record<string, string[] | undefine
     localStorage.removeItem(STORAGE_KEY);
   }
 
+  // Calculate the total cart value
   const cartTotal = useMemo(() => cartItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0), [cartItems]);
 
-  const shippingPreview = useMemo(() => getShippingPreview(form, form.shippingType, cartTotal), [form, form.shippingType, cartTotal]);
+  // Generate the shipping preview (based on the state and cart total)
+  const shippingPreview = useMemo(() => getShippingPreview(form.state, form.shippingType), [form, cartTotal]);
 
   return {
     form,

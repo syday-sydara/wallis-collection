@@ -2,6 +2,18 @@
 
 import { useState } from "react";
 
+type Variant = {
+  id: string;
+  price: number;
+  attributes?: Record<string, any>;
+};
+
+type Props = {
+  productId: string;
+  variant?: Variant; // undefined instead of null
+  disabled?: boolean;
+};
+
 export default function AddToCartButton({ productId, variant, disabled }: Props) {
   const [loading, setLoading] = useState(false);
 
@@ -24,8 +36,7 @@ export default function AddToCartButton({ productId, variant, disabled }: Props)
     };
 
     console.log("Add to cart:", item);
-    // cartStore.add(item)
-
+    // TODO: replace with cart store logic
     setLoading(false);
   }
 

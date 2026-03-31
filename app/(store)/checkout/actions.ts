@@ -1,4 +1,3 @@
-// app/(store)/checkout/actions.ts
 "use server";
 
 import * as Sentry from "@sentry/nextjs";
@@ -7,7 +6,7 @@ import { CheckoutPayloadSchema } from "@/lib/checkout/schema";
 import { processCheckout } from "@/lib/checkout/service";
 import { logEvent } from "@/lib/logger";
 import { startTimer } from "@/lib/metrics";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/api/rate-limit";
 import { getIdempotentResponse, saveIdempotentResponse } from "@/lib/idempotency";
 import { buildRiskContext } from "@/lib/risk/context";
 
@@ -52,9 +51,7 @@ export async function submitCheckout(
       }
 
       const idempotencyKey =
-        hdrs.get("x-idempotency-key") ??
-        (formData.get("idempotencyKey") as string | null) ??
-        null;
+        hdrs.get("x-idempotency-key") ?? (formData.get("idempotencyKey") as string | null) ?? null;
 
       if (idempotencyKey) {
         const cached = getIdempotentResponse(idempotencyKey);

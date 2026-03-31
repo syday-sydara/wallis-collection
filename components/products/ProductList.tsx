@@ -1,46 +1,106 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import ProductGrid from "./ProductGrid";
 import ProductGridSkeleton from "./ProductGridSkeleton";
 import EmptyState from "../ui/EmptyState";
 import ResultHeader from "./ResultHeader";
-import Pagination from "../ui/Pagination";
-import { listProducts } from "@/lib/catalog/service";
-import type { ProductListParams, ProductListResult, ProductWithRelations } from "@/lib/catalog/types";
+import { listProducts } from "@/lib/catalog/listProducts";
+import type {
+  ProductListParams,
+  ProductListResult,
+  ProductWithRelations,
+} from "@/lib/catalog/types";
 
-export default function ProductList({ params }: { params: ProductListParams }) {
+type ProductListProps = {
+  params: ProductListParams;
+};
+
+export default function ProductList({ params }: ProductListProps) {
   const [products, setProducts] = useState<ProductWithRelations[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const requestIdRef = useRef(0);
 
-    setLoading(true);
+  // Initial fetch
+  useEffect(() => {
+    const requestId = ++requestIdRef.current;
+
+    setLoading(products.length === 0);
     setError(false);
 
     async function fetchProducts() {
       try {
         const res: ProductListResult = await listProducts(params);
-        if (cancelled) return;
+
+        if (requestId !== requestIdRef.current) return;
 
         setProducts(res.items);
         setNextCursor(res.nextCursor);
       } catch {
-        if (!cancelled) setError(true);
+        if (requestId === requestIdRef.current) {
+          setError(true);
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (requestId === requestIdRef.current) {
+          setLoading(false);
+        }
       }
     }
 
     fetchProducts();
+  }, [params]);
+
+  // Load more
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || loadingMore) return;
+
+    setLoadingMore(true);
+    const currentCursor = nextCursor;
+
+    try {
+      const res: ProductListResult = await listProducts({
+        ...params,
+        cursor: currentCursor,
+      });
+
+      if (currentCursor !== nextCursor) return;
+
+      setProducts((prev) => [...prev, ...res.items]);
+      setNextCursor(res.nextCursor);
+    } catch {
+      console.error("Failed to load more products");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [nextCursor, loadingMore, params]);
+
+  // Observer
+  useEffect(() => {
+    if (!loadMoreRef.current || !nextCursor) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(loadMoreRef.current);
 
     return () => {
-      cancelled = true;
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current);
+      }
+      observer.disconnect();
     };
-  }, [params]);
+  }, [loadMore, nextCursor]);
 
   if (loading) return <ProductGridSkeleton />;
 
@@ -49,6 +109,14 @@ export default function ProductList({ params }: { params: ProductListParams }) {
       <EmptyState
         title="Error loading products"
         description="Check your connection and try again."
+        action={
+          <button
+            onClick={() => location.reload()}
+            className="btn btn-primary mt-2"
+          >
+            Retry
+          </button>
+        }
       />
     );
 
@@ -58,8 +126,20 @@ export default function ProductList({ params }: { params: ProductListParams }) {
     <>
       <ResultHeader count={products.length} />
       <ProductGrid products={products} />
+
       {nextCursor && (
-        <Pagination cursor={nextCursor} limit={params.limit ?? 24} />
+        <div
+          ref={loadMoreRef}
+          className="mt-4 text-center text-sm text-text-muted"
+        >
+          {loadingMore ? "Loading more products..." : "Scroll down to load more"}
+        </div>
+      )}
+
+      {!nextCursor && (
+        <p className="mt-4 text-center text-xs text-text-muted">
+          No more products
+        </p>
       )}
     </>
   );

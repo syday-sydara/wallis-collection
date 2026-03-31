@@ -1,4 +1,7 @@
+"use client";
+
 import ProductCard from "./ProductCard";
+import type { ProductCardVM } from "@/lib/catalog/types";
 
 type ProductGridProps = {
   products: ProductCardVM[];
@@ -6,29 +9,25 @@ type ProductGridProps = {
 };
 
 export default function ProductGrid({ products, isLoading }: ProductGridProps) {
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="aspect-square animate-pulse rounded-lg bg-skeleton" />
-        ))}
-      </div>
-    );
-  }
-
-  if (!products.length) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center text-text-muted">
-        No products available right now.
-      </div>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-      {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
-      ))}
+    <div
+      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
+      aria-busy={isLoading ? true : undefined}
+    >
+      {isLoading
+        ? Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-square animate-pulse rounded-lg bg-skeleton"
+            />
+          ))
+        : products.length
+        ? products.map((product) => <ProductCard key={product.id} product={product} />)
+        : (
+          <div className="col-span-full flex flex-col items-center justify-center py-12 text-center text-text-muted">
+            No products available right now.
+          </div>
+        )}
     </div>
   );
 }

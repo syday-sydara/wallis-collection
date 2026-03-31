@@ -40,3 +40,20 @@ export function serverError(message = "Something went wrong", err?: unknown) {
     { status: 500 }
   );
 }
+
+/**
+ * Return a 404 Not Found response
+ */
+export function notFound(message = "Resource not found") {
+  return NextResponse.json<ResponseError>(
+    { success: false, error: message },
+    { status: 404 }
+  );
+}
+
+export function tooManyRequests(message = "Too many requests") {
+  return NextResponse.json(
+    { success: false, error: message },
+    { status: 429 }
+  );
+}
