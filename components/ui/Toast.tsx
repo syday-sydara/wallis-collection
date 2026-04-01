@@ -9,12 +9,16 @@ type Toast = {
   variant: "success" | "error";
 };
 
-const ToastContext = createContext<any>(null);
+type ToastContextType = {
+  show: (message: string, variant?: Toast["variant"]) => void;
+};
 
-export function ToastProvider({ children }) {
+const ToastContext = createContext<ToastContextType | null>(null);
+
+export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const show = useCallback((message: string, variant: "success" | "error") => {
+  const show = useCallback((message: string, variant: Toast["variant"] = "success") => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message, variant }]);
 
@@ -27,7 +31,6 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ show }}>
       {children}
 
-      {/* Toast Container */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 px-4 pointer-events-none">
         {toasts.map((t) => (
           <div
@@ -49,5 +52,7 @@ export function ToastProvider({ children }) {
 }
 
 export function useToast() {
-  return useContext(ToastContext);
+  const ctx = useContext(ToastContext);
+  if (!ctx) throw new Error("useToast must be used within ToastProvider");
+  return ctx;
 }
