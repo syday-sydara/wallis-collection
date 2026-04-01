@@ -1,13 +1,26 @@
+"use client";
+
 import ProductCard from "./ProductCard";
+import { Skeleton } from "@/components/ui/Skeleton";
+import type { ProductWithRelations } from "@/lib/catalog/types";
 
-export default function ProductGrid({ products }: { products: any[] }) {
-  if (!products?.length) return null;
+type ProductGridProps = {
+  products: ProductWithRelations[];
+  isLoading?: boolean;
+};
 
+export default function ProductGrid({ products, isLoading }: ProductGridProps) {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-      {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
-      ))}
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" aria-busy={isLoading ? true : undefined}>
+      {isLoading
+        ? Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="aspect-square" />)
+        : products.length
+        ? products.map((p) => <ProductCard key={p.id} product={p} />)
+        : (
+          <div className="col-span-full flex flex-col items-center justify-center py-12 text-text-muted text-center">
+            No products available
+          </div>
+        )}
     </div>
   );
 }

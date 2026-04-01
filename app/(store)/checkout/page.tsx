@@ -1,70 +1,37 @@
 // app/(store)/checkout/page.tsx
 "use client";
 
-import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { toast } from "@/components/ui/toast";
-import { submitCheckout, checkoutInitialState } from "./actions";
-import { useCheckoutForm } from "./useCheckoutForm";
-import CartSummary from "./CartSummary";
+import { submitCheckout } from "./actions";
+import { useCheckoutForm } from "@/lib/checkout/useCheckoutForm";
+import CartSummary from "../../../components/cart/CartSummary";
 import Field from "@/components/forms/Field";
 import { NIGERIAN_STATES } from "@/lib/checkout/constants";
 import { PAYMENT_METHODS } from "@/lib/payment/methods";
 import { formatCurrency } from "@/lib/utils/index";
 
-interface CartItem {
-  id: string;
-  name: string;
-  quantity: number;
-  unitPrice: number;
-  image?: string;
-  variant?: string;
-}
-
-// ----------------------------
-// Demo cart (replace with dynamic cart from context/store)
-// ----------------------------
-const demoCart: CartItem[] = [
-  {
-    id: "p1",
-    name: "Premium Cotton Shirt",
-    quantity: 1,
-    unitPrice: 15000,
-    image: "/demo/shirt.jpg",
-    variant: "Red / M"
-  },
-  {
-    id: "p2",
-    name: "Silk Scarf",
-    quantity: 2,
-    unitPrice: 8000,
-    image: "/demo/scarf.jpg"
-  }
-];
-
 export default function CheckoutPage() {
-  const [cartItems, setCartItems] = useState<CartItem[]>(demoCart);
-
-  // Handle server actions
-  const [state, formAction] = useFormState(submitCheckout, checkoutInitialState);
+  // -------------------- Form & Cart --------------------
+  const [state, formAction] = useFormState(submitCheckout, {});
+  const { pending } = useFormStatus();
 
   const {
     form,
     update,
+    cartItems,
+    removeFromCart,
+    updateCartItemQuantity,
+    cartTotal,
+    shippingPreview,
     validateClient,
     mergedErrors,
     errorRefs,
     saving,
-    clearForm,
-    cartTotal,
-    shippingPreview
-  } = useCheckoutForm(state.fieldErrors, cartItems);
+    clearForm
+  } = useCheckoutForm(state.fieldErrors);
 
-  const { pending } = useFormStatus();
-
-  // ----------------------------
-  // Handlers
-  // ----------------------------
+  // -------------------- Handlers --------------------
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -73,48 +40,38 @@ export default function CheckoutPage() {
     const fd = new FormData(e.currentTarget);
     fd.append(
       "items",
-      JSON.stringify(
-        cartItems.map((i) => ({
-          productId: i.id,
-          quantity: i.quantity,
-          unitPrice: i.unitPrice
-        }))
-      )
+      JSON.stringify(cartItems.map((i) => ({
+        productId: i.id,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice
+      })))
     );
 
     formAction(fd);
   }
 
   function handleQuantityChange(id: string, qty: number) {
-    setCartItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity: qty } : item))
-    );
+    updateCartItemQuantity(id, qty);
   }
 
   function handleRemove(id: string) {
-    setCartItems((prev) => prev.filter((i) => i.id !== id));
+    removeFromCart(id);
   }
 
-  // ----------------------------
-  // Feedback
-  // ----------------------------
+  // -------------------- Feedback --------------------
   if (state.success === true && state.orderId && !state.paymentUrl) {
     toast("Order created successfully. Redirecting…", "success");
   } else if (state.success === false && state.message) {
     toast(state.message, "error");
   }
 
-  // ----------------------------
-  // Conditional Payment UI
-  // ----------------------------
+  // -------------------- Payment Helper --------------------
   function PaymentMethodUI() {
     switch (form.paymentMethod) {
       case "PAYSTACK":
         return <p className="text-sm text-text-muted">Pay via Paystack securely.</p>;
-      case "FLUTTERWAVE":
-        return <p className="text-sm text-text-muted">Pay via Flutterwave securely.</p>;
-      case "COD":
-        return <p className="text-sm text-text-muted">Pay on delivery when your order arrives.</p>;
+      case "MONNIFY":
+        return <p className="text-sm text-text-muted">Pay via Monnify securely.</p>;
       default:
         return null;
     }
@@ -122,6 +79,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="p-4 max-w-xl mx-auto space-y-6 md:space-y-10">
+      {/* ---------------- Header ---------------- */}
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Checkout</h1>
         <p className="text-sm text-text-muted">
@@ -222,7 +180,7 @@ export default function CheckoutPage() {
               name="shippingType"
               className="w-full rounded-md border px-3 py-2 text-sm"
               defaultValue={form.shippingType}
-              onChange={(e) => update("shippingType", e.target.value as any)}
+              onChange={(e) => update("shippingType", e.target.value)}
             >
               <option value="STANDARD">Standard</option>
               <option value="EXPRESS">Express</option>
@@ -234,10 +192,7 @@ export default function CheckoutPage() {
         {shippingPreview && (
           <div className="text-sm text-text space-y-1">
             <p>
-              Shipping cost:{" "}
-              <span className="font-medium">
-                ₦{shippingPreview.cost.toLocaleString()}
-              </span>
+              Shipping cost: <span className="font-medium">{formatCurrency(shippingPreview.cost)}</span>
             </p>
             <p className="text-xs text-text-muted">
               Estimated delivery: {shippingPreview.eta}
@@ -286,16 +241,18 @@ export default function CheckoutPage() {
         </div>
 
         {/* ---------------- Cart Total (mobile sticky) ---------------- */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-surface border-t border-border-subtle md:hidden flex justify-between items-center">
-          <span className="font-medium">{formatCurrency(cartTotal)}</span>
-          <button
-            type="submit"
-            disabled={pending}
-            className="ml-4 flex-1 rounded-md bg-[--brand-600] text-white py-2 text-sm font-medium"
-          >
-            {pending ? "Processing…" : "Pay"}
-          </button>
-        </div>
+        {cartItems.length > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-surface border-t border-border-subtle md:hidden flex justify-between items-center">
+            <span className="font-medium">{formatCurrency(cartTotal + (shippingPreview?.cost || 0))}</span>
+            <button
+              type="submit"
+              disabled={pending}
+              className="ml-4 flex-1 rounded-md bg-[--brand-600] text-white py-2 text-sm font-medium"
+            >
+              {pending ? "Processing…" : "Pay"}
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

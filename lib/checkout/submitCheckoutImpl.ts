@@ -18,6 +18,7 @@ export async function submitCheckoutImpl(prevState, formData) {
     };
   }
 
+  // Client payload WITHOUT trusting totals
   const payload = {
     email: raw.email,
     phone: raw.phone,
@@ -30,7 +31,7 @@ export async function submitCheckoutImpl(prevState, formData) {
     items
   };
 
-  const parsed = CheckoutPayloadSchema.safeParse(payload);
+  const parsed = CheckoutPayloadSchema.omit({ total: true, shippingCost: true }).safeParse(payload);
 
   if (!parsed.success) {
     return {
@@ -40,13 +41,24 @@ export async function submitCheckoutImpl(prevState, formData) {
     };
   }
 
-  const result = await processCheckout(parsed.data);
+  try {
+    const result = await processCheckout(parsed.data, {
+      email: payload.email,
+      state: payload.state
+    });
 
-  return {
-    success: true,
-    message: null,
-    fieldErrors: {},
-    orderId: result.orderId,
-    paymentUrl: result.paymentUrl
-  };
+    return {
+      success: true,
+      message: null,
+      fieldErrors: {},
+      orderId: result.orderId,
+      paymentUrl: result.paymentUrl
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err.message || "An error occurred during checkout.",
+      fieldErrors: {}
+    };
+  }
 }

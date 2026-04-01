@@ -1,52 +1,72 @@
 // lib/catalog/listProducts.ts
 import { prisma } from "@/lib/db";
-import { ProductListParams, ProductListResult, ProductWithRelations } from "./types";
+import type { ProductWithRelations, ProductListParams, ProductListResult } from "./types";
 
 /**
- * Lists products with optional filters and cursor-based pagination.
- * Optimized for Nigerian e-commerce market (prices in kobo, NGN currency).
+ * List products with optional filters and pagination
  */
-export async function listProducts(params: ProductListParams): Promise<ProductListResult> {
-  const {
-    search,
-    minPrice,
-    maxPrice,
-    includeArchived = false,
-    limit = 24,
-    cursor,
-  } = params;
-
-  const where: any = {
-    deletedAt: null,
-    ...(includeArchived ? {} : { isArchived: false }),
-    ...(search
-      ? { name: { contains: search, mode: "insensitive" } }
-      : {}),
-    ...(minPrice !== undefined || maxPrice !== undefined
-      ? {
-          basePrice: {
-            ...(minPrice !== undefined ? { gte: minPrice } : {}),
-            ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
-          },
-        }
-      : {}),
-  };
+export async function listProducts(
+  params: ProductListParams = {}
+): Promise<ProductListResult> {
+  const { search, minPrice, maxPrice, includeArchived = false, limit = 24, cursor } = params;
 
   const products = await prisma.product.findMany({
-    take: limit + 1, // fetch one extra for nextCursor
+    where: {
+      deletedAt: null,
+      isArchived: includeArchived ? undefined : false,
+      AND: [
+        search
+          ? {
+              OR: [
+                { name: { contains: search, mode: "insensitive" } },
+                { description: { contains: search, mode: "insensitive" } },
+              ],
+            }
+          : {},
+        minPrice !== undefined ? { basePrice: { gte: minPrice } } : {},
+        maxPrice !== undefined ? { basePrice: { lte: maxPrice } } : {},
+      ],
+    },
+    take: limit + 1,
     skip: cursor ? 1 : 0,
     cursor: cursor ? { id: cursor } : undefined,
-    where,
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     include: {
-      images: { orderBy: { sortOrder: "asc" }, select: { id: true, url: true, alt: true, sortOrder: true } },
-      variants: { select: { id: true, name: true, sku: true, price: true } },
+      images: { orderBy: { sortOrder: "asc" } },
+      variants: true,
     },
   });
 
-  const hasMore = products.length > limit;
-  const items: ProductWithRelations[] = hasMore ? products.slice(0, -1) : products;
-  const nextCursor = hasMore ? items[items.length - 1].id : null;
+  let nextCursor: string | null = null;
+  if (products.length > limit) {
+    const nextItem = products.pop();
+    nextCursor = nextItem!.id;
+  }
 
-  return { items, nextCursor };
+  return {
+    items: products.slice(0, limit).map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      description: p.description,
+      basePrice: p.basePrice,
+      stock: p.variants.reduce((sum, v) => sum + v.price, 0),
+      isArchived: p.isArchived,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      images: p.images.map((img) => ({
+        id: img.id,
+        url: img.url,
+        alt: img.alt,
+        sortOrder: img.sortOrder,
+      })),
+      variants: p.variants.map((v) => ({
+        id: v.id,
+        name: v.name,
+        sku: v.sku,
+        price: v.price,
+      })),
+    })),
+    nextCursor,
+  };
 }

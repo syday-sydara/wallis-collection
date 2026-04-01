@@ -1,14 +1,24 @@
-export default function ProductGridSkeleton() {
+"use client";
+
+export default function ProductGridSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-      {Array.from({ length: 8 }).map((_, i) => (
+    <div
+      role="status"
+      aria-label="Loading products"
+      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"
+    >
+      {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="animate-pulse rounded-lg border p-3 shadow-sm"
+          className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-sm animate-pulse"
         >
-          <div className="aspect-square w-full rounded-md bg-gray-200" />
-          <div className="mt-3 h-3 w-3/4 rounded bg-gray-200" />
-          <div className="mt-2 h-3 w-1/2 rounded bg-gray-200" />
+          <div className="relative w-full aspect-square bg-skeleton rounded-t-md" />
+          <div className="flex flex-1 flex-col p-3 space-y-2">
+            <div className="h-3 w-3/4 rounded bg-skeleton" />
+            <div className="h-4 w-1/2 rounded bg-skeleton" />
+            <div className="h-3 w-1/4 rounded bg-skeleton" />
+            <div className="mt-2 h-6 w-full rounded bg-skeleton" />
+          </div>
         </div>
       ))}
     </div>

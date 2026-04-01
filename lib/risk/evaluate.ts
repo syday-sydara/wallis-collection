@@ -1,9 +1,17 @@
 // lib/risk/evaluate.ts
 
 import type { RuleCondition, RiskContext } from "./types";
+import { logEvent } from "@/lib/logger";
 
 export function evaluateRule(condition: RuleCondition, context: RiskContext): boolean {
   const c = condition;
+
+  // Optional NOT operator
+  if ("not" in c && c.not) {
+    const clone = { ...c };
+    delete clone.not;
+    return !evaluateRule(clone as RuleCondition, context);
+  }
 
   switch (c.type) {
     case "ip_in_list":
@@ -14,7 +22,8 @@ export function evaluateRule(condition: RuleCondition, context: RiskContext): bo
 
     case "numeric_threshold": {
       const metricValue = context[c.metric];
-      if (metricValue === undefined || metricValue === null) return false;
+
+      if (typeof metricValue !== "number") return false;
 
       switch (c.operator) {
         case ">": return metricValue > c.value;
@@ -40,7 +49,15 @@ export function evaluateRule(condition: RuleCondition, context: RiskContext): bo
       return c.list.includes(prefix);
     }
 
+    // Compound rules
+    case "and":
+      return c.conditions.every(cond => evaluateRule(cond, context));
+
+    case "or":
+      return c.conditions.some(cond => evaluateRule(cond, context));
+
     default:
+      logEvent("risk_unknown_rule_type", { type: c.type });
       return false;
   }
 }

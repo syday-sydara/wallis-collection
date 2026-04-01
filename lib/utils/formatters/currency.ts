@@ -1,5 +1,11 @@
+// lib/utils/formatters/currency.ts
+
 /**
- * Format Nigerian Naira currency (₦) from kobo or naira.
+ * Format a number as Nigerian Naira (₦)
+ * @param amount Amount in kobo or naira
+ * @param fromKobo If true, converts kobo to naira (default: true)
+ * @param fractionDigits Number of decimal places (default: 0)
+ * @returns Formatted currency string, e.g. "₦1,000"
  */
 export const formatCurrency = (
   amount: number,

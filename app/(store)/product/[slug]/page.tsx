@@ -1,69 +1,34 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { getProductBySlug } from "@/lib/catalog/service";
-import ProductClient from "./ProductClient";
+// app/product/[slug]/page.tsx
+"use client";
 
-export const revalidate = 60;
+import ProductCard from "@/components/products/ProductCard";
+import type { ProductCardVM } from "@/lib/catalog/types";
 
-interface Props {
-  params: { slug: string };
-}
+type ProductGridProps = {
+  products: ProductCardVM[];
+  isLoading?: boolean;
+};
 
-// -----------------------------
-// Metadata
-// -----------------------------
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const product = await getProductBySlug(params.slug);
-
-  if (!product) {
-    return {
-      title: "Product Not Found — Wallis Collection",
-    };
-  }
-
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL;
-
-  return {
-    title: `${product.name} — Wallis Collection`,
-    description: product.description ?? "Premium Nigerian fashion.",
-    alternates: {
-      canonical: `${baseUrl}/product/${params.slug}`,
-    },
-    openGraph: {
-      type: "website",
-      title: product.name,
-      description: product.description ?? "",
-      images: product.images.map((i) => i.url),
-    },
-  };
-}
-
-// -----------------------------
-// Page
-// -----------------------------
-export default async function Page({ params }: Props) {
-  let product;
-
-  try {
-    product = await getProductBySlug(params.slug);
-  } catch {
-    return notFound();
-  }
-
-  if (!product || product.isArchived || product.deletedAt) {
-    return notFound();
-  }
-
-  // Minimal view model (keep it simple)
-  const viewModel = {
-    id: product.id,
-    name: product.name,
-    description: product.description,
-    price: product.discountPrice ?? product.basePrice,
-    images: product.images,
-    variants: product.variants,
-    inStock: product.stock > 0,
-  };
-
-  return <ProductClient product={viewModel} slug={params.slug} />;
+export default function ProductGrid({ products, isLoading }: ProductGridProps) {
+  return (
+    <div
+      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
+      aria-busy={isLoading ? true : undefined}
+    >
+      {isLoading
+        ? Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-square animate-pulse rounded-lg bg-surface-muted"
+            />
+          ))
+        : products.length
+        ? products.map((product) => <ProductCard key={product.id} product={product} />)
+        : (
+          <div className="col-span-full flex flex-col items-center justify-center py-12 text-center text-text-muted">
+            No products available right now.
+          </div>
+        )}
+    </div>
+  );
 }

@@ -4,3 +4,4 @@ export * from "./formatters/date";
 export * from "./sleep";
 export * from "./formatters/riskScore"
 export * from "./tailwind"
+export * from "./whatsapp";

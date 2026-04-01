@@ -7,7 +7,6 @@ const config: Config = {
   content: [
     "./app/**/*.{ts,tsx,mdx}",
     "./components/**/*.{ts,tsx,mdx}",
-    "./lib/**/*.{ts,tsx}",
   ],
 
   theme: {
@@ -17,37 +16,22 @@ const config: Config = {
         DEFAULT: "1rem",
         sm: "1rem",
         lg: "2rem",
-        xl: "3rem",
       },
     },
 
     extend: {
       colors: {
-        /* Surface & text */
         surface: "rgb(var(--surface) / <alpha-value>)",
         "surface-muted": "rgb(var(--surface-muted) / <alpha-value>)",
+        card: "rgb(var(--surface-card) / <alpha-value>)",
 
-        text: "rgb(var(--text) / <alpha-value>)",
-        "text-muted": "rgb(var(--text-muted) / <alpha-value>)",
-        "text-subtle": "rgb(var(--text-subtle) / <alpha-value>)",
+        text: {
+          DEFAULT: "rgb(var(--text) / <alpha-value>)",
+          muted: "rgb(var(--text-muted) / <alpha-value>)",
+        },
 
         border: "rgb(var(--border) / <alpha-value>)",
 
-        /* Brand scale */
-        brand: {
-          50: "rgb(var(--brand-50) / <alpha-value>)",
-          100: "rgb(var(--brand-100) / <alpha-value>)",
-          200: "rgb(var(--brand-200) / <alpha-value>)",
-          300: "rgb(var(--brand-300) / <alpha-value>)",
-          400: "rgb(var(--brand-400) / <alpha-value>)",
-          500: "rgb(var(--brand-500) / <alpha-value>)",
-          600: "rgb(var(--brand-600) / <alpha-value>)",
-          700: "rgb(var(--brand-700) / <alpha-value>)",
-          800: "rgb(var(--brand-800) / <alpha-value>)",
-          900: "rgb(var(--brand-900) / <alpha-value>)",
-        },
-
-        /* Semantic */
         primary: {
           DEFAULT: "rgb(var(--color-primary) / <alpha-value>)",
           hover: "rgb(var(--color-primary-hover) / <alpha-value>)",
@@ -70,27 +54,8 @@ const config: Config = {
           foreground: "#111111",
         },
 
-        /* Commerce */
-        commerce: {
-          price: "rgb(var(--color-price) / <alpha-value>)",
-          discount: "rgb(var(--color-discount) / <alpha-value>)",
-          instock: "rgb(var(--color-instock) / <alpha-value>)",
-          outofstock: "rgb(var(--color-outofstock) / <alpha-value>)",
-        },
-      },
-
-      borderRadius: {
-        ...defaultTheme.borderRadius,
-        sm: "var(--radius-sm)",
-        md: "var(--radius-md)",
-        lg: "var(--radius-lg)",
-      },
-
-      boxShadow: {
-        ...defaultTheme.boxShadow,
-        sm: "var(--shadow-sm)",
-        md: "var(--shadow-md)",
-        lg: "var(--shadow-lg)",
+        skeleton: "rgb(var(--skeleton) / <alpha-value>)",
+        disabled: "rgb(var(--color-disabled) / <alpha-value>)",
       },
 
       fontFamily: {
@@ -98,33 +63,41 @@ const config: Config = {
       },
 
       fontSize: {
-        xs: ["0.75rem", { lineHeight: "1rem" }],
-        sm: ["0.875rem", { lineHeight: "1.25rem" }],
-        base: ["1rem", { lineHeight: "1.5rem" }],
-        lg: ["1.125rem", { lineHeight: "1.75rem" }],
-        xl: ["1.25rem", { lineHeight: "1.75rem" }],
+        sm: ["0.875rem", { lineHeight: "1.3rem" }],
+        base: ["1rem", { lineHeight: "1.6rem" }],
+        lg: ["1.125rem", { lineHeight: "1.7rem" }],
+        xl: ["1.25rem", { lineHeight: "1.8rem" }],
         "2xl": ["1.5rem", { lineHeight: "2rem" }],
       },
 
-      /* Avoid overriding Tailwind spacing scale */
-      spacing: {
-        "space-xs": "var(--space-xs)",
-        "space-sm": "var(--space-sm)",
-        "space-md": "var(--space-md)",
-        "space-lg": "var(--space-lg)",
-        "space-xl": "var(--space-xl)",
+      borderRadius: {
+        sm: "var(--radius-sm)",
+        md: "var(--radius-md)",
+        lg: "var(--radius-lg)",
+      },
+
+      boxShadow: {
+        sm: "var(--shadow-sm)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
       },
 
       zIndex: {
-        header: "100",
-        overlay: "1050",
-        dropdown: "var(--z-dropdown)",
-        modal: "var(--z-modal)",
-        toast: "var(--z-toast)",
+        header: "10",
+        modal: "40",
       },
 
       ringColor: {
         primary: "rgb(var(--color-primary) / <alpha-value>)",
+      },
+
+      minHeight: {
+        touch: "44px",
+      },
+
+      transitionTimingFunction: {
+        standard: "var(--ease-standard)",
+        emphasized: "var(--ease-emphasized)",
       },
     },
   },

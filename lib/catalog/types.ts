@@ -1,18 +1,6 @@
 // lib/catalog/types.ts
 
 /**
- * Parameters for listing products with optional filters and pagination
- */
-export type ProductListParams = {
-  search?: string;
-  minPrice?: number;       // minimum price in kobo
-  maxPrice?: number;       // maximum price in kobo
-  includeArchived?: boolean;
-  limit?: number;          // page size, default to 24 or similar
-  cursor?: string;         // for cursor-based pagination
-};
-
-/**
  * Represents a product including related entities
  */
 export type ProductWithRelations = {
@@ -21,7 +9,7 @@ export type ProductWithRelations = {
   slug: string;
   description: string | null;
   basePrice: number;       // in kobo
-  stock: number;
+  stock: number;           // currently unused (O(1) service)
   isArchived: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -31,7 +19,7 @@ export type ProductWithRelations = {
     id: string;
     url: string;
     alt: string | null;
-    sortOrder?: number;     // optional if used for ordering
+    sortOrder?: number;
   }[];
   variants: {
     id: string;
@@ -42,9 +30,66 @@ export type ProductWithRelations = {
 };
 
 /**
+ * Recommended product simplified for product detail page
+ */
+export type RecommendedProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  basePrice: number;       // in kobo
+  images: {
+    id: string;
+    url: string;
+    alt: string | null;
+    sortOrder?: number;
+  }[];
+};
+
+/**
+ * Product detail response including recommendations
+ */
+export type ProductDetailResponse = {
+  product: ProductWithRelations;
+  recommendations: RecommendedProduct[];
+};
+
+/**
  * Cursor-based paginated product list result
  */
 export type ProductListResult = {
   items: ProductWithRelations[];
   nextCursor: string | null;
+};
+
+export type ProductListParams = {
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  includeArchived?: boolean;
+  limit?: number;
+  cursor?: string;
+};
+
+export function toProductCardVM(product: ProductWithRelations | RecommendedProduct) {
+  const minPrice = "variants" in product && product.variants?.length
+    ? Math.min(...product.variants.map(v => v.price))
+    : product.basePrice;
+
+  const maxPrice = "variants" in product && product.variants?.length
+    ? Math.max(...product.variants.map(v => v.price))
+    : product.basePrice;
+
+  return {
+    id: product.id,
+    name: product.name,
+    minPrice,
+    maxPrice,
+    inStock: "stock" in product ? product.stock > 0 : true,
+    images: product.images,
+  };
+}
+
+
+export type ProductClientVM = ProductWithRelations & {
+  recommended?: RecommendedProduct[];
 };

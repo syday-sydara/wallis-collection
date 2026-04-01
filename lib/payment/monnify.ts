@@ -1,10 +1,12 @@
 // lib/payments/monnify.ts
 export async function createMonnifySession(params: {
   email: string;
-  amount: number; // Naira
+  amount: number;
   orderId: string;
 }) {
-  const auth = Buffer.from(process.env.MONNIFY_AUTH!).toString("base64");
+  const auth = Buffer
+    .from(`${process.env.MONNIFY_API_KEY}:${process.env.MONNIFY_SECRET_KEY}`)
+    .toString("base64");
 
   const res = await fetch(
     "https://api.monnify.com/api/v1/merchant/transactions/init-transaction",
@@ -25,8 +27,19 @@ export async function createMonnifySession(params: {
     }
   );
 
-  const data = await res.json();
-  if (data.requestSuccessful !== true) throw new Error("Monnify init failed");
+  if (!res.ok) {
+    throw new Error("Monnify API error");
+  }
 
-  return data.response.checkoutUrl as string;
+  const data = await res.json();
+
+  if (!data.requestSuccessful) {
+    throw new Error(data.responseMessage || "Monnify init failed");
+  }
+
+  return {
+    checkoutUrl: data.response.checkoutUrl,
+    transactionReference: data.response.transactionReference,
+    paymentReference: data.response.paymentReference
+  };
 }
