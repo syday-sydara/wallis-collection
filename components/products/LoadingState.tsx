@@ -13,13 +13,14 @@ export default function LoadingState({
     <div
       role="status"
       aria-live="polite"
-      className="flex flex-col items-center justify-center py-16 px-4 text-center max-w-md mx-auto"
+      aria-busy="true"
+      className="flex flex-col items-center justify-center py-16 px-4 text-center max-w-md mx-auto animate-fadeIn"
     >
       {/* Spinner */}
       <div className="mb-4 text-text-muted">
         {spinner || (
           <svg
-            className="w-10 h-10 animate-spin text-text-muted"
+            className="w-10 h-10 animate-spin text-text-muted leading-none"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"

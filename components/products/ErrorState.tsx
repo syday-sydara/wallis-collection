@@ -1,4 +1,3 @@
-// components/ui/ErrorState.tsx
 type ErrorStateProps = {
   title?: string;
   description?: string;
@@ -16,16 +15,21 @@ export default function ErrorState({
     <div
       role="alert"
       aria-live="assertive"
-      className="flex flex-col items-center justify-center py-16 px-4 text-center max-w-md mx-auto"
+      aria-atomic="true"
+      className="flex flex-col items-center justify-center py-16 px-4 text-center max-w-md mx-auto animate-fadeIn"
     >
       {/* Icon */}
-      <div className="mb-4 text-danger text-4xl">{icon ?? "⚠️"}</div>
+      <div className="mb-4 text-danger text-4xl leading-none">
+        {icon ?? "⚠️"}
+      </div>
 
       {/* Title */}
       <p className="text-lg font-semibold text-text">{title}</p>
 
       {/* Description */}
-      <p className="mt-2 text-sm text-text-muted">{description}</p>
+      <p className="mt-2 text-sm text-text-muted max-w-prose">
+        {description}
+      </p>
 
       {/* Optional Action */}
       {action && <div className="mt-4">{action}</div>}

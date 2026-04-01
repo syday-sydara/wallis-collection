@@ -119,19 +119,23 @@ export default function ProductList({ params }: ProductListProps) {
   return (
     <>
       <ResultHeader count={products.length} />
-      <ProductGrid products={products} />
+
+      <div className="animate-fadeIn">
+        <ProductGrid products={products} />
+      </div>
 
       {nextCursor && (
         <div
           ref={loadMoreRef}
-          className="mt-4 text-center text-sm text-text-subtle"
+          aria-busy={loadingMore}
+          className="mt-4 text-center text-sm text-text-muted leading-none pb-safe"
         >
           {loadingMore ? "Loading more products..." : "Scroll down to load more"}
         </div>
       )}
 
       {!nextCursor && (
-        <p className="mt-4 text-center text-xs text-text-subtle">
+        <p className="mt-4 text-center text-xs text-text-muted animate-fadeIn-fast">
           No more products
         </p>
       )}
