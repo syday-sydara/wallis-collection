@@ -4,7 +4,7 @@ import { useState } from "react";
 import { formatCurrency } from "@/lib/utils";
 import Gallery from "./Gallery";
 import VariantSelector from "./VariantSelector";
-import AddToCartButton from "./AddToCartButton";
+import AddToCartButton from "../cart/AddToCartButton";
 import ProductCard from "./ProductCard";
 import type { ProductWithRelations, RecommendedProduct } from "@/lib/catalog/types";
 

@@ -1,9 +1,9 @@
-// app/layout.tsx
-import "./globals.css";
 import { Inter } from "next/font/google";
 import { ToastProvider } from "@/components/ui/Toast";
+import { CartProvider } from "@/components/cart/useCart";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { cn } from "@/lib/utils";
+import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,15 +16,16 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
       <body className={cn(inter.className, "h-full antialiased")}>
-        <ToastProvider>
-          {/* Global Cart Drawer */}
-          <CartDrawer />
+        {/* All client components MUST be inside CartProvider */}
+        <CartProvider>
+          <ToastProvider>
+            <CartDrawer />
 
-          {/* Page Content */}
-          <main className="min-h-screen bg-surface text-text pb-safe animate-fadeIn">
-            {children}
-          </main>
-        </ToastProvider>
+            <main className="min-h-screen bg-surface text-text pb-safe animate-fadeIn">
+              {children}
+            </main>
+          </ToastProvider>
+        </CartProvider>
       </body>
     </html>
   );
