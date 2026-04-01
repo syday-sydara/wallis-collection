@@ -1,4 +1,3 @@
-// app/admin/products/page.tsx
 import Link from "next/link";
 import { adminListProductsPaginated } from "@/lib/catalog/admin";
 
@@ -12,59 +11,84 @@ export default async function AdminProductsPage({
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold">Products</h2>
+        <h2 className="text-lg font-semibold text-text tracking-tight">
+          Products
+        </h2>
+
         <Link
           href="/admin/products/new"
-          className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white"
+          className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground shadow-sm hover:bg-primary-hover active:bg-primary-active transition-all"
         >
           New product
         </Link>
       </div>
 
-      <table className="w-full text-left text-xs">
-        <thead className="border-b text-[11px] uppercase text-neutral-500">
-          <tr>
-            <th className="py-2">Name</th>
-            <th>Price</th>
-            <th>Stock</th>
-            <th>Status</th>
-            <th>Updated</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y text-[13px]">
-          {items.map((p) => (
-            <tr key={p.id}>
-              <td className="py-2">
-                <Link
-                  href={`/admin/products/${p.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {p.name}
-                </Link>
-                <div className="text-[11px] text-neutral-500">{p.slug}</div>
-              </td>
-              <td>₦{(p.basePrice / 100).toLocaleString("en-NG")}</td>
-              <td>{p.stock}</td>
-              <td>{p.isArchived ? "Archived" : "Active"}</td>
-              <td>
-                {new Date(p.updatedAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric"
-                })}
-              </td>
+      {/* Table container */}
+      <div className="overflow-hidden rounded-lg border border-border bg-surface-card shadow-card">
+        <table className="w-full text-left text-sm">
+          <thead className="border-b border-border bg-surface-muted text-xs uppercase text-text-muted">
+            <tr>
+              <th className="py-3 px-4">Name</th>
+              <th className="px-4">Price</th>
+              <th className="px-4">Stock</th>
+              <th className="px-4">Status</th>
+              <th className="px-4">Updated</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
 
+          <tbody className="divide-y divide-border">
+            {items.map((p) => (
+              <tr key={p.id} className="hover:bg-surface-muted/50 transition-colors">
+                <td className="py-3 px-4">
+                  <Link
+                    href={`/admin/products/${p.id}`}
+                    className="font-medium text-text hover:underline"
+                  >
+                    {p.name}
+                  </Link>
+                  <div className="text-xs text-text-muted">{p.slug}</div>
+                </td>
+
+                <td className="px-4">
+                  ₦{(p.basePrice / 100).toLocaleString("en-NG")}
+                </td>
+
+                <td className="px-4">{p.stock}</td>
+
+                <td className="px-4">
+                  {p.isArchived ? (
+                    <span className="rounded-md bg-danger px-2 py-0.5 text-xs text-danger-foreground">
+                      Archived
+                    </span>
+                  ) : (
+                    <span className="rounded-md bg-success px-2 py-0.5 text-xs text-success-foreground">
+                      Active
+                    </span>
+                  )}
+                </td>
+
+                <td className="px-4 text-xs text-text-muted">
+                  {new Date(p.updatedAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric"
+                  })}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
       {nextCursor && (
-        <div className="mt-4">
+        <div className="pt-4">
           <Link
             href={`/admin/products?cursor=${nextCursor}`}
-            className="text-xs text-neutral-700 underline"
+            className="text-sm text-text-muted underline hover:text-text"
           >
             Load more
           </Link>

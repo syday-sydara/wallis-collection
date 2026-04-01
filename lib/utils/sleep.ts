@@ -1,10 +1,31 @@
 // lib/utils/sleep.ts
 
 /**
- * Sleep helper for async delays
- * @param ms - milliseconds to wait
+ * Pause execution for a given number of milliseconds.
+ * Supports optional cancellation via AbortSignal.
+ *
+ * @param ms - Duration to wait in milliseconds
+ * @param signal - Optional AbortSignal to cancel the sleep
+ *
  * @example
- * await sleep(1000); // waits for 1 second
+ * await sleep(1000) // waits 1 second
+ *
+ * @example
+ * const controller = new AbortController();
+ * sleep(5000, controller.signal).catch(() => console.log("Cancelled"));
+ * controller.abort();
  */
-export const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  const duration = Math.max(0, Math.round(ms)); // defensive: ensure non-negative integer
+
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => resolve(), duration);
+
+    if (signal) {
+      signal.addEventListener("abort", () => {
+        clearTimeout(timeoutId);
+        reject(new Error("Sleep aborted"));
+      });
+    }
+  });
+}

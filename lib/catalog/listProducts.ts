@@ -1,6 +1,6 @@
 // lib/catalog/listProducts.ts
 import { prisma } from "@/lib/db";
-import type { ProductWithRelations, ProductListParams, ProductListResult } from "./types";
+import type { ProductListParams, ProductListResult } from "./types";
 
 /**
  * List products with optional filters and pagination
@@ -12,36 +12,28 @@ export async function listProducts(
 
   const products = await prisma.product.findMany({
     where: {
-      deletedAt: null,
       isArchived: includeArchived ? undefined : false,
-      AND: [
-        search
-          ? {
-              OR: [
-                { name: { contains: search, mode: "insensitive" } },
-                { description: { contains: search, mode: "insensitive" } },
-              ],
-            }
-          : {},
-        minPrice !== undefined ? { basePrice: { gte: minPrice } } : {},
-        maxPrice !== undefined ? { basePrice: { lte: maxPrice } } : {},
-      ],
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
+        ],
+      }),
+      ...(minPrice !== undefined && { basePrice: { gte: minPrice } }),
+      ...(maxPrice !== undefined && { basePrice: { lte: maxPrice } }),
     },
     take: limit + 1,
     skip: cursor ? 1 : 0,
     cursor: cursor ? { id: cursor } : undefined,
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    orderBy: { createdAt: "desc" },
     include: {
       images: { orderBy: { sortOrder: "asc" } },
       variants: true,
     },
   });
 
-  let nextCursor: string | null = null;
-  if (products.length > limit) {
-    const nextItem = products.pop();
-    nextCursor = nextItem!.id;
-  }
+  const hasMore = products.length > limit;
+  const nextCursor = hasMore ? products[limit].id : null;
 
   return {
     items: products.slice(0, limit).map((p) => ({
@@ -50,22 +42,12 @@ export async function listProducts(
       slug: p.slug,
       description: p.description,
       basePrice: p.basePrice,
-      stock: p.variants.reduce((sum, v) => sum + v.price, 0),
+      stock: p.variants.reduce((sum, v) => sum + v.stock, 0),
       isArchived: p.isArchived,
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
-      images: p.images.map((img) => ({
-        id: img.id,
-        url: img.url,
-        alt: img.alt,
-        sortOrder: img.sortOrder,
-      })),
-      variants: p.variants.map((v) => ({
-        id: v.id,
-        name: v.name,
-        sku: v.sku,
-        price: v.price,
-      })),
+      images: p.images,
+      variants: p.variants,
     })),
     nextCursor,
   };

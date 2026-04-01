@@ -1,61 +1,47 @@
 // lib/catalog/types.ts
 
-/**
- * Represents a product including related entities
- */
+export type ProductImage = {
+  id: string;
+  url: string;
+  alt: string | null;
+  sortOrder: number;
+};
+
+export type ProductVariant = {
+  id: string;
+  name: string;
+  sku: string;
+  price: number;
+  stock: number;
+};
+
 export type ProductWithRelations = {
   id: string;
   name: string;
   slug: string;
   description: string | null;
-  basePrice: number;       // in kobo
-  stock: number;           // currently unused (O(1) service)
+  basePrice: number | null;
+  stock: number;
   isArchived: boolean;
   createdAt: Date;
   updatedAt: Date;
-
-  // Relations
-  images: {
-    id: string;
-    url: string;
-    alt: string | null;
-    sortOrder?: number;
-  }[];
-  variants: {
-    id: string;
-    name: string;
-    sku: string;
-    price: number;         // in kobo
-  }[];
+  images: ProductImage[];
+  variants: ProductVariant[];
 };
 
-/**
- * Recommended product simplified for product detail page
- */
 export type RecommendedProduct = {
   id: string;
   name: string;
   slug: string;
-  basePrice: number;       // in kobo
-  images: {
-    id: string;
-    url: string;
-    alt: string | null;
-    sortOrder?: number;
-  }[];
+  basePrice: number | null;
+  images: ProductImage[];
 };
 
-/**
- * Product detail response including recommendations
- */
 export type ProductDetailResponse = {
   product: ProductWithRelations;
   recommendations: RecommendedProduct[];
 };
 
-/**
- * Cursor-based paginated product list result
- */
 export type ProductListResult = {
   items: ProductWithRelations[];
   nextCursor: string | null;
@@ -71,13 +57,16 @@ export type ProductListParams = {
 };
 
 export function toProductCardVM(product: ProductWithRelations | RecommendedProduct) {
-  const minPrice = "variants" in product && product.variants?.length
-    ? Math.min(...product.variants.map(v => v.price))
-    : product.basePrice;
+  const variants = "variants" in product ? product.variants : [];
+  const hasVariants = variants.length > 0;
 
-  const maxPrice = "variants" in product && product.variants?.length
-    ? Math.max(...product.variants.map(v => v.price))
-    : product.basePrice;
+  const minPrice = hasVariants
+    ? Math.min(...variants.map(v => v.price))
+    : product.basePrice ?? 0;
+
+  const maxPrice = hasVariants
+    ? Math.max(...variants.map(v => v.price))
+    : product.basePrice ?? 0;
 
   return {
     id: product.id,
@@ -88,7 +77,6 @@ export function toProductCardVM(product: ProductWithRelations | RecommendedProdu
     images: product.images,
   };
 }
-
 
 export type ProductClientVM = ProductWithRelations & {
   recommended?: RecommendedProduct[];

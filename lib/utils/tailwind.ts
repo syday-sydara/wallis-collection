@@ -2,25 +2,26 @@
 import { twMerge } from "tailwind-merge";
 
 /**
- * Tailwind-aware className merge
- * Filters out falsy values and merges Tailwind classes intelligently.
+ * Unified Tailwind-aware className utility.
+ * Accepts strings, arrays, nested arrays, and falsy values.
+ *
  * @example
- * cn("p-4", isActive && "bg-primary")
- */
-export const cn = (...classes: (string | undefined | null | false)[]): string =>
-  twMerge(classes.filter(Boolean).join(" "));
-
-/**
- * Flexible version that accepts arrays of classes
+ * cnx("p-4", isActive && "bg-primary")
+ *
  * @example
- * cnFlexible("p-4", ["bg-primary", isActive && "text-white"])
+ * cnx("p-4", ["bg-primary", isActive && "text-white"])
+ *
+ * @example
+ * cnx(["p-4", ["bg-primary", ["text-white"]]])
  */
-export const cnFlexible = (
+export function cnx(
   ...classes: Array<string | string[] | undefined | null | false>
-): string =>
-  twMerge(
-    classes
-      .flatMap((c) => (Array.isArray(c) ? c : [c]))
-      .filter(Boolean)
-      .join(" ")
+): string {
+  const flattened = classes.flatMap(c =>
+    Array.isArray(c) ? c : [c]
   );
+
+  return twMerge(
+    flattened.filter(Boolean).join(" ")
+  );
+}

@@ -8,7 +8,7 @@ import { useCheckoutForm } from "@/lib/checkout/useCheckoutForm";
 import CartSummary from "../../../components/cart/CartSummary";
 import Field from "@/components/forms/Field";
 import { NIGERIAN_STATES } from "@/lib/checkout/constants";
-import { PAYMENT_METHODS } from "@/lib/payment/methods";
+import { PAYMENT_METHODS } from "@/lib/payment/verification";
 import { formatCurrency } from "@/lib/utils/index";
 
 export default function CheckoutPage() {

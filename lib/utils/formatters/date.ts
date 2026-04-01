@@ -1,28 +1,34 @@
 // lib/utils/formatters/date.ts
 
 /**
- * Format a date in Nigerian locale (en-NG)
+ * Format a date in Nigerian locale (en-NG).
  * Example: "Mon, 30 Mar 2026, 14:35"
  *
  * @param date - A Date object or ISO date string
- * @param options - Optional Intl.DateTimeFormat options to override defaults
- * @returns Formatted date string or empty string if invalid date
+ * @param options - Optional Intl.DateTimeFormat overrides
+ * @returns Formatted date string or empty string if invalid
  */
-export const formatDate = (
+export function formatDate(
   date: Date | string,
   options?: Intl.DateTimeFormatOptions
-): string => {
+): string {
   const d = typeof date === "string" ? new Date(date) : date;
 
-  if (isNaN(d.getTime())) return "";
+  // Guard against invalid dates
+  if (!(d instanceof Date) || isNaN(d.getTime())) {
+    return "";
+  }
 
-  return new Intl.DateTimeFormat("en-NG", {
+  const formatter = new Intl.DateTimeFormat("en-NG", {
     weekday: "short",
     year: "numeric",
     month: "short",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    ...options,
-  }).format(d);
-};
+    hour12: false, // Nigerian digital time is typically 24h
+    ...options
+  });
+
+  return formatter.format(d);
+}

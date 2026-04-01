@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, PropsWithChildren } from "react";
+import React, { createContext, useContext, useState, useEffect, PropsWithChildren } from "react";
 import { Cart, CartItem } from "./types";
 
 interface CartContextProps {
@@ -13,40 +13,52 @@ interface CartContextProps {
 
 const CartContext = createContext<CartContextProps | undefined>(undefined);
 
+function recalcTotal(items: CartItem[]) {
+  return items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+}
+
 export function CartProvider({ children }: PropsWithChildren) {
   const [cart, setCart] = useState<Cart>({ items: [], total: 0 });
 
-  function recalcTotal(items: CartItem[]) {
-    return items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  }
-
   const addItem = (item: CartItem) => {
-    setCart((prev) => {
-      const exists = prev.items.find((i) => i.variantId === item.variantId);
-      let items;
-      if (exists) {
-        items = prev.items.map((i) =>
-          i.variantId === item.variantId ? { ...i, quantity: i.quantity + item.quantity } : i
+    setCart(prev => {
+      const existing = prev.items.find(i => i.variantId === item.variantId);
+
+      if (existing) {
+        const newQty = Math.min(existing.quantity + item.quantity, item.stock);
+        if (newQty === existing.quantity) return prev;
+
+        const items = prev.items.map(i =>
+          i.variantId === item.variantId ? { ...i, quantity: newQty } : i
         );
-      } else {
-        items = [...prev.items, item];
+
+        return { items, total: recalcTotal(items) };
       }
+
+      const items = [...prev.items, { ...item, quantity: Math.min(item.quantity, item.stock) }];
       return { items, total: recalcTotal(items) };
     });
   };
 
   const removeItem = (variantId: string) => {
-    setCart((prev) => {
-      const items = prev.items.filter((i) => i.variantId !== variantId);
+    setCart(prev => {
+      const items = prev.items.filter(i => i.variantId !== variantId);
       return { items, total: recalcTotal(items) };
     });
   };
 
   const updateQuantity = (variantId: string, qty: number) => {
-    setCart((prev) => {
-      const items = prev.items.map((i) =>
-        i.variantId === variantId ? { ...i, quantity: qty } : i
+    setCart(prev => {
+      const item = prev.items.find(i => i.variantId === variantId);
+      if (!item) return prev;
+
+      const newQty = Math.max(1, Math.min(qty, item.stock));
+      if (newQty === item.quantity) return prev;
+
+      const items = prev.items.map(i =>
+        i.variantId === variantId ? { ...i, quantity: newQty } : i
       );
+
       return { items, total: recalcTotal(items) };
     });
   };

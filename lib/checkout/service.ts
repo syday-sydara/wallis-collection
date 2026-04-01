@@ -3,113 +3,106 @@
 import { prisma } from "@/lib/db";
 import type { CheckoutPayload } from "./schema";
 import { logEvent } from "@/lib/logger";
-import { startTimer } from "@/lib/metrics";
-import * as Sentry from "@sentry/nextjs";
-import { calculateRiskScore } from "@/lib/risk/engine";
-import type { RiskContext } from "@/lib/risk/types";
 
 /**
- * Processes a checkout order
- * 1. Evaluates risk score
- * 2. Creates order in DB
- * 3. Returns orderId and optional paymentUrl
+ * Lean checkout processor
+ * - Validates cart items
+ * - Validates stock
+ * - Computes totals securely
+ * - Creates order + order items
  */
-export async function processCheckout(payload: CheckoutPayload, riskContext: RiskContext) {
-  return Sentry.startSpan(
-    { name: "checkout.process", op: "service" },
-    async () => {
-      const endTimer = startTimer("checkout_service");
+export async function processCheckout(payload: CheckoutPayload) {
+  const variantIds = payload.items.map(i => i.variantId);
 
-      // ---------------- Risk Evaluation ----------------
-      const { score, triggered } = await calculateRiskScore(riskContext);
+  return prisma.$transaction(async (tx) => {
+    const variants = await tx.productVariant.findMany({
+      where: { id: { in: variantIds } },
+      include: { product: true }
+    });
 
-      logEvent("risk_score_evaluated", {
-        email: payload.email,
-        score,
-        triggeredRules: triggered.map((r) => r.name),
-      });
+    if (variants.length !== payload.items.length) {
+      throw new Error("Some items in your cart are no longer available");
+    }
 
-      if (score >= 50) {
-        logEvent("order_blocked_high_risk", {
-          email: payload.email,
-          score,
-          triggeredRules: triggered.map((r) => r.name),
-        });
-        endTimer();
-        throw new Error("Order flagged as high risk");
+    const variantMap = new Map(variants.map(v => [v.id, v]));
+
+    for (const item of payload.items) {
+      const variant = variantMap.get(item.variantId);
+      if (!variant) throw new Error("A product variant no longer exists");
+
+      if (item.quantity > variant.stock) {
+        throw new Error(`Insufficient stock for ${variant.name}`);
       }
 
-      // ---------------- Compute Totals (SECURE) ----------------
-      const subtotal = payload.items.reduce(
-        (sum, item) => sum + item.unitPrice * item.quantity,
-        0
-      );
-
-      const shippingCost = payload.shippingType === "EXPRESS" ? 2500 : 1500; // example logic
-      const total = subtotal + shippingCost;
-
-      // ---------------- Create Order ----------------
-      try {
-        const dbTimer = startTimer("db.order.create");
-
-        const order = await prisma.order.create({
-          data: {
-            email: payload.email,
-            phone: payload.phone,
-            fullName: payload.fullName,
-            paymentMethod: payload.paymentMethod,
-            paymentStatus: "PENDING",
-            orderStatus: "PENDING",
-            shippingType: payload.shippingType,
-            shippingState: payload.state,
-            shippingCost,
-            address: payload.address,
-            city: payload.city,
-            state: payload.state,
-            cartSnapshot: payload.items,
-            total, // 👈 server‑computed
-            items: {
-              create: payload.items.map((item) => ({
-                productId: item.productId,
-                name: item.name,
-                image: item.image,
-                variantId: item.variantId ?? null, // 👈 FIXED
-                quantity: item.quantity,
-                price: item.unitPrice,
-              })),
-            },
-          },
-        });
-
-        dbTimer();
-
-        // ---------------- Payment Session ----------------
-        const paymentTimer = startTimer("payment_session_create");
-        const paymentUrl: string | null = null; // integrate Paystack/Monnify later
-        paymentTimer();
-
-        logEvent("checkout_order_created", {
-          orderId: order.id,
-          email: payload.email,
-          itemsCount: payload.items.length,
-        });
-
-        endTimer();
-
-        return {
-          orderId: order.id,
-          paymentUrl,
-        };
-      } catch (err: any) {
-        Sentry.captureException(err);
-        logEvent(
-          "checkout_service_error",
-          { message: err?.message, stack: err?.stack },
-          "error"
-        );
-        endTimer();
-        throw err;
+      if (item.price !== variant.price) {
+        throw new Error(`Price changed for ${variant.name}. Refresh your cart.`);
       }
     }
-  );
+
+    const subtotal = payload.items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+
+    const shippingCost = payload.shippingType === "EXPRESS" ? 2500 : 1500;
+    const total = subtotal + shippingCost;
+
+    // Create address record
+    const address = await tx.address.create({
+      data: {
+        fullName: payload.fullName,
+        phone: payload.phone,
+        line1: payload.address,
+        city: payload.city,
+        state: payload.state,
+        country: "Nigeria"
+      }
+    });
+
+    // Reserve stock
+    for (const item of payload.items) {
+      await tx.productVariant.update({
+        where: { id: item.variantId },
+        data: { stock: { decrement: item.quantity } }
+      });
+    }
+
+    const order = await tx.order.create({
+      data: {
+        email: payload.email,
+        phone: payload.phone,
+        fullName: payload.fullName,
+        paymentMethod: payload.paymentMethod,
+        paymentStatus: "PENDING",
+        orderStatus: "CREATED",
+        shippingType: payload.shippingType,
+        shippingCost,
+        total,
+        addressId: address.id,
+        cartSnapshot: payload.items,
+        items: {
+          create: payload.items.map(item => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            name: item.name,
+            image: item.image,
+            quantity: item.quantity,
+            price: item.price
+          }))
+        }
+      }
+    });
+
+    logEvent("checkout_order_created", {
+      orderId: order.id,
+      email: payload.email,
+      itemsCount: payload.items.length,
+      total
+    });
+
+    return {
+      orderId: order.id,
+      paymentUrl: null
+    };
+  });
 }

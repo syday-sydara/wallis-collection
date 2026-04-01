@@ -4,55 +4,48 @@ import { prisma } from "@/lib/db";
 
 type AdjustStockArgs = {
   variantId: string;
-  change: number;
-  reason: string;
-  reference?: string;
+  change: number; // positive or negative
 };
 
-export async function adjustProductStock(args: AdjustStockArgs) {
-  const { variantId, change, reason, reference } = args;
-
-  if (change === 0) {
-    throw new Error("Stock change cannot be zero");
-  }
+export async function adjustProductStock({ variantId, change }: AdjustStockArgs) {
+  if (!variantId) throw new Error("Variant ID is required");
+  if (change === 0) throw new Error("Stock change cannot be zero");
 
   return prisma.$transaction(async (tx) => {
-    const result = await tx.productVariant.updateMany({
-      where: {
-        id: variantId,
-        stock: {
-          gte: change < 0 ? Math.abs(change) : 0
-        }
-      },
-      data: {
-        stock: {
-          increment: change
-        }
-      }
+    const variant = await tx.productVariant.findUnique({
+      where: { id: variantId },
+      select: { stock: true }
     });
 
-    if (result.count === 0) {
+    if (!variant) throw new Error("Variant not found");
+
+    if (change < 0 && variant.stock < Math.abs(change)) {
       throw new Error("Insufficient stock");
     }
 
-    const variant = await tx.productVariant.findUnique({
+    const updated = await tx.productVariant.update({
       where: { id: variantId },
+      data: { stock: { increment: change } },
       select: {
         id: true,
         stock: true,
+        price: true,
+        name: true,
+        sku: true,
         productId: true
       }
     });
 
-    await tx.inventoryMovement.create({
+    // Optional: write to StockLog
+    await tx.stockLog.create({
       data: {
-        productId: variant!.productId,
+        variantId,
         change,
-        reason,
-        reference
+        reason: change > 0 ? "manual increase" : "manual decrease"
       }
     });
 
-    return variant;
+    return updated;
   });
 }
+

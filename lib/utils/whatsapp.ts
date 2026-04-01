@@ -2,36 +2,43 @@
 import type { CartItem } from "@/app/(store)/checkout/page";
 
 /**
- * Generate a WhatsApp message based on cart items, total, and buyer name
- * @param items Array of cart items
- * @param total Total cart price
- * @param fullName Optional buyer full name
- * @returns Formatted WhatsApp message string
+ * Format a single cart line for WhatsApp.
+ */
+function formatCartLine(item: CartItem): string {
+  const variant = item.variant ? ` (${item.variant})` : "";
+  const lineTotal = item.unitPrice * item.quantity;
+
+  return `${item.name}${variant} x${item.quantity} - ₦${lineTotal.toLocaleString()}`;
+}
+
+/**
+ * Generate a WhatsApp message based on cart items, total, and buyer name.
  */
 export function generateWhatsAppMessage(
   items: CartItem[],
   total: number,
   fullName?: string
 ): string {
-  const itemLines = items
-    .map(
-      (i) =>
-        `${i.name}${i.variant ? ` (${i.variant})` : ""} x${i.quantity} - ₦${(
-          i.unitPrice * i.quantity
-        ).toLocaleString()}`
-    )
-    .join("\n");
+  const itemLines = items.map(formatCartLine).join("\n");
 
-  const message = `Hello! My name is ${fullName || ""}.\nI would like to place an order:\n\n${itemLines}\n\nTotal: ₦${total.toLocaleString()}`;
-  return message;
+  const nameLine = fullName?.trim()
+    ? `Hello! My name is ${fullName.trim()}.\n`
+    : "Hello!\n";
+
+  return (
+    `${nameLine}I would like to place an order:\n\n` +
+    `${itemLines}\n\n` +
+    `Total: ₦${total.toLocaleString()}`
+  );
 }
 
 /**
- * Generate a WhatsApp URL with prefilled message for Nigeria
- * @param message Message text to prefill in WhatsApp chat
- * @returns WhatsApp URL
+ * Generate a WhatsApp URL with a prefilled message.
+ * Uses your business number from env or fallback.
  */
 export function generateWhatsAppLink(message: string): string {
-  const phone = "234XXXXXXXXXX"; // Replace with your business number
+  const phone =
+    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "234XXXXXXXXXX"; // fallback
+
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }

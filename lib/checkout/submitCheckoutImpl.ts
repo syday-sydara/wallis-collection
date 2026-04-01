@@ -1,13 +1,15 @@
 import { CheckoutPayloadSchema } from "@/lib/checkout/schema";
 import { processCheckout } from "@/lib/checkout/service";
 
-export async function submitCheckoutImpl(prevState, formData) {
-  const raw = {};
+export async function submitCheckoutImpl(prevState: any, formData: FormData) {
+  const raw: Record<string, any> = {};
+
   formData.forEach((value, key) => {
     raw[key] = typeof value === "string" ? value.trim() : value;
   });
 
-  let items;
+  // Parse cart items
+  let items: any;
   try {
     items = JSON.parse(raw.items);
   } catch {
@@ -18,20 +20,31 @@ export async function submitCheckoutImpl(prevState, formData) {
     };
   }
 
-  // Client payload WITHOUT trusting totals
+  if (!Array.isArray(items)) {
+    return {
+      success: false,
+      message: "Invalid cart data",
+      fieldErrors: { items: ["Items must be an array"] }
+    };
+  }
+
+  // Build payload
   const payload = {
     email: raw.email,
     phone: raw.phone,
     fullName: raw.fullName,
     paymentMethod: raw.paymentMethod,
     shippingType: raw.shippingType,
-    address: raw.address,
-    city: raw.city,
-    state: raw.state,
+    address: raw.address?.trim(),
+    city: raw.city?.trim(),
+    state: raw.state?.trim(),
     items
   };
 
-  const parsed = CheckoutPayloadSchema.omit({ total: true, shippingCost: true }).safeParse(payload);
+  // Validate with Zod
+  const parsed = CheckoutPayloadSchema
+    .omit({ total: true, shippingCost: true })
+    .safeParse(payload);
 
   if (!parsed.success) {
     return {
@@ -41,11 +54,9 @@ export async function submitCheckoutImpl(prevState, formData) {
     };
   }
 
+  // Server-side processing
   try {
-    const result = await processCheckout(parsed.data, {
-      email: payload.email,
-      state: payload.state
-    });
+    const result = await processCheckout(parsed.data);
 
     return {
       success: true,
@@ -58,7 +69,7 @@ export async function submitCheckoutImpl(prevState, formData) {
     return {
       success: false,
       message: err.message || "An error occurred during checkout.",
-      fieldErrors: {}
+      fieldErrors: { items: [err.message] }
     };
   }
 }
