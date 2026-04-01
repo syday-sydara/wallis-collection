@@ -1,4 +1,3 @@
-// app/(store)/checkout/useCheckoutForm.ts
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -30,7 +29,9 @@ export const defaultForm: CheckoutFormState = {
   shippingType: "STANDARD",
   address: "",
   city: "",
-  state: ""
+  state: "",
+  total: 0,              // 👈 add this
+  shippingCost: undefined // 👈 optional, only if schema includes it
 };
 
 export function useCheckoutForm(serverErrors: Record<string, string[] | undefined>) {

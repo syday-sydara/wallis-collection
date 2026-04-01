@@ -1,8 +1,9 @@
+// components/ui/EmptyState.tsx
 type EmptyStateProps = {
   title?: string;
   description?: string;
   action?: React.ReactNode;
-  icon?: React.ReactNode; // optional custom icon
+  icon?: React.ReactNode;
 };
 
 export default function EmptyState({
@@ -12,23 +13,10 @@ export default function EmptyState({
   icon,
 }: EmptyStateProps) {
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="flex flex-col items-center justify-center py-16 text-center"
-    >
-      {/* Icon */}
-      <div className="mb-4 text-primary text-3xl">
-        {icon || "📦"}
-      </div>
-
-      {/* Title */}
+    <div role="status" aria-live="polite" className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="mb-4 text-primary text-3xl">{icon || "📦"}</div>
       <p className="text-lg font-semibold text-text">{title}</p>
-
-      {/* Description */}
       <p className="mt-2 text-sm text-text-muted">{description}</p>
-
-      {/* Action */}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );

@@ -39,6 +39,15 @@ export async function processCheckout(payload: CheckoutPayload, riskContext: Ris
         throw new Error("Order flagged as high risk");
       }
 
+      // ---------------- Compute Totals (SECURE) ----------------
+      const subtotal = payload.items.reduce(
+        (sum, item) => sum + item.unitPrice * item.quantity,
+        0
+      );
+
+      const shippingCost = payload.shippingType === "EXPRESS" ? 2500 : 1500; // example logic
+      const total = subtotal + shippingCost;
+
       // ---------------- Create Order ----------------
       try {
         const dbTimer = startTimer("db.order.create");
@@ -53,18 +62,18 @@ export async function processCheckout(payload: CheckoutPayload, riskContext: Ris
             orderStatus: "PENDING",
             shippingType: payload.shippingType,
             shippingState: payload.state,
-            shippingCost: payload.shippingCost ?? 0,
+            shippingCost,
             address: payload.address,
             city: payload.city,
             state: payload.state,
             cartSnapshot: payload.items,
-            total: payload.total,
+            total, // 👈 server‑computed
             items: {
               create: payload.items.map((item) => ({
                 productId: item.productId,
                 name: item.name,
                 image: item.image,
-                variants: item.variants,
+                variantId: item.variantId ?? null, // 👈 FIXED
                 quantity: item.quantity,
                 price: item.unitPrice,
               })),
@@ -76,7 +85,7 @@ export async function processCheckout(payload: CheckoutPayload, riskContext: Ris
 
         // ---------------- Payment Session ----------------
         const paymentTimer = startTimer("payment_session_create");
-        const paymentUrl: string | null = null; // TODO: integrate Paystack / Monnify here
+        const paymentUrl: string | null = null; // integrate Paystack/Monnify later
         paymentTimer();
 
         logEvent("checkout_order_created", {
@@ -87,10 +96,9 @@ export async function processCheckout(payload: CheckoutPayload, riskContext: Ris
 
         endTimer();
 
-        // ---------------- Return Order Info ----------------
         return {
           orderId: order.id,
-          paymentUrl, // If null, you can use WhatsApp flow instead
+          paymentUrl,
         };
       } catch (err: any) {
         Sentry.captureException(err);

@@ -1,33 +1,34 @@
 // app/product/[slug]/page.tsx
-import { notFound } from "next/navigation";
-import { getProductDetailWithRecommendations } from "@/lib/catalog/service";
-import ProductClient from "./ProductClient";
+"use client";
 
-export const revalidate = 60;
+import ProductCard from "@/components/products/ProductCard";
+import type { ProductCardVM } from "@/lib/catalog/types";
 
-export default async function Page({ params }: { params: { slug: string } }) {
-  const data = await getProductDetailWithRecommendations(params.slug).catch(() => null);
+type ProductGridProps = {
+  products: ProductCardVM[];
+  isLoading?: boolean;
+};
 
-  if (!data) return notFound();
-
-  const { product, recommendations } = data;
-
-  // Calculate stock
-  const stock = product.variants.reduce((sum, v) => sum + v.price, 0);
-
-  // Calculate min/max prices
-  const prices = product.variants.map(v => v.price);
-  const minPrice = prices.length ? Math.min(...prices) : product.basePrice;
-  const maxPrice = prices.length ? Math.max(...prices) : product.basePrice;
-
-  const viewModel = {
-    ...product,
-    stock,
-    minPrice,
-    maxPrice,
-    inStock: stock > 0,
-    recommended: recommendations
-  };
-
-  return <ProductClient product={viewModel} slug={params.slug} />;
+export default function ProductGrid({ products, isLoading }: ProductGridProps) {
+  return (
+    <div
+      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
+      aria-busy={isLoading ? true : undefined}
+    >
+      {isLoading
+        ? Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-square animate-pulse rounded-lg bg-surface-muted"
+            />
+          ))
+        : products.length
+        ? products.map((product) => <ProductCard key={product.id} product={product} />)
+        : (
+          <div className="col-span-full flex flex-col items-center justify-center py-12 text-center text-text-muted">
+            No products available right now.
+          </div>
+        )}
+    </div>
+  );
 }

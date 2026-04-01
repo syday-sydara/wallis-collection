@@ -1,31 +1,24 @@
 "use client";
 
 import ProductCard from "./ProductCard";
-import type { ProductCardVM } from "@/lib/catalog/types";
+import { Skeleton } from "@/components/ui/Skeleton";
+import type { ProductWithRelations } from "@/lib/catalog/types";
 
 type ProductGridProps = {
-  products: ProductCardVM[];
+  products: ProductWithRelations[];
   isLoading?: boolean;
 };
 
 export default function ProductGrid({ products, isLoading }: ProductGridProps) {
   return (
-    <div
-      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
-      aria-busy={isLoading ? true : undefined}
-    >
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" aria-busy={isLoading ? true : undefined}>
       {isLoading
-        ? Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="aspect-square animate-pulse rounded-lg bg-skeleton"
-            />
-          ))
+        ? Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="aspect-square" />)
         : products.length
-        ? products.map((product) => <ProductCard key={product.id} product={product} />)
+        ? products.map((p) => <ProductCard key={p.id} product={p} />)
         : (
-          <div className="col-span-full flex flex-col items-center justify-center py-12 text-center text-text-muted">
-            No products available right now.
+          <div className="col-span-full flex flex-col items-center justify-center py-12 text-text-muted text-center">
+            No products available
           </div>
         )}
     </div>

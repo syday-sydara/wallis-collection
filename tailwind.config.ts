@@ -13,7 +13,7 @@ const config: Config = {
     container: {
       center: true,
       padding: {
-        DEFAULT: "0.75rem",
+        DEFAULT: "1rem",
         sm: "1rem",
         lg: "2rem",
       },
@@ -31,13 +31,6 @@ const config: Config = {
         },
 
         border: "rgb(var(--border) / <alpha-value>)",
-
-        /* Simplified brand scale */
-        brand: {
-          500: "rgb(var(--brand-500) / <alpha-value>)",
-          600: "rgb(var(--brand-600) / <alpha-value>)",
-          700: "rgb(var(--brand-700) / <alpha-value>)",
-        },
 
         primary: {
           DEFAULT: "rgb(var(--color-primary) / <alpha-value>)",
@@ -62,7 +55,7 @@ const config: Config = {
         },
 
         skeleton: "rgb(var(--skeleton) / <alpha-value>)",
-        disabled: "rgb(156 163 175 / <alpha-value>)",
+        disabled: "rgb(var(--color-disabled) / <alpha-value>)",
       },
 
       fontFamily: {
@@ -70,13 +63,11 @@ const config: Config = {
       },
 
       fontSize: {
-        xs: ["0.75rem", { lineHeight: "1rem" }],
         sm: ["0.875rem", { lineHeight: "1.3rem" }],
         base: ["1rem", { lineHeight: "1.6rem" }],
         lg: ["1.125rem", { lineHeight: "1.7rem" }],
         xl: ["1.25rem", { lineHeight: "1.8rem" }],
         "2xl": ["1.5rem", { lineHeight: "2rem" }],
-        "3xl": ["1.875rem", { lineHeight: "2.2rem" }],
       },
 
       borderRadius: {
@@ -93,14 +84,15 @@ const config: Config = {
 
       zIndex: {
         header: "10",
-        dropdown: "20",
-        overlay: "30",
         modal: "40",
-        toast: "50",
       },
 
       ringColor: {
         primary: "rgb(var(--color-primary) / <alpha-value>)",
+      },
+
+      minHeight: {
+        touch: "44px",
       },
 
       transitionTimingFunction: {

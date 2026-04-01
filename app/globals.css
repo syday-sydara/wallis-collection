@@ -1,7 +1,7 @@
-/* ADD THIS TO :root */
---skeleton: 229 231 235;
+:root {
+  --skeleton: 229 231 235;
+}
 
-/* DARK MODE */
 .dark {
   --surface: 17 24 39;
   --surface-muted: 31 41 55;
@@ -14,37 +14,48 @@
 
   --skeleton: 55 65 81;
 
-  --surface-active: 255 255 255 / 0.08;
+  --surface-active: 255 255 255;
 }
 
-/* BUTTON IMPROVEMENTS */
+/* GLOBAL MOBILE POLISH */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* BUTTONS */
 .btn:disabled {
-  opacity: 0.6;
-  pointer-events: none;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-primary:active {
   @apply bg-primary-active;
-  transform: scale(0.98);
+  transform: scale(0.97);
+  transition: transform 0.05s ease;
 }
 
-/* INPUT IMPROVEMENT */
+/* INPUT */
 .input {
   @apply w-full px-3 py-2 text-base border border-border rounded-md bg-surface;
 }
 
-/* STICKY CTA SAFE AREA */
+.input:focus {
+  @apply outline-none ring-2 ring-primary border-transparent;
+}
+
+/* STICKY CTA */
 .sticky-cta {
   position: fixed;
   bottom: env(safe-area-inset-bottom);
   width: 100%;
+  z-index: 30;
   background: rgb(var(--surface));
   border-top: 1px solid rgb(var(--border));
   padding: 12px;
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
 }
 
-/* WHATSAPP FAB IMPROVED */
+/* WHATSAPP FAB */
 .whatsapp-fab {
   position: fixed;
   bottom: 16px;
@@ -58,4 +69,9 @@
   align-items: center;
   gap: 8px;
   box-shadow: var(--shadow-lg);
+  z-index: 40;
+}
+
+.whatsapp-fab:active {
+  transform: scale(0.96);
 }

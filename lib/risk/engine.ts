@@ -1,14 +1,21 @@
 // lib/risk/engine.ts
-
 import { prisma } from "@/lib/db";
 import type { RiskContext, FraudRuleRecord } from "./types";
 import { evaluateRule } from "./evaluate";
-import { logEvent } from "@/lib/logger";
+import { logAuditEvent } from "@/lib/audit/log";
+import { processAlert } from "@/lib/audit/alerts";
 
 export type RiskResult = {
   score: number;
+  level: "LOW" | "MEDIUM" | "HIGH";
   triggered: FraudRuleRecord[];
 };
+
+function classify(score: number) {
+  if (score >= 50) return "HIGH";
+  if (score >= 20) return "MEDIUM";
+  return "LOW";
+}
 
 export async function calculateRiskScore(context: RiskContext): Promise<RiskResult> {
   const rules = (await prisma.fraudRule.findMany({
@@ -21,25 +28,55 @@ export async function calculateRiskScore(context: RiskContext): Promise<RiskResu
   for (const rule of rules) {
     try {
       const matched = evaluateRule(rule.condition, context);
+
       if (matched) {
         score += rule.weight;
         triggered.push(rule);
+
+        await logAuditEvent({
+          action: "RISK_RULE_TRIGGERED",
+          actorType: "SYSTEM",
+          resource: "fraudRule",
+          resourceId: rule.id,
+          metadata: { ruleName: rule.name }
+        });
       }
     } catch (err: any) {
-      logEvent(
-        "risk_rule_evaluation_error",
-        { ruleId: rule.id, name: rule.name, message: err?.message },
-        "error"
-      );
+      await logAuditEvent({
+        action: "RISK_RULE_EVALUATION_ERROR",
+        actorType: "SYSTEM",
+        resource: "fraudRule",
+        resourceId: rule.id,
+        metadata: { message: err?.message }
+      });
     }
   }
 
-  logEvent("risk_score_computed", {
-    ip: context.ip,
-    email: context.email,
-    score,
-    triggeredRules: triggered.map((r) => r.name)
+  const level = classify(score);
+
+  await logAuditEvent({
+    action: "RISK_SCORE_COMPUTED",
+    actorType: "SYSTEM",
+    metadata: {
+      score,
+      level,
+      triggeredRules: triggered.map(r => r.name),
+      ip: context.ip,
+      email: context.email
+    }
   });
 
-  return { score, triggered };
+  if (level === "HIGH") {
+    await processAlert({
+      action: "ALERT_RISK_SCORE_HIGH",
+      metadata: {
+        score,
+        email: context.email,
+        ip: context.ip,
+        triggeredRules: triggered.map(r => r.name)
+      }
+    });
+  }
+
+  return { score, level, triggered };
 }

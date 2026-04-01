@@ -17,9 +17,6 @@
     "noEmit": true,
     "isolatedModules": true,
     "forceConsistentCasingInFileNames": true,
-    "types": [
-      "node"
-    ],
     "baseUrl": ".",
     "paths": {
       "@/*": [
@@ -34,7 +31,6 @@
     "allowJs": true
   },
   "include": [
-    "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"

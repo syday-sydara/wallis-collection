@@ -2,42 +2,23 @@
 
 import { useState } from "react";
 
-type Variant = {
-  id: string;
-  price: number;
-  attributes?: Record<string, any>;
-};
+type Variant = { id: string; price: number; attributes?: Record<string, any> };
 
-type Props = {
-  productId: string;
-  variant?: Variant; // undefined instead of null
-  disabled?: boolean;
-};
+type Props = { productId: string; variant?: Variant; disabled?: boolean };
 
 export default function AddToCartButton({ productId, variant, disabled }: Props) {
   const [loading, setLoading] = useState(false);
 
   async function handleClick() {
     if (disabled || loading) return;
-
-    if (!variant) {
-      console.warn("Variant required for this product");
-      return;
-    }
+    if (!variant) return console.warn("Variant required");
 
     setLoading(true);
 
-    const item = {
-      productId,
-      variantId: variant.id,
-      quantity: 1,
-      price: variant.price,
-      attributes: variant.attributes,
-    };
-
+    const item = { productId, variantId: variant.id, quantity: 1, price: variant.price, attributes: variant.attributes };
     console.log("Add to cart:", item);
-    // TODO: replace with cart store logic
-    setLoading(false);
+
+    setTimeout(() => setLoading(false), 500); // simulate API
   }
 
   return (

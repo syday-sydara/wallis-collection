@@ -1,3 +1,4 @@
+// components/ui/ErrorState.tsx
 type ErrorStateProps = {
   title?: string;
   description?: string;
@@ -18,19 +19,13 @@ export default function ErrorState({
       className="flex flex-col items-center justify-center py-16 px-4 text-center max-w-md mx-auto"
     >
       {/* Icon */}
-      <div className="mb-4 text-danger text-4xl">
-        {icon ?? "⚠️"}
-      </div>
+      <div className="mb-4 text-danger text-4xl">{icon ?? "⚠️"}</div>
 
       {/* Title */}
-      <p className="text-lg font-semibold text-text">
-        {title}
-      </p>
+      <p className="text-lg font-semibold text-text">{title}</p>
 
       {/* Description */}
-      <p className="mt-2 text-sm text-text-muted">
-        {description}
-      </p>
+      <p className="mt-2 text-sm text-text-muted">{description}</p>
 
       {/* Optional Action */}
       {action && <div className="mt-4">{action}</div>}

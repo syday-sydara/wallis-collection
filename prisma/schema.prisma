@@ -36,15 +36,15 @@ enum OrderStatus {
 //////////////////////
 
 model User {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  name       String?
-  role       UserRole @default(USER)
-  riskScore  Int      @default(0)
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      UserRole @default(USER)
+  riskScore Int      @default(0)
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  deletedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   sessions Session[]
   devices  Device[]
@@ -56,12 +56,12 @@ model User {
 }
 
 model Session {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  ipAddress  String?
-  userAgent  String?
+  ipAddress String?
+  userAgent String?
 
   createdAt  DateTime @default(now())
   lastSeenAt DateTime @default(now())
@@ -72,9 +72,9 @@ model Session {
 }
 
 model Device {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   fingerprint String?  @unique
   deviceName  String?
@@ -86,11 +86,14 @@ model Device {
 
 model SecurityEvent {
   id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
 
   type      String
   message   String
+  severity  String   @default("low")
+  metadata  Json?
+
   ip        String?
   userAgent String?
 
@@ -106,18 +109,18 @@ model SecurityEvent {
 //////////////////////
 
 model Product {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
-  slug        String   @unique
+  slug        String  @unique
   description String?
 
-  basePrice   Int
+  basePrice Int
 
-  isArchived  Boolean  @default(false)
-  deletedAt   DateTime?
+  isArchived Boolean   @default(false)
+  deletedAt  DateTime?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   images     ProductImage[]
   variants   ProductVariant[]
@@ -140,21 +143,22 @@ model ProductImage {
 }
 
 model ProductVariant {
-  id         String  @id @default(cuid())
-  productId  String
-  product    Product @relation(fields: [productId], references: [id])
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
 
-  name       String
-  sku        String  @unique
+  name String
+  sku  String @unique
 
-  price      Int
-  currency   String  @default("NGN")
+  price    Int
+  currency String @default("NGN")
 
-  stock      Int     @default(0)
+  stock Int @default(0)
 
   attributes Json
 
-  createdAt  DateTime @default(now())
+  createdAt         DateTime            @default(now())
+  InventoryMovement InventoryMovement[]
 
   @@index([productId])
 }
@@ -164,10 +168,10 @@ model ProductVariant {
 //////////////////////
 
 model InventoryMovement {
-  id        String   @id @default(cuid())
+  id String @id @default(cuid())
 
   productId String
-  product   Product  @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
 
   // ✅ NEW: track exact variant
   variantId String?
@@ -190,14 +194,14 @@ model InventoryMovement {
 //////////////////////
 
 model Order {
-  id            String        @id @default(cuid())
+  id        String   @id @default(cuid())
 
-  email         String
-  phone         String
-  fullName      String
+  email     String
+  phone     String
+  fullName  String
 
-  total         Int
-  currency      String        @default("NGN")
+  total     Int
+  currency  String   @default("NGN")
 
   paymentMethod String
   paymentStatus PaymentStatus
@@ -205,21 +209,25 @@ model Order {
 
   currentStatusUpdatedAt DateTime?
 
-  shippingType  String
-  shippingCost  Int
+  shippingType String
+  shippingCost Int
 
-  addressId     String?
-  address       Address?      @relation(fields: [addressId], references: [id])
+  addressId String?
+  address   Address? @relation(fields: [addressId], references: [id])
 
-  cartSnapshot  Json
+  cartSnapshot Json
 
-  checkoutSessionId String?   @unique
+  checkoutSessionId   String? @unique
 
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  // 👇 ADD THESE TWO FIELDS
+  paymentReference     String?   // Paystack + Monnify reference
+  transactionReference String?   // Monnify-specific
 
-  userId        String?
-  user          User?         @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String?
+  user   User? @relation(fields: [userId], references: [id])
 
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
@@ -231,31 +239,31 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
+  id String @id @default(cuid())
 
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id])
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
 
   productId String?
   product   Product? @relation(fields: [productId], references: [id])
 
-  name      String
-  image     String?
+  name  String
+  image String?
 
   attributes Json
 
-  quantity  Int
-  price     Int
+  quantity Int
+  price    Int
 
   @@index([orderId])
   @@index([productId]) // ✅ NEW
 }
 
 model OrderStatusHistory {
-  id        String      @id @default(cuid())
+  id String @id @default(cuid())
 
-  orderId   String
-  order     Order       @relation(fields: [orderId], references: [id])
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
 
   status    OrderStatus
   createdAt DateTime    @default(now())
@@ -269,20 +277,20 @@ model OrderStatusHistory {
 //////////////////////
 
 model Address {
-  id        String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  fullName  String
-  line1     String
-  line2     String?
-  landmark  String?
-  city      String
-  state     String
+  fullName   String
+  line1      String
+  line2      String?
+  landmark   String?
+  city       String
+  state      String
   postalCode String?
-  country   String
+  country    String
 
   createdAt DateTime @default(now())
 
-  orders    Order[]
+  orders Order[]
 }
 
 //////////////////////
@@ -290,14 +298,14 @@ model Address {
 //////////////////////
 
 model FraudEvent {
-  id        String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  orderId   String?
-  ip        String?
-  email     String?
+  orderId String?
+  ip      String?
+  email   String?
 
-  signal    String
-  metadata  Json?
+  signal   String
+  metadata Json?
 
   createdAt DateTime @default(now())
 
@@ -305,3 +313,40 @@ model FraudEvent {
   @@index([ip])
   @@index([createdAt])
 }
+
+model AuditEvent {
+  id        String   @id @default(cuid())
+  userId    String?  // null for anonymous
+  actorType String   // "USER" | "SYSTEM" | "ADMIN" | "JOB"
+  action    String   // "ORDER_CREATED", "PAYMENT_CONFIRMED", "LOGIN", "PROFILE_UPDATED"
+  resource  String?  // "order", "user", "product"
+  resourceId String? // "orderId", "userId", etc.
+
+  ip        String?
+  userAgent String?
+
+  metadata  Json?    // flexible payload (before/after, diffs, context)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+}
+
+model AlertRule {
+  id        String   @id @default(cuid())
+  name      String
+  event     String   // e.g. "AUTH_LOGIN_FAILED"
+  threshold Int?     // e.g. 5 failures
+  windowSec Int?     // e.g. 600 seconds
+  enabled   Boolean  @default(true)
+
+  notifyEmail   String?
+  notifyWebhook String?
+  notifyWhatsApp String?
+
+  createdAt DateTime @default(now())
+}
+

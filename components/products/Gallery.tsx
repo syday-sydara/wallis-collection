@@ -2,20 +2,14 @@
 
 import { useState } from "react";
 
-type Image = {
-  id?: string;
-  url: string;
-  alt?: string | null;
-};
+type Image = { id?: string; url: string; alt?: string | null };
 
-type Props = {
-  images: Image[];
-};
+type Props = { images: Image[] };
 
 export default function Gallery({ images }: Props) {
   const [active, setActive] = useState(images[0]?.url);
 
-  if (!images.length) return null; // graceful fallback
+  if (!images.length) return null;
 
   return (
     <div className="space-y-4">

@@ -25,13 +25,13 @@ export const CheckoutPayloadSchema = z.object({
   email: z.string().email("Enter a valid email address"),
   phone: z.string().regex(nigeriaPhoneRegex, "Enter a valid Nigerian phone number"),
   fullName: z.string().min(2, "Full name is required"),
-  paymentMethod: z.enum(["PAYSTACK", "MONNIFY", "COD"], "Select a valid payment method"),
-  shippingType: z.enum(["STANDARD", "EXPRESS"], "Select a valid shipping type"),
+  paymentMethod: z.enum(["PAYSTACK", "MONNIFY", "COD"]),
+  shippingType: z.enum(["STANDARD", "EXPRESS"]),
   address: z.string().min(5, "Address is too short"),
   city: z.string().min(2, "Enter a valid city"),
   state: z.string().min(2, "Enter a valid state"),
   shippingCost: z.number().nonnegative().optional(),
-  total: z.number().nonnegative(),
+  total: z.number().nonnegative().optional(),   // 👈 FIXED
   items: z.array(CheckoutItemSchema).min(1, "Cart cannot be empty")
 });
 

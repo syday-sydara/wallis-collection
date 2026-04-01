@@ -1,23 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import ProductGrid from "./ProductGrid";
-import ProductGridSkeleton from "./ProductGridSkeleton";
+import ProductGrid from "@/components/products/ProductGrid";
+import ProductGridSkeleton from "@/components/products/ProductGridSkeleton";
 import EmptyState from "@/components/products/EmptyState";
-import ErrorState from "./ErrorState";
-import ResultHeader from "./ResultHeader";
+import { Button } from "@/components/ui/Button";
 import { listProducts } from "@/lib/catalog/listProducts";
-import type {
-  ProductListParams,
-  ProductListResult,
-  ProductWithRelations,
-} from "@/lib/catalog/types";
+import type { ProductListParams, ProductListResult, ProductWithRelations } from "@/lib/catalog/types";
 
-type ProductListProps = {
-  params: ProductListParams;
-};
-
-export default function ProductList({ params }: ProductListProps) {
+export default function ProductsPage() {
   const [products, setProducts] = useState<ProductWithRelations[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,11 +18,13 @@ export default function ProductList({ params }: ProductListProps) {
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
 
+  const params: ProductListParams = {}; // Customize filters as needed
+
   // Initial fetch
   useEffect(() => {
     const requestId = ++requestIdRef.current;
 
-    setLoading(products.length === 0);
+    setLoading(true);
     setError(false);
 
     async function fetchProducts() {
@@ -76,7 +69,7 @@ export default function ProductList({ params }: ProductListProps) {
     }
   }, [nextCursor, loadingMore, params]);
 
-  // IntersectionObserver for infinite scroll
+  // Infinite scroll observer
   useEffect(() => {
     if (!loadMoreRef.current || !nextCursor) return;
 
@@ -99,42 +92,33 @@ export default function ProductList({ params }: ProductListProps) {
 
   if (error)
     return (
-      <ErrorState
+      <EmptyState
         title="Error loading products"
         description="Check your connection and try again."
         action={
-          <button
-            onClick={() => location.reload()}
-            className="btn btn-primary mt-2"
-          >
-            Retry
-          </button>
+          <Button onClick={() => location.reload()}>Retry</Button>
         }
       />
     );
 
   if (!products.length)
-    return <EmptyState title="No products found" />;
+    return <EmptyState description="No products available at the moment." />;
 
   return (
-    <>
-      <ResultHeader count={products.length} />
+    <div className="px-4 py-8 max-w-7xl mx-auto space-y-8">
       <ProductGrid products={products} />
 
       {nextCursor && (
-        <div
-          ref={loadMoreRef}
-          className="mt-4 text-center text-sm text-text-subtle"
-        >
+        <div ref={loadMoreRef} className="text-center text-sm text-text-muted">
           {loadingMore ? "Loading more products..." : "Scroll down to load more"}
         </div>
       )}
 
       {!nextCursor && (
-        <p className="mt-4 text-center text-xs text-text-subtle">
+        <p className="text-center text-xs text-text-muted">
           No more products
         </p>
       )}
-    </>
+    </div>
   );
 }
