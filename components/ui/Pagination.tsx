@@ -12,7 +12,7 @@ export default function Pagination({ cursor, limit }: PaginationProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  if (!cursor) return null; // no more pages
+  if (!cursor) return null;
 
   const nextParams = new URLSearchParams(searchParams.toString());
   nextParams.set("cursor", cursor);
@@ -23,13 +23,15 @@ export default function Pagination({ cursor, limit }: PaginationProps) {
   };
 
   return (
-    <div className="mt-6 flex justify-center">
+    <div className="mt-6 flex justify-center pb-safe">
       <button
         onClick={handleNext}
+        aria-label="Load more products"
         className={cn(
-          "rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm",
+          "rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm min-h-touch",
           "hover:bg-primary-hover active:bg-primary-active",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 transition-colors duration-150"
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+          "transition-colors duration-150 animate-fadeIn"
         )}
       >
         Load More

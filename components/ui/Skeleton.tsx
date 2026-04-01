@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 
 const skeletonVariants = cva(
-  "animate-pulse bg-surface-muted rounded-md",
+  "w-full rounded-md bg-surface-muted animate-pulse leading-none",
   {
     variants: {
       variant: {
@@ -30,5 +30,14 @@ export interface SkeletonProps
     VariantProps<typeof skeletonVariants> {}
 
 export function Skeleton({ className, variant, size, ...props }: SkeletonProps) {
-  return <div className={cn(skeletonVariants({ variant, size }), className)} {...props} />;
+  return (
+    <div
+      className={cn(
+        skeletonVariants({ variant, size }),
+        "animate-fadeIn-fast",
+        className
+      )}
+      {...props}
+    />
+  );
 }

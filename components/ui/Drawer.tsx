@@ -4,32 +4,32 @@ import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 
-interface ModalProps {
+interface DrawerProps {
   open: boolean;
   onClose: () => void;
   title?: string;
   description?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  size?: "sm" | "md" | "lg";
   hideCloseButton?: boolean;
   closeOnOutsideClick?: boolean;
+  height?: "sm" | "md" | "lg" | "full";
 }
 
-export function Modal({
+export function Drawer({
   open,
   onClose,
   title,
   description,
   children,
   footer,
-  size = "md",
   hideCloseButton = false,
   closeOnOutsideClick = true,
-}: ModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
+  height = "md",
+}: DrawerProps) {
+  const drawerRef = useRef<HTMLDivElement>(null);
 
-  // ESC key closes modal
+  // ESC key closes drawer
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -38,11 +38,6 @@ export function Modal({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
-
-  // Focus trap
-  useEffect(() => {
-    if (open && dialogRef.current) dialogRef.current.focus();
-  }, [open]);
 
   // Prevent background scroll
   useEffect(() => {
@@ -53,43 +48,53 @@ export function Modal({
     };
   }, [open]);
 
+  // Focus drawer on open
+  useEffect(() => {
+    if (open && drawerRef.current) {
+      drawerRef.current.focus();
+    }
+  }, [open]);
+
   if (!open) return null;
 
-  const sizeClass =
-    size === "sm"
-      ? "w-[90%] max-w-sm"
-      : size === "md"
-      ? "w-[90%] max-w-md"
-      : "w-[90%] max-w-lg";
+  const heightClass =
+    height === "sm"
+      ? "h-[35vh]"
+      : height === "md"
+      ? "h-[50vh]"
+      : height === "lg"
+      ? "h-[75vh]"
+      : "h-[100vh]";
 
   return (
     <div
-      className="fixed inset-0 z-modal flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-modal bg-black/40 backdrop-blur-sm animate-fadeIn flex items-end"
       role="dialog"
       aria-modal="true"
-      aria-labelledby={title ? "modal-title" : undefined}
-      aria-describedby={description ? "modal-description" : undefined}
+      aria-labelledby={title ? "drawer-title" : undefined}
+      aria-describedby={description ? "drawer-description" : undefined}
       onClick={closeOnOutsideClick ? onClose : undefined}
     >
       <div
-        ref={dialogRef}
+        ref={drawerRef}
         tabIndex={-1}
         className={cn(
-          "relative rounded-lg border border-border bg-surface shadow-lg animate-fadeIn-fast overflow-hidden focus:outline-none",
-          sizeClass
+          "w-full bg-surface rounded-t-lg border-t border-border shadow-lg animate-fadeIn-fast animate-slideUp overflow-hidden",
+          heightClass
         )}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Header */}
         {(title || !hideCloseButton) && (
-          <div className="flex items-center justify-between border-b border-border p-4">
+          <div className="flex items-center justify-between p-4 border-b border-border">
             <div>
               {title && (
-                <h2 id="modal-title" className="text-lg font-semibold text-text leading-snug">
+                <h2 id="drawer-title" className="text-lg font-semibold text-text">
                   {title}
                 </h2>
               )}
               {description && (
-                <p id="modal-description" className="text-sm text-text-muted mt-0.5">
+                <p id="drawer-description" className="text-sm text-text-muted mt-0.5">
                   {description}
                 </p>
               )}
@@ -106,10 +111,12 @@ export function Modal({
           </div>
         )}
 
-        <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-text">
+        {/* Body */}
+        <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] overflow-y-auto h-full text-text">
           {children}
         </div>
 
+        {/* Footer */}
         {footer && (
           <div className="border-t border-border p-4 flex justify-end gap-2">
             {footer}

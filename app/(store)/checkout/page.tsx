@@ -2,7 +2,7 @@
 "use client";
 
 import { useFormState, useFormStatus } from "react-dom";
-import { toast } from "@/components/ui/toast";
+import { toast } from "@/components/ui/Toast";
 import { submitCheckout } from "./actions";
 import { useCheckoutForm } from "@/lib/checkout/useCheckoutForm";
 import CartSummary from "../../../components/cart/CartSummary";

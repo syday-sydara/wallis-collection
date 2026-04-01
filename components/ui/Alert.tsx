@@ -31,9 +31,18 @@ export interface AlertProps
     VariantProps<typeof alertVariants> {
   title?: string;
   description?: string;
+  children?: React.ReactNode;
 }
 
-export function Alert({ variant, size, title, description, className, ...props }: AlertProps) {
+export function Alert({
+  variant,
+  size,
+  title,
+  description,
+  children,
+  className,
+  ...props
+}: AlertProps) {
   const Icon =
     variant === "success"
       ? CheckCircle2
@@ -44,11 +53,21 @@ export function Alert({ variant, size, title, description, className, ...props }
       : Info;
 
   return (
-    <div role="alert" className={cn(alertVariants({ variant, size }), className)} {...props}>
-      <Icon className="h-5 w-5 shrink-0 mt-0.5" />
+    <div
+      role="alert"
+      className={cn(alertVariants({ variant, size }), "animate-fadeIn", className)}
+      {...props}
+    >
+      <Icon className="h-5 w-5 shrink-0 text-current/90" />
+
       <div className="flex flex-col">
-        {title && <h4 className="font-semibold leading-tight">{title}</h4>}
-        {description && <p className="text-text-subtle mt-0.5">{description}</p>}
+        {title && <h4 className="font-semibold leading-snug">{title}</h4>}
+
+        {description && (
+          <p className="text-text-muted mt-1">{description}</p>
+        )}
+
+        {children}
       </div>
     </div>
   );
