@@ -1,50 +1,30 @@
-import { createVariant } from "@/app/admin/products/actions";
-import { SubmitButton } from "./SubmitButton";
+"use client";
 
-export function VariantForm({ productId }: { productId: string }) {
-  async function variantAction(formData: FormData) {
-    "use server";
-    await createVariant(productId, formData);
-  }
+import { createVariant } from "../../actions";
+import { AdminField } from "@/components/admin/ui/AdminField";
+import { AdminInput } from "@/components/admin/ui/AdminInput";
+import { SubmitButton } from "@/components/admin/ui/SubmitButton";
 
+export function VariantForm({ productId }) {
   return (
-    <form
-      action={variantAction}
-      className="mt-2 grid grid-cols-3 gap-2 text-xs"
-    >
-      <input
-        name="name"
-        placeholder="Variant name"
-        required
-        className="rounded-md border border-border bg-surface px-2 py-1.5 text-text 
-                   shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--focus-ring))]"
-      />
+    <form action={createVariant.bind(null, productId)} className="space-y-4">
+      <AdminField label="Variant Name">
+        <AdminInput name="name" required />
+      </AdminField>
 
-      <input
-        name="sku"
-        placeholder="SKU"
-        required
-        className="rounded-md border border-border bg-surface px-2 py-1.5 text-text 
-                   shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--focus-ring))]"
-      />
+      <AdminField label="SKU">
+        <AdminInput name="sku" required />
+      </AdminField>
 
-      <input
-        name="price"
-        type="number"
-        placeholder="Price (kobo)"
-        required
-        className="rounded-md border border-border bg-surface px-2 py-1.5 text-text 
-                   shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--focus-ring))]"
-      />
+      <AdminField label="Price">
+        <AdminInput type="number" name="price" step="0.01" required />
+      </AdminField>
 
-      <SubmitButton
-        pendingLabel="Adding..."
-        className="col-span-3 rounded-md bg-primary px-3 py-1.5 text-xs font-medium 
-                   text-primary-foreground shadow-sm hover:bg-primary-hover 
-                   active:bg-primary-active disabled:opacity-60 transition-all"
-      >
-        Add variant
-      </SubmitButton>
+      <AdminField label="Initial Stock">
+        <AdminInput type="number" name="stock" required />
+      </AdminField>
+
+      <SubmitButton pendingLabel="Adding variant…">Add Variant</SubmitButton>
     </form>
   );
 }

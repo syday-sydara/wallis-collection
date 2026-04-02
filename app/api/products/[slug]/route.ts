@@ -14,7 +14,7 @@ import {
   getIdempotentResponse,
   saveIdempotentResponse
 } from "@/lib/idempotency";
-import type { ProductWithRelations } from "@/lib/catalog/types";
+import type { ProductWithRelations } from "@/lib/catalog/shared/types";
 
 /**
  * GET /api/products/[slug]?limit=24

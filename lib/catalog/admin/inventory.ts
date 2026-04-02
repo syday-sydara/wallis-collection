@@ -1,13 +1,16 @@
-// lib/catalog/inventory.ts
-
 import { prisma } from "@/lib/db";
 
 type AdjustStockArgs = {
   variantId: string;
   change: number; // positive or negative
+  reason?: string;
 };
 
-export async function adjustProductStock({ variantId, change }: AdjustStockArgs) {
+export async function adjustProductStock({
+  variantId,
+  change,
+  reason
+}: AdjustStockArgs) {
   if (!variantId) throw new Error("Variant ID is required");
   if (change === 0) throw new Error("Stock change cannot be zero");
 
@@ -36,16 +39,15 @@ export async function adjustProductStock({ variantId, change }: AdjustStockArgs)
       }
     });
 
-    // Optional: write to StockLog
     await tx.stockLog.create({
       data: {
         variantId,
         change,
-        reason: change > 0 ? "manual increase" : "manual decrease"
+        reason:
+          reason ?? (change > 0 ? "manual increase" : "manual decrease")
       }
     });
 
     return updated;
   });
 }
-

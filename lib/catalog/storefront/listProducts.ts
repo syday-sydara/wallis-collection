@@ -1,14 +1,20 @@
-// lib/catalog/listProducts.ts
 import { prisma } from "@/lib/db";
-import type { ProductListParams, ProductListResult } from "./types";
+import type { ProductListParams, ProductListResult } from "../shared/types";
 
 /**
- * List products with optional filters and pagination
+ * List products with optional filters and pagination (storefront)
  */
 export async function listProducts(
   params: ProductListParams = {}
 ): Promise<ProductListResult> {
-  const { search, minPrice, maxPrice, includeArchived = false, limit = 24, cursor } = params;
+  const {
+    search,
+    minPrice,
+    maxPrice,
+    includeArchived = false,
+    limit = 24,
+    cursor
+  } = params;
 
   const products = await prisma.product.findMany({
     where: {
@@ -16,11 +22,11 @@ export async function listProducts(
       ...(search && {
         OR: [
           { name: { contains: search, mode: "insensitive" } },
-          { description: { contains: search, mode: "insensitive" } },
-        ],
+          { description: { contains: search, mode: "insensitive" } }
+        ]
       }),
       ...(minPrice !== undefined && { basePrice: { gte: minPrice } }),
-      ...(maxPrice !== undefined && { basePrice: { lte: maxPrice } }),
+      ...(maxPrice !== undefined && { basePrice: { lte: maxPrice } })
     },
     take: limit + 1,
     skip: cursor ? 1 : 0,
@@ -28,8 +34,8 @@ export async function listProducts(
     orderBy: { createdAt: "desc" },
     include: {
       images: { orderBy: { sortOrder: "asc" } },
-      variants: true,
-    },
+      variants: true
+    }
   });
 
   const hasMore = products.length > limit;
@@ -47,8 +53,8 @@ export async function listProducts(
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
       images: p.images,
-      variants: p.variants,
+      variants: p.variants
     })),
-    nextCursor,
+    nextCursor
   };
 }

@@ -1,80 +1,93 @@
-import { deleteVariant, updateVariant } from "@/app/admin/products/actions";
-import { SubmitButton } from "./SubmitButton";
+"use client";
 
-type Variant = {
-  id: string;
-  name: string;
-  sku: string;
-  price: number;
-};
+import { useState, useTransition } from "react";
+import { updateVariant, deleteVariant } from "../../actions";
+import { AdminCard } from "@/components/admin/ui/AdminCard";
+import { AdminField } from "@/components/admin/ui/AdminField";
+import { AdminInput } from "@/components/admin/ui/AdminInput";
+import { SubmitButton } from "@/components/admin/ui/SubmitButton";
 
-export function VariantList({ variants }: { variants: Variant[] }) {
+export function VariantList({ variants }) {
+  const [editing, setEditing] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
   return (
-    <ul className="space-y-3 text-xs">
-      {variants.map((v) => (
-        <li
-          key={v.id}
-          className="rounded-md border border-border bg-surface p-3 shadow-sm space-y-2"
-        >
-          {/* UPDATE FORM */}
-          <form
-            action={async (formData) => {
-              "use server";
-              await updateVariant(v.id, formData);
-            }}
-            className="flex flex-wrap items-start gap-3"
-          >
-            <input
-              name="name"
-              defaultValue={v.name}
-              required
-              className="w-32 rounded-md border border-border bg-surface px-2 py-1.5 text-text 
-                         shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--focus-ring))]"
-            />
+    <div className="space-y-3">
+      {variants.map((variant) => {
+        const isEditing = editing === variant.id;
 
-            <input
-              name="sku"
-              defaultValue={v.sku}
-              required
-              className="w-32 rounded-md border border-border bg-surface px-2 py-1.5 text-text 
-                         shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--focus-ring))]"
-            />
+        return (
+          <AdminCard key={variant.id}>
+            {isEditing ? (
+              <form
+                className="space-y-4"
+                action={updateVariant.bind(null, variant.id)}
+                onSubmit={() => setEditing(null)}
+              >
+                <AdminField label="Name">
+                  <AdminInput name="name" defaultValue={variant.name} />
+                </AdminField>
 
-            <input
-              name="price"
-              type="number"
-              defaultValue={v.price}
-              required
-              className="w-28 rounded-md border border-border bg-surface px-2 py-1.5 text-text 
-                         shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--focus-ring))]"
-            />
+                <AdminField label="SKU">
+                  <AdminInput name="sku" defaultValue={variant.sku} />
+                </AdminField>
 
-            <SubmitButton
-              pendingLabel="Saving..."
-              className="rounded-md bg-primary px-3 py-1.5 text-[11px] font-medium 
-                         text-primary-foreground shadow-sm hover:bg-primary-hover 
-                         active:bg-primary-active disabled:opacity-60 transition-all"
-            >
-              Save
-            </SubmitButton>
-          </form>
+                <AdminField label="Price">
+                  <AdminInput
+                    type="number"
+                    name="price"
+                    step="0.01"
+                    defaultValue={variant.price}
+                  />
+                </AdminField>
 
-          {/* DELETE FORM */}
-          <form
-            action={async () => {
-              "use server";
-              await deleteVariant(v.id);
-            }}
-          >
-            <SubmitButton
-              pendingLabel="Deleting..."
-              className="text-[11px] text-danger-foreground hover:underline disabled:opacity-60"
-            >
-              Delete
-            </SubmitButton>
-          </form>
-        </li>
-      ))}
-    </ul>
+                <div className="flex gap-2">
+                  <SubmitButton size="sm" pendingLabel="Saving…">
+                    Save
+                  </SubmitButton>
+
+                  <button
+                    type="button"
+                    className="text-xs text-text-muted"
+                    onClick={() => setEditing(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-medium">{variant.name}</p>
+                  <p className="text-xs text-text-muted">SKU: {variant.sku}</p>
+                  <p className="text-xs text-text-muted">
+                    ${variant.price.toFixed(2)} — {variant.stock} in stock
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    className="text-xs underline"
+                    onClick={() => setEditing(variant.id)}
+                  >
+                    Edit
+                  </button>
+
+                  <form action={deleteVariant.bind(null, variant.id)}>
+                    <SubmitButton
+                      variant="danger"
+                      size="sm"
+                      pendingLabel="Deleting…"
+                    >
+                      Delete
+                    </SubmitButton>
+                  </form>
+                </div>
+              </div>
+            )}
+          </AdminCard>
+        );
+      })}
+    </div>
   );
 }

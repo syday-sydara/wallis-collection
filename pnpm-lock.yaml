@@ -29,6 +29,9 @@ importers:
       cloudinary:
         specifier: 2.9.0
         version: 2.9.0
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       lucide-react:
         specifier: ^1.7.0
         version: 1.7.0(react@18.3.1)

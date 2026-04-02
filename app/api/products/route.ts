@@ -8,7 +8,7 @@ import {
 } from "@/lib/api/response";
 import { getProducts } from "@/lib/catalog/service";
 import { checkRateLimit } from "@/lib/api/rate-limit";
-import type { ProductListParams } from "@/lib/catalog/types";
+import type { ProductListParams } from "@/lib/catalog/shared/types";
 
 export async function GET(req: NextRequest) {
   try {

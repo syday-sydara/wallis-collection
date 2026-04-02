@@ -1,286 +1,145 @@
-// app/admin/products/actions.ts
 "use server";
 
-import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import { updateProduct } from '@/app/admin/products/actions';
+import {
+  updateProduct,
+  createVariant,
+  updateVariant,
+  deleteVariant,
+  addImage,
+  deleteImage,
+  reorderImages,
+  adjustProductStock
+} from "@/lib/catalog/admin";
 
-/* ------------------------- ZOD SCHEMAS ------------------------- */
-
-const productSchema = z.object({
-  name: z.string().trim().min(1).max(200),
-  slug: z.string().trim().min(1).max(200),
-  basePrice: z.coerce.number().int().nonnegative(),
-  description: z.string().trim().optional(),
-  isArchived: z.coerce.boolean().optional()
-});
-
-const variantSchema = z.object({
-  name: z.string().trim().min(1).max(200),
-  sku: z.string().trim().min(1).max(200),
-  price: z.coerce.number().int().nonnegative()
-});
-
-const variantUpdateSchema = variantSchema;
-
-const inventorySchema = z.object({
-  change: z.coerce.number().int(),
-  reason: z.string().trim().min(1).max(200)
-});
-
-const imageSchema = z.object({
-  url: z.string().url(),
-  alt: z.string().trim().optional()
-});
-
-/* ------------------------- HELPERS ------------------------- */
-
-function formDataToObject(formData: FormData) {
-  const obj: Record<string, any> = {};
-
-  formData.forEach((value, key) => {
-    if (obj[key]) {
-      // Convert repeated keys into arrays
-      obj[key] = Array.isArray(obj[key]) ? [...obj[key], value] : [obj[key], value];
-    } else {
-      obj[key] = value === "on" ? true : value;
-    }
-  });
-
-  return obj;
-}
-
-/* ------------------------- PRODUCT ACTIONS ------------------------- */
-
-export async function createProduct(formData: FormData) {
-  const raw = formDataToObject(formData);
-  const parsed = productSchema.safeParse(raw);
-
-  if (!parsed.success) {
-    return { ok: false, errors: parsed.error.flatten().fieldErrors };
-  }
-
-  const { name, slug, basePrice, description } = parsed.data;
-  const normalizedSlug = slug.toLowerCase();
-
-  const existing = await prisma.product.findUnique({
-    where: { slug: normalizedSlug }
-  });
-
-  if (existing) {
-    return { ok: false, errors: { slug: ["Slug is already in use"] } };
-  }
-
-  const product = await prisma.product.create({
-    data: {
-      name,
-      slug: normalizedSlug,
-      basePrice,
-      description: description || null
-    }
-  });
-
-  revalidatePath("/admin/products");
-  return { ok: true, id: product.id };
-}
-
-export async function updateProduct(id: string, formData: FormData) {
-  const raw = formDataToObject(formData);
-  const parsed = productSchema.safeParse(raw);
-
-  if (!parsed.success) {
-    return { ok: false, errors: parsed.error.flatten().fieldErrors };
-  }
-
-  const { name, slug, basePrice, description, isArchived } = parsed.data;
-  const normalizedSlug = slug.toLowerCase();
-
-  const existing = await prisma.product.findFirst({
-    where: { slug: normalizedSlug, NOT: { id } }
-  });
-
-  if (existing) {
-    return { ok: false, errors: { slug: ["Slug is already in use"] } };
-  }
-
-  await prisma.product.update({
-    where: { id },
-    data: {
-      name,
-      slug: normalizedSlug,
-      basePrice,
-      description: description || null,
-      isArchived: !!isArchived
-    }
-  });
-
-  revalidatePath(`/admin/products/${id}`);
-  revalidatePath("/admin/products");
-
-  return { ok: true };
-}
-
-/* ------------------------- VARIANT ACTIONS ------------------------- */
-
-export async function createVariant(productId: string, formData: FormData) {
-  const raw = formDataToObject(formData);
-  const parsed = variantSchema.safeParse(raw);
-
-  if (!parsed.success) {
-    return { ok: false, errors: parsed.error.flatten().fieldErrors };
-  }
-
-  const { name, sku, price } = parsed.data;
-  const normalizedSku = sku.toLowerCase();
-
-  const existing = await prisma.productVariant.findUnique({
-    where: { sku: normalizedSku }
-  });
-
-  if (existing) {
-    return { ok: false, errors: { sku: ["SKU is already in use"] } };
-  }
-
-  await prisma.productVariant.create({
-    data: {
-      name,
-      sku: normalizedSku,
-      price,
-      productId
-    }
-  });
-
-  revalidatePath(`/admin/products/${productId}`);
-  return { ok: true };
-}
-
-export async function updateVariant(variantId: string, formData: FormData) {
-  const raw = formDataToObject(formData);
-  const parsed = variantUpdateSchema.safeParse(raw);
-
-  if (!parsed.success) {
-    return { ok: false, errors: parsed.error.flatten().fieldErrors };
-  }
-
-  const { name, sku, price } = parsed.data;
-  const normalizedSku = sku.toLowerCase();
-
-  const existing = await prisma.productVariant.findFirst({
-    where: { sku: normalizedSku, NOT: { id: variantId } }
-  });
-
-  if (existing) {
-    return { ok: false, errors: { sku: ["SKU is already in use"] } };
-  }
-
-  const variant = await prisma.productVariant.update({
-    where: { id: variantId },
-    include: { product: true },
-    data: { name, sku: normalizedSku, price }
-  });
-
-  revalidatePath(`/admin/products/${variant.productId}`);
-  return { ok: true };
-}
-
-export async function deleteVariant(variantId: string) {
-  const variant = await prisma.productVariant.delete({
-    where: { id: variantId },
-    include: { product: true }
-  });
-
-  revalidatePath(`/admin/products/${variant.productId}`);
-  return { ok: true };
-}
-
-/* ------------------------- INVENTORY ACTIONS ------------------------- */
-
-export async function adjustInventory(productId: string, formData: FormData) {
-  const raw = formDataToObject(formData);
-  const parsed = inventorySchema.safeParse(raw);
-
-  if (!parsed.success) {
-    return { ok: false, errors: parsed.error.flatten().fieldErrors };
-  }
-
-  const { change, reason } = parsed.data;
-
+// ------------------------------
+// UPDATE PRODUCT
+// ------------------------------
+export async function updateProduct(productId: string, formData: FormData) {
   try {
-    await prisma.$transaction(async (tx) => {
-      const current = await tx.product.findUnique({
-        where: { id: productId },
-        select: { stock: true }
-      });
-
-      if (!current) throw new Error("Product not found");
-
-      const newStock = current.stock + change;
-      if (newStock < 0) throw new Error("Stock cannot be negative");
-
-      await tx.product.update({
-        where: { id: productId },
-        data: { stock: newStock }
-      });
-
-      await tx.inventoryMovement.create({
-        data: { productId, change, reason }
-      });
+    await adminUpdateProduct(productId, {
+      name: formData.get("name") as string,
+      slug: formData.get("slug") as string,
+      description: formData.get("description") as string | null,
+      basePrice: formData.get("basePrice")
+        ? Number(formData.get("basePrice"))
+        : null
     });
 
     revalidatePath(`/admin/products/${productId}`);
     return { ok: true };
   } catch (err: any) {
-    return {
-      ok: false,
-      errors: { _form: [err?.message ?? "Inventory adjustment failed"] }
-    };
+    return { ok: false, error: err.message };
   }
 }
 
-/* ------------------------- IMAGE ACTIONS ------------------------- */
+// ------------------------------
+// CREATE VARIANT
+// ------------------------------
+export async function createVariant(productId: string, formData: FormData) {
+  try {
+    await adminCreateVariant(productId, {
+      name: formData.get("name") as string,
+      sku: formData.get("sku") as string,
+      price: Number(formData.get("price")),
+      stock: Number(formData.get("stock"))
+    });
 
-export async function addProductImage(productId: string, formData: FormData) {
-  const raw = formDataToObject(formData);
-  const parsed = imageSchema.safeParse(raw);
-
-  if (!parsed.success) {
-    return { ok: false, errors: parsed.error.flatten().fieldErrors };
+    revalidatePath(`/admin/products/${productId}`);
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message };
   }
-
-  const { url, alt } = parsed.data;
-
-  await prisma.productImage.create({
-    data: {
-      url,
-      alt: alt || null,
-      productId
-    }
-  });
-
-  revalidatePath(`/admin/products/${productId}`);
-  return { ok: true };
 }
 
-export async function deleteProductImage(imageId: string) {
-  const img = await prisma.productImage.delete({
-    where: { id: imageId },
-    include: { product: true }
-  });
+// ------------------------------
+// UPDATE VARIANT
+// ------------------------------
+export async function updateVariant(variantId: string, formData: FormData) {
+  try {
+    await adminUpdateVariant(variantId, {
+      name: formData.get("name") as string,
+      sku: formData.get("sku") as string,
+      price: Number(formData.get("price"))
+    });
 
-  revalidatePath(`/admin/products/${img.productId}`);
-  return { ok: true };
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message };
+  }
 }
 
-export async function reorderProductImages(productId: string, orderedIds: string[]) {
-  await prisma.$transaction(
-    orderedIds.map((id, index) =>
-      prisma.productImage.update({
-        where: { id },
-        data: { sortOrder: index }
-      })
-    )
-  );
+// ------------------------------
+// DELETE VARIANT
+// ------------------------------
+export async function deleteVariant(variantId: string, productId: string) {
+  try {
+    await adminDeleteVariant(variantId);
+    revalidatePath(`/admin/products/${productId}`);
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message };
+  }
+}
 
-  revalidatePath(`/admin/products/${productId}`);
-  return { ok: true };
+// ------------------------------
+// ADD IMAGE
+// ------------------------------
+export async function addImage(productId: string, formData: FormData) {
+  try {
+    const file = formData.get("file") as File;
+    const alt = formData.get("alt") as string | null;
+
+    await adminAddImage(productId, file, alt);
+
+    revalidatePath(`/admin/products/${productId}`);
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message };
+  }
+}
+
+// ------------------------------
+// DELETE IMAGE
+// ------------------------------
+export async function deleteImage(productId: string, imageId: string) {
+  try {
+    await adminDeleteImage(imageId);
+    revalidatePath(`/admin/products/${productId}`);
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message };
+  }
+}
+
+// ------------------------------
+// REORDER IMAGES
+// ------------------------------
+export async function reorderImages(productId: string, newOrder: string[]) {
+  try {
+    await adminReorderImages(productId, newOrder);
+    revalidatePath(`/admin/products/${productId}`);
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message };
+  }
+}
+
+// ------------------------------
+// ADJUST STOCK
+// ------------------------------
+export async function updateInventory(productId: string, formData: FormData) {
+  try {
+    await adjustProductStock({
+      variantId: formData.get("variantId") as string,
+      change: Number(formData.get("change")),
+      reason: (formData.get("reason") as string) ?? undefined
+    });
+
+    revalidatePath(`/admin/products/${productId}`);
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message };
+  }
 }

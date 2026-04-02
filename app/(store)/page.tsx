@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import ProductList from "@/components/products/ProductList";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import type { ProductListParams } from "@/lib/catalog/types";
+import type { ProductListParams } from "@/lib/catalog/shared/types";
 
 export default function StorePage() {
   const [search, setSearch] = useState("");

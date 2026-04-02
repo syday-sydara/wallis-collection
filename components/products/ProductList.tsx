@@ -6,12 +6,12 @@ import ProductGridSkeleton from "./ProductGridSkeleton";
 import EmptyState from "@/components/products/EmptyState";
 import ErrorState from "./ErrorState";
 import ResultHeader from "./ResultHeader";
-import { listProducts } from "@/lib/catalog/listProducts";
+import { listProducts } from "@/lib/catalog/storefront/listProducts";
 import type {
   ProductListParams,
   ProductListResult,
   ProductWithRelations,
-} from "@/lib/catalog/types";
+} from "@/lib/catalog/shared/types";
 
 type ProductListProps = {
   params: ProductListParams;
