@@ -6,11 +6,11 @@ import { AdminNav } from "./AdminNav";
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-surface text-text">
-      {/* Soft feminine gradient header */}
+      {/* Soft gradient header */}
       <header className="border-b border-border bg-gradient-to-r from-[#FFF2F5] to-[#FFE6EC] shadow-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
 
-          {/* Elegant feminine wordmark */}
+          {/* Elegant wordmark */}
           <h1 className="text-lg font-semibold tracking-tight text-text">
             <span className="rounded-md bg-primary/20 px-2 py-1">
               Wallis

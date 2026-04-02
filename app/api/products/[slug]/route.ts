@@ -20,33 +20,31 @@ import type { ProductWithRelations } from "@/lib/catalog/types";
  * GET /api/products/[slug]?limit=24
  * Returns product details + recommended products
  */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
   const stopTimer = startTimer("api_products_slug_ms");
   const slug = params.slug;
 
-  // ---------------- Rate Limit ----------------
-  const ip =
-    req.ip ||
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "anonymous";
+  // --- Validate slug ---
+  if (!slug || slug.length > 200) {
+    stopTimer();
+    return badRequest("Invalid slug");
+  }
+
+  // --- Rate Limit ---
+  const forwarded = req.headers.get("x-forwarded-for");
+  const ip = forwarded?.split(",")[0].trim() || req.ip || "anonymous";
 
   const rate = checkRateLimit(ip);
   if (!rate.allowed) {
     logEvent("rate_limited", { ip, slug }, "warn");
     stopTimer();
-    return badRequest(
-      `Rate limit exceeded. Try again in ${rate.retryAfter}s`
-    );
+    return tooManyRequests(`Rate limit exceeded. Try again in ${rate.retryAfter}s`);
   }
 
-  // ---------------- Idempotency ----------------
+  // --- Idempotency ---
   const idempotencyKey = req.headers.get("x-idempotency-key");
   if (idempotencyKey) {
-    const cached =
-      getIdempotentResponse<ProductWithRelations>(idempotencyKey);
+    const cached = getIdempotentResponse<ProductWithRelations>(idempotencyKey);
     if (cached) {
       stopTimer();
       return ok(cached);
@@ -54,7 +52,7 @@ export async function GET(
   }
 
   try {
-    // ---------------- Fetch Product ----------------
+    // --- Fetch Product ---
     const product = await prisma.product.findUnique({
       where: { slug },
       include: {
@@ -64,16 +62,16 @@ export async function GET(
     });
 
     if (!product) {
+      logEvent("product_not_found", { slug, ip }, "warn");
       stopTimer();
       return notFound("Product not found");
     }
 
-    // ---------------- Recommended Products ----------------
+    // --- Recommended Products ---
     const recommended = await prisma.product.findMany({
       where: {
         id: { not: product.id },
-        isArchived: false,
-        deletedAt: null
+        isArchived: false
       },
       take: 4,
       orderBy: { createdAt: "desc" },
@@ -88,9 +86,9 @@ export async function GET(
 
     const response = { product, recommended };
 
-    // ---------------- Save Idempotent Response ----------------
+    // --- Save Idempotent Response ---
     if (idempotencyKey) {
-      saveIdempotentResponse(idempotencyKey, response);
+      saveIdempotentResponse(idempotencyKey, response, 60); // TTL 60s
     }
 
     logEvent("product_viewed", {

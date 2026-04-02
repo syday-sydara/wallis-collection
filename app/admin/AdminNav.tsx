@@ -8,13 +8,16 @@ export function AdminNav() {
 
   const links = [
     { href: "/admin/products", label: "Products" },
-    // Add more links here later (Orders, Fraud, Webhooks, etc.)
+    { href: "/admin/orders", label: "Orders" },
+    { href: "/admin/fraud", label: "Fraud" },
+    { href: "/admin/webhooks", label: "Webhooks" }
   ];
 
   return (
     <nav className="flex items-center gap-3 text-sm">
       {links.map((link) => {
-        const isActive = pathname.startsWith(link.href);
+        const isActive =
+          pathname === link.href || pathname.startsWith(link.href + "/");
 
         return (
           <Link
@@ -22,6 +25,7 @@ export function AdminNav() {
             href={link.href}
             className={[
               "px-3 py-1.5 rounded-md transition-all",
+              "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--focus-ring))] focus:ring-offset-1",
               isActive
                 ? "bg-primary/20 text-text font-semibold shadow-sm"
                 : "text-text-muted hover:text-text hover:bg-surface-muted"

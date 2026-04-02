@@ -9,25 +9,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing orderId" }, { status: 400 });
   }
 
-  // Fetch order with items
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: { items: true }
-  });
-
-  if (!order) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
-  }
-
-  if (order.paymentMethod !== "PAYSTACK") {
-    return NextResponse.json({ error: "Invalid payment method" }, { status: 400 });
-  }
-
-  if (!order.paymentReference) {
-    return NextResponse.json({ error: "Missing payment reference" }, { status: 400 });
-  }
-
   try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true }
+    });
+
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    if (order.paymentMethod !== "CARD") {
+      return NextResponse.json({ error: "Invalid payment method" }, { status: 400 });
+    }
+
+    if (!order.paymentReference) {
+      return NextResponse.json({ error: "Missing payment reference" }, { status: 400 });
+    }
+
     // ---------------- VERIFY WITH PAYSTACK ----------------
     const res = await fetch(
       `https://api.paystack.co/transaction/verify/${order.paymentReference}`,
@@ -47,40 +46,55 @@ export async function POST(req: NextRequest) {
     const status = data?.data?.status;
 
     if (status === "success") {
-      // Only update if not already paid
-      if (order.paymentStatus !== "PAID") {
-        await prisma.$transaction(async (tx) => {
-          // Reduce stock safely
-          for (const item of order.items) {
-            if (item.variantId) {
-              await tx.productVariant.update({
-                where: { id: item.variantId },
-                data: { stock: { decrement: item.quantity } }
-              });
+      await prisma.$transaction(async (tx) => {
+        const freshOrder = await tx.order.findUnique({
+          where: { id: orderId },
+          include: { items: true }
+        });
+
+        if (!freshOrder) throw new Error("Order disappeared");
+
+        if (freshOrder.paymentStatus === "PAID") return;
+
+        // Reduce stock safely
+        for (const item of freshOrder.items) {
+          if (item.variantId) {
+            const variant = await tx.productVariant.findUnique({
+              where: { id: item.variantId }
+            });
+
+            if (!variant || variant.stock < item.quantity) {
+              throw new Error(`Insufficient stock for variant ${item.variantId}`);
             }
+
+            await tx.productVariant.update({
+              where: { id: item.variantId },
+              data: { stock: { decrement: item.quantity } }
+            });
           }
+        }
 
-          // Update order status
-          await tx.order.update({
-            where: { id: orderId },
-            data: {
-              paymentStatus: "PAID",
-              orderStatus: "CONFIRMED",
-            },
-          });
+        // Update order
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            paymentStatus: "PAID",
+            orderStatus: "PROCESSING",
+          },
         });
+      });
 
-        await logSecurityEvent({
-          type: "PAYMENT_CONFIRMED",
-          message: `Payment confirmed for order ${orderId}`,
-        });
-      }
+      await logSecurityEvent({
+        type: "PAYMENT_CONFIRMED",
+        message: `Payment confirmed for order ${orderId}`,
+      });
     }
 
     return NextResponse.json({
       success: true,
       paymentStatus: status,
     });
+
   } catch (err) {
     console.error("Paystack verification error:", err);
 

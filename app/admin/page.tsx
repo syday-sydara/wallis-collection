@@ -26,7 +26,7 @@ export default async function AdminProductsPage({
         </Link>
       </div>
 
-      {/* Table container */}
+      {/* Table */}
       <div className="overflow-hidden rounded-lg border border-border bg-surface-card shadow-card">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-border bg-surface-muted text-xs uppercase text-text-muted">
@@ -41,7 +41,11 @@ export default async function AdminProductsPage({
 
           <tbody className="divide-y divide-border">
             {items.map((p) => (
-              <tr key={p.id} className="hover:bg-surface-muted/50 transition-colors">
+              <tr
+                key={p.id}
+                className="hover:bg-surface-muted/50 transition-colors"
+              >
+                {/* Name + slug */}
                 <td className="py-3 px-4">
                   <Link
                     href={`/admin/products/${p.id}`}
@@ -52,12 +56,21 @@ export default async function AdminProductsPage({
                   <div className="text-xs text-text-muted">{p.slug}</div>
                 </td>
 
+                {/* Price */}
                 <td className="px-4">
-                  ₦{(p.basePrice / 100).toLocaleString("en-NG")}
+                  {p.basePrice != null ? (
+                    <>₦{(p.basePrice / 100).toLocaleString("en-NG")}</>
+                  ) : (
+                    <span className="text-xs text-text-muted">—</span>
+                  )}
                 </td>
 
-                <td className="px-4">{p.stock}</td>
+                {/* Stock */}
+                <td className="px-4">
+                  {typeof p.stock === "number" ? p.stock : "—"}
+                </td>
 
+                {/* Status */}
                 <td className="px-4">
                   {p.isArchived ? (
                     <span className="rounded-md bg-danger px-2 py-0.5 text-xs text-danger-foreground">
@@ -70,6 +83,7 @@ export default async function AdminProductsPage({
                   )}
                 </td>
 
+                {/* Updated */}
                 <td className="px-4 text-xs text-text-muted">
                   {new Date(p.updatedAt).toLocaleDateString("en-US", {
                     month: "short",

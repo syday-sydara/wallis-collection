@@ -14,7 +14,7 @@ import { twMerge } from "tailwind-merge";
  * @example
  * cnx(["p-4", ["bg-primary", ["text-white"]]])
  */
-export function cnx(
+export function cn(
   ...classes: Array<string | string[] | undefined | null | false>
 ): string {
   const flattened = classes.flatMap(c =>

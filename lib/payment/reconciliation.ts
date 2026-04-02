@@ -1,26 +1,33 @@
+import pLimit from "p-limit";
 import { processPaymentEvent } from "@/lib/payment/processor";
 
 export async function reconcilePendingPayments(limit = 100) {
+  const safeLimit = Math.min(limit, 200);
+
   const pending = await prisma.order.findMany({
     where: {
       paymentStatus: "PENDING",
       paymentReference: { not: null },
-      paymentProvider: { not: null }
+      paymentProvider: { in: ["paystack", "monnify"] }
     },
-    take: limit
+    take: safeLimit
   });
 
-  const results = [];
+  const limitConcurrency = pLimit(5);
 
-  for (const order of pending) {
-    const result = await processPaymentEvent({
-      provider: order.paymentProvider as any,
-      reference: order.paymentReference!,
-      source: "reconciliation"
-    });
+  const results = await Promise.all(
+    pending.map(order =>
+      limitConcurrency(async () => {
+        const result = await processPaymentEvent({
+          provider: order.paymentProvider as any,
+          reference: order.paymentReference!,
+          source: "reconciliation"
+        });
 
-    results.push({ orderId: order.id, ...result });
-  }
+        return { orderId: order.id, ...result };
+      })
+    )
+  );
 
   return { processed: results.length, results };
 }
