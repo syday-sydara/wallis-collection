@@ -1,5 +1,6 @@
 import { Inter } from "next/font/google";
 import { ToastProvider } from "@/components/ui/Toast";
+import { Toaster } from "@/components/ui/toast/Toaster";
 import { CartProvider } from "@/components/cart/useCart";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { cn } from "@/lib/utils";
@@ -16,9 +17,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
       <body className={cn(inter.className, "h-full antialiased")}>
-        {/* All client components MUST be inside CartProvider */}
         <CartProvider>
           <ToastProvider>
+            {/* Toast UI lives here */}
+            <Toaster />
+
             <CartDrawer />
 
             <main className="min-h-screen bg-surface text-text pb-safe animate-fadeIn">
