@@ -1,4 +1,3 @@
-// app/admin/products/new/page.tsx
 "use client";
 
 import { useState, useTransition } from "react";
@@ -23,20 +22,28 @@ export default function NewProductPage() {
   async function onSubmit(formData: FormData) {
     startTransition(async () => {
       const result = await createProduct(formData);
+
       if (!result.ok) {
         setErrors(result.errors ?? {});
         return;
       }
+
       router.push(`/admin/products/${result.id}`);
     });
   }
 
   return (
-    <div className="max-w-xl space-y-4">
-      <h2 className="text-base font-semibold">New product</h2>
-      <form action={onSubmit} className="space-y-3 text-sm">
+    <div className="max-w-xl space-y-6">
+      <h2 className="text-lg font-semibold text-text tracking-tight">
+        New product
+      </h2>
+
+      <form action={onSubmit} className="space-y-4 text-sm">
+        {/* Name */}
         <div>
-          <label className="block text-xs font-medium">Name</label>
+          <label className="block text-xs font-medium text-text-muted">
+            Name
+          </label>
           <input
             name="name"
             required
@@ -46,54 +53,84 @@ export default function NewProductPage() {
               setName(v);
               if (!slug) setSlug(slugify(v));
             }}
-            className="mt-1 w-full rounded border px-2 py-1 text-sm"
+            className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-1.5 
+                       text-text shadow-sm focus:outline-none focus:ring-2 
+                       focus:ring-[rgb(var(--focus-ring))]"
           />
           {errors.name && (
-            <p className="mt-1 text-xs text-red-600">{errors.name[0]}</p>
+            <p className="mt-1 text-xs text-danger-foreground">
+              {errors.name[0]}
+            </p>
           )}
         </div>
+
+        {/* Slug */}
         <div>
-          <label className="block text-xs font-medium">Slug</label>
+          <label className="block text-xs font-medium text-text-muted">
+            Slug
+          </label>
           <input
             name="slug"
             required
             value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            className="mt-1 w-full rounded border px-2 py-1 text-sm"
+            onChange={(e) => setSlug(slugify(e.target.value))}
+            className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-1.5 
+                       text-text shadow-sm focus:outline-none focus:ring-2 
+                       focus:ring-[rgb(var(--focus-ring))]"
           />
           {errors.slug && (
-            <p className="mt-1 text-xs text-red-600">{errors.slug[0]}</p>
+            <p className="mt-1 text-xs text-danger-foreground">
+              {errors.slug[0]}
+            </p>
           )}
         </div>
+
+        {/* Base Price */}
         <div>
-          <label className="block text-xs font-medium">Base price (kobo)</label>
+          <label className="block text-xs font-medium text-text-muted">
+            Base price (kobo)
+          </label>
           <input
             name="basePrice"
             type="number"
             required
-            className="mt-1 w-full rounded border px-2 py-1 text-sm"
+            className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-1.5 
+                       text-text shadow-sm focus:outline-none focus:ring-2 
+                       focus:ring-[rgb(var(--focus-ring))]"
           />
           {errors.basePrice && (
-            <p className="mt-1 text-xs text-red-600">
+            <p className="mt-1 text-xs text-danger-foreground">
               {errors.basePrice[0]}
             </p>
           )}
         </div>
+
+        {/* Description */}
         <div>
-          <label className="block text-xs font-medium">Description</label>
+          <label className="block text-xs font-medium text-text-muted">
+            Description
+          </label>
           <textarea
             name="description"
-            className="mt-1 w-full rounded border px-2 py-1 text-sm"
             rows={4}
+            className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-1.5 
+                       text-text shadow-sm focus:outline-none focus:ring-2 
+                       focus:ring-[rgb(var(--focus-ring))]"
           />
         </div>
+
+        {/* Form-level errors */}
         {errors._form && (
-          <p className="text-xs text-red-600">{errors._form[0]}</p>
+          <p className="text-xs text-danger-foreground">{errors._form[0]}</p>
         )}
+
+        {/* Submit */}
         <button
           type="submit"
           disabled={isPending}
-          className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+          className="rounded-md bg-primary px-4 py-2 text-xs font-medium 
+                     text-primary-foreground shadow-sm hover:bg-primary-hover 
+                     active:bg-primary-active disabled:opacity-60 transition-all"
         >
           {isPending ? "Saving..." : "Create"}
         </button>

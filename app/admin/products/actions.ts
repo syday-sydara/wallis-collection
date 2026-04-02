@@ -8,42 +8,45 @@ import { z } from "zod";
 /* ------------------------- ZOD SCHEMAS ------------------------- */
 
 const productSchema = z.object({
-  name: z.string().min(1),
-  slug: z.string().min(1),
+  name: z.string().trim().min(1).max(200),
+  slug: z.string().trim().min(1).max(200),
   basePrice: z.coerce.number().int().nonnegative(),
-  description: z.string().optional(),
+  description: z.string().trim().optional(),
   isArchived: z.coerce.boolean().optional()
 });
 
 const variantSchema = z.object({
-  name: z.string().min(1),
-  sku: z.string().min(1),
+  name: z.string().trim().min(1).max(200),
+  sku: z.string().trim().min(1).max(200),
   price: z.coerce.number().int().nonnegative()
 });
 
-const variantUpdateSchema = z.object({
-  name: z.string().min(1),
-  sku: z.string().min(1),
-  price: z.coerce.number().int().nonnegative()
-});
+const variantUpdateSchema = variantSchema;
 
 const inventorySchema = z.object({
   change: z.coerce.number().int(),
-  reason: z.string().min(1)
+  reason: z.string().trim().min(1).max(200)
 });
 
 const imageSchema = z.object({
   url: z.string().url(),
-  alt: z.string().optional()
+  alt: z.string().trim().optional()
 });
 
 /* ------------------------- HELPERS ------------------------- */
 
 function formDataToObject(formData: FormData) {
   const obj: Record<string, any> = {};
+
   formData.forEach((value, key) => {
-    obj[key] = value;
+    if (obj[key]) {
+      // Convert repeated keys into arrays
+      obj[key] = Array.isArray(obj[key]) ? [...obj[key], value] : [obj[key], value];
+    } else {
+      obj[key] = value === "on" ? true : value;
+    }
   });
+
   return obj;
 }
 
@@ -58,8 +61,12 @@ export async function createProduct(formData: FormData) {
   }
 
   const { name, slug, basePrice, description } = parsed.data;
+  const normalizedSlug = slug.toLowerCase();
 
-  const existing = await prisma.product.findUnique({ where: { slug } });
+  const existing = await prisma.product.findUnique({
+    where: { slug: normalizedSlug }
+  });
+
   if (existing) {
     return { ok: false, errors: { slug: ["Slug is already in use"] } };
   }
@@ -67,7 +74,7 @@ export async function createProduct(formData: FormData) {
   const product = await prisma.product.create({
     data: {
       name,
-      slug,
+      slug: normalizedSlug,
       basePrice,
       description: description || null
     }
@@ -86,9 +93,10 @@ export async function updateProduct(id: string, formData: FormData) {
   }
 
   const { name, slug, basePrice, description, isArchived } = parsed.data;
+  const normalizedSlug = slug.toLowerCase();
 
   const existing = await prisma.product.findFirst({
-    where: { slug, NOT: { id } }
+    where: { slug: normalizedSlug, NOT: { id } }
   });
 
   if (existing) {
@@ -99,7 +107,7 @@ export async function updateProduct(id: string, formData: FormData) {
     where: { id },
     data: {
       name,
-      slug,
+      slug: normalizedSlug,
       basePrice,
       description: description || null,
       isArchived: !!isArchived
@@ -123,8 +131,12 @@ export async function createVariant(productId: string, formData: FormData) {
   }
 
   const { name, sku, price } = parsed.data;
+  const normalizedSku = sku.toLowerCase();
 
-  const existing = await prisma.productVariant.findUnique({ where: { sku } });
+  const existing = await prisma.productVariant.findUnique({
+    where: { sku: normalizedSku }
+  });
+
   if (existing) {
     return { ok: false, errors: { sku: ["SKU is already in use"] } };
   }
@@ -132,7 +144,7 @@ export async function createVariant(productId: string, formData: FormData) {
   await prisma.productVariant.create({
     data: {
       name,
-      sku,
+      sku: normalizedSku,
       price,
       productId
     }
@@ -151,9 +163,10 @@ export async function updateVariant(variantId: string, formData: FormData) {
   }
 
   const { name, sku, price } = parsed.data;
+  const normalizedSku = sku.toLowerCase();
 
   const existing = await prisma.productVariant.findFirst({
-    where: { sku, NOT: { id: variantId } }
+    where: { sku: normalizedSku, NOT: { id: variantId } }
   });
 
   if (existing) {
@@ -163,7 +176,7 @@ export async function updateVariant(variantId: string, formData: FormData) {
   const variant = await prisma.productVariant.update({
     where: { id: variantId },
     include: { product: true },
-    data: { name, sku, price }
+    data: { name, sku: normalizedSku, price }
   });
 
   revalidatePath(`/admin/products/${variant.productId}`);

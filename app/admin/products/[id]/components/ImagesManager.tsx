@@ -31,6 +31,7 @@ export function ImagesManager({
   async function handleReorder(from: number, to: number) {
     setError(null);
     setReordering(true);
+
     const previous = localImages;
     const updated = arrayMove(localImages, from, to);
     setLocalImages(updated);
@@ -51,6 +52,7 @@ export function ImagesManager({
   async function handleDelete(id: string) {
     setError(null);
     setPendingId(id);
+
     const previous = localImages;
     setLocalImages((prev) => prev.filter((i) => i.id !== id));
 
@@ -65,31 +67,41 @@ export function ImagesManager({
   }
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-semibold">Images</h3>
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold text-text tracking-tight">
+        Images
+      </h3>
 
-      {error && <p className="text-[11px] text-red-600">{error}</p>}
+      {error && (
+        <p classname="text-[11px] text-danger-foreground">{error}</p>
+      )}
 
-      <div className="flex flex-wrap gap-2">
+      {/* Image grid */}
+      <div className="flex flex-wrap gap-3">
         {localImages.map((img, index) => (
           <div
             key={img.id}
-            className="relative h-24 w-20 overflow-hidden rounded border"
+            className="relative h-28 w-24 overflow-hidden rounded-md border border-border bg-surface shadow-sm"
           >
             <img
               src={img.url}
               alt={img.alt ?? ""}
               className="h-full w-full object-cover"
             />
+
+            {/* Controls overlay */}
             <div className="absolute inset-x-0 bottom-0 flex justify-between bg-black/40 px-1 py-0.5 text-[10px] text-white">
+              {/* Delete */}
               <button
                 type="button"
                 onClick={() => handleDelete(img.id)}
                 disabled={pendingId === img.id}
                 className="disabled:opacity-60"
               >
-                {pendingId === img.id ? "..." : "Del"}
+                {pendingId === img.id ? "…" : "Del"}
               </button>
+
+              {/* Reorder */}
               <div className="flex gap-1">
                 <button
                   type="button"
@@ -113,6 +125,7 @@ export function ImagesManager({
         ))}
       </div>
 
+      {/* Add new image */}
       <form
         action={(formData) => addProductImage(productId, formData)}
         className="mt-2 flex gap-2 text-xs"
@@ -120,17 +133,17 @@ export function ImagesManager({
         <input
           name="url"
           placeholder="Image URL"
-          className="flex-1 rounded border px-2 py-1"
+          className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-text shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--focus-ring))]"
           required
         />
         <input
           name="alt"
           placeholder="Alt text"
-          className="w-40 rounded border px-2 py-1"
+          className="w-40 rounded-md border border-border bg-surface px-2 py-1.5 text-text shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--focus-ring))]"
         />
         <button
           type="submit"
-          className="rounded bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white"
+          className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm hover:bg-primary-hover active:bg-primary-active transition-all"
         >
           Add
         </button>
