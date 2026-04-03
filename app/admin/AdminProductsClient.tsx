@@ -1,15 +1,38 @@
-// app/admin/products/page.tsx
-import Link from "next/link";
-import { adminListProductsPaginated } from "@/lib/catalog/admin";
+"use client";
 
-export default async function AdminProductsPage({
-  searchParams
-}: {
-  searchParams: { cursor?: string };
-}) {
-  const { items, nextCursor } = await adminListProductsPaginated({
-    cursor: searchParams?.cursor
-  });
+import Link from "next/link";
+import { useState, useEffect } from "react";
+
+export default function AdminProductsClient({ initialData }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [items, setItems] = useState(initialData.items);
+  const [nextCursor, setNextCursor] = useState(initialData.nextCursor);
+
+  // Re-fetch when cursor changes
+  useEffect(() => {
+    async function fetchMore() {
+      if (!nextCursor) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch(`/api/admin/products?cursor=${nextCursor}`);
+        const data = await res.json();
+
+        setItems(data.items);
+        setNextCursor(data.nextCursor);
+      } catch (err) {
+        setError("Failed to load products");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchMore();
+  }, [nextCursor]);
 
   return (
     <div className="space-y-6">
@@ -29,6 +52,8 @@ export default async function AdminProductsPage({
         </Link>
       </div>
 
+      {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
+
       {/* Table */}
       <div className="overflow-hidden rounded-lg border border-border bg-surface-card shadow-card">
         <table className="w-full text-left text-sm">
@@ -43,19 +68,15 @@ export default async function AdminProductsPage({
           </thead>
 
           <tbody className="divide-y divide-border">
-            {items.length === 0 ? (
+            {loading ? (
               <tr>
-                <td colSpan={5} className="text-center py-6 text-sm text-text-muted">
-                  No products found.
+                <td colSpan={5} className="text-center py-6 text-sm">
+                  Loading products...
                 </td>
               </tr>
             ) : (
               items.map((p) => (
-                <tr
-                  key={p.id}
-                  className="hover:bg-surface-muted/50 transition-colors"
-                >
-                  {/* Name + slug */}
+                <tr key={p.id} className="hover:bg-surface-muted/50 transition-colors">
                   <td className="py-3 px-4">
                     <Link
                       href={`/admin/products/${p.id}`}
@@ -66,7 +87,6 @@ export default async function AdminProductsPage({
                     <div className="text-xs text-text-muted">{p.slug}</div>
                   </td>
 
-                  {/* Price */}
                   <td className="px-4">
                     {p.basePrice != null ? (
                       <>₦{(p.basePrice / 100).toLocaleString("en-NG")}</>
@@ -75,10 +95,8 @@ export default async function AdminProductsPage({
                     )}
                   </td>
 
-                  {/* Stock */}
-                  <td className="px-4">{p.stock}</td>
+                  <td className="px-4">{typeof p.stock === "number" ? p.stock : "—"}</td>
 
-                  {/* Status */}
                   <td className="px-4">
                     {p.isArchived ? (
                       <span className="rounded-md bg-danger px-2 py-0.5 text-xs text-danger-foreground">
@@ -91,12 +109,11 @@ export default async function AdminProductsPage({
                     )}
                   </td>
 
-                  {/* Updated */}
                   <td className="px-4 text-xs text-text-muted">
                     {new Date(p.updatedAt).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
-                      year: "numeric"
+                      year: "numeric",
                     })}
                   </td>
                 </tr>

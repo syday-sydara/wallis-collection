@@ -18,7 +18,12 @@ export type AdminProductDetail = {
   stock: number;
   isArchived: boolean;
   updatedAt: Date;
-  images: { id: string; url: string; alt: string | null; sortOrder: number }[]; // Images array with more details
+  images: {
+    id: string;
+    url: string;
+    alt: string | null;
+    sortOrder: number;
+  }[];
   variants: {
     id: string;
     name: string;
@@ -26,3 +31,4 @@ export type AdminProductDetail = {
     price: number;
     stock: number;
   }[];
+};

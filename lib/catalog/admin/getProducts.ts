@@ -32,3 +32,4 @@ export async function adminGetProduct(
 
   return { ...product, stock };
 }
+
