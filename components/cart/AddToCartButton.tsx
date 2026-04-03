@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useCart } from "@/lib/cart/store"; // ✅ shared cart store
+import { useCart } from "@/components/cart/useCart";
 
 type Variant = { id: string; price: number; attributes?: Record<string, any> };
 
