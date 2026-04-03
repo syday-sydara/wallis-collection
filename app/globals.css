@@ -1,36 +1,40 @@
 /* ROOT TOKENS — full light theme */
 :root {
+  /* surfaces */
   --surface: 255 255 255;
   --surface-muted: 245 245 245;
   --surface-card: 255 255 255;
 
+  /* text */
   --text: 17 24 39;
   --text-muted: 107 114 128;
 
+  /* borders */
   --border: 229 231 235;
 
+  /* brand */
   --color-primary: 59 130 246;
   --color-primary-hover: 37 99 235;
   --color-primary-active: 29 78 216;
 
+  /* states */
   --color-success: 16 185 129;
   --color-danger: 239 68 68;
   --color-warning: 234 179 8;
   --color-disabled: 209 213 219;
 
+  /* misc */
+  --skeleton: 229 231 235;
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
-
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
   --shadow-md: 0 2px 4px rgba(0,0,0,0.06);
   --shadow-lg: 0 4px 8px rgba(0,0,0,0.08);
-
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-emphasized: cubic-bezier(0.4, 0, 0.2, 1);
-
-  --skeleton: 229 231 235;
 }
+
 
 /* DARK MODE TOKENS */
 .dark {

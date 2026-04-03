@@ -5,31 +5,42 @@ import { useFormState, useFormStatus } from "react-dom";
 import { toast } from "@/components/ui/Toast";
 import { submitCheckout } from "./actions";
 import { useCheckoutForm } from "@/lib/checkout/useCheckoutForm";
-import CartSummary from "../../../components/cart/CartSummary";
+import CartSummary from "@/components/cart/CartSummary";
 import Field from "@/components/forms/Field";
 import { NIGERIAN_STATES } from "@/lib/checkout/constants";
-import { PAYMENT_METHODS } from "@/lib/payment/methods";
+import { PAYMENT_METHODS } from "@/lib/payment/verification";
 import { formatCurrency } from "@/lib/utils/index";
+import { useCart } from "@/lib/cart/store";
+import type { CartItem } from "@/lib/cart/types";
+
+// WhatsApp helpers
+import {
+  generateWhatsAppMessage,
+  generateWhatsAppLink,
+} from "@/lib/utils/whatsapp";
 
 export default function CheckoutPage() {
   // -------------------- Form & Cart --------------------
   const [state, formAction] = useFormState(submitCheckout, {});
   const { pending } = useFormStatus();
 
+  const { cart, updateQuantity, removeItem } = useCart();
+  const cartItems: CartItem[] = cart.items;
+
   const {
     form,
     update,
-    cartItems,
-    removeFromCart,
-    updateCartItemQuantity,
-    cartTotal,
     shippingPreview,
     validateClient,
     mergedErrors,
     errorRefs,
     saving,
-    clearForm
+    clearForm,
   } = useCheckoutForm(state.fieldErrors);
+
+  const cartTotal =
+    cartItems.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0) +
+    (shippingPreview?.cost || 0);
 
   // -------------------- Handlers --------------------
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -40,22 +51,24 @@ export default function CheckoutPage() {
     const fd = new FormData(e.currentTarget);
     fd.append(
       "items",
-      JSON.stringify(cartItems.map((i) => ({
-        productId: i.id,
-        quantity: i.quantity,
-        unitPrice: i.unitPrice
-      })))
+      JSON.stringify(
+        cartItems.map((i: CartItem) => ({
+          productId: i.id,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+        }))
+      )
     );
 
     formAction(fd);
   }
 
   function handleQuantityChange(id: string, qty: number) {
-    updateCartItemQuantity(id, qty);
+    updateQuantity(id, qty);
   }
 
   function handleRemove(id: string) {
-    removeFromCart(id);
+    removeItem(id);
   }
 
   // -------------------- Feedback --------------------
@@ -69,9 +82,13 @@ export default function CheckoutPage() {
   function PaymentMethodUI() {
     switch (form.paymentMethod) {
       case "PAYSTACK":
-        return <p className="text-sm text-text-muted">Pay via Paystack securely.</p>;
+        return (
+          <p className="text-sm text-text-muted">Pay via Paystack securely.</p>
+        );
       case "MONNIFY":
-        return <p className="text-sm text-text-muted">Pay via Monnify securely.</p>;
+        return (
+          <p className="text-sm text-text-muted">Pay via Monnify securely.</p>
+        );
       default:
         return null;
     }
@@ -79,7 +96,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="p-4 max-w-xl mx-auto space-y-6 md:space-y-10">
-      {/* ---------------- Header ---------------- */}
+      {/* Header */}
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Checkout</h1>
         <p className="text-sm text-text-muted">
@@ -90,15 +107,17 @@ export default function CheckoutPage() {
         )}
       </header>
 
-      {/* ---------------- Cart Summary ---------------- */}
+      {/* Cart Summary */}
       <CartSummary
         items={cartItems}
+        shippingCost={shippingPreview?.cost}
         onQuantityChange={handleQuantityChange}
         onRemove={handleRemove}
       />
 
-      {/* ---------------- Checkout Form ---------------- */}
+      {/* Checkout Form */}
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        {/* Full name */}
         <Field
           label="Full name"
           name="fullName"
@@ -109,6 +128,7 @@ export default function CheckoutPage() {
           required
         />
 
+        {/* Email */}
         <Field
           label="Email"
           name="email"
@@ -120,6 +140,7 @@ export default function CheckoutPage() {
           required
         />
 
+        {/* Phone */}
         <Field
           label="Phone"
           name="phone"
@@ -131,6 +152,7 @@ export default function CheckoutPage() {
           required
         />
 
+        {/* Address */}
         <Field
           label="Address"
           name="address"
@@ -142,6 +164,7 @@ export default function CheckoutPage() {
           required
         />
 
+        {/* City, State, Shipping */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Field
             label="City"
@@ -153,7 +176,10 @@ export default function CheckoutPage() {
             required
           />
 
-          <div className="space-y-1" ref={(el) => (errorRefs.current.state = el)}>
+          <div
+            className="space-y-1"
+            ref={(el) => (errorRefs.current.state = el)}
+          >
             <label className="text-sm font-medium">State</label>
             <select
               name="state"
@@ -192,7 +218,10 @@ export default function CheckoutPage() {
         {shippingPreview && (
           <div className="text-sm text-text space-y-1">
             <p>
-              Shipping cost: <span className="font-medium">{formatCurrency(shippingPreview.cost)}</span>
+              Shipping cost:{" "}
+              <span className="font-medium">
+                {formatCurrency(shippingPreview.cost)}
+              </span>
             </p>
             <p className="text-xs text-text-muted">
               Estimated delivery: {shippingPreview.eta}
@@ -200,7 +229,7 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* ---------------- Payment Method ---------------- */}
+        {/* Payment Method */}
         <div className="space-y-1">
           <label className="text-sm font-medium">Payment method</label>
           <select
@@ -218,8 +247,9 @@ export default function CheckoutPage() {
           <PaymentMethodUI />
         </div>
 
-        {/* ---------------- Submit & Clear ---------------- */}
+        {/* Submit + WhatsApp + Clear */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Complete Order */}
           <button
             type="submit"
             disabled={pending}
@@ -231,6 +261,19 @@ export default function CheckoutPage() {
             {pending ? "Processing..." : "Complete order"}
           </button>
 
+          {/* WhatsApp Checkout */}
+          <a
+            href={generateWhatsAppLink(
+              generateWhatsAppMessage(cartItems, cartTotal, form.fullName)
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-md bg-green-600 text-white px-4 py-2 text-sm font-medium active:scale-press transition"
+          >
+            Checkout via WhatsApp
+          </a>
+
+          {/* Clear Form */}
           <button
             type="button"
             onClick={clearForm}
@@ -239,20 +282,6 @@ export default function CheckoutPage() {
             Clear form
           </button>
         </div>
-
-        {/* ---------------- Cart Total (mobile sticky) ---------------- */}
-        {cartItems.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-surface border-t border-border-subtle md:hidden flex justify-between items-center">
-            <span className="font-medium">{formatCurrency(cartTotal + (shippingPreview?.cost || 0))}</span>
-            <button
-              type="submit"
-              disabled={pending}
-              className="ml-4 flex-1 rounded-md bg-[--brand-600] text-white py-2 text-sm font-medium"
-            >
-              {pending ? "Processing…" : "Pay"}
-            </button>
-          </div>
-        )}
       </form>
     </div>
   );

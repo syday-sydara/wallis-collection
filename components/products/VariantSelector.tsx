@@ -14,7 +14,7 @@ export default function VariantSelector({ variants, selected, onChange }: Props)
   if (!variants?.length) return null;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 animate-fadeIn-fast">
       <p className="text-sm font-medium text-text">Select option</p>
 
       <div className="flex flex-wrap gap-2">
@@ -26,11 +26,13 @@ export default function VariantSelector({ variants, selected, onChange }: Props)
               key={v.id}
               type="button"
               aria-pressed={isSelected}
+              aria-label={`Select variant ${v.name}`}
               onClick={() => onChange(v)}
               className={cn(
-                "rounded-md border px-4 py-2 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary",
+                "rounded-md border px-4 py-2 text-sm font-medium transition-all leading-none min-h-touch",
+                "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface active:scale-press",
                 isSelected
-                  ? "border-primary bg-primary text-white shadow-sm"
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
                   : "border-border-subtle bg-surface hover:border-primary"
               )}
             >

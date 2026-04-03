@@ -1,6 +1,5 @@
 import type { Config } from "tailwindcss";
 import defaultTheme from "tailwindcss/defaultTheme";
-import colors from "tailwindcss/colors";
 
 const config: Config = {
   darkMode: "class",
@@ -17,23 +16,22 @@ const config: Config = {
       center: true,
       padding: {
         DEFAULT: "1rem",
-        sm: "1rem",
         lg: "2rem",
       },
     },
 
     screens: {
-      xs: "360px", // baseline for Nigerian Android devices
+      xs: "360px",
       ...defaultTheme.screens,
     },
 
     extend: {
       colors: {
-        surface: "rgb(var(--surface) / <alpha-value>)",
-        "surface-muted": "rgb(var(--surface-muted) / <alpha-value>)",
-        card: "rgb(var(--surface-card) / <alpha-value>)",
-
-        neutral: colors.neutral,
+        surface: {
+          DEFAULT: "rgb(var(--surface) / <alpha-value>)",
+          muted: "rgb(var(--surface-muted) / <alpha-value>)",
+          card: "rgb(var(--surface-card) / <alpha-value>)",
+        },
 
         text: {
           DEFAULT: "rgb(var(--text) / <alpha-value>)",
@@ -74,11 +72,11 @@ const config: Config = {
 
       fontSize: {
         sm: ["0.875rem", { lineHeight: "1.3rem" }],
-        base: ["1.05rem", { lineHeight: "1.65rem" }], // readability bump
+        base: ["1.05rem", { lineHeight: "1.65rem" }],
         lg: ["1.2rem", { lineHeight: "1.75rem" }],
         xl: ["1.25rem", { lineHeight: "1.8rem" }],
         "2xl": ["1.5rem", { lineHeight: "2rem" }],
-        "2xs": ["0.7rem", { lineHeight: "1rem" }], // for tiny screens
+        "2xs": ["0.7rem", { lineHeight: "1rem" }],
       },
 
       borderRadius: {
@@ -97,6 +95,7 @@ const config: Config = {
       zIndex: {
         header: "10",
         modal: "40",
+        overlay: "50",
       },
 
       padding: {
@@ -118,12 +117,12 @@ const config: Config = {
 
       keyframes: {
         shimmer: {
-          "0%": { backgroundPosition: "-100% 0" },
-          "100%": { backgroundPosition: "100% 0" },
+          from: { backgroundPosition: "-100% 0" },
+          to: { backgroundPosition: "100% 0" },
         },
         fadeIn: {
-          "0%": { opacity: "0" },
-          "100%": { opacity: "1" },
+          from: { opacity: "0" },
+          to: { opacity: "1" },
         },
       },
 

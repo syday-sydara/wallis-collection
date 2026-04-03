@@ -1,14 +1,9 @@
-export interface CartItem {
+export type CartItem = {
+  id: string;
   productId: string;
-  variantId: string;
   name: string;
-  variantName?: string;
+  unitPrice: number;
+  image: string;
   quantity: number;
-  price: number; // in cents
-  image?: string;
-}
-
-export interface Cart {
-  items: CartItem[];
-  total: number; // in cents
-}
+  attributes?: Record<string, any>;
+};

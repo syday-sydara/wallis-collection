@@ -1,41 +1,33 @@
-import { createVariant } from "@/app/admin/products/actions";
-import { SubmitButton } from "./SubmitButton";
+"use client";
 
-export function VariantForm({ productId }: { productId: string }) {
-  async function variantAction(formData: FormData) {
-    "use server";
-    await createVariant(productId, formData);
-  }
+import { createVariant } from "../../actions";
+import { AdminField } from "@/components/admin/ui/AdminField";
+import { AdminInput } from "@/components/admin/ui/AdminInput";
+import { SubmitButton } from "@/components/admin/ui/SubmitButton";
 
+export function VariantForm({ productId }) {
   return (
-    <form
-      action={variantAction}
-      className="mt-2 grid grid-cols-3 gap-2 text-xs"
-    >
-      <input
-        name="name"
-        placeholder="Variant name"
-        className="rounded border px-2 py-1"
-        required
-      />
-      <input
-        name="sku"
-        placeholder="SKU"
-        className="rounded border px-2 py-1"
-        required
-      />
-      <input
-        name="price"
-        type="number"
-        placeholder="Price (kobo)"
-        className="rounded border px-2 py-1"
-        required
-      />
-      <SubmitButton
-        pendingLabel="Adding..."
-        className="col-span-3 rounded bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
-      >
-        Add variant
+    <form action={createVariant.bind(null, productId)} className="space-y-4">
+      <AdminField label="Variant Name">
+        <AdminInput name="name" required />
+      </AdminField>
+
+      <AdminField label="SKU">
+        <AdminInput name="sku" required />
+      </AdminField>
+
+      <div className="grid grid-cols-2 gap-4">
+        <AdminField label="Price">
+          <AdminInput type="number" name="price" step="0.01" min={0} required />
+        </AdminField>
+
+        <AdminField label="Initial Stock">
+          <AdminInput type="number" name="stock" min={0} required />
+        </AdminField>
+      </div>
+
+      <SubmitButton type="submit" pendingLabel="Adding variant…">
+        Add Variant
       </SubmitButton>
     </form>
   );

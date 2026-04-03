@@ -10,7 +10,7 @@ interface LogEventBase {
 
 /**
  * Logs a structured event to the console (JSON).
- * You can later swap console.log with Sentry, Datadog, or any logging backend.
+ * Can be swapped with Sentry, Datadog, Logtail, or any backend later.
  */
 export function logEvent(
   event: string,
@@ -21,18 +21,19 @@ export function logEvent(
     event,
     level,
     timestamp: new Date().toISOString(),
-    ...data,
+    ...data
   };
 
-  // Use appropriate console method for level
+  const serialized = JSON.stringify(payload);
+
   switch (level) {
     case "warn":
-      console.warn(JSON.stringify(payload));
+      console.warn(serialized);
       break;
     case "error":
-      console.error(JSON.stringify(payload));
+      console.error(serialized);
       break;
     default:
-      console.log(JSON.stringify(payload));
+      console.log(serialized);
   }
 }

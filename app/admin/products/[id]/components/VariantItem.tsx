@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateVariant, deleteVariant } from "../../actions";
+import { updateVariant, deleteVariant } from "@/app/admin/products/actions";
 
-export default function VariantItem({ variant }: { variant: any }) {
+import { AdminField } from "@/components/admin/ui/AdminField";
+import { AdminInput } from "@/components/admin/ui/AdminInput";
+import { AdminButton } from "@/components/admin/ui/AdminButton";
+
+export default function VariantItem({ variant, productId }) {
   const [errors, setErrors] = useState<Record<string, string[] | undefined>>({});
   const [isPending, startTransition] = useTransition();
 
@@ -11,11 +15,8 @@ export default function VariantItem({ variant }: { variant: any }) {
     setErrors({});
 
     startTransition(async () => {
-      const result = await updateVariant(variant.id, formData);
-
-      if (!result.ok) {
-        setErrors(result.errors ?? {});
-      }
+      const result = await updateVariant(productId, variant.id, formData);
+      if (!result.ok) setErrors(result.errors ?? {});
     });
   }
 
@@ -23,73 +24,65 @@ export default function VariantItem({ variant }: { variant: any }) {
     if (!confirm("Delete this variant?")) return;
 
     startTransition(async () => {
-      await deleteVariant(variant.id);
+      await deleteVariant(variant.id, productId);
     });
   }
 
   return (
-    <li className="rounded border p-2 text-xs space-y-2">
+    <li className="rounded-md border border-border bg-surface p-3 shadow-sm space-y-3 text-xs">
       {/* UPDATE FORM */}
-      <form action={handleUpdate} className="flex flex-wrap items-center gap-2">
-        <div>
-          <input
+      <form action={handleUpdate} className="flex flex-wrap items-start gap-3">
+        <AdminField label="Name" error={errors.name?.[0]}>
+          <AdminInput
             name="name"
             defaultValue={variant.name}
             disabled={isPending}
-            className="w-32 rounded border px-2 py-1"
           />
-          {errors.name && (
-            <p className="text-red-600 text-[11px]">{errors.name[0]}</p>
-          )}
-        </div>
+        </AdminField>
 
-        <div>
-          <input
+        <AdminField label="SKU" error={errors.sku?.[0]}>
+          <AdminInput
             name="sku"
             defaultValue={variant.sku}
             disabled={isPending}
-            className="w-32 rounded border px-2 py-1"
           />
-          {errors.sku && (
-            <p className="text-red-600 text-[11px]">{errors.sku[0]}</p>
-          )}
-        </div>
+        </AdminField>
 
-        <div>
-          <input
+        <AdminField label="Price" error={errors.price?.[0]}>
+          <AdminInput
             name="price"
             type="number"
+            min={0}
             defaultValue={variant.price}
             disabled={isPending}
-            className="w-28 rounded border px-2 py-1"
           />
-          {errors.price && (
-            <p className="text-red-600 text-[11px]">{errors.price[0]}</p>
-          )}
-        </div>
+        </AdminField>
 
-        <button
+        <AdminButton
           type="submit"
           disabled={isPending}
-          className="rounded bg-neutral-900 px-2 py-1 text-[11px] font-medium text-white disabled:opacity-50"
+          className="px-3 py-1.5"
         >
           {isPending ? "Saving…" : "Save"}
-        </button>
+        </AdminButton>
       </form>
 
       {/* FORM-LEVEL ERROR */}
       {errors._form && (
-        <p className="text-red-600 text-[11px]">{errors._form[0]}</p>
+        <p className="text-danger-foreground text-[11px]">
+          {errors._form[0]}
+        </p>
       )}
 
       {/* DELETE BUTTON */}
-      <button
+      <AdminButton
+        variant="danger"
         onClick={handleDelete}
         disabled={isPending}
-        className="text-[11px] text-red-600 hover:underline disabled:opacity-50"
+        className="text-[11px] px-2 py-1"
       >
         Delete
-      </button>
+      </AdminButton>
     </li>
   );
 }

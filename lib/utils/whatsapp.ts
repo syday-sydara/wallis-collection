@@ -1,37 +1,35 @@
 // lib/utils/whatsapp.ts
-import type { CartItem } from "@/app/(store)/checkout/page";
+import type { CartItem } from "@/lib/cart/types";
 
-/**
- * Generate a WhatsApp message based on cart items, total, and buyer name
- * @param items Array of cart items
- * @param total Total cart price
- * @param fullName Optional buyer full name
- * @returns Formatted WhatsApp message string
- */
+function formatCartLine(item: CartItem): string {
+  const variant = item.attributes
+    ? ` (${Object.values(item.attributes).join(", ")})`
+    : "";
+
+  const total = item.unitPrice * item.quantity;
+
+  return `${item.name}${variant} x${item.quantity} - ₦${total.toLocaleString()}`;
+}
+
 export function generateWhatsAppMessage(
   items: CartItem[],
   total: number,
   fullName?: string
-): string {
-  const itemLines = items
-    .map(
-      (i) =>
-        `${i.name}${i.variant ? ` (${i.variant})` : ""} x${i.quantity} - ₦${(
-          i.unitPrice * i.quantity
-        ).toLocaleString()}`
-    )
-    .join("\n");
+) {
+  const name = fullName?.trim()
+    ? `Hello! My name is ${fullName}.\n`
+    : "Hello!\n";
 
-  const message = `Hello! My name is ${fullName || ""}.\nI would like to place an order:\n\n${itemLines}\n\nTotal: ₦${total.toLocaleString()}`;
-  return message;
+  return (
+    `${name}I would like to place an order:\n\n` +
+    items.map(formatCartLine).join("\n") +
+    `\n\nTotal: ₦${total.toLocaleString()}`
+  );
 }
 
-/**
- * Generate a WhatsApp URL with prefilled message for Nigeria
- * @param message Message text to prefill in WhatsApp chat
- * @returns WhatsApp URL
- */
-export function generateWhatsAppLink(message: string): string {
-  const phone = "234XXXXXXXXXX"; // Replace with your business number
+export function generateWhatsAppLink(message: string) {
+  const phone =
+    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "234XXXXXXXXXX";
+
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }

@@ -6,12 +6,12 @@ import ProductGridSkeleton from "./ProductGridSkeleton";
 import EmptyState from "@/components/products/EmptyState";
 import ErrorState from "./ErrorState";
 import ResultHeader from "./ResultHeader";
-import { listProducts } from "@/lib/catalog/listProducts";
+import { listProducts } from "@/lib/catalog/storefront/listProducts";
 import type {
   ProductListParams,
   ProductListResult,
   ProductWithRelations,
-} from "@/lib/catalog/types";
+} from "@/lib/catalog/shared/types";
 
 type ProductListProps = {
   params: ProductListParams;
@@ -119,19 +119,23 @@ export default function ProductList({ params }: ProductListProps) {
   return (
     <>
       <ResultHeader count={products.length} />
-      <ProductGrid products={products} />
+
+      <div className="animate-fadeIn">
+        <ProductGrid products={products} />
+      </div>
 
       {nextCursor && (
         <div
           ref={loadMoreRef}
-          className="mt-4 text-center text-sm text-text-subtle"
+          aria-busy={loadingMore}
+          className="mt-4 text-center text-sm text-text-muted leading-none pb-safe"
         >
           {loadingMore ? "Loading more products..." : "Scroll down to load more"}
         </div>
       )}
 
       {!nextCursor && (
-        <p className="mt-4 text-center text-xs text-text-subtle">
+        <p className="mt-4 text-center text-xs text-text-muted animate-fadeIn-fast">
           No more products
         </p>
       )}

@@ -1,81 +1,60 @@
 // lib/catalog/service.ts
 import { prisma } from "@/lib/db";
-import type { 
-  ProductWithRelations, 
-  ProductListParams, 
+import type {
+  ProductWithRelations,
+  ProductListParams,
   ProductListResult,
   RecommendedProduct,
   ProductDetailResponse
-} from "./types";
-import { listProducts } from "./listProducts";
+} from "./shared/types";
+import { listProducts } from "./storefront/listProducts";
 
-/**
- * List products with optional filters and pagination
- */
 export async function getProducts(params: ProductListParams = {}): Promise<ProductListResult> {
   return listProducts(params);
 }
 
-/**
- * Get product by slug including variants and images
- */
 export async function getProductBySlug(slug: string): Promise<ProductWithRelations | null> {
-  const product = await prisma.product.findFirst({
-    where: { slug, deletedAt: null, isArchived: false },
+  const product = await prisma.product.findUnique({
+    where: { slug },
     include: {
       images: { orderBy: { sortOrder: "asc" } },
       variants: true
     }
   });
 
-  if (!product) return null;
+  if (!product || product.isArchived) return null;
+
+  const stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
 
   return {
-    id: product.id,
-    name: product.name,
-    slug: product.slug,
-    description: product.description,
-    basePrice: product.basePrice,
-    stock: product.variants.reduce((sum, v) => sum + v.price, 0),
-    isArchived: product.isArchived,
-    createdAt: product.createdAt,
-    updatedAt: product.updatedAt,
-    images: product.images.map(img => ({
-      id: img.id,
-      url: img.url,
-      alt: img.alt,
-      sortOrder: img.sortOrder
-    })),
-    variants: product.variants.map(v => ({
-      id: v.id,
-      name: v.name,
-      sku: v.sku,
-      price: v.price
-    }))
+    ...product,
+    stock,
+    images: product.images,
+    variants: product.variants
   };
 }
 
-/**
- * List recommended products for a given product
- * Strategy: similar basePrice ±20% and exclude current product
- */
-export async function listProductsForRecommendation(product: ProductWithRelations): Promise<RecommendedProduct[]> {
+export async function listProductsForRecommendation(
+  product: ProductWithRelations
+): Promise<RecommendedProduct[]> {
+
+  if (!product.basePrice) return [];
+
   const priceMin = Math.max(product.basePrice * 0.8, 0);
   const priceMax = product.basePrice * 1.2;
 
   const recommended = await prisma.product.findMany({
     where: {
       id: { not: product.id },
-      deletedAt: null,
       isArchived: false,
-      basePrice: { gte: priceMin, lte: priceMax },
+      basePrice: { gte: priceMin, lte: priceMax }
     },
     take: 6,
-    orderBy: [{ createdAt: "desc" }],
+    orderBy: { createdAt: "desc" },
     include: {
       images: { orderBy: { sortOrder: "asc" } },
-      variants: true,
-    },
+      variants: true
+    }
   });
 
   return recommended.map((p) => ({
@@ -83,19 +62,14 @@ export async function listProductsForRecommendation(product: ProductWithRelation
     name: p.name,
     slug: p.slug,
     basePrice: p.basePrice,
-    images: p.images.map(img => ({
-      id: img.id,
-      url: img.url,
-      alt: img.alt,
-      sortOrder: img.sortOrder,
-    })),
+    images: p.images
   }));
 }
 
-/**
- * Fetch product details with recommendations
- */
-export async function getProductDetailWithRecommendations(slug: string): Promise<ProductDetailResponse | null> {
+export async function getProductDetailWithRecommendations(
+  slug: string
+): Promise<ProductDetailResponse | null> {
+
   const product = await getProductBySlug(slug);
   if (!product) return null;
 

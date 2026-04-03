@@ -11,29 +11,29 @@ export async function logSecurityEvent(params: {
   metadata?: Record<string, any>;
 }) {
   const {
-    userId,
+    userId = null,
     type,
     message,
     severity = "low",
-    ip,
-    userAgent,
-    metadata,
+    ip = null,
+    userAgent = null,
+    metadata = {}
   } = params;
 
   try {
     await prisma.securityEvent.create({
       data: {
-        userId: userId ?? null,
+        userId,
         type,
         message,
-        ip: ip ?? null,
-        userAgent: userAgent ?? null,
-        metadata: metadata ?? {},
         severity,
-      },
+        ip,
+        userAgent,
+        metadata
+      }
     });
   } catch (err) {
-    // Never throw inside middleware or auth flows
+    // Never throw inside security or auth flows
     console.error("Failed to log security event:", err);
   }
 }

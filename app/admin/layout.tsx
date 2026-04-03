@@ -1,21 +1,23 @@
-// app/admin/layout.tsx
-"use client";
-
 import type { ReactNode } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {AdminNav} from "./AdminNav";
+import { AdminNav } from "./AdminNav";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <h1 className="text-sm font-semibold tracking-tight">Wallis Admin</h1>
+    <div className="min-h-screen bg-surface text-text flex flex-col">
+      <header className="border-b border-border bg-gradient-to-r from-[#FFF2F5] to-[#FFE6EC] shadow-sm">
+        <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
+          <h1 className="text-lg font-semibold tracking-tight text-text flex items-center gap-2">
+            <span className="rounded-md bg-primary/20 px-2 py-1">Wallis</span>
+            Admin
+          </h1>
+
           <AdminNav />
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+
+      <main className="mx-auto max-w-6xl px-4 py-8 flex-1 animate-fadeIn">
+        {children}
+      </main>
     </div>
   );
 }

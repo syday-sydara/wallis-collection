@@ -5,14 +5,16 @@ export default function ProductGridSkeleton({ count = 8 }: { count?: number }) {
     <div
       role="status"
       aria-label="Loading products"
-      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"
+      aria-busy="true"
+      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 animate-fadeIn-fast"
     >
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-sm animate-pulse"
+          className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-sm animate-pulse leading-none"
         >
-          <div className="relative w-full aspect-square bg-skeleton rounded-t-md" />
+          <div className="relative w-full aspect-square bg-skeleton rounded-t-lg" />
+
           <div className="flex flex-1 flex-col p-3 space-y-2">
             <div className="h-3 w-3/4 rounded bg-skeleton" />
             <div className="h-4 w-1/2 rounded bg-skeleton" />

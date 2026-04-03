@@ -1,35 +1,30 @@
-type EmptyStateProps = {
-  title?: string;
-  description?: string;
-  action?: React.ReactNode;
-  icon?: React.ReactNode; // optional custom icon
+import { Inter } from "next/font/google";
+import { ClientProviders } from "@/components/ClientProviders";
+import { Toaster } from "@/components/ui/toast/Toaster";
+import { CartDrawer } from "@/components/cart/CartDrawer";
+import { cn } from "@/lib/utils";
+import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata = {
+  title: "Wallis Collection",
+  description: "Premium Nigerian fashion, crafted with intention.",
 };
 
-export default function EmptyState({
-  title = "No products found",
-  description = "Try adjusting your filters or search query.",
-  action,
-  icon,
-}: EmptyStateProps) {
+export default function RootLayout({ children }) {
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="flex flex-col items-center justify-center py-16 text-center"
-    >
-      {/* Icon */}
-      <div className="mb-4 text-primary text-3xl">
-        {icon || "📦"}
-      </div>
+    <html lang="en" suppressHydrationWarning className="h-full">
+      <body className={cn(inter.className, "h-full antialiased")}>
+        <ClientProviders>
+          <Toaster />
+          <CartDrawer />
 
-      {/* Title */}
-      <p className="text-lg font-semibold text-text">{title}</p>
-
-      {/* Description */}
-      <p className="mt-2 text-sm text-text-muted">{description}</p>
-
-      {/* Action */}
-      {action && <div className="mt-4">{action}</div>}
-    </div>
+          <main className="min-h-screen bg-surface text-text pb-safe animate-fadeIn">
+            {children}
+          </main>
+        </ClientProviders>
+      </body>
+    </html>
   );
 }
