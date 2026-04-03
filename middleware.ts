@@ -5,22 +5,24 @@ import { getSessionUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/auth/permissions";
 
 export async function middleware(req: NextRequest) {
-  const url = new URL(req.url);
+  const url = req.nextUrl;
+  const pathname = url.pathname;
 
-  if (url.pathname.startsWith("/security-center")) {
+  if (pathname.startsWith("/security-center")) {
     const user = await getSessionUser();
 
     if (!hasPermission(user, "VIEW_SECURITY_CENTER")) {
       const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
       const userAgent = req.headers.get("user-agent");
 
-      // Fire-and-forget logging (middleware-safe)
-      fetch(`${process.env.NEXT_PUBLIC_URL}/api/security/log`, {
+      // Fire-and-forget logging
+      fetch(`${url.origin}/api/security/log`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: user?.id,
           type: "PERMISSION_DENIED",
-          message: `Denied access to ${url.pathname}`,
+          message: `Denied access to ${pathname}`,
           ip,
           userAgent
         }),

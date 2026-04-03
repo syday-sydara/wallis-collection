@@ -7,6 +7,8 @@ import { promisify } from "node:util";
 import fs from "node:fs";
 import readline from "node:readline/promises";
 import { z } from "zod";
+import dotenv from "dotenv";
+import ora from "ora";
 
 const run = promisify(exec);
 
@@ -67,13 +69,17 @@ function validateEnv() {
 }
 
 async function runCommand(cmd: string, label: string) {
-  log.info(label);
+  const spinner = ora(label).start();
   try {
     const { stdout, stderr } = await run(cmd);
+    spinner.succeed();
+
     if (stdout) process.stdout.write(stdout);
     if (stderr) process.stderr.write(stderr);
-  } catch (err) {
+  } catch (err: any) {
+    spinner.fail();
     log.error(`Command failed: ${cmd}`);
+    if (err.stderr) process.stderr.write(err.stderr);
     process.exit(1);
   }
 }
@@ -87,26 +93,36 @@ async function main() {
     .option("--skip-install", "Skip dependency installation")
     .option("--skip-migrate", "Skip Prisma migrations")
     .option("--force", "Run without confirmation prompts")
+    .option("--ci", "Run in CI mode (non-interactive)")
     .parse(process.argv);
 
   const opts = program.opts();
 
   console.log(chalk.magenta("\n🚀 Starting Wallis Collection setup...\n"));
 
+  // Ensure .env exists
   ensureEnvFile();
+
+  // Reload env after creating .env
+  dotenv.config();
+
+  // Validate environment
   validateEnv();
 
+  // Install dependencies
   if (!opts.skipInstall) {
     await runCommand("pnpm install", "Installing dependencies");
   } else {
     log.warn("Skipping dependency installation");
   }
 
+  // Generate Prisma client
   await runCommand("pnpm prisma:generate", "Generating Prisma client");
 
+  // Run migrations
   if (!opts.skipMigrate) {
     const shouldMigrate =
-      opts.force || (await confirm("Run Prisma migrations? (y/N) "));
+      opts.force || opts.ci || (await confirm("Run Prisma migrations? (y/N) "));
 
     if (shouldMigrate) {
       await runCommand("pnpm prisma:migrate", "Running Prisma migrations");

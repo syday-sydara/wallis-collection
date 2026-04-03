@@ -1,4 +1,3 @@
-"use client";
 
 import { createContext, useContext, useState, useCallback } from "react";
 import type { Toast, ToastContextValue } from "./types";
