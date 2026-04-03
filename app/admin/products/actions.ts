@@ -1,15 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { updateProduct } from '@/app/admin/products/actions';
+
 import {
-  updateProduct,
-  createVariant,
-  updateVariant,
-  deleteVariant,
-  addImage,
-  deleteImage,
-  reorderImages,
+  updateProduct as adminUpdateProduct,
+  createVariant as adminCreateVariant,
+  updateVariant as adminUpdateVariant,
+  deleteVariant as adminDeleteVariant,
+  addImage as adminAddImage,
+  deleteImage as adminDeleteImage,
+  reorderImages as adminReorderImages,
   adjustProductStock
 } from "@/lib/catalog/admin";
 
@@ -56,7 +56,11 @@ export async function createVariant(productId: string, formData: FormData) {
 // ------------------------------
 // UPDATE VARIANT
 // ------------------------------
-export async function updateVariant(variantId: string, formData: FormData) {
+export async function updateVariant(
+  productId: string,
+  variantId: string,
+  formData: FormData
+) {
   try {
     await adminUpdateVariant(variantId, {
       name: formData.get("name") as string,
@@ -64,6 +68,7 @@ export async function updateVariant(variantId: string, formData: FormData) {
       price: Number(formData.get("price"))
     });
 
+    revalidatePath(`/admin/products/${productId}`);
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: err.message };

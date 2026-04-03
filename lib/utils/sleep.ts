@@ -16,16 +16,22 @@
  * controller.abort();
  */
 export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  const duration = Math.max(0, Math.round(ms)); // defensive: ensure non-negative integer
+  const duration = Math.max(0, Math.round(ms));
+
+  if (signal?.aborted) {
+    return Promise.reject(new Error("Sleep aborted"));
+  }
 
   return new Promise((resolve, reject) => {
     const timeoutId = setTimeout(() => resolve(), duration);
 
     if (signal) {
-      signal.addEventListener("abort", () => {
+      const onAbort = () => {
         clearTimeout(timeoutId);
+        signal.removeEventListener("abort", onAbort);
         reject(new Error("Sleep aborted"));
-      });
+      };
+      signal.addEventListener("abort", onAbort);
     }
   });
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useCart } from "@/lib/cart/store"; // ✅ shared cart store
 
 type Variant = { id: string; price: number; attributes?: Record<string, any> };
 
@@ -9,6 +10,7 @@ type Props = { productId: string; variant?: Variant; disabled?: boolean };
 
 export default function AddToCartButton({ productId, variant, disabled }: Props) {
   const [loading, setLoading] = useState(false);
+  const { addItem } = useCart(); // ✅ add to cart action
 
   async function handleClick() {
     if (disabled || loading) return;
@@ -16,17 +18,18 @@ export default function AddToCartButton({ productId, variant, disabled }: Props)
 
     setLoading(true);
 
-    const item = {
-      productId,
+    addItem({
+      id: productId,
       variantId: variant.id,
+      name: "", // optional — depends on your cart structure
+      image: "",
       quantity: 1,
-      price: variant.price,
+      unitPrice: variant.price,
       attributes: variant.attributes,
-    };
+    });
 
-    console.log("Add to cart:", item);
-
-    setTimeout(() => setLoading(false), 500); // simulate API
+    // Simulate delay for UX
+    setTimeout(() => setLoading(false), 400);
   }
 
   return (

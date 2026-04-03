@@ -3,26 +3,41 @@ export type PaymentProvider = "paystack" | "monnify";
 
 export type PaymentVerificationStatus =
   | "success"
-  | "failed"
   | "pending"
+  | "failed"
   | "error";
 
-export interface PaymentVerificationResult {
-  provider: PaymentProvider;
-  reference: string;
-  status: PaymentVerificationStatus;
-
-  // Optional metadata returned by providers
-  amount?: number;
-  currency?: string;
-  paidAt?: string;
-  channel?: string;
-  providerTransactionId?: string;
-
-  // Optional context
-  source?: "webhook" | "reconciliation" | "manual";
-  message?: string;
-
-  // Raw provider response for debugging
-  raw: unknown;
-}
+export type PaymentVerificationResult =
+  | {
+      status: "success";
+      provider: PaymentProvider;
+      reference: string;
+      amount: number;
+      currency: "NGN";
+      paidAt?: string;
+      providerTransactionId?: string;
+      channel?: string;
+      isFinal?: boolean;
+      raw: unknown;
+    }
+  | {
+      status: "pending";
+      provider: PaymentProvider;
+      reference: string;
+      message?: string;
+      raw: unknown;
+    }
+  | {
+      status: "failed";
+      provider: PaymentProvider;
+      reference: string;
+      message?: string;
+      raw: unknown;
+    }
+  | {
+      status: "error";
+      provider: PaymentProvider;
+      reference: string;
+      message?: string;
+      raw: unknown;
+    };

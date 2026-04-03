@@ -35,40 +35,48 @@ export function ImagesManager({ productId, images }) {
 
   return (
     <div className="space-y-3">
-      {items.map((img) => (
-        <AdminCard
-          key={img.id}
-          draggable
-          onDragStart={(e) => handleDragStart(e, img.id)}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => handleDrop(e, img.id)}
-        >
-          <div className="flex items-center gap-4">
-            <img
-              src={img.url}
-              alt={img.alt ?? ""}
-              className="h-16 w-16 rounded object-cover"
-            />
+      {items.map((img) => {
+        const filename = img.url.split("/").pop();
 
-            <div className="flex-1">
-              <p className="text-sm">{img.url}</p>
-              {img.alt && (
-                <p className="text-xs text-text-muted">Alt: {img.alt}</p>
-              )}
+        return (
+          <AdminCard
+            key={img.id}
+            draggable={!isPending}
+            onDragStart={(e) => handleDragStart(e, img.id)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => handleDrop(e, img.id)}
+          >
+            <div className="flex items-center gap-4">
+              <div className="cursor-grab active:cursor-grabbing text-text-muted">
+                ⋮⋮
+              </div>
+
+              <img
+                src={img.url}
+                alt={img.alt ?? ""}
+                className="h-16 w-16 rounded object-cover"
+              />
+
+              <div className="flex-1">
+                <p className="text-sm">{filename}</p>
+                {img.alt && (
+                  <p className="text-xs text-text-muted">Alt: {img.alt}</p>
+                )}
+              </div>
+
+              <form action={deleteImage.bind(null, productId, img.id)}>
+                <SubmitButton
+                  variant="danger"
+                  size="sm"
+                  pendingLabel="Deleting…"
+                >
+                  Delete
+                </SubmitButton>
+              </form>
             </div>
-
-            <form action={deleteImage.bind(null, productId, img.id)}>
-              <SubmitButton
-                variant="danger"
-                size="sm"
-                pendingLabel="Deleting…"
-              >
-                Delete
-              </SubmitButton>
-            </form>
-          </div>
-        </AdminCard>
-      ))}
+          </AdminCard>
+        );
+      })}
     </div>
   );
 }

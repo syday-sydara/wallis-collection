@@ -9,12 +9,14 @@ export function RecentMovements({ movements }) {
     <div className="space-y-3">
       {movements.map((m) => (
         <AdminCard key={m.id}>
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center">
             <span className="font-medium">{m.reason}</span>
+
             <span
               className={
-                m.change > 0 ? "text-green-600" : "text-red-600"
+                m.change > 0 ? "text-green-600 font-mono" : "text-red-600 font-mono"
               }
+              aria-label={`Stock change: ${m.change}`}
             >
               {m.change > 0 ? "+" : ""}
               {m.change}

@@ -1,17 +1,22 @@
 // components/admin/ui/AdminSection.tsx
 import { ReactNode } from "react";
+import clsx from "clsx";
 
 export function AdminSection({
   title,
   description,
-  children
+  children,
+  className,
+  id
 }: {
   title: string;
   description?: string;
   children: ReactNode;
+  className?: string;
+  id?: string;
 }) {
   return (
-    <section className="space-y-3">
+    <section id={id} className={clsx("space-y-3", className)}>
       <div>
         <h3 className="text-sm font-semibold text-text tracking-tight">
           {title}

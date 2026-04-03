@@ -1,8 +1,9 @@
+// lib/products/types.ts
 export type AdminProductSummary = {
   id: string;
   name: string;
   slug: string;
-  basePrice: number | null;
+  basePrice: number | null; // basePrice can now be null
   stock: number;
   isArchived: boolean;
   updatedAt: Date;
@@ -12,12 +13,12 @@ export type AdminProductDetail = {
   id: string;
   name: string;
   slug: string;
-  description: string | null;
-  basePrice: number | null;
+  description: string | null; // description can also be null
+  basePrice: number | null; // basePrice can now be null
   stock: number;
   isArchived: boolean;
   updatedAt: Date;
-  images: { id: string; url: string; alt: string | null; sortOrder: number }[];
+  images: { id: string; url: string; alt: string | null; sortOrder: number }[]; // Images array with more details
   variants: {
     id: string;
     name: string;
@@ -25,4 +26,3 @@ export type AdminProductDetail = {
     price: number;
     stock: number;
   }[];
-};

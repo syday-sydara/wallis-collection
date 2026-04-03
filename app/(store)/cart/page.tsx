@@ -1,9 +1,11 @@
+// app/(store)/cart/page.tsx
 "use client";
 
 import { useCart } from "@/lib/cart/store";
 import { formatCurrency } from "@/lib/utils";
 import { Button, Card, Input } from "@/components/ui/";
 import EmptyState from "@/components/products/EmptyState";
+import type { CartItem } from "@/lib/cart/types"; // ✅ shared type
 
 export default function CartPage() {
   const { cart, removeItem, updateQuantity, clearCart } = useCart();
@@ -21,7 +23,7 @@ export default function CartPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 space-y-6 animate-fadeIn pb-safe">
-      {cart.items.map((item) => (
+      {cart.items.map((item: CartItem) => ( // ✅ use shared type
         <Card
           key={item.variantId}
           padding="sm"

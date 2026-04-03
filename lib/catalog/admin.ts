@@ -1,5 +1,4 @@
 // lib/catalog/admin.ts
-
 import { prisma } from "@/lib/db";
 
 export type AdminProductSummary = {
@@ -38,7 +37,7 @@ export async function adminListProductsPaginated(args: {
     take: safeLimit + 1,
     skip: args.cursor ? 1 : 0,
     cursor: args.cursor ? { id: args.cursor } : undefined,
-    orderBy: { createdAt: "desc" },
+    orderBy: { id: "desc" },
     select: {
       id: true,
       name: true,
@@ -46,9 +45,7 @@ export async function adminListProductsPaginated(args: {
       basePrice: true,
       isArchived: true,
       updatedAt: true,
-      variants: {
-        select: { stock: true }
-      }
+      variants: { select: { stock: true } }
     }
   });
 

@@ -11,42 +11,41 @@ import { VariantForm } from "../components/VariantForm";
 import { ImagesManager } from "../components/ImagesManager";
 import { InventorySection } from "../components/InventorySection";
 import { RecentMovements } from "../components/RecentMovements";
+import Link from "next/link";
 
-export default async function EditProductPage({
-  params
-}: {
-  params: { id: string };
-}) {
+export default async function EditProductPage({ params }: { params: { id: string } }) {
   const product = await adminGetProduct(params.id);
   if (!product) return notFound();
 
   return (
     <div className="space-y-10">
-      {/* Page Header */}
       <AdminPageHeader
         title={product.name}
         subtitle={`SKU: ${product.slug}`}
         breadcrumbs={
-          <span>
-            <a href="/admin/products" className="hover:underline">
-              Products
-            </a>{" "}
-            / {product.name}
-          </span>
+          <nav aria-label="Breadcrumb">
+            <ol className="flex items-center gap-1 text-xs text-text-muted">
+              <li>
+                <Link href="/admin/products" className="hover:underline">
+                  Products
+                </Link>
+              </li>
+              <li>/</li>
+              <li className="text-text">{product.name}</li>
+            </ol>
+          </nav>
         }
       />
 
       <div className="grid gap-10 md:grid-cols-[2fr,1fr]">
         {/* LEFT COLUMN */}
         <div className="space-y-10">
-          {/* Product Info */}
           <AdminSection title="Product">
             <AdminCard>
               <ProductForm product={product} />
             </AdminCard>
           </AdminSection>
 
-          {/* Variants */}
           <AdminSection title="Variants">
             <AdminCard header="Existing Variants">
               <VariantList variants={product.variants} />
@@ -60,7 +59,6 @@ export default async function EditProductPage({
 
         {/* RIGHT COLUMN */}
         <div className="space-y-10">
-          {/* Images */}
           <AdminSection title="Images">
             <AdminCard>
               <ImagesManager
@@ -74,14 +72,12 @@ export default async function EditProductPage({
             </AdminCard>
           </AdminSection>
 
-          {/* Inventory */}
           <AdminSection title="Inventory">
             <AdminCard>
               <InventorySection productId={product.id} stock={product.stock} />
             </AdminCard>
           </AdminSection>
 
-          {/* Movements */}
           <AdminSection title="Recent Movements">
             <AdminCard>
               <RecentMovements movements={product.inventory} />

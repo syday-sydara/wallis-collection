@@ -16,15 +16,19 @@ export function VariantForm({ productId }) {
         <AdminInput name="sku" required />
       </AdminField>
 
-      <AdminField label="Price">
-        <AdminInput type="number" name="price" step="0.01" required />
-      </AdminField>
+      <div className="grid grid-cols-2 gap-4">
+        <AdminField label="Price">
+          <AdminInput type="number" name="price" step="0.01" min={0} required />
+        </AdminField>
 
-      <AdminField label="Initial Stock">
-        <AdminInput type="number" name="stock" required />
-      </AdminField>
+        <AdminField label="Initial Stock">
+          <AdminInput type="number" name="stock" min={0} required />
+        </AdminField>
+      </div>
 
-      <SubmitButton pendingLabel="Adding variant…">Add Variant</SubmitButton>
+      <SubmitButton type="submit" pendingLabel="Adding variant…">
+        Add Variant
+      </SubmitButton>
     </form>
   );
 }

@@ -18,9 +18,12 @@ enum UserRole {
 
 enum PaymentStatus {
   PENDING
+  PROCESSING
   PAID
   FAILED
+  REVIEW
   REFUNDED
+  CHARGEBACK
 }
 
 enum OrderStatus {
@@ -70,7 +73,7 @@ model Product {
   slug        String  @unique
   description String?
 
-  basePrice Int?   // optional if variants exist
+  basePrice Int?
 
   isArchived Boolean @default(false)
 
@@ -79,6 +82,8 @@ model Product {
 
   images   ProductImage[]
   variants ProductVariant[]
+
+  @@index([slug])
 }
 
 model ProductImage {
@@ -99,9 +104,13 @@ model ProductVariant {
   name  String
   sku   String @unique
   price Int
-  stock Int @default(0)
+
+  stock         Int @default(0)
+  reservedStock Int @default(0) // future-safe for reservations
 
   attributes Json?
+
+  @@index([productId])
 }
 
 //////////////////////
@@ -125,15 +134,15 @@ model Order {
   paymentStatus PaymentStatus
   orderStatus   OrderStatus
 
-  paymentReference     String?
-  transactionReference String?
-
   shippingType String
 
-  addressId String?
-  address   Address? @relation(fields: [addressId], references: [id])
+  // Snapshot (CRITICAL)
+  shippingAddress Json
+  cartSnapshot    Json
 
-  cartSnapshot Json
+  // Fraud tracking
+  fraudScore   Int?
+  fraudSignals Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -141,7 +150,12 @@ model Order {
   userId String?
   user   User? @relation(fields: [userId], references: [id])
 
-  items OrderItem[]
+  items    OrderItem[]
+  payments Payment[]
+
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@index([userId])
 }
 
 model OrderItem {
@@ -162,10 +176,45 @@ model OrderItem {
 
   quantity  Int
   unitPrice Int
+
+  @@index([orderId])
 }
 
 //////////////////////
-// ADDRESS
+// PAYMENTS (LEDGER)
+//////////////////////
+
+model Payment {
+  id        String   @id @default(cuid())
+
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+
+  provider  String
+  reference String   @unique // provider reference
+
+  providerTransactionId String?
+
+  amount   Int
+  currency Currency
+
+  status PaymentStatus
+
+  channel String?
+
+  paidAt DateTime?
+
+  raw Json
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([reference])
+  @@index([createdAt])
+}
+
+//////////////////////
+// ADDRESS (OPTIONAL USER STORAGE)
 //////////////////////
 
 model Address {
@@ -185,34 +234,45 @@ model Address {
   deliveryInstructions String?
 
   createdAt DateTime @default(now())
-
-  orders Order[]
 }
 
 //////////////////////
-// AUDIT (LIGHTWEIGHT)
+// AUDIT
 //////////////////////
 
 model AuditEvent {
   id        String   @id @default(cuid())
+
   userId    String?
   user      User?    @relation(fields: [userId], references: [id])
 
-  action    String
-  resource  String?
-  resourceId String? @db.Uuid
+  action     String
+  resource   String?
+  resourceId String?
 
-  metadata  Json?
+  metadata Json?
 
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }
+
+//////////////////////
+// STOCK LOG
+//////////////////////
 
 model StockLog {
   id        String   @id @default(cuid())
+
   variantId String
-  change    Int
-  reason    String?
-  createdAt DateTime @default(now())
   variant   ProductVariant @relation(fields: [variantId], references: [id])
 
+  change    Int
+  reason    String?
+
+  createdAt DateTime @default(now())
+
+  @@index([variantId])
+  @@index([createdAt])
 }

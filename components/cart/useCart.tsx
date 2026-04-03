@@ -1,12 +1,18 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 
 export type CartItem = {
-  id: string;            // unique cart item id
+  id: string; // unique cart item id
   productId: string;
   name: string;
-  price: number;
+  unitPrice: number;
   image: string;
   quantity: number;
   attributes?: Record<string, any>;
@@ -20,13 +26,14 @@ type CartContextType = {
   close: () => void;
   toggle: () => void;
   addItem: (item: Omit<CartItem, "id" | "quantity">) => void;
+  updateQuantity: (id: string, qty: number) => void;
   removeItem: (id: string) => void;
   clear: () => void;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
 
-export function CartProvider({ children }) {
+export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -53,21 +60,42 @@ export function CartProvider({ children }) {
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((v) => !v), []);
 
+  // Add or merge item
   const addItem = useCallback((item) => {
     setItems((prev) => {
-      const id = `${item.productId}-${Date.now()}`;
+      const existing = prev.find(
+        (i) =>
+          i.productId === item.productId &&
+          JSON.stringify(i.attributes) === JSON.stringify(item.attributes)
+      );
+
+      if (existing) {
+        return prev.map((i) =>
+          i.id === existing.id
+            ? { ...i, quantity: i.quantity + 1 }
+            : i
+        );
+      }
 
       return [
         ...prev,
         {
-          id,
+          id: crypto.randomUUID(),
           quantity: 1,
           ...item,
         },
       ];
     });
 
-    setIsOpen(true); // auto-open cart
+    setIsOpen(true);
+  }, []);
+
+  const updateQuantity = useCallback((id: string, qty: number) => {
+    setItems((prev) =>
+      prev.map((i) =>
+        i.id === id ? { ...i, quantity: Math.max(1, qty) } : i
+      )
+    );
   }, []);
 
   const removeItem = useCallback((id: string) => {
@@ -76,7 +104,10 @@ export function CartProvider({ children }) {
 
   const clear = useCallback(() => setItems([]), []);
 
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const subtotal = items.reduce(
+    (sum, i) => sum + i.unitPrice * i.quantity,
+    0
+  );
 
   return (
     <CartContext.Provider
@@ -88,6 +119,7 @@ export function CartProvider({ children }) {
         close,
         toggle,
         addItem,
+        updateQuantity,
         removeItem,
         clear,
       }}

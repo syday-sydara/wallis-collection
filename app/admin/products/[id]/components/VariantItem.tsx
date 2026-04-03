@@ -7,7 +7,7 @@ import { AdminField } from "@/components/admin/ui/AdminField";
 import { AdminInput } from "@/components/admin/ui/AdminInput";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 
-export default function VariantItem({ variant }: { variant: any }) {
+export default function VariantItem({ variant, productId }) {
   const [errors, setErrors] = useState<Record<string, string[] | undefined>>({});
   const [isPending, startTransition] = useTransition();
 
@@ -15,7 +15,7 @@ export default function VariantItem({ variant }: { variant: any }) {
     setErrors({});
 
     startTransition(async () => {
-      const result = await updateVariant(variant.id, formData);
+      const result = await updateVariant(productId, variant.id, formData);
       if (!result.ok) setErrors(result.errors ?? {});
     });
   }
@@ -24,7 +24,7 @@ export default function VariantItem({ variant }: { variant: any }) {
     if (!confirm("Delete this variant?")) return;
 
     startTransition(async () => {
-      await deleteVariant(variant.id);
+      await deleteVariant(variant.id, productId);
     });
   }
 
@@ -52,6 +52,7 @@ export default function VariantItem({ variant }: { variant: any }) {
           <AdminInput
             name="price"
             type="number"
+            min={0}
             defaultValue={variant.price}
             disabled={isPending}
           />

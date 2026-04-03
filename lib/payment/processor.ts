@@ -1,13 +1,13 @@
 // lib/payments/processor.ts
 import { prisma } from "@/lib/db";
-import { verifyPayment } from "@/lib/payment/verification";
+import { verifyPayment } from "@/lib/payments/verification";
+
+// Security logging
 import { logSecurityEvent } from "@/lib/security/events";
 import { logFraudSignal } from "@/lib/security/fraud";
-import {
-  computeFraudScore,
-  classifyFraudScore,
-  type FraudSignal
-} from "@/lib/security/fraud-score";
+
+// Fraud scoring
+import { computeFraudScore, classifyFraudScore, type FraudSignal } from "@/lib/security/fraud-score";
 
 export async function processPaymentEvent(params: {
   provider: "paystack" | "monnify";
@@ -19,14 +19,14 @@ export async function processPaymentEvent(params: {
 
   // --- Fetch order by payment reference ---
   const order = await prisma.order.findUnique({
-    where: { paymentReference: reference }
+    where: { paymentReference: reference },
   });
 
   if (!order) {
     await logFraudSignal({
-      type: "UNKNOWN_PAYMENT_REFERENCE",
+      type: "WEBHOOK_UNKNOWN_ORDER",
       provider,
-      reference
+      reference,
     });
     return { ok: false, reason: "unknown_order" };
   }
@@ -36,7 +36,7 @@ export async function processPaymentEvent(params: {
     return { ok: true, reason: "already_paid" };
   }
 
-  // --- Verify with provider ---
+  // --- Verify payment with provider ---
   const verification = await verifyPayment(provider, reference);
 
   const signals: FraudSignal[] = [];
@@ -51,8 +51,7 @@ export async function processPaymentEvent(params: {
 
   // --- Amount mismatch ---
   const providerAmount =
-    (verification.raw as any)?.data?.amount ??
-    (verification.raw as any)?.amount;
+    (verification as any).amount ?? (verification.raw as any)?.data?.amount;
 
   if (
     verification.status === "success" &&
@@ -63,7 +62,7 @@ export async function processPaymentEvent(params: {
   }
 
   // --- High-value order ---
-  if (order.total > 200000) {
+  if (order.total > 200_000) {
     signals.push("HIGH_VALUE_ORDER");
   }
 
@@ -73,13 +72,9 @@ export async function processPaymentEvent(params: {
 
   // --- Transaction-safe update ---
   return await prisma.$transaction(async (tx) => {
-    const fresh = await tx.order.findUnique({
-      where: { id: order.id }
-    });
+    const fresh = await tx.order.findUnique({ where: { id: order.id } });
 
-    if (!fresh) {
-      return { ok: false, reason: "order_disappeared" };
-    }
+    if (!fresh) return { ok: false, reason: "order_disappeared" };
 
     // Idempotency inside transaction
     if (fresh.paymentStatus === "PAID") {
@@ -92,16 +87,16 @@ export async function processPaymentEvent(params: {
         where: { id: order.id },
         data: {
           paymentStatus: "PAID",
-          orderStatus: "PROCESSING", // valid enum
-          fraudScore: score
-        }
+          orderStatus: "PROCESSING",
+          fraudScore: score,
+        },
       });
 
       await logSecurityEvent({
         type: "PAYMENT_CONFIRMED",
         message: `Order ${order.id} confirmed via ${source}`,
         severity: "low",
-        metadata: { provider, reference, score }
+        metadata: { provider, reference, score },
       });
 
       return { ok: true, reason: "paid" };
@@ -113,16 +108,16 @@ export async function processPaymentEvent(params: {
       data: {
         paymentStatus:
           verification.status === "success" ? "REVIEW" : "FAILED",
-        fraudScore: score
-      }
+        fraudScore: score,
+      },
     });
 
     if (signals.length > 0) {
       await logFraudSignal({
-        type: "PAYMENT_FLAGGED",
+        type: "WEBHOOK_DUPLICATE_EXCESSIVE",
         provider,
         reference,
-        metadata: { signals, score }
+        metadata: { signals, score },
       });
     }
 
@@ -130,7 +125,7 @@ export async function processPaymentEvent(params: {
       type: "PAYMENT_FLAGGED",
       message: `Order ${order.id} flagged via ${source}`,
       severity,
-      metadata: { provider, reference, score, signals }
+      metadata: { provider, reference, score, signals },
     });
 
     return { ok: false, reason: "flagged", score };

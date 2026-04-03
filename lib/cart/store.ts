@@ -1,79 +1,76 @@
 "use client";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
-import React, { createContext, useContext, useState, useEffect, PropsWithChildren } from "react";
-import { Cart, CartItem } from "./types";
+export type CartItem = {
+  id: string;
+  productId: string;
+  name: string;
+  unitPrice: number;
+  image: string;
+  quantity: number;
+  attributes?: Record<string, any>;
+};
 
-interface CartContextProps {
-  cart: Cart;
-  addItem: (item: CartItem) => void;
-  removeItem: (variantId: string) => void;
-  updateQuantity: (variantId: string, qty: number) => void;
-  clearCart: () => void;
-}
+type CartContextType = {
+  items: CartItem[];
+  isOpen: boolean;
+  subtotal: number;
+  open: () => void;
+  close: () => void;
+  toggle: () => void;
+  addItem: (item: Omit<CartItem, "id" | "quantity">) => void;
+  updateQuantity: (id: string, qty: number) => void;
+  removeItem: (id: string) => void;
+  clear: () => void;
+};
 
-const CartContext = createContext<CartContextProps | undefined>(undefined);
+const CartContext = createContext<CartContextType | null>(null);
 
-function recalcTotal(items: CartItem[]) {
-  return items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-}
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
 
-export function CartProvider({ children }: PropsWithChildren) {
-  const [cart, setCart] = useState<Cart>({ items: [], total: 0 });
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("cart");
+      if (stored) setItems(JSON.parse(stored));
+    } catch { console.warn("Failed to load cart"); }
+  }, []);
 
-  const addItem = (item: CartItem) => {
-    setCart(prev => {
-      const existing = prev.items.find(i => i.variantId === item.variantId);
+  useEffect(() => {
+    try { localStorage.setItem("cart", JSON.stringify(items)); } 
+    catch { console.warn("Failed to save cart"); }
+  }, [items]);
 
-      if (existing) {
-        const newQty = Math.min(existing.quantity + item.quantity, item.stock);
-        if (newQty === existing.quantity) return prev;
+  const open = useCallback(() => setIsOpen(true), []);
+  const close = useCallback(() => setIsOpen(false), []);
+  const toggle = useCallback(() => setIsOpen(v => !v), []);
 
-        const items = prev.items.map(i =>
-          i.variantId === item.variantId ? { ...i, quantity: newQty } : i
-        );
-
-        return { items, total: recalcTotal(items) };
-      }
-
-      const items = [...prev.items, { ...item, quantity: Math.min(item.quantity, item.stock) }];
-      return { items, total: recalcTotal(items) };
+  const addItem = useCallback((item) => {
+    setItems(prev => {
+      const existing = prev.find(i => i.productId === item.productId && JSON.stringify(i.attributes) === JSON.stringify(item.attributes));
+      if (existing) return prev.map(i => i.id === existing.id ? { ...i, quantity: i.quantity + 1 } : i);
+      return [...prev, { id: crypto.randomUUID(), quantity: 1, ...item }];
     });
-  };
+    setIsOpen(true);
+  }, []);
 
-  const removeItem = (variantId: string) => {
-    setCart(prev => {
-      const items = prev.items.filter(i => i.variantId !== variantId);
-      return { items, total: recalcTotal(items) };
-    });
-  };
+  const updateQuantity = useCallback((id: string, qty: number) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, quantity: Math.max(1, qty) } : i));
+  }, []);
 
-  const updateQuantity = (variantId: string, qty: number) => {
-    setCart(prev => {
-      const item = prev.items.find(i => i.variantId === variantId);
-      if (!item) return prev;
+  const removeItem = useCallback((id: string) => {
+    setItems(prev => prev.filter(i => i.id !== id));
+  }, []);
 
-      const newQty = Math.max(1, Math.min(qty, item.stock));
-      if (newQty === item.quantity) return prev;
+  const clear = useCallback(() => setItems([]), []);
+  const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
 
-      const items = prev.items.map(i =>
-        i.variantId === variantId ? { ...i, quantity: newQty } : i
-      );
-
-      return { items, total: recalcTotal(items) };
-    });
-  };
-
-  const clearCart = () => setCart({ items: [], total: 0 });
-
-  return (
-    <CartContext.Provider value={{ cart, addItem, removeItem, updateQuantity, clearCart }}>
-      {children}
-    </CartContext.Provider>
-  );
+  return <CartContext.Provider value={{ items, isOpen, subtotal, open, close, toggle, addItem, updateQuantity, removeItem, clear }}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {
   const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used within CartProvider");
+  if (!ctx) throw new Error("useCart must be used inside <CartProvider>");
   return ctx;
 }

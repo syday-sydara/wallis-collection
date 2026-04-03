@@ -1,115 +1,103 @@
 // lib/payments/providers/monnify.ts
 import crypto from "crypto";
-import type {
-  PaymentVerificationResult,
-  PaymentVerificationStatus
-} from "@/lib/payment/types";
+import type { PaymentVerificationResult } from "@/lib/payments/types";
 
 const MONNIFY_WEBHOOK_SECRET = process.env.MONNIFY_WEBHOOK_SECRET!;
 const MONNIFY_API_KEY = process.env.MONNIFY_API_KEY!;
 const MONNIFY_SECRET_KEY = process.env.MONNIFY_SECRET_KEY!;
 const MONNIFY_BASE_URL = "https://api.monnify.com/api/v1";
 
-//
-// 1. Verify webhook signature
-//
-export function verifyMonnifyWebhookSignature(
-  rawBody: string, // must be raw, not parsed JSON
-  signature: string | null
-) {
+// --- Webhook signature
+export function verifyMonnifyWebhookSignature(rawBody: string, signature: string | null) {
   if (!signature) return false;
-
-  const computed = crypto
-    .createHmac("sha512", MONNIFY_WEBHOOK_SECRET)
-    .update(rawBody)
-    .digest("hex");
-
-  return computed.toLowerCase() === signature.toLowerCase();
+  const computed = crypto.createHmac("sha512", MONNIFY_WEBHOOK_SECRET).update(rawBody).digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(signature));
 }
 
-//
-// 2. Extract reference from webhook body
-//
+// --- Extract reference
 export function extractMonnifyReference(body: any): string | null {
-  return (
-    body?.eventData?.transactionReference ||
-    body?.eventData?.paymentReference ||
-    body?.eventData?.productReference ||
-    null
-  );
+  return body?.eventData?.transactionReference || body?.eventData?.paymentReference || null;
 }
 
-//
-// 3. Verify reference via Monnify API
-//
-async function getMonnifyToken() {
-  const auth = Buffer.from(`${MONNIFY_API_KEY}:${MONNIFY_SECRET_KEY}`).toString("base64");
+// --- Token caching (in-memory, replace with Redis in prod)
+let cachedToken: string | null = null;
+let tokenExpiry = 0;
 
+async function getMonnifyToken(): Promise<string> {
+  if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
+
+  const auth = Buffer.from(`${MONNIFY_API_KEY}:${MONNIFY_SECRET_KEY}`).toString("base64");
   const res = await fetch(`${MONNIFY_BASE_URL}/auth/login`, {
     method: "POST",
-    headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/json"
-    }
+    headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
   });
 
   if (!res.ok) throw new Error("Failed to authenticate with Monnify");
 
   const data = await res.json();
-  return data.responseBody.accessToken;
+  cachedToken = data.responseBody.accessToken;
+  tokenExpiry = Date.now() + 23 * 60 * 60 * 1000; // 23h buffer
+  return cachedToken;
 }
 
-export async function verifyMonnifyReference(
-  reference: string
-): Promise<PaymentVerificationResult> {
+// --- Verify reference
+export async function verifyMonnifyReference(reference: string): Promise<PaymentVerificationResult> {
   try {
     const token = await getMonnifyToken();
-
-    const res = await fetch(
-      `${MONNIFY_BASE_URL}/transactions/${reference}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
+    const res = await fetch(`${MONNIFY_BASE_URL}/transactions/${reference}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     if (!res.ok) {
-      return {
-        provider: "monnify",
-        reference,
-        status: "error",
-        message: "Monnify API error",
-        raw: await res.text()
-      };
+      return { status: "error", provider: "monnify", reference, message: "Monnify API error", raw: await res.text() };
     }
 
     const data = await res.json();
-    const status = data?.responseBody?.paymentStatus;
+    const tx = data?.responseBody;
+    if (!tx) return { status: "error", provider: "monnify", reference, message: "No transaction data", raw: data };
 
-    let mapped: PaymentVerificationStatus = "pending";
+    let status: PaymentVerificationResult["status"] = "pending";
+    let isFinal = false;
 
-    if (status === "PAID") mapped = "success";
-    else if (status === "FAILED") mapped = "failed";
+    switch (tx.paymentStatus) {
+      case "PAID":
+        status = "success";
+        isFinal = true;
+        break;
+      case "FAILED":
+      case "REVERSED":
+        status = "failed";
+        isFinal = true;
+        break;
+      case "PENDING":
+        status = "pending";
+        break;
+    }
 
-    return {
-      provider: "monnify",
-      reference,
-      status: mapped,
-      amount: data?.responseBody?.amountPaid,
-      currency: data?.responseBody?.currency,
-      paidAt: data?.responseBody?.paymentDate,
-      channel: data?.responseBody?.paymentMethod,
-      providerTransactionId: data?.responseBody?.transactionReference,
-      raw: data
-    };
+    const paidAt = tx.paymentDate ? new Date(tx.paymentDate) : undefined;
+    const amount = Number(tx.amountPaid);
+
+    return status === "success"
+      ? {
+          status,
+          provider: "monnify",
+          reference,
+          amount,
+          currency: tx.currency === "NGN" ? "NGN" : "NGN", // normalize to NGN
+          paidAt: paidAt!,
+          providerTransactionId: tx.transactionReference,
+          isFinal,
+          customer: { email: tx.customerEmail, name: tx.customerName },
+          raw: data,
+        }
+      : {
+          status,
+          provider: "monnify",
+          reference,
+          message: `Status: ${tx.paymentStatus}`,
+          raw: data,
+        };
   } catch (err) {
-    return {
-      provider: "monnify",
-      reference,
-      status: "error",
-      message: (err as Error).message,
-      raw: err
-    };
+    return { status: "error", provider: "monnify", reference, message: (err as Error).message, raw: err };
   }
 }

@@ -1,26 +1,41 @@
-import { processPaymentEvent } from "@/lib/payment/processor";
+import { processPaymentEvent } from "@/lib/payments/processor";
 import {
   verifyMonnifyWebhookSignature,
   extractMonnifyReference
-} from "@/lib/payment/providers/monnify";
+} from "@/lib/payments/providers/monnify";
 import { NextRequest, NextResponse } from "next/server";
 import { logFraudSignal } from "@/lib/security/fraud";
 
-
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  // --- Get raw body as string for signature verification ---
+  const rawBody = await req.text();
   const signature = req.headers.get("monnify-signature") ?? "";
-  const valid = verifyMonnifyWebhookSignature(body, signature);
 
+  const valid = verifyMonnifyWebhookSignature(rawBody, signature);
   if (!valid) {
     await logFraudSignal({
       type: "WEBHOOK_SIGNATURE_MISMATCH",
-      provider: "monnify"
+      provider: "monnify",
+      metadata: { body: rawBody }
     });
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
-  const reference = String(body?.data?.reference ?? "");
+  // --- Parse body after verification ---
+  const body = JSON.parse(rawBody);
+
+  // --- Extract reference safely ---
+  const reference = extractMonnifyReference(body);
+  if (!reference) {
+    await logFraudSignal({
+      type: "WEBHOOK_UNKNOWN_ORDER",
+      provider: "monnify",
+      metadata: { body }
+    });
+    return NextResponse.json({ ok: false }, { status: 400 });
+  }
+
+  // --- Process payment ---
   const result = await processPaymentEvent({
     provider: "monnify",
     reference,

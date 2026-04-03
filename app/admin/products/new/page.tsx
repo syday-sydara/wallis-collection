@@ -49,6 +49,7 @@ export default function NewProductPage() {
             name="name"
             required
             value={name}
+            aria-invalid={!!errors.name}
             onChange={(e) => {
               const v = e.target.value;
               setName(v);
@@ -62,15 +63,18 @@ export default function NewProductPage() {
             name="slug"
             required
             value={slug}
+            aria-invalid={!!errors.slug}
             onChange={(e) => setSlug(slugify(e.target.value))}
           />
         </AdminField>
 
-        <AdminField
-          label="Base price (kobo)"
-          error={errors.basePrice?.[0]}
-        >
-          <AdminInput name="basePrice" type="number" required />
+        <AdminField label="Base price (kobo)" error={errors.basePrice?.[0]}>
+          <AdminInput
+            name="basePrice"
+            type="number"
+            required
+            aria-invalid={!!errors.basePrice}
+          />
         </AdminField>
 
         <AdminField label="Description">

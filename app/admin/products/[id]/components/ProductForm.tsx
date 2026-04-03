@@ -34,7 +34,9 @@ export function ProductForm({ product }) {
         />
       </AdminField>
 
-      <SubmitButton pendingLabel="Saving product…">Save Changes</SubmitButton>
+      <SubmitButton type="submit" pendingLabel="Saving product…">
+        Save Changes
+      </SubmitButton>
     </form>
   );
 }

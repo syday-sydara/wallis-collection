@@ -40,7 +40,13 @@ export function SubmitButton({
     <button
       type="submit"
       disabled={pending}
-      className={clsx(base, variants[variant], sizes[size], className)}
+      className={clsx(
+        base,
+        variants[variant],
+        sizes[size],
+        "focus:outline-none focus:ring-[var(--focus-ring-width)] focus:ring-[rgb(var(--focus-ring))]",
+        className
+      )}
     >
       {pending ? pendingLabel : children}
     </button>

@@ -7,7 +7,7 @@ import { AdminField } from "@/components/admin/ui/AdminField";
 import { AdminInput } from "@/components/admin/ui/AdminInput";
 import { SubmitButton } from "@/components/admin/ui/SubmitButton";
 
-export function VariantList({ variants }) {
+export function VariantList({ variants, productId }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -21,7 +21,7 @@ export function VariantList({ variants }) {
             {isEditing ? (
               <form
                 className="space-y-4"
-                action={updateVariant.bind(null, variant.id)}
+                action={updateVariant.bind(null, productId, variant.id)}
                 onSubmit={() => setEditing(null)}
               >
                 <AdminField label="Name">
@@ -37,12 +37,13 @@ export function VariantList({ variants }) {
                     type="number"
                     name="price"
                     step="0.01"
+                    min={0}
                     defaultValue={variant.price}
                   />
                 </AdminField>
 
                 <div className="flex gap-2">
-                  <SubmitButton size="sm" pendingLabel="Saving…">
+                  <SubmitButton type="submit" size="sm" pendingLabel="Saving…">
                     Save
                   </SubmitButton>
 
@@ -68,12 +69,15 @@ export function VariantList({ variants }) {
                 <div className="flex gap-2">
                   <button
                     className="text-xs underline"
-                    onClick={() => setEditing(variant.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setEditing(variant.id);
+                    }}
                   >
                     Edit
                   </button>
 
-                  <form action={deleteVariant.bind(null, variant.id)}>
+                  <form action={deleteVariant.bind(null, variant.id, productId)}>
                     <SubmitButton
                       variant="danger"
                       size="sm"
