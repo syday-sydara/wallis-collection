@@ -9,6 +9,8 @@ import { startTimer } from "@/lib/metrics";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 import { getIdempotentResponse, saveIdempotentResponse } from "@/lib/idempotency";
 import { buildRiskContext } from "@/lib/risk/context";
+import { prisma } from "@/lib/db";
+import { normalizePhone, maskEmail } from "@/lib/security/normalize";
 
 export type CheckoutActionState = {
   success: boolean | null;
@@ -39,6 +41,7 @@ export async function submitCheckout(
       const ip = hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
       const userAgent = hdrs.get("user-agent") ?? "unknown";
 
+      // Rate limit
       const rate = checkRateLimit(`checkout:${ip}`);
       if (!rate.allowed) {
         logEvent("checkout_rate_limited", { ip, userAgent }, "warn");
@@ -50,24 +53,36 @@ export async function submitCheckout(
         };
       }
 
+      // Idempotency
       const idempotencyKey =
-        hdrs.get("x-idempotency-key") ?? (formData.get("idempotencyKey") as string | null) ?? null;
+        hdrs.get("x-idempotency-key") ??
+        (formData.get("idempotencyKey") as string | null) ??
+        null;
 
-      if (idempotencyKey) {
-        const cached = getIdempotentResponse(idempotencyKey);
-        if (cached) {
-          logEvent("checkout_idempotent_reuse", { idempotencyKey, ip });
-          endTimer();
-          return cached;
-        }
+      if (!idempotencyKey) {
+        endTimer();
+        return {
+          success: false,
+          message: "Missing idempotency key",
+          fieldErrors: {}
+        };
+      }
+
+      const cached = getIdempotentResponse(idempotencyKey);
+      if (cached) {
+        logEvent("checkout_idempotent_reuse", { idempotencyKey, ip });
+        endTimer();
+        return cached;
       }
 
       try {
+        // Extract raw form data
         const raw: Record<string, any> = {};
         formData.forEach((value, key) => {
           raw[key] = typeof value === "string" ? value.trim() : value;
         });
 
+        // Parse items JSON
         let items;
         try {
           items = JSON.parse(raw.items);
@@ -81,9 +96,13 @@ export async function submitCheckout(
           };
         }
 
+        // Normalize sensitive fields
+        const normalizedPhone = normalizePhone(raw.phone);
+        const maskedEmail = maskEmail(raw.email);
+
         const payload = {
           email: raw.email,
-          phone: raw.phone,
+          phone: normalizedPhone,
           fullName: raw.fullName,
           paymentMethod: raw.paymentMethod,
           shippingType: raw.shippingType,
@@ -93,11 +112,12 @@ export async function submitCheckout(
           items
         };
 
+        // Validate payload
         const parsed = CheckoutPayloadSchema.safeParse(payload);
         if (!parsed.success) {
           const flattened = parsed.error.flatten().fieldErrors;
           logEvent("checkout_validation_failed", {
-            email: payload.email,
+            email: maskedEmail,
             fieldErrors: flattened
           });
           endTimer();
@@ -108,19 +128,23 @@ export async function submitCheckout(
           };
         }
 
-        logEvent("checkout_attempt", {
-          email: parsed.data.email,
-          itemsCount: parsed.data.items.length,
-          shippingType: parsed.data.shippingType,
-          paymentMethod: parsed.data.paymentMethod
+        // Fetch server-side prices
+        const productIds = parsed.data.items.map(i => i.productId);
+        const products = await prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true, basePrice: true, name: true }
         });
 
-        const cartValue =
-          parsed.data.items.reduce(
-            (sum, item) => sum + (item.unitPrice ?? 0) * item.quantity,
-            0
-          ) ?? 0;
+        const priceMap = new Map(products.map(p => [p.id, p]));
 
+        // Compute cart value securely
+        const cartValue = parsed.data.items.reduce((sum, item) => {
+          const product = priceMap.get(item.productId);
+          const unitPrice = product?.basePrice ?? 0;
+          return sum + unitPrice * item.quantity;
+        }, 0);
+
+        // Build risk context
         const riskContext = buildRiskContext({
           ip,
           email: parsed.data.email,
@@ -131,10 +155,11 @@ export async function submitCheckout(
           shippingState: parsed.data.state
         });
 
+        // Process checkout (creates order + payment intent)
         const result = await processCheckout(parsed.data, riskContext);
 
         logEvent("checkout_success", {
-          email: parsed.data.email,
+          email: maskedEmail,
           orderId: result.orderId,
           hasPaymentUrl: Boolean(result.paymentUrl)
         });
@@ -147,9 +172,7 @@ export async function submitCheckout(
           paymentUrl: result.paymentUrl ?? null
         };
 
-        if (idempotencyKey) {
-          saveIdempotentResponse(idempotencyKey, response);
-        }
+        saveIdempotentResponse(idempotencyKey, response);
 
         endTimer();
         return response;

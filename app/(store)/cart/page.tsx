@@ -1,13 +1,14 @@
-// app/(store)/cart/page.tsx
 "use client";
 
 import { useCart } from "@/lib/cart/store";
 import { formatCurrency } from "@/lib/utils";
 import { Button, Card, Input } from "@/components/ui/";
 import EmptyState from "@/components/products/EmptyState";
-import type { CartItem } from "@/lib/cart/types"; // ✅ shared type
+import type { CartItem } from "@/lib/cart/types";
+import { useRouter } from "next/navigation";
 
 export default function CartPage() {
+  const router = useRouter();
   const { cart, removeItem, updateQuantity, clearCart } = useCart();
 
   if (cart.items.length === 0) {
@@ -23,7 +24,7 @@ export default function CartPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 space-y-6 animate-fadeIn pb-safe">
-      {cart.items.map((item: CartItem) => ( // ✅ use shared type
+      {cart.items.map((item: CartItem) => (
         <Card
           key={item.variantId}
           padding="sm"
@@ -32,7 +33,7 @@ export default function CartPage() {
           {item.image && (
             <img
               src={item.image}
-              alt={item.name}
+              alt={item.name || "Product image"}
               className="w-20 h-20 object-cover rounded-md"
             />
           )}
@@ -56,9 +57,10 @@ export default function CartPage() {
                 value={item.quantity}
                 min={1}
                 className="w-20 text-sm"
-                onChange={(e) =>
-                  updateQuantity(item.variantId, Number(e.target.value))
-                }
+                onChange={(e) => {
+                  const value = Math.max(1, Number(e.target.value) || 1);
+                  updateQuantity(item.variantId, value);
+                }}
               />
 
               <Button
@@ -88,7 +90,10 @@ export default function CartPage() {
             Clear Cart
           </Button>
 
-          <Button className="min-h-touch active:scale-press">
+          <Button
+            className="min-h-touch active:scale-press"
+            onClick={() => router.push("/checkout")}
+          >
             Checkout
           </Button>
         </div>

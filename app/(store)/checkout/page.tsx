@@ -1,105 +1,170 @@
 // app/(store)/checkout/actions.ts
-"use server";
+"use client";
 
-import { prisma } from "@/lib/db";
-import { encrypt } from "@/lib/security/crypto"; // AES-256-GCM helper
-import { z } from "zod";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { submitCheckout, checkoutInitialState } from "./actions";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
+import { cn } from "@/lib/utils";
 
-const CheckoutSchema = z.object({
-  fullName: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().min(8),
-  address: z.string().min(5),
-  city: z.string().min(2),
-  state: z.string().min(2),
-  shippingType: z.enum(["STANDARD", "EXPRESS"]),
-  paymentMethod: z.string(),
-  items: z.array(
-    z.object({
-      productId: z.string(),
-      quantity: z.number().int().positive(),
-    })
-  ),
-});
+export default function CheckoutPage() {
+  const router = useRouter();
+  const [state, setState] = useState(checkoutInitialState);
+  const [isPending, startTransition] = useTransition();
 
-export async function submitCheckout(_: any, formData: FormData) {
-  try {
-    const rawItems = JSON.parse(formData.get("items") as string || "[]");
-    const parsed = CheckoutSchema.parse({
-      fullName: formData.get("fullName"),
-      email: formData.get("email"),
-      phone: formData.get("phone"),
-      address: formData.get("address"),
-      city: formData.get("city"),
-      state: formData.get("state"),
-      shippingType: formData.get("shippingType") || "STANDARD",
-      paymentMethod: formData.get("paymentMethod"),
-      items: rawItems,
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.currentTarget);
+
+    // Add idempotency key
+    formData.append("idempotencyKey", crypto.randomUUID());
+
+    startTransition(async () => {
+      const result = await submitCheckout(state, formData);
+      setState(result);
+
+      if (result.success) {
+        if (result.paymentUrl) {
+          // Redirect to payment provider
+          window.location.href = result.paymentUrl;
+        } else if (result.orderId) {
+          router.push(`/success?orderId=${result.orderId}`);
+        }
+      }
     });
+  };
 
-    // Fetch products/variants and compute prices server-side
-    const products = await prisma.product.findMany({
-      where: { id: { in: parsed.items.map(i => i.productId) } },
-      select: { id: true, basePrice: true },
-    });
+  const fieldError = (name: string) =>
+    state.fieldErrors?.[name]?.[0] ?? null;
 
-    const priceMap = new Map(products.map(p => [p.id, p.basePrice ?? 0]));
+  return (
+    <main className="max-w-3xl mx-auto px-4 py-10 space-y-8">
+      <h1 className="text-2xl font-semibold">Checkout</h1>
 
-    const subtotal = parsed.items.reduce((sum, item) => {
-      const unitPrice = priceMap.get(item.productId) ?? 0;
-      return sum + unitPrice * item.quantity;
-    }, 0);
+      {state.message && !state.success && (
+        <p className="text-danger text-sm">{state.message}</p>
+      )}
 
-    // Compute shipping cost server-side too
-    const shippingCost = await computeShipping({
-      state: parsed.state,
-      shippingType: parsed.shippingType,
-    });
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Contact Info */}
+        <section className="space-y-4">
+          <h2 className="font-medium text-lg">Contact Information</h2>
 
-    const total = subtotal + shippingCost;
+          <div className="space-y-2">
+            <Input
+              name="fullName"
+              placeholder="Full Name"
+              aria-invalid={!!fieldError("fullName")}
+            />
+            {fieldError("fullName") && (
+              <p className="text-danger text-xs">{fieldError("fullName")}</p>
+            )}
+          </div>
 
-    const order = await prisma.order.create({
-      data: {
-        email: encrypt(parsed.email),
-        phone: encrypt(parsed.phone),
-        fullName: encrypt(parsed.fullName),
-        subtotal,
-        shippingCost,
-        total,
-        currency: "NGN",
-        paymentMethod: "CARD", // or map from parsed.paymentMethod
-        paymentStatus: "PENDING",
-        orderStatus: "CREATED",
-        shippingType: parsed.shippingType,
-        shippingAddress: {
-          fullName: parsed.fullName,
-          phone: parsed.phone,
-          address: parsed.address,
-          city: parsed.city,
-          state: parsed.state,
-        },
-        cartSnapshot: parsed.items,
-        items: {
-          create: parsed.items.map(item => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            unitPrice: priceMap.get(item.productId) ?? 0,
-            name: "", // fill from product if needed
-          })),
-        },
-      },
-    });
+          <div className="space-y-2">
+            <Input
+              name="email"
+              type="email"
+              placeholder="Email"
+              aria-invalid={!!fieldError("email")}
+            />
+            {fieldError("email") && (
+              <p className="text-danger text-xs">{fieldError("email")}</p>
+            )}
+          </div>
 
-    return { success: true, orderId: order.id };
-  } catch (err: any) {
-    if (err instanceof z.ZodError) {
-      return {
-        success: false,
-        fieldErrors: err.flatten().fieldErrors,
-        message: "Please fix the highlighted fields.",
-      };
-    }
+          <div className="space-y-2">
+            <Input
+              name="phone"
+              placeholder="Phone Number"
+              aria-invalid={!!fieldError("phone")}
+            />
+            {fieldError("phone") && (
+              <p className="text-danger text-xs">{fieldError("phone")}</p>
+            )}
+          </div>
+        </section>
 
-    return { success: false, message: "Something went wrong. Please try again." };
-  }
+        {/* Shipping */}
+        <section className="space-y-4">
+          <h2 className="font-medium text-lg">Shipping Address</h2>
+
+          <div className="space-y-2">
+            <Textarea
+              name="address"
+              placeholder="Street Address"
+              aria-invalid={!!fieldError("address")}
+            />
+            {fieldError("address") && (
+              <p className="text-danger text-xs">{fieldError("address")}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Input
+                name="city"
+                placeholder="City"
+                aria-invalid={!!fieldError("city")}
+              />
+              {fieldError("city") && (
+                <p className="text-danger text-xs">{fieldError("city")}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Input
+                name="state"
+                placeholder="State"
+                aria-invalid={!!fieldError("state")}
+              />
+              {fieldError("state") && (
+                <p className="text-danger text-xs">{fieldError("state")}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <select
+              name="shippingType"
+              className="w-full border rounded-md p-2 bg-surface"
+            >
+              <option value="STANDARD">Standard Shipping</option>
+              <option value="EXPRESS">Express Shipping</option>
+            </select>
+          </div>
+        </section>
+
+        {/* Payment */}
+        <section className="space-y-4">
+          <h2 className="font-medium text-lg">Payment Method</h2>
+
+          <select
+            name="paymentMethod"
+            className="w-full border rounded-md p-2 bg-surface"
+          >
+            <option value="CARD">Pay with Card</option>
+          </select>
+        </section>
+
+        {/* Cart Snapshot */}
+        <input
+          type="hidden"
+          name="items"
+          value={typeof window !== "undefined" ? localStorage.getItem("cart") ?? "[]" : "[]"}
+        />
+
+        <Button
+          type="submit"
+          disabled={isPending}
+          className={cn("w-full py-3 text-base")}
+        >
+          {isPending ? "Processing..." : "Place Order"}
+        </Button>
+      </form>
+    </main>
+  );
 }
