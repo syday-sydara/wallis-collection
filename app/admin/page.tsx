@@ -2,7 +2,7 @@
 export const dynamic = "force-dynamic";
 
 import AdminProductsClient from "./AdminProductsClient";
-import { adminListProductsPaginated } from "@/lib/catalog/admin";
+import { adminListProductsPaginated } from "@/lib/products/admin";
 
 interface AdminProductsPageProps {
   searchParams?: {

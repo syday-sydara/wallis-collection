@@ -6,7 +6,7 @@ import Gallery from "./Gallery";
 import VariantSelector from "./VariantSelector";
 import AddToCartButton from "../cart/AddToCartButton";
 import ProductCard from "./ProductCard";
-import type { ProductWithRelations, RecommendedProduct } from "@/lib/catalog/shared/types";
+import type { ProductWithRelations, RecommendedProduct } from "@/lib/products/types";
 
 type Props = {
   product: ProductWithRelations & { recommended?: RecommendedProduct[] };

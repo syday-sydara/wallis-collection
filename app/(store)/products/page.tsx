@@ -5,8 +5,8 @@ import ProductGrid from "@/components/products/ProductGrid";
 import ProductGridSkeleton from "@/components/products/ProductGridSkeleton";
 import EmptyState from "@/components/products/EmptyState";
 import { Button } from "@/components/ui/Button";
-import { listProducts } from "@/lib/catalog/storefront/listProducts";
-import type { ProductListParams, ProductListResult, ProductWithRelations } from "@/lib/catalog/shared/types";
+import { listProducts } from "@/lib/products/storefront/listProducts";
+import type { ProductListParams, ProductListResult, ProductWithRelations } from "@/lib/products/types";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<ProductWithRelations[]>([]);

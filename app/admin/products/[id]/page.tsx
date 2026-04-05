@@ -1,92 +1,138 @@
-// app/admin/products/[id]/page.tsx
-import { notFound } from "next/navigation";
-import { adminGetProduct } from "@/lib/catalog/admin";
+"use client";
 
-import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
-import { AdminSection } from "@/components/admin/ui/AdminSection";
-import { AdminCard } from "@/components/admin/ui/AdminCard";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { createProduct } from "@/app/admin/products/actions";  // Adjust according to your server-side actions file path
 
-import { ProductForm } from "./components/ProductForm";
-import { VariantForm } from "./components/VariantForm";
-import VariantItem from "./components/VariantItem";
-import { InventorySection } from "./components/InventorySection";
-import { ImagesManager } from "./components/ImagesManager";
-import Link from "next/link";
+import { AdminField } from "@/components/admin/ui/AdminField";
+import { AdminInput } from "@/components/admin/ui/AdminInput";
+import { AdminTextarea } from "@/components/admin/ui/AdminTextarea";
+import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { AdminMessage } from "@/components/admin/ui/AdminMessage"; // Optional, for showing messages
 
-export default async function ProductDetailPage({
-  params
-}: {
-  params: { id: string };
-}) {
-  if (!params?.id) notFound();
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
-  const product = await adminGetProduct(params.id);
-  if (!product) notFound();
+export default function NewProductPage() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState("");
+  const [basePrice, setBasePrice] = useState("");
+  const [image, setImage] = useState<File | null>(null);
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [isPending, startTransition] = useTransition();
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  async function onSubmit(formData: FormData) {
+    startTransition(async () => {
+      const result = await createProduct(formData);
+
+      if (!result.ok) {
+        setErrors(result.errors ?? {});
+        return;
+      }
+
+      setSuccessMessage("Product created successfully!");
+      router.push(`/admin/products/${result.id}`);
+    });
+  }
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files) {
+      setImage(e.target.files[0]);
+    }
+  }
 
   return (
-    <div className="space-y-10">
-      <AdminPageHeader
-        title={product.name}
-        subtitle={`SKU: ${product.slug}`}
-        breadcrumbs={
-          <nav aria-label="Breadcrumb">
-            <ol className="flex items-center gap-1 text-xs text-text-muted">
-              <li>
-                <Link href="/admin/products" className="hover:underline">
-                  Products
-                </Link>
-              </li>
-              <li>/</li>
-              <li className="text-text">{product.name}</li>
-            </ol>
-          </nav>
-        }
-      />
+    <div className="max-w-xl space-y-6">
+      <h2 className="text-lg font-semibold text-text tracking-tight">New Product</h2>
 
-      <AdminSection title="Product Information">
-        <AdminCard>
-          <ProductForm product={product} />
-        </AdminCard>
-      </AdminSection>
+      {/* Success Message */}
+      {successMessage && (
+        <AdminMessage type="success">{successMessage}</AdminMessage>
+      )}
 
-      <AdminSection
-        title="Variants"
-        description="Manage product variants such as sizes, colors, or configurations."
+      <form
+        action={onSubmit}
+        method="POST"
+        encType="multipart/form-data"
+        className="space-y-4 text-sm"
       >
-        <AdminCard header="Add Variant">
-          <VariantForm productId={product.id} />
-        </AdminCard>
+        {/* Product Name */}
+        <AdminField label="Name" error={errors.name?.[0]}>
+          <AdminInput
+            name="name"
+            required
+            value={name}
+            aria-invalid={!!errors.name}
+            onChange={(e) => {
+              const v = e.target.value;
+              setName(v);
+              if (!slug) setSlug(slugify(v));
+            }}
+          />
+        </AdminField>
 
-        <div className="space-y-3">
-          {product.variants.length === 0 ? (
-            <p className="text-xs text-text-muted">No variants yet.</p>
-          ) : (
-            product.variants.map((variant) => (
-              <AdminCard key={variant.id}>
-                <VariantItem variant={variant} />
-              </AdminCard>
-            ))
-          )}
-        </div>
-      </AdminSection>
+        {/* Slug */}
+        <AdminField label="Slug" error={errors.slug?.[0]}>
+          <AdminInput
+            name="slug"
+            required
+            value={slug}
+            aria-invalid={!!errors.slug}
+            onChange={(e) => setSlug(slugify(e.target.value))}
+          />
+        </AdminField>
 
-      <AdminSection
-        title="Inventory"
-        description="Adjust stock levels and view recent inventory movements."
-      >
-        <AdminCard>
-          <InventorySection product={product} movements={product.movements} />
-        </AdminCard>
-      </AdminSection>
+        {/* Description */}
+        <AdminField label="Description" error={errors.description?.[0]}>
+          <AdminTextarea
+            name="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+          />
+        </AdminField>
 
-      <AdminSection
-        title="Images"
-        description="Manage product images and display order."
-      >
-        <AdminCard>
-          <ImagesManager product={product} />
-        </AdminCard>
-      </AdminSection>
+        {/* Base Price */}
+        <AdminField label="Base Price (Kobo)" error={errors.basePrice?.[0]}>
+          <AdminInput
+            name="basePrice"
+            type="number"
+            required
+            value={basePrice}
+            aria-invalid={!!errors.basePrice}
+            onChange={(e) => setBasePrice(e.target.value)}
+          />
+        </AdminField>
+
+        {/* Product Image */}
+        <AdminField label="Product Image" error={errors.image?.[0]}>
+          <input
+            type="file"
+            name="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="block w-full text-sm"
+          />
+        </AdminField>
+
+        {/* Display form errors */}
+        {errors._form && (
+          <p className="text-xs text-danger-foreground">{errors._form[0]}</p>
+        )}
+
+        {/* Submit Button */}
+        <AdminButton type="submit" disabled={isPending}>
+          {isPending ? "Saving…" : "Create Product"}
+        </AdminButton>
+      </form>
     </div>
   );
 }

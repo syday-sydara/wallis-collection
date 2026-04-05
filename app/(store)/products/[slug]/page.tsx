@@ -2,7 +2,7 @@
 "use client";
 
 import ProductCard from "@/components/products/ProductCard";
-import type { ProductCardVM } from "@/lib/catalog/shared/types";
+import type { ProductCardVM } from "@/lib/products/types";
 
 type ProductGridProps = {
   products: ProductCardVM[];
