@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { X } from "lucide-react";
-import { useCart } from "@/components/cart/useCart";
+import { useCart } from "@/lib/cart/store";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -21,6 +21,7 @@ export function CartDrawer() {
 
   return (
     <>
+      {/* Overlay */}
       <div
         className={cn(
           "fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity z-40",
@@ -29,6 +30,7 @@ export function CartDrawer() {
         onClick={close}
       />
 
+      {/* Drawer */}
       <aside
         className={cn(
           "fixed right-0 top-0 h-full w-[90%] max-w-sm bg-surface shadow-xl z-50 flex flex-col transition-transform pb-safe",
@@ -47,6 +49,7 @@ export function CartDrawer() {
           </button>
         </div>
 
+        {/* Items */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {items.length === 0 ? (
             <p className="text-text-muted text-sm text-center mt-10">
@@ -83,6 +86,7 @@ export function CartDrawer() {
           )}
         </div>
 
+        {/* Footer */}
         {items.length > 0 && (
           <div className="border-t border-border-subtle p-4 space-y-3">
             <div className="flex justify-between text-text">

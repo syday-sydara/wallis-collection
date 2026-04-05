@@ -9,9 +9,9 @@ import { useRouter } from "next/navigation";
 
 export default function CartPage() {
   const router = useRouter();
-  const { cart, removeItem, updateQuantity, clearCart } = useCart();
+  const { items, subtotal, removeItem, updateQuantity, clear } = useCart();
 
-  if (cart.items.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="py-20 animate-fadeIn">
         <EmptyState
@@ -24,9 +24,9 @@ export default function CartPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 space-y-6 animate-fadeIn pb-safe">
-      {cart.items.map((item: CartItem) => (
+      {items.map((item: CartItem) => (
         <Card
-          key={item.variantId}
+          key={item.id}
           padding="sm"
           className="flex items-center gap-4 leading-none"
         >
@@ -41,14 +41,14 @@ export default function CartPage() {
           <div className="flex-1 space-y-1">
             <p className="font-medium text-text leading-none">{item.name}</p>
 
-            {item.variantName && (
+            {item.attributes && (
               <p className="text-sm text-text-muted leading-none">
-                {item.variantName}
+                {Object.values(item.attributes).join(" / ")}
               </p>
             )}
 
             <p className="text-sm leading-none">
-              {formatCurrency(item.price)}
+              {formatCurrency(item.unitPrice)}
             </p>
 
             <div className="flex gap-2 items-center mt-2">
@@ -59,7 +59,7 @@ export default function CartPage() {
                 className="w-20 text-sm"
                 onChange={(e) => {
                   const value = Math.max(1, Number(e.target.value) || 1);
-                  updateQuantity(item.variantId, value);
+                  updateQuantity(item.id, value);
                 }}
               />
 
@@ -67,7 +67,7 @@ export default function CartPage() {
                 variant="outline"
                 size="sm"
                 className="min-h-touch active:scale-press"
-                onClick={() => removeItem(item.variantId)}
+                onClick={() => removeItem(item.id)}
               >
                 Remove
               </Button>
@@ -78,14 +78,14 @@ export default function CartPage() {
 
       <div className="flex justify-between items-center mt-6 leading-none">
         <p className="text-lg font-semibold">
-          Total: {formatCurrency(cart.total)}
+          Total: {formatCurrency(subtotal)}
         </p>
 
         <div className="flex gap-2">
           <Button
             variant="outline"
             className="min-h-touch active:scale-press"
-            onClick={clearCart}
+            onClick={clear}
           >
             Clear Cart
           </Button>

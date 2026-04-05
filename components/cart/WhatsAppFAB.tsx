@@ -1,4 +1,5 @@
 "use client";
+
 import { useCart } from "@/lib/cart/store";
 import { formatCurrency } from "@/lib/utils/formatters/currency";
 
@@ -7,17 +8,27 @@ export function WhatsAppFAB() {
 
   if (items.length === 0) return null;
 
-  const message = `Hello! I want to place an order:\n` +
-    items.map(i => `${i.name} x${i.quantity} = ${formatCurrency(i.unitPrice * i.quantity)}`).join("\n") +
-    `\nTotal: ${formatCurrency(subtotal)}`;
+  const messageLines = [
+    "Hello! I want to place an order:",
+    "",
+    ...items.map(
+      (i) => `${i.name} x${i.quantity} = ${formatCurrency(i.unitPrice * i.quantity)}`
+    ),
+    "",
+    `Total: ${formatCurrency(subtotal)}`
+  ];
 
-  const link = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  const link = `https://wa.me/?text=${encodeURIComponent(messageLines.join("\n"))}`;
 
   return (
-    <a href={link} target="_blank" rel="noopener noreferrer"
-      className="whatsapp-fab">
+    <a
+      href={link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="whatsapp-fab fixed bottom-6 right-6 bg-green-500 text-white px-4 py-3 rounded-full shadow-lg flex items-center gap-2 active:scale-95 transition"
+    >
       <span>💬</span>
-      <span>Checkout via WhatsApp</span>
+      <span className="font-medium">Checkout via WhatsApp</span>
     </a>
   );
 }
