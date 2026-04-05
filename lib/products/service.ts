@@ -4,17 +4,46 @@ import { toProductCardVM } from "./mappers";
 
 /** --- List products --- */
 export async function getProducts(params: ProductListParams = {}): Promise<ProductListResult> {
-  const { search, minPrice, maxPrice, includeArchived = false, limit = 24, cursor } = params;
+  const {
+    search,
+    minPrice,
+    maxPrice,
+    includeArchived = false,
+    limit = 24,
+    cursor,
+    sort,
+  } = params;
+
+  let orderBy: any = [
+    { createdAt: "desc" },
+    { id: "desc" },
+  ];
+
+  if (sort === "price-asc") {
+    orderBy = [
+      { variants: { some: { price: "asc" } } },
+      { id: "asc" },
+    ];
+  }
+
+  if (sort === "price-desc") {
+    orderBy = [
+      { variants: { some: { price: "desc" } } },
+      { id: "desc" },
+    ];
+  }
 
   const products = await prisma.product.findMany({
     where: {
       isArchived: includeArchived ? undefined : false,
+
       ...(search && {
         OR: [
           { name: { contains: search, mode: "insensitive" } },
           { description: { contains: search, mode: "insensitive" } },
         ],
       }),
+
       ...(minPrice !== undefined || maxPrice !== undefined
         ? {
             variants: {
@@ -26,13 +55,16 @@ export async function getProducts(params: ProductListParams = {}): Promise<Produ
           }
         : {}),
     },
+
     take: limit + 1,
     skip: cursor ? 1 : 0,
     cursor: cursor ? { id: cursor } : undefined,
-    orderBy: { createdAt: "desc" },
+
+    orderBy,
+
     include: {
       images: { orderBy: { sortOrder: "asc" } },
-      variants: { select: { price: true } },
+      variants: { select: { price: true, stock: true } },
     },
   });
 
@@ -40,18 +72,22 @@ export async function getProducts(params: ProductListParams = {}): Promise<Produ
   const nextCursor = hasMore ? products[limit].id : null;
 
   return {
-    items: products.slice(0, limit),
+    items: products.slice(0, limit).map(toProductCardVM),
     nextCursor,
   };
 }
 
 /** --- Get product detail + recommendations --- */
-export async function getProductDetailWithRecommendations(slug: string): Promise<ProductClientVM | null> {
+export async function getProductDetailWithRecommendations(
+  slug: string
+): Promise<ProductClientVM | null> {
   const product = await prisma.product.findUnique({
     where: { slug },
     include: {
       images: { orderBy: { sortOrder: "asc" } },
-      variants: { select: { id: true, name: true, price: true, stock: true, sku: true } },
+      variants: {
+        select: { id: true, name: true, price: true, stock: true, sku: true },
+      },
     },
   });
 
@@ -63,19 +99,24 @@ export async function getProductDetailWithRecommendations(slug: string): Promise
   const priceMin = Math.max(basePrice * 0.8, 0);
   const priceMax = basePrice * 1.2;
 
-  const recommended = await prisma.product.findMany({
+  const recommendedRaw = await prisma.product.findMany({
     where: {
       id: { not: product.id },
       isArchived: false,
       variants: { some: { price: { gte: priceMin, lte: priceMax } } },
     },
     take: 6,
-    orderBy: { createdAt: "desc" },
+    orderBy: [
+      { createdAt: "desc" },
+      { id: "desc" },
+    ],
     include: {
       images: { orderBy: { sortOrder: "asc" } },
-      variants: { select: { price: true } },
+      variants: { select: { price: true, stock: true } },
     },
   });
+
+  const recommended = recommendedRaw.map(toProductCardVM);
 
   return { ...product, recommended };
 }

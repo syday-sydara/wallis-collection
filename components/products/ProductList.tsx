@@ -6,11 +6,12 @@ import ProductGridSkeleton from "./ProductGridSkeleton";
 import EmptyState from "@/components/products/EmptyState";
 import ErrorState from "./ErrorState";
 import ResultHeader from "./ResultHeader";
-import { listProducts } from "@/lib/products/storefront/listProducts";
+import { getProducts } from "@/lib/products/service";
+
 import type {
   ProductListParams,
   ProductListResult,
-  ProductWithRelations,
+  ProductCardVM,
 } from "@/lib/products/types";
 
 type ProductListProps = {
@@ -18,7 +19,7 @@ type ProductListProps = {
 };
 
 export default function ProductList({ params }: ProductListProps) {
-  const [products, setProducts] = useState<ProductWithRelations[]>([]);
+  const [products, setProducts] = useState<ProductCardVM[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -26,38 +27,53 @@ export default function ProductList({ params }: ProductListProps) {
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
+  const nextCursorRef = useRef<string | null>(null);
 
-  // Initial fetch
+  // Keep nextCursorRef in sync
+  useEffect(() => {
+    nextCursorRef.current = nextCursor;
+  }, [nextCursor]);
+
+  // Initial fetch (with proper reset + unmount safety)
   useEffect(() => {
     const requestId = ++requestIdRef.current;
+    let isMounted = true;
 
-    setLoading(products.length === 0);
+    setLoading(true);
     setError(false);
 
     async function fetchProducts() {
       try {
         const res: ProductListResult = await listProducts(params);
 
-        if (requestId !== requestIdRef.current) return;
+        if (!isMounted || requestId !== requestIdRef.current) return;
 
         setProducts(res.items);
         setNextCursor(res.nextCursor);
       } catch {
-        if (requestId === requestIdRef.current) setError(true);
+        if (isMounted && requestId === requestIdRef.current) {
+          setError(true);
+        }
       } finally {
-        if (requestId === requestIdRef.current) setLoading(false);
+        if (isMounted && requestId === requestIdRef.current) {
+          setLoading(false);
+        }
       }
     }
 
     fetchProducts();
+
+    return () => {
+      isMounted = false;
+    };
   }, [params]);
 
-  // Load more
+  // Load more (with stable cursor check)
   const loadMore = useCallback(async () => {
-    if (!nextCursor || loadingMore) return;
+    if (!nextCursorRef.current || loadingMore) return;
 
     setLoadingMore(true);
-    const currentCursor = nextCursor;
+    const currentCursor = nextCursorRef.current;
 
     try {
       const res: ProductListResult = await listProducts({
@@ -65,7 +81,8 @@ export default function ProductList({ params }: ProductListProps) {
         cursor: currentCursor,
       });
 
-      if (currentCursor !== nextCursor) return;
+      // Prevent race conditions
+      if (currentCursor !== nextCursorRef.current) return;
 
       setProducts((prev) => [...prev, ...res.items]);
       setNextCursor(res.nextCursor);
@@ -74,7 +91,7 @@ export default function ProductList({ params }: ProductListProps) {
     } finally {
       setLoadingMore(false);
     }
-  }, [nextCursor, loadingMore, params]);
+  }, [loadingMore, params]);
 
   // IntersectionObserver for infinite scroll
   useEffect(() => {
@@ -113,8 +130,7 @@ export default function ProductList({ params }: ProductListProps) {
       />
     );
 
-  if (!products.length)
-    return <EmptyState title="No products found" />;
+  if (!products.length) return <EmptyState title="No products found" />;
 
   return (
     <>

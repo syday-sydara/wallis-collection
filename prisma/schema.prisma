@@ -62,6 +62,11 @@ enum Currency {
   GBP
 }
 
+enum PaymentProvider {
+  PAYSTACK
+  MONNIFY
+  BANK_TRANSFER
+}
 //////////////////////
 // USER
 //////////////////////
@@ -100,7 +105,7 @@ model Category {
   name String   @unique
   slug String   @unique
 
-  products Product[]
+  products Product[] @relation("ProductCategories")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -212,6 +217,8 @@ model Order {
   deliveryNotes String?
   deliveredAt   DateTime?
 
+  isPaid Boolean @default(false)
+
   trackingNumber String?
   carrier        String?
 
@@ -270,7 +277,7 @@ model Payment {
 
   currency Currency @default(NGN)
 
-  status PaymentStatus
+  status PaymentStatus @default(PENDING)
 
   channel String?
   raw     Json?
