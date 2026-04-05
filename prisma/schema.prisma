@@ -65,20 +65,25 @@ enum FraudDecision {
 //////////////////////
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  role      UserRole @default(USER)
+  id    String   @id @default(cuid())
+  email String   @unique
+  name  String?
+  role  UserRole @default(USER)
 
   passwordHash  String?
-  phone         String? @unique // E.164 format recommended
+  phone         String? @unique
   phoneVerified Boolean @default(false)
   emailVerified Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orders Order[]
+  orders         Order[]
+  addresses      Address[]
+  auditEvents    AuditEvent[]
+  securityEvents SecurityEvent[]
+
+  @@index([email])
 }
 
 //////////////////////
@@ -93,13 +98,15 @@ model Product {
 
   basePrice Int?
 
-  isArchived Boolean @default(false)
+  isArchived Boolean   @default(false)
+  deletedAt  DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  images   ProductImage[]
-  variants ProductVariant[]
+  images     ProductImage[]
+  variants   ProductVariant[]
+  orderItems OrderItem[]
 
   @@index([slug])
 }
@@ -125,10 +132,15 @@ model ProductVariant {
 
   stock         Int @default(0)
   reservedStock Int @default(0)
+  /// reservedStock must never exceed stock
 
   attributes Json?
 
+  orderItems OrderItem[]
+  stockLogs  StockLog[]
+
   @@index([productId])
+  @@index([sku, productId])
 }
 
 //////////////////////
@@ -153,36 +165,43 @@ model Order {
 
   shippingType ShippingType
 
-  // Snapshot
   shippingAddress Json
   cartSnapshot    Json
 
-  // Fraud
   fraudScore    Int?
   fraudSignals  Json?
   fraudDecision FraudDecision?
 
-  // Idempotency
-  idempotencyKey String? @unique
+  ipAddress String?
+  userAgent String?
+
+  deliveryNotes String?
+  assignedRider String?
+  deliveredAt   DateTime?
+
+  idempotencyKey String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   userId String?
-  user   User? @relation(fields: [userId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
 
   items    OrderItem[]
   payments Payment[]
 
+  @@unique([idempotencyKey, userId])
   @@index([createdAt])
   @@index([userId])
+  @@index([userId, createdAt])
+  @@index([orderStatus, createdAt])
 }
 
 model OrderItem {
   id String @id @default(cuid())
 
   orderId String
-  order   Order @relation(fields: [orderId], references: [id])
+  order   Order  @relation(fields: [orderId], references: [id])
 
   productId String?
   product   Product? @relation(fields: [productId], references: [id])
@@ -201,21 +220,21 @@ model OrderItem {
 }
 
 //////////////////////
-// PAYMENTS (SOURCE OF TRUTH)
+// PAYMENTS
 //////////////////////
 
 model Payment {
   id String @id @default(cuid())
 
   orderId String
-  order   Order @relation(fields: [orderId], references: [id])
+  order   Order  @relation(fields: [orderId], references: [id])
 
   provider  String
   reference String
 
   providerTransactionId String?
 
-  idempotencyKey String? @unique
+  idempotencyKey String?
 
   amount   Int
   currency Currency
@@ -226,18 +245,29 @@ model Payment {
 
   paidAt DateTime?
 
-  // Nigeria resilience
-  verifiedAt DateTime?
-  verificationAttempts Int @default(0)
-  lastCheckedAt DateTime?
+  bankName          String?
+  accountNumber     String?
+  accountName       String?
+  transferReference String?
+
+  verifiedAt           DateTime?
+  verificationAttempts Int       @default(0)
+  lastCheckedAt        DateTime?
+  nextVerificationAt   DateTime?
+
+  attempt Int @default(1)
 
   raw Json
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([provider, reference])
   @@index([orderId])
   @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([orderId, status])
+  @@index([providerTransactionId])
 }
 
 //////////////////////
@@ -248,7 +278,7 @@ model Address {
   id String @id @default(cuid())
 
   userId String?
-  user   User? @relation(fields: [userId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
 
   fullName String
   phone    String
@@ -262,13 +292,50 @@ model Address {
   lga   String?
 
   postalCode String?
-  country    String @default("Nigeria")
+  country    String  @default("Nigeria")
+
+  latitude  Float?
+  longitude Float?
 
   deliveryInstructions String?
 
   createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([userId, createdAt])
+}
+
+//////////////////////
+// PAYMENT LOG
+//////////////////////
+
+model PaymentLog {
+  id String @id @default(cuid())
+
+  provider String
+  payload  Json
+
+  processed Boolean @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////
+// OTP
+//////////////////////
+
+model OTP {
+  id String @id @default(cuid())
+
+  phone String
+  code  String
+
+  expiresAt DateTime
+  used      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([phone])
 }
 
 //////////////////////
@@ -279,7 +346,7 @@ model AuditEvent {
   id String @id @default(cuid())
 
   userId String?
-  user   User? @relation(fields: [userId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
 
   action     String
   resource   String?
@@ -320,11 +387,11 @@ model SecurityEvent {
   id String @id @default(cuid())
 
   userId String?
-  user   User? @relation(fields: [userId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
 
   type      String
   message   String
-  ip        String
+  ip        String @db.VarChar(45)
   userAgent String
 
   timestamp DateTime @default(now())

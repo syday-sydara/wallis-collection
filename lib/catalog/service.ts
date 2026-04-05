@@ -2,78 +2,63 @@
 import { prisma } from "@/lib/db";
 import type {
   ProductWithRelations,
-  ProductListParams,
-  ProductListResult,
   RecommendedProduct,
-  ProductDetailResponse
+  ProductDetailResponse,
+  ProductListParams,
+  ProductListResult
 } from "./shared/types";
-import { listProducts } from "./storefront/listProducts";
+import { toProductCardVM, toProductDetailVM } from "./shared/mappers";
 
+/** --- List products with filters --- */
 export async function getProducts(params: ProductListParams = {}): Promise<ProductListResult> {
-  return listProducts(params);
+  const { search, minPrice, maxPrice, includeArchived = false, limit = 24, cursor } = params;
+
+  const products = await prisma.product.findMany({
+    where: {
+      isArchived: includeArchived ? undefined : false,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } }
+        ]
+      }),
+      ...(minPrice !== undefined && { basePrice: { gte: minPrice } }),
+      ...(maxPrice !== undefined && { basePrice: { lte: maxPrice } })
+    },
+    take: limit + 1,
+    skip: cursor ? 1 : 0,
+    cursor: cursor ? { id: cursor } : undefined,
+    orderBy: { createdAt: "desc" },
+    include: { images: { orderBy: { sortOrder: "asc" } }, variants: true }
+  });
+
+  const hasMore = products.length > limit;
+  const nextCursor = hasMore ? products[limit].id : null;
+
+  return {
+    items: products.slice(0, limit).map((p) => toProductCardVM(p)),
+    nextCursor
+  };
 }
 
-export async function getProductBySlug(slug: string): Promise<ProductWithRelations | null> {
+/** --- Get product by slug --- */
+export async function getProductDetailWithRecommendations(slug: string): Promise<ProductClientVM | null> {
   const product = await prisma.product.findUnique({
     where: { slug },
-    include: {
-      images: { orderBy: { sortOrder: "asc" } },
-      variants: true
-    }
+    include: { images: { orderBy: { sortOrder: "asc" } }, variants: true }
   });
 
   if (!product || product.isArchived) return null;
 
-  const stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+  const priceMin = Math.max(product.basePrice! * 0.8, 0);
+  const priceMax = product.basePrice! * 1.2;
 
-  return {
-    ...product,
-    stock,
-    images: product.images,
-    variants: product.variants
-  };
-}
-
-export async function listProductsForRecommendation(
-  product: ProductWithRelations
-): Promise<RecommendedProduct[]> {
-
-  if (!product.basePrice) return [];
-
-  const priceMin = Math.max(product.basePrice * 0.8, 0);
-  const priceMax = product.basePrice * 1.2;
-
-  const recommended = await prisma.product.findMany({
-    where: {
-      id: { not: product.id },
-      isArchived: false,
-      basePrice: { gte: priceMin, lte: priceMax }
-    },
+  const recommended: RecommendedProduct[] = await prisma.product.findMany({
+    where: { id: { not: product.id }, isArchived: false, basePrice: { gte: priceMin, lte: priceMax } },
     take: 6,
     orderBy: { createdAt: "desc" },
-    include: {
-      images: { orderBy: { sortOrder: "asc" } },
-      variants: true
-    }
-  });
+    include: { images: { orderBy: { sortOrder: "asc" } }, variants: true }
+  }).then(res => res.map(r => ({ id: r.id, name: r.name, slug: r.slug, basePrice: r.basePrice, images: r.images })));
 
-  return recommended.map((p) => ({
-    id: p.id,
-    name: p.name,
-    slug: p.slug,
-    basePrice: p.basePrice,
-    images: p.images
-  }));
-}
-
-export async function getProductDetailWithRecommendations(
-  slug: string
-): Promise<ProductDetailResponse | null> {
-
-  const product = await getProductBySlug(slug);
-  if (!product) return null;
-
-  const recommendations = await listProductsForRecommendation(product);
-
-  return { product, recommendations };
+  return toProductDetailVM(product, recommended);
 }
