@@ -12,6 +12,7 @@ export default function ProductGridSkeleton({ count = 8 }: { count?: number }) {
         <div
           key={i}
           className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-sm animate-pulse leading-none"
+          aria-hidden="true"
         >
           <div className="relative w-full aspect-square bg-skeleton rounded-t-lg" />
 

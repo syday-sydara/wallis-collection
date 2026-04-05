@@ -34,7 +34,7 @@ export default function ProductList({ params }: ProductListProps) {
     nextCursorRef.current = nextCursor;
   }, [nextCursor]);
 
-  // Initial fetch (with proper reset + unmount safety)
+  // Initial fetch
   useEffect(() => {
     const requestId = ++requestIdRef.current;
     let isMounted = true;
@@ -44,7 +44,7 @@ export default function ProductList({ params }: ProductListProps) {
 
     async function fetchProducts() {
       try {
-        const res: ProductListResult = await listProducts(params);
+        const res: ProductListResult = await getProducts(params);
 
         if (!isMounted || requestId !== requestIdRef.current) return;
 
@@ -68,7 +68,7 @@ export default function ProductList({ params }: ProductListProps) {
     };
   }, [params]);
 
-  // Load more (with stable cursor check)
+  // Load more
   const loadMore = useCallback(async () => {
     if (!nextCursorRef.current || loadingMore) return;
 
@@ -76,12 +76,11 @@ export default function ProductList({ params }: ProductListProps) {
     const currentCursor = nextCursorRef.current;
 
     try {
-      const res: ProductListResult = await listProducts({
+      const res: ProductListResult = await getProducts({
         ...params,
         cursor: currentCursor,
       });
 
-      // Prevent race conditions
       if (currentCursor !== nextCursorRef.current) return;
 
       setProducts((prev) => [...prev, ...res.items]);
@@ -93,7 +92,7 @@ export default function ProductList({ params }: ProductListProps) {
     }
   }, [loadingMore, params]);
 
-  // IntersectionObserver for infinite scroll
+  // Infinite scroll observer
   useEffect(() => {
     if (!loadMoreRef.current || !nextCursor) return;
 
@@ -112,6 +111,7 @@ export default function ProductList({ params }: ProductListProps) {
     };
   }, [loadMore, nextCursor]);
 
+  // UI states
   if (loading) return <ProductGridSkeleton />;
 
   if (error)

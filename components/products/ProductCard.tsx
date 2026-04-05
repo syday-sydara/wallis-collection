@@ -18,11 +18,13 @@ export function ProductCard({ product }) {
       className="overflow-hidden group animate-fadeIn-fast hover:shadow-md transition-shadow"
     >
       {/* Image */}
-      <Link href={`/product/${id}`} aria-label={`View product ${name}`}>
+      <Link href={`/product/${id}`} aria-label={`View product ${name}`} prefetch={false}>
         <div className="relative aspect-square w-full bg-surface-muted overflow-hidden rounded-t-lg">
           <img
             src={image}
             alt={name}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
 
@@ -35,7 +37,7 @@ export function ProductCard({ product }) {
 
       {/* Content */}
       <div className="p-4 space-y-2">
-        <Link href={`/product/${id}`} aria-label={`View product ${name}`}>
+        <Link href={`/product/${id}`} aria-label={`View product ${name}`} prefetch={false}>
           <h3 className="font-medium text-base text-text line-clamp-1 leading-none">
             {name}
           </h3>
@@ -64,7 +66,7 @@ export function ProductCard({ product }) {
             fullWidth
           />
         ) : (
-          <Button disabled fullWidth className="min-h-touch">
+          <Button disabled aria-disabled="true" fullWidth className="min-h-touch">
             Out of Stock
           </Button>
         )}

@@ -17,7 +17,7 @@ export default function VariantSelector({ variants, selected, onChange }: Props)
     <div className="space-y-2 animate-fadeIn-fast">
       <p className="text-sm font-medium text-text">Select option</p>
 
-      <div className="flex flex-wrap gap-2">
+      <div role="radiogroup" className="flex flex-wrap gap-2">
         {variants.map((v) => {
           const isSelected = selected?.id === v.id;
 
@@ -25,8 +25,11 @@ export default function VariantSelector({ variants, selected, onChange }: Props)
             <button
               key={v.id}
               type="button"
+              role="radio"
               aria-pressed={isSelected}
+              aria-checked={isSelected}
               aria-label={`Select variant ${v.name}`}
+              title={v.name}
               onClick={() => onChange(v)}
               className={cn(
                 "rounded-md border px-4 py-2 text-sm font-medium transition-all leading-none min-h-touch",

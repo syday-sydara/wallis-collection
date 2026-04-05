@@ -97,3 +97,15 @@ export type ProductCardVM = {
   inStock: boolean;
   images: ProductImage[];
 }
+
+export type ProductDetailVM = {
+  id: string;
+  name: string;
+  description: string | null;
+  images: ProductImage[];
+  variants: ProductVariant[];
+  minPrice: number;
+  maxPrice: number;
+  inStock: boolean;
+  recommended?: ProductCardVM[];
+};
