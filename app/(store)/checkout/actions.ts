@@ -12,6 +12,10 @@ import { buildRiskContext } from "@/lib/risk/context";
 import { prisma } from "@/lib/db";
 import { normalizePhone, maskEmail } from "@/lib/security/normalize";
 
+import type { CheckoutActionState } from "./state"; // ✔ types allowed
+
+
+
 export type CheckoutActionState = {
   success: boolean | null;
   message: string | null;
