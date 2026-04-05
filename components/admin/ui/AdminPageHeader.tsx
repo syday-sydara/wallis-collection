@@ -1,21 +1,34 @@
+// components/admin/ui/AdminPageHeader.tsx
 import { ReactNode } from "react";
 import clsx from "clsx";
+
+interface AdminPageHeaderProps {
+  title: string;
+  subtitle?: string;
+  actions?: ReactNode;
+  breadcrumbs?: ReactNode;
+  icon?: ReactNode;
+  compact?: boolean;
+  className?: string;
+}
 
 export function AdminPageHeader({
   title,
   subtitle,
   actions,
   breadcrumbs,
-  className
-}: {
-  title: string;
-  subtitle?: string;
-  actions?: ReactNode;
-  breadcrumbs?: ReactNode;
-  className?: string;
-}) {
+  icon,
+  compact = false,
+  className,
+}: AdminPageHeaderProps) {
   return (
-    <header className={clsx("space-y-2 border-b border-border pb-4", className)}>
+    <header
+      className={clsx(
+        "border-b border-border",
+        compact ? "pb-3 space-y-1.5" : "pb-4 space-y-2",
+        className
+      )}
+    >
       {breadcrumbs && (
         <div className="text-xs text-text-muted">
           {breadcrumbs}
@@ -23,16 +36,24 @@ export function AdminPageHeader({
       )}
 
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight text-text">
-            {title}
-          </h1>
-
-          {subtitle && (
-            <p className="text-sm text-text-muted mt-0.5">
-              {subtitle}
-            </p>
+        <div className="flex items-start gap-2">
+          {icon && (
+            <div className="text-text-muted mt-0.5">
+              {icon}
+            </div>
           )}
+
+          <div>
+            <h1 className="text-lg font-semibold tracking-tight text-text">
+              {title}
+            </h1>
+
+            {subtitle && (
+              <p className="text-sm text-text-muted mt-0.5">
+                {subtitle}
+              </p>
+            )}
+          </div>
         </div>
 
         {actions && (

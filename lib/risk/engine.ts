@@ -25,32 +25,47 @@ export async function calculateRiskScore(context: RiskContext): Promise<RiskResu
   let score = 0;
   const triggered: FraudRuleRecord[] = [];
 
-  for (const rule of rules) {
-    try {
-      const matched = evaluateRule(rule.condition, context);
+  // Evaluate rules in parallel
+  const evaluations = await Promise.all(
+    rules.map(async (rule) => {
+      try {
+        const matched = evaluateRule(rule.condition, context);
 
-      if (matched) {
-        score += rule.weight;
-        triggered.push(rule);
-
+        if (matched) {
+          return { rule, matched: true };
+        }
+      } catch (err: any) {
         await logAuditEvent({
-          action: "RISK_RULE_TRIGGERED",
+          action: "RISK_RULE_EVALUATION_ERROR",
           actorType: "SYSTEM",
           resource: "fraudRule",
           resourceId: rule.id,
-          metadata: { ruleName: rule.name }
+          metadata: { message: err?.message }
         });
       }
-    } catch (err: any) {
+
+      return { rule, matched: false };
+    })
+  );
+
+  // Aggregate results
+  for (const { rule, matched } of evaluations) {
+    if (matched) {
+      score += rule.weight;
+      triggered.push(rule);
+
       await logAuditEvent({
-        action: "RISK_RULE_EVALUATION_ERROR",
+        action: "RISK_RULE_TRIGGERED",
         actorType: "SYSTEM",
         resource: "fraudRule",
         resourceId: rule.id,
-        metadata: { message: err?.message }
+        metadata: { ruleName: rule.name }
       });
     }
   }
+
+  // Soft cap to prevent runaway scores
+  score = Math.min(score, 100);
 
   const level = classify(score);
 
@@ -60,21 +75,24 @@ export async function calculateRiskScore(context: RiskContext): Promise<RiskResu
     metadata: {
       score,
       level,
-      triggeredRules: triggered.map(r => r.name),
+      triggeredRules: triggered.map((r) => r.name),
       ip: context.ip,
       email: context.email
     }
   });
 
+  // Fire-and-forget alerting
   if (level === "HIGH") {
-    await processAlert({
+    processAlert({
       action: "ALERT_RISK_SCORE_HIGH",
       metadata: {
         score,
         email: context.email,
         ip: context.ip,
-        triggeredRules: triggered.map(r => r.name)
+        triggeredRules: triggered.map((r) => r.name)
       }
+    }).catch((err) => {
+      console.error("Failed to send risk alert:", err);
     });
   }
 

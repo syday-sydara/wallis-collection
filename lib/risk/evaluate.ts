@@ -1,16 +1,26 @@
 // lib/risk/evaluate.ts
-
 import type { RuleCondition, RiskContext } from "./types";
 import { logEvent } from "@/lib/logger";
 
-export function evaluateRule(condition: RuleCondition, context: RiskContext): boolean {
+const MAX_DEPTH = 10;
+
+export function evaluateRule(
+  condition: RuleCondition,
+  context: RiskContext,
+  depth = 0
+): boolean {
+  if (depth > MAX_DEPTH) {
+    logEvent("risk_rule_recursion_limit", { condition });
+    return false;
+  }
+
   const c = condition;
 
-  // Optional NOT operator
+  // NOT operator
   if ("not" in c && c.not) {
     const clone = { ...c };
     delete clone.not;
-    return !evaluateRule(clone as RuleCondition, context);
+    return !evaluateRule(clone as RuleCondition, context, depth + 1);
   }
 
   switch (c.type) {
@@ -23,14 +33,22 @@ export function evaluateRule(condition: RuleCondition, context: RiskContext): bo
     case "numeric_threshold": {
       const metricValue = context[c.metric];
 
-      if (typeof metricValue !== "number") return false;
+      if (typeof metricValue !== "number") {
+        logEvent("risk_invalid_metric", {
+          metric: c.metric,
+          value: metricValue
+        });
+        return false;
+      }
 
       switch (c.operator) {
         case ">": return metricValue > c.value;
         case "<": return metricValue < c.value;
         case ">=": return metricValue >= c.value;
         case "<=": return metricValue <= c.value;
-        default: return false;
+        default:
+          logEvent("risk_invalid_operator", { operator: c.operator });
+          return false;
       }
     }
 
@@ -49,12 +67,15 @@ export function evaluateRule(condition: RuleCondition, context: RiskContext): bo
       return c.list.includes(prefix);
     }
 
-    // Compound rules
     case "and":
-      return c.conditions.every(cond => evaluateRule(cond, context));
+      return c.conditions.every(cond =>
+        evaluateRule(cond, context, depth + 1)
+      );
 
     case "or":
-      return c.conditions.some(cond => evaluateRule(cond, context));
+      return c.conditions.some(cond =>
+        evaluateRule(cond, context, depth + 1)
+      );
 
     default:
       logEvent("risk_unknown_rule_type", { type: c.type });

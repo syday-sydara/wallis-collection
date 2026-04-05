@@ -126,3 +126,29 @@
   --transition-medium: 180ms var(--ease-standard);
   --transition-slow: 260ms var(--ease-emphasized);
 }
+
+/* Map CSS variables to Tailwind utilities */
+.bg-surface        { background-color: rgb(var(--surface)); }
+.bg-surface-muted  { background-color: rgb(var(--surface-muted)); }
+.bg-surface-card   { background-color: rgb(var(--surface-card)); }
+
+.text-text         { color: rgb(var(--text)); }
+.text-text-muted   { color: rgb(var(--text-muted)); }
+
+.border-border     { border-color: rgb(var(--border)); }
+
+.bg-primary        { background-color: rgb(var(--color-primary)); }
+.bg-primary-hover  { background-color: rgb(var(--color-primary-hover)); }
+.bg-primary-active { background-color: rgb(var(--color-primary-active)); }
+.text-primary-foreground { color: rgb(var(--color-primary-foreground)); }
+
+.bg-success        { background-color: rgb(var(--color-success)); }
+.text-success-foreground { color: rgb(var(--color-success-foreground)); }
+
+.bg-danger         { background-color: rgb(var(--color-danger)); }
+.text-danger-foreground { color: rgb(var(--color-danger-foreground)); }
+
+.bg-warning        { background-color: rgb(var(--color-warning)); }
+.text-warning-foreground { color: rgb(var(--color-warning-foreground)); }
+
+.bg-skeleton       { background-color: rgb(var(--skeleton)); }

@@ -26,6 +26,9 @@ const config: Config = {
     },
 
     extend: {
+      /* -------------------------------------------------- */
+      /* Colors mapped to your CSS variables */
+      /* -------------------------------------------------- */
       colors: {
         surface: {
           DEFAULT: "rgb(var(--surface) / <alpha-value>)",
@@ -44,28 +47,41 @@ const config: Config = {
           DEFAULT: "rgb(var(--color-primary) / <alpha-value>)",
           hover: "rgb(var(--color-primary-hover) / <alpha-value>)",
           active: "rgb(var(--color-primary-active) / <alpha-value>)",
-          foreground: "#ffffff",
+          foreground: "rgb(var(--color-primary-foreground) / <alpha-value>)",
         },
 
         success: {
           DEFAULT: "rgb(var(--color-success) / <alpha-value>)",
-          foreground: "#ffffff",
+          hover: "rgb(var(--color-success-hover) / <alpha-value>)",
+          active: "rgb(var(--color-success-active) / <alpha-value>)",
+          foreground: "rgb(var(--color-success-foreground) / <alpha-value>)",
         },
 
         danger: {
           DEFAULT: "rgb(var(--color-danger) / <alpha-value>)",
-          foreground: "#ffffff",
+          hover: "rgb(var(--color-danger-hover) / <alpha-value>)",
+          active: "rgb(var(--color-danger-active) / <alpha-value>)",
+          foreground: "rgb(var(--color-danger-foreground) / <alpha-value>)",
         },
 
         warning: {
           DEFAULT: "rgb(var(--color-warning) / <alpha-value>)",
-          foreground: "#111111",
+          hover: "rgb(var(--color-warning-hover) / <alpha-value>)",
+          active: "rgb(var(--color-warning-active) / <alpha-value>)",
+          foreground: "rgb(var(--color-warning-foreground) / <alpha-value>)",
+        },
+
+        disabled: {
+          DEFAULT: "rgb(var(--color-disabled) / <alpha-value>)",
+          foreground: "rgb(var(--color-disabled-foreground) / <alpha-value>)",
         },
 
         skeleton: "rgb(var(--skeleton) / <alpha-value>)",
-        disabled: "rgb(var(--color-disabled) / <alpha-value>)",
       },
 
+      /* -------------------------------------------------- */
+      /* Typography */
+      /* -------------------------------------------------- */
       fontFamily: {
         sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
       },
@@ -79,6 +95,9 @@ const config: Config = {
         "2xs": ["0.7rem", { lineHeight: "1rem" }],
       },
 
+      /* -------------------------------------------------- */
+      /* Radii, Shadows, Motion */
+      /* -------------------------------------------------- */
       borderRadius: {
         sm: "var(--radius-sm)",
         md: "var(--radius-md)",

@@ -10,63 +10,92 @@ type ResponseData<T> = {
 type ResponseError = {
   success: false;
   error: string;
+  code?: string;
   issues?: unknown;
 };
 
-/**
- * 200 OK — Successful response
- */
+/* -------------------------------------------------- */
+/* Base JSON helper */
+/* -------------------------------------------------- */
+function json<T>(body: T, init?: ResponseInit) {
+  return NextResponse.json(body, init);
+}
+
+/* -------------------------------------------------- */
+/* Success responses */
+/* -------------------------------------------------- */
 export function ok<T>(data: T, init?: ResponseInit) {
-  return NextResponse.json<ResponseData<T>>(
-    { success: true, data },
-    { status: 200, ...init }
-  );
+  return json<ResponseData<T>>({ success: true, data }, { status: 200, ...init });
 }
 
-/**
- * 400 Bad Request — Validation or client error
- */
-export function badRequest(message: string, issues?: unknown) {
-  return NextResponse.json<ResponseError>(
-    { success: false, error: message, issues },
-    { status: 400 }
-  );
+export function created<T>(data: T, init?: ResponseInit) {
+  return json<ResponseData<T>>({ success: true, data }, { status: 201, ...init });
 }
 
-/**
- * 404 Not Found — Resource missing
- */
-export function notFound(message = "Resource not found") {
-  return NextResponse.json<ResponseError>(
-    { success: false, error: message },
-    { status: 404 }
-  );
+export function noContent(init?: ResponseInit) {
+  return new NextResponse(null, { status: 204, ...init });
 }
 
-/**
- * 429 Too Many Requests — Rate limit exceeded
- */
-export function tooManyRequests(message = "Too many requests") {
-  return NextResponse.json<ResponseError>(
-    { success: false, error: message },
-    { status: 429 }
-  );
+/* -------------------------------------------------- */
+/* Client / validation errors */
+/* -------------------------------------------------- */
+export function badRequest(message: string, issues?: unknown, code?: string, init?: ResponseInit) {
+  return json<ResponseError>({ success: false, error: message, issues, code }, { status: 400, ...init });
 }
 
-/**
- * 500 Internal Server Error — Logs to Sentry
- */
-export function serverError(
-  message = "Something went wrong",
-  err?: unknown
+export function unprocessable(message = "Validation failed", issues?: unknown, code?: string, init?: ResponseInit) {
+  return json<ResponseError>({ success: false, error: message, issues, code }, { status: 422, ...init });
+}
+
+export function unauthorized(message = "Unauthorized", code?: string, init?: ResponseInit) {
+  return json<ResponseError>({ success: false, error: message, code }, { status: 401, ...init });
+}
+
+export function forbidden(message = "Forbidden", code?: string, init?: ResponseInit) {
+  return json<ResponseError>({ success: false, error: message, code }, { status: 403, ...init });
+}
+
+export function notFound(message = "Resource not found", code?: string, init?: ResponseInit) {
+  return json<ResponseError>({ success: false, error: message, code }, { status: 404, ...init });
+}
+
+export function tooManyRequests(
+  message = "Too many requests",
+  code?: string,
+  retryAfter?: number,
+  init?: ResponseInit
 ) {
+  return json<ResponseError>(
+    { success: false, error: message, code },
+    {
+      status: 429,
+      ...init,
+      headers: {
+        ...(init?.headers ?? {}),
+        ...(retryAfter ? { "Retry-After": retryAfter.toString() } : {}),
+      },
+    }
+  );
+}
+
+/* -------------------------------------------------- */
+/* Server error + logging */
+/* -------------------------------------------------- */
+export function serverError(message = "Something went wrong", err?: unknown, code?: string, init?: ResponseInit) {
   if (err) {
-    Sentry.captureException(err);
+    Sentry.captureException(err, {
+      tags: { api: true },
+      extra: { message },
+    });
     console.error("Server error:", err);
   }
 
-  return NextResponse.json<ResponseError>(
-    { success: false, error: message },
-    { status: 500 }
-  );
+  return json<ResponseError>({ success: false, error: message, code }, { status: 500, ...init });
+}
+
+/* -------------------------------------------------- */
+/* Redirect helper */
+/* -------------------------------------------------- */
+export function redirectResponse(url: string, status: 302) {
+  return NextResponse.redirect(url, status);
 }
