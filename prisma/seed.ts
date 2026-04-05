@@ -1,5 +1,12 @@
-// prisma/seed.ts
-import { PrismaClient, UserRole, Currency, PaymentMethod, OrderStatus, ShippingType } from "@prisma/client";
+import {
+  PrismaClient,
+  UserRole,
+  Currency,
+  PaymentMethod,
+  OrderStatus,
+  ShippingType,
+  PaymentStatus,
+} from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -9,14 +16,16 @@ async function main() {
   // ---------------------------
   // Clear existing data
   // ---------------------------
-  await prisma.payment.deleteMany({});
-  await prisma.orderItem.deleteMany({});
-  await prisma.order.deleteMany({});
-  await prisma.stockLog.deleteMany({});
-  await prisma.productVariant.deleteMany({});
-  await prisma.productImage.deleteMany({});
-  await prisma.product.deleteMany({});
-  await prisma.user.deleteMany({});
+  await prisma.payment.deleteMany();
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.stockLog.deleteMany();
+  await prisma.productVariant.deleteMany();
+  await prisma.productImage.deleteMany();
+  await prisma.product.deleteMany();
+  await prisma.category.deleteMany();
+  await prisma.user.deleteMany();
+
   console.log("🧹 Cleared old data");
 
   // ---------------------------
@@ -30,7 +39,28 @@ async function main() {
   for (const user of users) {
     await prisma.user.create({ data: user });
   }
+
   console.log("✅ Users seeded");
+
+  // ---------------------------
+  // Categories
+  // ---------------------------
+  const categories = await prisma.category.createMany({
+    data: [
+      { name: "Fabrics", slug: "fabrics" },
+      { name: "Abayas", slug: "abayas" },
+    ],
+  });
+
+  console.log("✅ Categories seeded");
+
+  const fabricsCategory = await prisma.category.findUnique({
+    where: { slug: "fabrics" },
+  });
+
+  const abayasCategory = await prisma.category.findUnique({
+    where: { slug: "abayas" },
+  });
 
   // ---------------------------
   // Products + Variants + Images
@@ -41,6 +71,7 @@ async function main() {
       name: "Wax",
       basePrice: 5000,
       description: "High-quality wax for vibrant prints.",
+      category: fabricsCategory,
       images: [
         { url: "/images/products/wax1.jpg", alt: "Wax Roll Front" },
         { url: "/images/products/wax2.jpg", alt: "Wax Roll Back" },
@@ -55,9 +86,8 @@ async function main() {
       name: "Super Wax",
       basePrice: 12000,
       description: "Premium super wax for exceptional prints.",
-      images: [
-        { url: "/images/products/superwax1.jpg", alt: "Super Wax Front" },
-      ],
+      category: fabricsCategory,
+      images: [{ url: "/images/products/superwax1.jpg", alt: "Super Wax Front" }],
       variants: [
         { name: "Single Pack", sku: "SUPERWAX-1", price: 12000, stock: 30 },
         { name: "Pack of 3", sku: "SUPERWAX-3", price: 35000, stock: 20 },
@@ -68,9 +98,8 @@ async function main() {
       name: "Hollands",
       basePrice: 15000,
       description: "Authentic Hollands fabric.",
-      images: [
-        { url: "/images/products/hollands1.jpg", alt: "Hollands Front" },
-      ],
+      category: fabricsCategory,
+      images: [{ url: "/images/products/hollands1.jpg", alt: "Hollands Front" }],
       variants: [
         { name: "6 Yards", sku: "HOLLANDS-6", price: 15000, stock: 40 },
         { name: "12 Yards", sku: "HOLLANDS-12", price: 28000, stock: 25 },
@@ -81,6 +110,7 @@ async function main() {
       name: "Abayas",
       basePrice: 20000,
       description: "Elegant abayas for every occasion.",
+      category: abayasCategory,
       images: [
         { url: "/images/products/abayas1.jpg", alt: "Abaya Black Front" },
         { url: "/images/products/abayas2.jpg", alt: "Abaya Black Back" },
@@ -95,20 +125,32 @@ async function main() {
   const allVariants: { id: string; stock: number }[] = [];
 
   for (const product of products) {
-    const createdProduct = await prisma.product.create({
+    const created = await prisma.product.create({
       data: {
         name: product.name,
         slug: product.slug,
         basePrice: product.basePrice,
         description: product.description,
+        isPublished: true,
+        categories: {
+          connect: { id: product.category!.id },
+        },
         images: { create: product.images },
-        variants: { create: product.variants.map(v => ({ ...v, reservedStock: 0 })) },
+        variants: {
+          create: product.variants.map((v) => ({
+            ...v,
+            reservedStock: 0,
+          })),
+        },
       },
       include: { variants: true },
     });
 
-    createdProduct.variants.forEach(v => allVariants.push({ id: v.id, stock: v.stock }));
+    created.variants.forEach((v) =>
+      allVariants.push({ id: v.id, stock: v.stock })
+    );
   }
+
   console.log("✅ Products seeded");
 
   // ---------------------------
@@ -123,17 +165,26 @@ async function main() {
       },
     });
   }
+
   console.log("✅ Stock logs seeded");
 
   // ---------------------------
-  // Sample Orders
+  // Sample Order
   // ---------------------------
-  const alice = await prisma.user.findUnique({ where: { email: "alice@example.com" } });
-  const waxVariant = await prisma.productVariant.findUnique({ where: { sku: "WAX-SMALL" } });
-  const abayaVariant = await prisma.productVariant.findUnique({ where: { sku: "ABAYA-M-BLACK" } });
+  const alice = await prisma.user.findUnique({
+    where: { email: "alice@example.com" },
+  });
+
+  const waxVariant = await prisma.productVariant.findUnique({
+    where: { sku: "WAX-SMALL" },
+  });
+
+  const abayaVariant = await prisma.productVariant.findUnique({
+    where: { sku: "ABAYA-M-BLACK" },
+  });
 
   if (alice && waxVariant && abayaVariant) {
-    const uniqueReference = `TEST-${Date.now()}`; // ✅ unique payment reference
+    const reference = `TEST-${Date.now()}`;
 
     await prisma.order.create({
       data: {
@@ -147,28 +198,53 @@ async function main() {
         paymentMethod: PaymentMethod.TRANSFER,
         orderStatus: OrderStatus.CREATED,
         shippingType: ShippingType.STANDARD,
-        shippingAddress: { line1: "123 Lagos Street", city: "Lagos", state: "Lagos", country: "Nigeria" },
+        shippingAddress: {
+          line1: "123 Lagos Street",
+          city: "Lagos",
+          state: "Lagos",
+          country: "Nigeria",
+        },
         cartSnapshot: {
           items: [
-            { variantId: waxVariant.id, name: waxVariant.name, quantity: 1, unitPrice: waxVariant.price },
-            { variantId: abayaVariant.id, name: abayaVariant.name, quantity: 1, unitPrice: abayaVariant.price },
+            {
+              variantId: waxVariant.id,
+              name: waxVariant.name,
+              quantity: 1,
+              unitPrice: waxVariant.price,
+            },
+            {
+              variantId: abayaVariant.id,
+              name: abayaVariant.name,
+              quantity: 1,
+              unitPrice: abayaVariant.price,
+            },
           ],
         },
         userId: alice.id,
         items: {
           create: [
-            { productId: waxVariant.productId, variantId: waxVariant.id, name: waxVariant.name, attributes: {}, quantity: 1, unitPrice: waxVariant.price },
-            { productId: abayaVariant.productId, variantId: abayaVariant.id, name: abayaVariant.name, attributes: {}, quantity: 1, unitPrice: abayaVariant.price },
+            {
+              variantId: waxVariant.id,
+              name: waxVariant.name,
+              quantity: 1,
+              unitPrice: waxVariant.price,
+            },
+            {
+              variantId: abayaVariant.id,
+              name: abayaVariant.name,
+              quantity: 1,
+              unitPrice: abayaVariant.price,
+            },
           ],
         },
         payments: {
           create: [
             {
               provider: "Bank Transfer",
-              reference: uniqueReference,
+              reference,
               amount: waxVariant.price + abayaVariant.price + 2000,
               currency: Currency.NGN,
-              status: "INITIATED",
+              status: PaymentStatus.PENDING,
               raw: {},
             },
           ],
@@ -176,8 +252,8 @@ async function main() {
       },
     });
   }
-  console.log("✅ Sample orders seeded");
 
+  console.log("✅ Sample order seeded");
   console.log("🌱 Seed completed successfully!");
 }
 
