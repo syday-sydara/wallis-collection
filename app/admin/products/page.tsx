@@ -1,122 +1,138 @@
-// app/admin/products/page.tsx
-import Link from "next/link";
-import { adminListProductsPaginated } from "@/lib/catalog/admin";
+"use client";
 
-export default async function AdminProductsPage({
-  searchParams
-}: {
-  searchParams: { cursor?: string };
-}) {
-  const { items, nextCursor } = await adminListProductsPaginated({
-    cursor: searchParams?.cursor
-  });
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { createProduct } from "@/app/admin/products/actions";  // Now it's correctly imported
+
+import { AdminField } from "@/components/admin/ui/AdminField";
+import { AdminInput } from "@/components/admin/ui/AdminInput";
+import { AdminTextarea } from "@/components/admin/ui/AdminTextarea";
+import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { AdminMessage } from "@/components/admin/ui/AdminMessage"; // Correct import
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export default function NewProductPage() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState("");
+  const [basePrice, setBasePrice] = useState("");
+  const [image, setImage] = useState<File | null>(null);
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [isPending, startTransition] = useTransition();
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  async function onSubmit(formData: FormData) {
+    startTransition(async () => {
+      const result = await createProduct(formData);
+
+      if (!result.ok) {
+        setErrors(result.errors ?? {});
+        return;
+      }
+
+      setSuccessMessage("Product created successfully!");
+      router.push(`/admin/products/${result.id}`);
+    });
+  }
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files) {
+      setImage(e.target.files[0]);
+    }
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-text tracking-tight">
-          Products
-        </h2>
+    <div className="max-w-xl space-y-6">
+      <h2 className="text-lg font-semibold text-text tracking-tight">New Product</h2>
 
-        <Link
-          href="/admin/products/new"
-          className="rounded-md bg-primary px-4 py-2 text-xs font-medium 
-                     text-primary-foreground shadow-sm hover:bg-primary-hover 
-                     active:bg-primary-active transition-all"
-        >
-          New product
-        </Link>
-      </div>
-
-      {/* Table */}
-      <div className="overflow-hidden rounded-lg border border-border bg-surface-card shadow-card">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-border bg-surface-muted text-xs uppercase text-text-muted">
-            <tr>
-              <th className="py-3 px-4">Name</th>
-              <th className="px-4">Price</th>
-              <th className="px-4">Stock</th>
-              <th className="px-4">Status</th>
-              <th className="px-4">Updated</th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-border">
-            {items.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-center py-6 text-sm text-text-muted">
-                  No products found.
-                </td>
-              </tr>
-            ) : (
-              items.map((p) => (
-                <tr
-                  key={p.id}
-                  className="hover:bg-surface-muted/50 transition-colors"
-                >
-                  {/* Name + slug */}
-                  <td className="py-3 px-4">
-                    <Link
-                      href={`/admin/products/${p.id}`}
-                      className="font-medium text-text hover:underline"
-                    >
-                      {p.name}
-                    </Link>
-                    <div className="text-xs text-text-muted">{p.slug}</div>
-                  </td>
-
-                  {/* Price */}
-                  <td className="px-4">
-                    {p.basePrice != null ? (
-                      <>₦{(p.basePrice / 100).toLocaleString("en-NG")}</>
-                    ) : (
-                      <span className="text-xs text-text-muted">—</span>
-                    )}
-                  </td>
-
-                  {/* Stock */}
-                  <td className="px-4">{p.stock}</td>
-
-                  {/* Status */}
-                  <td className="px-4">
-                    {p.isArchived ? (
-                      <span className="rounded-md bg-danger px-2 py-0.5 text-xs text-danger-foreground">
-                        Archived
-                      </span>
-                    ) : (
-                      <span className="rounded-md bg-success px-2 py-0.5 text-xs text-success-foreground">
-                        Active
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Updated */}
-                  <td className="px-4 text-xs text-text-muted">
-                    {new Date(p.updatedAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric"
-                    })}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      {nextCursor && (
-        <div className="pt-4">
-          <Link
-            href={`/admin/products?cursor=${nextCursor}`}
-            className="text-sm text-text-muted underline hover:text-text"
-          >
-            Load more
-          </Link>
-        </div>
+      {/* Success Message */}
+      {successMessage && (
+        <AdminMessage type="success">{successMessage}</AdminMessage>
       )}
+
+      <form
+        action={onSubmit}
+        method="POST"
+        encType="multipart/form-data"
+        className="space-y-4 text-sm"
+      >
+        {/* Product Name */}
+        <AdminField label="Name" error={errors.name?.[0]}>
+          <AdminInput
+            name="name"
+            required
+            value={name}
+            aria-invalid={!!errors.name}
+            onChange={(e) => {
+              const v = e.target.value;
+              setName(v);
+              if (!slug) setSlug(slugify(v));
+            }}
+          />
+        </AdminField>
+
+        {/* Slug */}
+        <AdminField label="Slug" error={errors.slug?.[0]}>
+          <AdminInput
+            name="slug"
+            required
+            value={slug}
+            aria-invalid={!!errors.slug}
+            onChange={(e) => setSlug(slugify(e.target.value))}
+          />
+        </AdminField>
+
+        {/* Description */}
+        <AdminField label="Description" error={errors.description?.[0]}>
+          <AdminTextarea
+            name="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+          />
+        </AdminField>
+
+        {/* Base Price */}
+        <AdminField label="Base Price (Kobo)" error={errors.basePrice?.[0]}>
+          <AdminInput
+            name="basePrice"
+            type="number"
+            required
+            value={basePrice}
+            aria-invalid={!!errors.basePrice}
+            onChange={(e) => setBasePrice(e.target.value)}
+          />
+        </AdminField>
+
+        {/* Product Image */}
+        <AdminField label="Product Image" error={errors.image?.[0]}>
+          <input
+            type="file"
+            name="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="block w-full text-sm"
+          />
+        </AdminField>
+
+        {/* Display form errors */}
+        {errors._form && (
+          <p className="text-xs text-danger-foreground">{errors._form[0]}</p>
+        )}
+
+        {/* Submit Button */}
+        <AdminButton type="submit" disabled={isPending}>
+          {isPending ? "Saving…" : "Create Product"}
+        </AdminButton>
+      </form>
     </div>
   );
 }

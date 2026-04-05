@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { adminGetProduct } from "@/lib/catalog/admin";
-
+import { adminGetProduct } from "@/lib/products/admin";
+ 
 import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
 import { AdminSection } from "@/components/admin/ui/AdminSection";
 import { AdminCard } from "@/components/admin/ui/AdminCard";

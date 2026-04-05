@@ -2,7 +2,7 @@
 
 import { NextRequest } from "next/server";
 import { ok, badRequest, tooManyRequests, serverError } from "@/lib/api/response";
-import { getProducts } from "@/lib/catalog/service";
+import { getProducts } from "@/lib/products/service";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 
 const MAX_LIMIT = 50;

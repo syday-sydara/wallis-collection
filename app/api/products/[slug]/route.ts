@@ -1,7 +1,7 @@
 // app/api/products/[slug]/route.ts
 import { NextRequest } from "next/server";
 import { ok, badRequest, notFound, tooManyRequests, serverError } from "@/lib/api/response";
-import { getProductDetailWithRecommendations } from "@/lib/catalog/service";
+import { getProductDetailWithRecommendations } from "@/lib/products/service";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 import { logEvent } from "@/lib/logger";
 import { startTimer } from "@/lib/metrics";
