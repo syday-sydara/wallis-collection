@@ -1,10 +1,3 @@
-export * from "./getProducts";
-export * from "./listProducts";
-export * from "./updateProduct";
-export * from "./createVariant";
-export * from "./updateVariant";
-export * from "./deleteVariant";
-export * from "./addImage";
-export * from "./deleteImage";
-export * from "./reorderImages";
-export * from "./inventory";
+// lib/products/admin/index.ts
+export * from "./admin-catalog-service";
+export * from "./types";

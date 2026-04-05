@@ -8,36 +8,39 @@ import { startTimer } from "@/lib/metrics";
 
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
   const stopTimer = startTimer("api_products_slug_ms");
-  const slug = params.slug;
-
-  if (!slug || slug.length > 200) {
-    stopTimer();
-    return badRequest("Invalid slug");
-  }
-
-  // --- Rate Limit ---
-  const forwarded = req.headers.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0].trim() || req.ip || "anonymous";
-  const { allowed, retryAfter } = checkRateLimit(ip);
-  if (!allowed) {
-    logEvent("rate_limited", { ip, slug }, "warn");
-    stopTimer();
-    return tooManyRequests(`Rate limit exceeded. Try again in ${retryAfter}s`);
-  }
 
   try {
+    const slug = params.slug;
+
+    const slugRegex = /^[a-z0-9-]+$/;
+    if (!slug || slug.length > 200 || !slugRegex.test(slug)) {
+      return badRequest("Invalid slug");
+    }
+
+    // --- Rate Limit ---
+    const ip = req.ip || req.headers.get("x-real-ip") || "anonymous";
+    const { allowed, retryAfter } = checkRateLimit(ip);
+
+    if (!allowed) {
+      logEvent("rate_limited", { ip, slug }, "warn");
+      return tooManyRequests(`Rate limit exceeded. Try again in ${retryAfter}s`);
+    }
+
     const productVM = await getProductDetailWithRecommendations(slug);
+
     if (!productVM) {
       logEvent("product_not_found", { slug, ip }, "warn");
-      stopTimer();
       return notFound("Product not found");
     }
 
-    logEvent("product_viewed", { slug, ip, recommendedCount: productVM.recommended?.length ?? 0 });
-    stopTimer();
-    return ok(productVM);
+    return ok(productVM, {
+      headers: {
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+      },
+    });
   } catch (err) {
-    stopTimer();
     return serverError("Failed to fetch product", err);
+  } finally {
+    stopTimer();
   }
 }
