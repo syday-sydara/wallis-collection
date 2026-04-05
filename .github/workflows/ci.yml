@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Install pnpm FIRST
+      # Install pnpm (this MUST come before Node)
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:

@@ -5,60 +5,98 @@ type Entry<T = any> = {
   response: T;
 };
 
-/**
- * Time-to-live for idempotency entries (default: 10 minutes)
- */
+type InFlight = {
+  promise: Promise<any>;
+  createdAt: number;
+};
+
 const IDEMPOTENCY_TTL_MS = 10 * 60_000;
+const MAX_ENTRIES = 5000;
 
-/**
- * In-memory store for idempotent responses.
- * NOTE: For multi-instance deployments, replace with Redis or a shared store.
- */
-const idempotencyStore = new Map<string, Entry>();
+const store = new Map<string, Entry>();
+const inFlight = new Map<string, InFlight>();
 
-/**
- * Internal helper to check if an entry is expired.
- */
-function isExpired(entry: Entry): boolean {
+function isExpired(entry: { createdAt: number }) {
   return Date.now() - entry.createdAt > IDEMPOTENCY_TTL_MS;
 }
 
-/**
- * Retrieve a cached idempotent response.
- * Automatically cleans up expired entries.
- */
 export function getIdempotentResponse<T = any>(key: string): T | null {
-  const entry = idempotencyStore.get(key);
+  const entry = store.get(key);
   if (!entry) return null;
 
   if (isExpired(entry)) {
-    idempotencyStore.delete(key);
+    store.delete(key);
     return null;
   }
 
   return entry.response as T;
 }
 
-/**
- * Save a response for idempotency.
- * Overwrites any existing entry for the same key.
- */
 export function saveIdempotentResponse<T = any>(key: string, response: T) {
-  idempotencyStore.set(key, {
+  if (store.size >= MAX_ENTRIES) {
+    // Simple eviction: remove oldest entry
+    const oldest = [...store.entries()].sort(
+      (a, b) => a[1].createdAt - b[1].createdAt
+    )[0];
+    if (oldest) store.delete(oldest[0]);
+  }
+
+  store.set(key, {
     createdAt: Date.now(),
     response
   });
 }
 
 /**
- * Optional: Clean up expired entries to prevent memory growth.
- * Useful if your server handles many idempotent operations.
+ * Ensures only one execution happens per key.
+ * If another request is already computing the value, this waits for it.
+ */
+export async function runIdempotent<T>(
+  key: string,
+  fn: () => Promise<T>
+): Promise<T> {
+  // 1. Return cached response if available
+  const cached = getIdempotentResponse<T>(key);
+  if (cached !== null) return cached;
+
+  // 2. If computation is in-flight, wait for it
+  const existing = inFlight.get(key);
+  if (existing && !isExpired(existing)) {
+    return existing.promise as Promise<T>;
+  }
+
+  // 3. Start new computation
+  const promise = fn()
+    .then((result) => {
+      saveIdempotentResponse(key, result);
+      inFlight.delete(key);
+      return result;
+    })
+    .catch((err) => {
+      inFlight.delete(key);
+      throw err;
+    });
+
+  inFlight.set(key, { promise, createdAt: Date.now() });
+
+  return promise;
+}
+
+/**
+ * Optional: periodic cleanup
  */
 export function cleanupIdempotencyStore() {
   const now = Date.now();
-  for (const [key, entry] of idempotencyStore.entries()) {
+
+  for (const [key, entry] of store.entries()) {
     if (now - entry.createdAt > IDEMPOTENCY_TTL_MS) {
-      idempotencyStore.delete(key);
+      store.delete(key);
+    }
+  }
+
+  for (const [key, entry] of inFlight.entries()) {
+    if (now - entry.createdAt > IDEMPOTENCY_TTL_MS) {
+      inFlight.delete(key);
     }
   }
 }
