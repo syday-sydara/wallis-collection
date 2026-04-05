@@ -18,24 +18,32 @@ function redirectToHome(req: NextRequest) {
 export function adminMiddleware(req: NextRequest) {
   const user = parseMiddlewareSession(req);
 
-  // 🚫 No session → redirect to login
-  if (!user) {
+  // No session → login
+  if (!user || typeof user !== "object" || !user.id) {
     return redirectToLogin(req);
   }
 
-  // 🚫 No permission → redirect to home
+  // Permission check
   const allowed = hasPermission(user, "VIEW_ADMIN");
 
   if (!allowed) {
-    // Optional: fire-and-forget async logging
+    // Extract IP safely
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip =
+      forwarded?.split(",")[0]?.trim().replace(/:\d+$/, "") ||
+      req.ip ||
+      "unknown";
+
+    // Fire-and-forget logging
     void fetch(`${req.nextUrl.origin}/api/_internal/security-log`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type: "ADMIN_ACCESS_DENIED",
-        message: `Denied access to ${req.nextUrl.pathname}`,
+        message: "Denied access to admin route",
+        path: req.nextUrl.pathname.slice(0, 200),
         userId: user.id,
-        ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.ip || "unknown",
+        ip,
         userAgent: req.headers.get("user-agent")?.slice(0, 300) ?? "unknown",
         timestamp: Date.now(),
       }),

@@ -68,20 +68,21 @@ export async function sendWhatsAppAlert(payload: {
           errorBody = await res.text();
         }
 
+        const status = res.status;
+
         logEvent(
           "whatsapp_alert_failed",
-          {
-            to,
-            template,
-            severity,
-            status: res.status,
-            error: errorBody,
-            attempt,
-          },
+          { to, template, severity, status, error: errorBody, attempt },
           "warn"
         );
 
-        if (res.status >= 500 && attempt === 1) {
+        // Rate limit
+        if (status === 429) {
+          return { ok: false, error: "rate_limited" };
+        }
+
+        // Retry only on server errors
+        if (status >= 500 && attempt === 1) {
           await new Promise((r) => setTimeout(r, 300 * attempt));
           continue;
         }
@@ -96,13 +97,7 @@ export async function sendWhatsAppAlert(payload: {
 
       logEvent(
         "whatsapp_alert_error",
-        {
-          to,
-          template,
-          severity,
-          message: err?.message,
-          attempt,
-        },
+        { to, template, severity, message: err?.message, attempt },
         "error"
       );
 

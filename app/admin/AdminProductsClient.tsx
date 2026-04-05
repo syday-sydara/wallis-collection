@@ -23,19 +23,22 @@ interface AdminProductsClientProps {
 }
 
 export default function AdminProductsClient({ initialData }: AdminProductsClientProps) {
-  const [items, setItems] = useState<Product[]>(initialData.items);
-  const [nextCursor, setNextCursor] = useState<string | undefined>(initialData.nextCursor);
+  const [items, setItems] = useState(initialData.items);
+  const [nextCursor, setNextCursor] = useState(initialData.nextCursor);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function loadMore() {
-    if (!nextCursor) return;
+    if (!nextCursor || loading) return;
 
     setLoading(true);
     setError(null);
 
     try {
       const res = await fetch(`/api/admin/products?cursor=${nextCursor}`);
+
+      if (!res.ok) throw new Error("Request failed");
+
       const data: PaginatedProducts = await res.json();
 
       if (!data || !Array.isArray(data.items)) {
@@ -60,7 +63,7 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
         <Link
           href="/admin/products/new"
           className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground
-                    shadow-sm hover:bg-primary-hover active:bg-primary-active transition-all"
+                     shadow-sm hover:bg-primary-hover active:bg-primary-active transition-all"
         >
           New product
         </Link>
@@ -80,7 +83,7 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
 
       {/* Table */}
       <div className="overflow-hidden rounded-lg border border-border bg-surface-card shadow-sm">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-sm" aria-busy={loading}>
           <thead className="border-b border-border bg-surface-muted text-xs uppercase text-text-muted">
             <tr>
               <th className="py-3 px-4">Name</th>
@@ -93,7 +96,10 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
 
           <tbody className="divide-y divide-border">
             {items.map((p) => (
-              <tr key={p.id} className="hover:bg-surface-muted/50 transition-colors cursor-pointer">
+              <tr
+                key={p.id}
+                className="hover:bg-surface-muted/50 transition-colors cursor-pointer"
+              >
                 <td className="py-3 px-4">
                   <Link href={`/admin/products/${p.id}`} className="font-medium text-text hover:underline">
                     {p.name}

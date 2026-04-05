@@ -13,10 +13,13 @@ export function RecentMovements({ movements }) {
             <span className="font-medium">{m.reason}</span>
 
             <span
-              className={
-                m.change > 0 ? "text-green-600 font-mono" : "text-red-600 font-mono"
-              }
+              role="text"
               aria-label={`Stock change: ${m.change}`}
+              className={`font-mono px-2 py-0.5 rounded text-xs ${
+                m.change > 0
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
             >
               {m.change > 0 ? "+" : ""}
               {m.change}
@@ -24,7 +27,10 @@ export function RecentMovements({ movements }) {
           </div>
 
           <p className="text-xs text-text-muted mt-1">
-            {new Date(m.createdAt).toLocaleString()}
+            {new Date(m.createdAt).toLocaleString(undefined, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
           </p>
         </AdminCard>
       ))}

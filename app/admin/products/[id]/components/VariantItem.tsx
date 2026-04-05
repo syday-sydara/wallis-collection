@@ -45,6 +45,9 @@ export default function VariantItem({ variant, productId }) {
             name="sku"
             defaultValue={variant.sku}
             disabled={isPending}
+            onBlur={(e) => {
+              e.target.value = e.target.value.trim().toUpperCase();
+            }}
           />
         </AdminField>
 
@@ -53,6 +56,7 @@ export default function VariantItem({ variant, productId }) {
             name="price"
             type="number"
             min={0}
+            step="0.01"
             defaultValue={variant.price}
             disabled={isPending}
           />
