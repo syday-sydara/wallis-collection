@@ -7,24 +7,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { logFraudSignal } from "@/lib/security/fraud";
 
 export async function POST(req: NextRequest) {
-  // --- Get raw body as string for signature verification ---
   const rawBody = await req.text();
   const signature = req.headers.get("monnify-signature") ?? "";
 
+  // --- Signature verification ---
   const valid = verifyMonnifyWebhookSignature(rawBody, signature);
   if (!valid) {
     await logFraudSignal({
       type: "WEBHOOK_SIGNATURE_MISMATCH",
       provider: "monnify",
-      metadata: { body: rawBody }
+      metadata: { truncatedBody: rawBody.slice(0, 500) }
     });
+
+    // Signature mismatch = safe to return 400
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
-  // --- Parse body after verification ---
-  const body = JSON.parse(rawBody);
+  // --- Parse after signature check ---
+  let body: any;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json({ ok: false }, { status: 200 });
+  }
 
-  // --- Extract reference safely ---
+  // --- Extract reference ---
   const reference = extractMonnifyReference(body);
   if (!reference) {
     await logFraudSignal({
@@ -32,16 +39,35 @@ export async function POST(req: NextRequest) {
       provider: "monnify",
       metadata: { body }
     });
-    return NextResponse.json({ ok: false }, { status: 400 });
+
+    // Unknown reference → still return 200 to avoid retries
+    return NextResponse.json({ ok: false }, { status: 200 });
   }
 
-  // --- Process payment ---
-  const result = await processPaymentEvent({
-    provider: "monnify",
-    reference,
-    rawPayload: body,
-    source: "webhook"
-  });
+  // --- Optional: Validate event type ---
+  const eventType = body?.eventType;
+  if (!eventType) {
+    return NextResponse.json({ ok: false }, { status: 200 });
+  }
 
-  return NextResponse.json(result);
+  // --- Process event safely ---
+  try {
+    const result = await processPaymentEvent({
+      provider: "monnify",
+      reference,
+      rawPayload: body,
+      source: "webhook"
+    });
+
+    return NextResponse.json(result, { status: 200 });
+  } catch (err: any) {
+    // Log internally but do NOT return 500 to Monnify
+    await logFraudSignal({
+      type: "WEBHOOK_PROCESSING_ERROR",
+      provider: "monnify",
+      metadata: { message: err?.message }
+    });
+
+    return NextResponse.json({ ok: false }, { status: 200 });
+  }
 }

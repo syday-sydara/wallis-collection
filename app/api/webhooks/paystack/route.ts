@@ -4,24 +4,43 @@ import { NextRequest, NextResponse } from "next/server";
 import { logFraudSignal } from "@/lib/security/fraud";
 
 export async function POST(req: NextRequest) {
-  // --- Get raw body as string for signature verification ---
   const rawBody = await req.text();
   const signature = req.headers.get("x-paystack-signature") ?? "";
 
+  // --- Signature verification ---
   const valid = verifyPaystackWebhookSignature(rawBody, signature);
   if (!valid) {
     await logFraudSignal({
       type: "WEBHOOK_SIGNATURE_MISMATCH",
       provider: "paystack",
-      metadata: { body: rawBody }
+      metadata: { truncatedBody: rawBody.slice(0, 500) }
     });
+
+    // Signature mismatch → return 400 so Paystack drops it
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
-  // --- Parse body after verification ---
-  const body = JSON.parse(rawBody);
+  // --- Parse after signature check ---
+  let body: any;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    // Invalid JSON → still return 200 to avoid retries
+    return NextResponse.json({ ok: false }, { status: 200 });
+  }
 
-  // --- Extract reference safely ---
+  // --- Validate event type ---
+  const event = body?.event;
+  if (!event || typeof event !== "string") {
+    return NextResponse.json({ ok: false }, { status: 200 });
+  }
+
+  // Only process charge events
+  if (!event.startsWith("charge.")) {
+    return NextResponse.json({ ok: true }, { status: 200 });
+  }
+
+  // --- Extract reference ---
   const reference = body?.data?.reference;
   if (!reference) {
     await logFraudSignal({
@@ -29,16 +48,28 @@ export async function POST(req: NextRequest) {
       provider: "paystack",
       metadata: { body }
     });
-    return NextResponse.json({ ok: false }, { status: 400 });
+
+    return NextResponse.json({ ok: false }, { status: 200 });
   }
 
-  // --- Process payment ---
-  const result = await processPaymentEvent({
-    provider: "paystack",
-    reference,
-    rawPayload: body,
-    source: "webhook"
-  });
+  // --- Process event safely ---
+  try {
+    const result = await processPaymentEvent({
+      provider: "paystack",
+      reference,
+      rawPayload: body,
+      source: "webhook"
+    });
 
-  return NextResponse.json(result);
+    return NextResponse.json(result, { status: 200 });
+  } catch (err: any) {
+    await logFraudSignal({
+      type: "WEBHOOK_PROCESSING_ERROR",
+      provider: "paystack",
+      metadata: { message: err?.message }
+    });
+
+    // Do NOT return 500 → Paystack will retry forever
+    return NextResponse.json({ ok: false }, { status: 200 });
+  }
 }
