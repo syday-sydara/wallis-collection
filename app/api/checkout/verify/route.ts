@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid token" }, { status: 403 });
   }
 
-  // FETCH ORDER + PAYMENT
+  // FETCH ORDER
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: { items: true },
@@ -29,12 +29,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
+  // FETCH PAYMENT
   const payment = await prisma.payment.findFirst({
-    where: { orderId, status: "PENDING" },
+    where: { orderId },
   });
 
   if (!payment) {
-    return NextResponse.json({ error: "No pending payment" }, { status: 400 });
+    return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+  }
+
+  // Already processed
+  if (payment.status === "SUCCESS") {
+    return NextResponse.json({ success: true }, { status: 200 });
   }
 
   // VERIFY WITH PAYSTACK
@@ -59,11 +65,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid response" }, { status: 500 });
   }
 
-  // VALIDATIONS
-  if (paystackData.status !== "success") {
-    return NextResponse.json({ success: false });
+  // STILL PROCESSING
+  if (paystackData.status === "ongoing" || paystackData.status === "queued") {
+    return NextResponse.json({ processing: true }, { status: 202 });
   }
 
+  // FAILED
+  if (paystackData.status !== "success") {
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: "FAILED" },
+    });
+
+    return NextResponse.json({ success: false }, { status: 400 });
+  }
+
+  // VALIDATIONS
   if (paystackData.amount !== order.total * 100) {
     return NextResponse.json({ error: "Amount mismatch" }, { status: 400 });
   }
@@ -74,7 +91,6 @@ export async function POST(req: NextRequest) {
 
   // TRANSACTION
   await prisma.$transaction(async (tx) => {
-    // prevent double processing
     const freshPayment = await tx.payment.findUnique({
       where: { id: payment.id },
     });
@@ -83,12 +99,18 @@ export async function POST(req: NextRequest) {
 
     // reduce stock
     for (const item of order.items) {
+      const variant = await tx.productVariant.findUnique({
+        where: { id: item.variantId },
+      });
+
+      if (!variant || variant.stock < item.quantity) {
+        throw new Error("Insufficient stock");
+      }
+
       await tx.productVariant.update({
         where: { id: item.variantId },
         data: {
-          stock: {
-            decrement: item.quantity,
-          },
+          stock: { decrement: item.quantity },
         },
       });
     }
@@ -111,5 +133,5 @@ export async function POST(req: NextRequest) {
     });
   });
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true }, { status: 200 });
 }

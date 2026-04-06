@@ -1,16 +1,17 @@
-// app/(store)/cart/page.tsx
 "use client";
 
 import { useCart } from "@/lib/cart/store";
 import { formatCurrency } from "@/lib/utils";
 import { Button, Card, Input } from "@/components/ui/";
 import EmptyState from "@/components/products/EmptyState";
-import type { CartItem } from "@/lib/cart/types"; // ✅ shared type
+import type { CartItem } from "@/lib/cart/types";
+import { useRouter } from "next/navigation";
 
 export default function CartPage() {
-  const { cart, removeItem, updateQuantity, clearCart } = useCart();
+  const router = useRouter();
+  const { items, subtotal, removeItem, updateQuantity, clear } = useCart();
 
-  if (cart.items.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="py-20 animate-fadeIn">
         <EmptyState
@@ -23,16 +24,16 @@ export default function CartPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 space-y-6 animate-fadeIn pb-safe">
-      {cart.items.map((item: CartItem) => ( // ✅ use shared type
+      {items.map((item: CartItem) => (
         <Card
-          key={item.variantId}
+          key={item.id}
           padding="sm"
           className="flex items-center gap-4 leading-none"
         >
           {item.image && (
             <img
               src={item.image}
-              alt={item.name}
+              alt={item.name || "Product image"}
               className="w-20 h-20 object-cover rounded-md"
             />
           )}
@@ -40,14 +41,14 @@ export default function CartPage() {
           <div className="flex-1 space-y-1">
             <p className="font-medium text-text leading-none">{item.name}</p>
 
-            {item.variantName && (
+            {item.attributes && (
               <p className="text-sm text-text-muted leading-none">
-                {item.variantName}
+                {Object.values(item.attributes).join(" / ")}
               </p>
             )}
 
             <p className="text-sm leading-none">
-              {formatCurrency(item.price)}
+              {formatCurrency(item.unitPrice)}
             </p>
 
             <div className="flex gap-2 items-center mt-2">
@@ -56,16 +57,17 @@ export default function CartPage() {
                 value={item.quantity}
                 min={1}
                 className="w-20 text-sm"
-                onChange={(e) =>
-                  updateQuantity(item.variantId, Number(e.target.value))
-                }
+                onChange={(e) => {
+                  const value = Math.max(1, Number(e.target.value) || 1);
+                  updateQuantity(item.id, value);
+                }}
               />
 
               <Button
                 variant="outline"
                 size="sm"
                 className="min-h-touch active:scale-press"
-                onClick={() => removeItem(item.variantId)}
+                onClick={() => removeItem(item.id)}
               >
                 Remove
               </Button>
@@ -76,19 +78,22 @@ export default function CartPage() {
 
       <div className="flex justify-between items-center mt-6 leading-none">
         <p className="text-lg font-semibold">
-          Total: {formatCurrency(cart.total)}
+          Total: {formatCurrency(subtotal)}
         </p>
 
         <div className="flex gap-2">
           <Button
             variant="outline"
             className="min-h-touch active:scale-press"
-            onClick={clearCart}
+            onClick={clear}
           >
             Clear Cart
           </Button>
 
-          <Button className="min-h-touch active:scale-press">
+          <Button
+            className="min-h-touch active:scale-press"
+            onClick={() => router.push("/checkout")}
+          >
             Checkout
           </Button>
         </div>

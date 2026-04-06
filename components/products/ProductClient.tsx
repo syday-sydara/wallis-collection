@@ -6,17 +6,14 @@ import Gallery from "./Gallery";
 import VariantSelector from "./VariantSelector";
 import AddToCartButton from "../cart/AddToCartButton";
 import ProductCard from "./ProductCard";
-import type { ProductWithRelations, RecommendedProduct } from "@/lib/products/types";
+import type { ProductDetailVM } from "@/lib/products/types";
 
 type Props = {
-  product: ProductWithRelations & { recommended?: RecommendedProduct[] };
+  product: ProductDetailVM;
   slug: string;
 };
 
-function getDisplayPrice(
-  product: typeof Props["product"],
-  selected: typeof product.variants[0] | undefined
-) {
+function getDisplayPrice(product: ProductDetailVM, selected?: ProductDetailVM["variants"][0]) {
   if (selected) return formatCurrency(selected.price);
   if (product.minPrice === product.maxPrice) return formatCurrency(product.minPrice);
   return `${formatCurrency(product.minPrice)} – ${formatCurrency(product.maxPrice)}`;
@@ -82,15 +79,7 @@ export default function ProductClient({ product }: Props) {
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {product.recommended.map((r) => (
-              <ProductCard
-                key={r.id}
-                product={{
-                  ...r,
-                  minPrice: r.basePrice,
-                  maxPrice: r.basePrice,
-                  inStock: true,
-                }}
-              />
+              <ProductCard key={r.id} product={r} />
             ))}
           </div>
         </section>

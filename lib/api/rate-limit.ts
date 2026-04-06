@@ -1,6 +1,6 @@
 // lib/rate-limit.ts
 
-const DEFAULT_WINDOW_MS = 60_000; // 1 minute
+const DEFAULT_WINDOW_MS = 60_000;
 const DEFAULT_MAX = 10;
 
 interface RateLimitEntry {
@@ -9,10 +9,9 @@ interface RateLimitEntry {
 }
 
 const store = new Map<string, RateLimitEntry>();
+const MAX_KEYS = 50_000;
 
-/* -------------------------------------------------- */
-/* Cleanup old entries periodically to prevent memory leaks */
-/* -------------------------------------------------- */
+/* Cleanup */
 export function cleanupRateLimitStore() {
   const now = Date.now();
   for (const [key, entry] of store.entries()) {
@@ -22,9 +21,7 @@ export function cleanupRateLimitStore() {
   }
 }
 
-/* -------------------------------------------------- */
-/* Check rate limit */
-/* -------------------------------------------------- */
+/* Core limiter */
 export function checkRateLimit(
   key: string,
   max = DEFAULT_MAX,
@@ -36,17 +33,24 @@ export function checkRateLimit(
   }
 ) {
   const { namespace, jitter = true, log = false } = options ?? {};
-  const fullKey = namespace ? `${namespace}:${key}` : key;
+
+  // Normalize key
+  const safeKey = key.replace(/\s+/g, "_").toLowerCase();
+  const fullKey = namespace ? `${namespace}:${safeKey}` : safeKey;
 
   const now = Date.now();
   const entry = store.get(fullKey);
 
-  // Apply a small jitter to prevent synchronized bursts
-  const resetAt = entry?.resetAt && entry.resetAt > now
-    ? entry.resetAt
-    : now + windowMs + (jitter ? Math.floor(Math.random() * 200) : 0);
+  // Jitter to avoid synchronized resets
+  const resetAt =
+    entry?.resetAt && entry.resetAt > now
+      ? entry.resetAt
+      : now + windowMs + (jitter ? Math.floor(Math.random() * 200) : 0);
 
+  // New window
   if (!entry || entry.resetAt <= now) {
+    if (store.size > MAX_KEYS) store.clear();
+
     store.set(fullKey, { count: 1, resetAt });
 
     if (log) console.debug(`[RateLimit] ${fullKey} allowed 1/${max}`);
@@ -59,6 +63,7 @@ export function checkRateLimit(
     };
   }
 
+  // Exceeded
   if (entry.count >= max) {
     const retryAfter = Math.max(0, Math.ceil((entry.resetAt - now) / 1000));
 
@@ -72,7 +77,7 @@ export function checkRateLimit(
     };
   }
 
-  // Increment count
+  // Increment
   const updated = { ...entry, count: entry.count + 1 };
   store.set(fullKey, updated);
 
@@ -86,7 +91,5 @@ export function checkRateLimit(
   };
 }
 
-/* -------------------------------------------------- */
-/* Optional: Auto cleanup interval (e.g., 1 min) */
-/* -------------------------------------------------- */
+/* Auto cleanup */
 setInterval(() => cleanupRateLimitStore(), 60_000).unref();

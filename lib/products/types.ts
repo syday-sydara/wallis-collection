@@ -55,7 +55,6 @@ export type ProductWithRelations = {
   slug: string;
   description: string | null;
   basePrice: number | null;
-  stock: number;
   isArchived: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -71,14 +70,8 @@ export type RecommendedProduct = {
   images: ProductImage[];
 };
 
-export type ProductDetailResponse = {
-  product: ProductWithRelations;
-  recommendations: RecommendedProduct[];
-};
-
-export type ProductListResult = {
-  items: ProductWithRelations[];
-  nextCursor: string | null;
+export type ProductClientVM = ProductWithRelations & {
+  recommended: RecommendedProduct[];
 };
 
 export type ProductListParams = {
@@ -88,8 +81,31 @@ export type ProductListParams = {
   includeArchived?: boolean;
   limit?: number;
   cursor?: string;
+  sort?: "newest" | "price-asc" | "price-desc" | "popular";
 };
 
-export type ProductClientVM = ProductWithRelations & {
-  recommended?: RecommendedProduct[];
+export type ProductListResult = {
+  items: ProductWithRelations[];
+  nextCursor: string | null;
+};
+
+export type ProductCardVM = {
+  id: string;
+  name: string;
+  minPrice: number;
+  maxPrice: number;
+  inStock: boolean;
+  images: ProductImage[];
+}
+
+export type ProductDetailVM = {
+  id: string;
+  name: string;
+  description: string | null;
+  images: ProductImage[];
+  variants: ProductVariant[];
+  minPrice: number;
+  maxPrice: number;
+  inStock: boolean;
+  recommended?: ProductCardVM[];
 };

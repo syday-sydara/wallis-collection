@@ -15,16 +15,21 @@ export function toProductCardVM(
   const minPrice = hasVariants
     ? Math.min(...variants.map((v) => v.price))
     : product.basePrice ?? 0;
+
   const maxPrice = hasVariants
     ? Math.max(...variants.map((v) => v.price))
     : product.basePrice ?? 0;
+
+  const inStock = hasVariants
+    ? variants.some((v) => v.stock > 0)
+    : true; // recommended products don't include stock info
 
   return {
     id: product.id,
     name: product.name,
     minPrice,
     maxPrice,
-    inStock: "stock" in product ? product.stock > 0 : true,
+    inStock,
     images: product.images,
   };
 }

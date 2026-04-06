@@ -5,22 +5,12 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 export function ProductCard({ product }) {
-  const {
-    id,
-    name,
-    price,
-    image,
-    isNew,
-    isLimited,
-    isOnSale,
-    salePrice,
-    stock,
-  } = product;
+  const { id, name, minPrice, maxPrice, inStock, images } = product;
 
-  const finalPrice = isOnSale ? salePrice : price;
+  const image = images?.[0]?.url ?? "/placeholder.png";
+  const isRange = minPrice !== maxPrice;
 
   return (
     <Card
@@ -28,27 +18,26 @@ export function ProductCard({ product }) {
       className="overflow-hidden group animate-fadeIn-fast hover:shadow-md transition-shadow"
     >
       {/* Image */}
-      <Link href={`/product/${id}`} aria-label={`View product ${name}`}>
+      <Link href={`/product/${id}`} aria-label={`View product ${name}`} prefetch={false}>
         <div className="relative aspect-square w-full bg-surface-muted overflow-hidden rounded-t-lg">
           <img
             src={image}
             alt={name}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
 
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-1">
-            {isNew && <Badge variant="brand">New</Badge>}
-            {isLimited && <Badge variant="warning">Limited</Badge>}
-            {isOnSale && <Badge variant="danger">Sale</Badge>}
-            {stock === 0 && <Badge variant="danger">Out of Stock</Badge>}
+            {!inStock && <Badge variant="danger">Out of Stock</Badge>}
           </div>
         </div>
       </Link>
 
       {/* Content */}
       <div className="p-4 space-y-2">
-        <Link href={`/product/${id}`} aria-label={`View product ${name}`}>
+        <Link href={`/product/${id}`} aria-label={`View product ${name}`} prefetch={false}>
           <h3 className="font-medium text-base text-text line-clamp-1 leading-none">
             {name}
           </h3>
@@ -56,28 +45,28 @@ export function ProductCard({ product }) {
 
         {/* Price */}
         <div className="flex items-center gap-2 leading-none">
-          <span className="font-semibold text-lg text-text leading-none">
-            ₦{finalPrice.toLocaleString()}
-          </span>
-
-          {isOnSale && (
-            <span className="text-text-muted line-through text-sm leading-none">
-              ₦{price.toLocaleString()}
+          {isRange ? (
+            <span className="font-semibold text-lg text-text leading-none">
+              ₦{minPrice.toLocaleString()} – ₦{maxPrice.toLocaleString()}
+            </span>
+          ) : (
+            <span className="font-semibold text-lg text-text leading-none">
+              ₦{minPrice.toLocaleString()}
             </span>
           )}
         </div>
 
         {/* Add to Cart */}
-        {stock > 0 ? (
+        {inStock ? (
           <AddToCartButton
             productId={id}
             name={name}
-            price={finalPrice}
+            price={minPrice}
             image={image}
             fullWidth
           />
         ) : (
-          <Button disabled fullWidth className="min-h-touch">
+          <Button disabled aria-disabled="true" fullWidth className="min-h-touch">
             Out of Stock
           </Button>
         )}

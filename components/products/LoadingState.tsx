@@ -2,22 +2,27 @@ type LoadingStateProps = {
   title?: string;
   description?: string;
   spinner?: React.ReactNode;
+  className?: string;
 };
 
 export default function LoadingState({
   title = "Loading...",
   description = "Please wait while we fetch the data.",
   spinner,
+  className,
 }: LoadingStateProps) {
   return (
     <div
       role="status"
       aria-live="polite"
       aria-busy="true"
-      className="flex flex-col items-center justify-center py-16 px-4 text-center max-w-md mx-auto animate-fadeIn"
+      className={`flex flex-col items-center justify-center py-16 px-4 text-center max-w-md mx-auto animate-fadeIn ${className ?? ""}`}
     >
       {/* Spinner */}
-      <div className="mb-4 text-text-muted">
+      <div
+        className="mb-4 text-text-muted flex items-center justify-center h-12 w-12"
+        aria-label="Loading"
+      >
         {spinner || (
           <svg
             className="w-10 h-10 animate-spin text-text-muted leading-none"
@@ -46,7 +51,9 @@ export default function LoadingState({
       <p className="text-lg font-semibold text-text">{title}</p>
 
       {/* Description */}
-      <p className="mt-2 text-sm text-text-muted">{description}</p>
+      {description && (
+        <p className="mt-2 text-sm text-text-muted">{description}</p>
+      )}
     </div>
   );
 }

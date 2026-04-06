@@ -19,7 +19,10 @@ export default function EmptyState({
       className="flex flex-col items-center justify-center py-16 text-center max-w-xs mx-auto animate-fadeIn"
     >
       {/* Icon */}
-      <div className="mb-4 text-primary text-4xl leading-none">
+      <div
+        className="mb-4 text-primary text-4xl leading-none"
+        aria-label={title}
+      >
         {icon ?? "📦"}
       </div>
 
@@ -27,9 +30,11 @@ export default function EmptyState({
       <p className="text-lg font-semibold text-text">{title}</p>
 
       {/* Description */}
-      <p className="mt-2 text-sm text-text-muted max-w-prose">
-        {description}
-      </p>
+      {description && (
+        <p className="mt-2 text-sm text-text-muted max-w-prose">
+          {description}
+        </p>
+      )}
 
       {/* Action */}
       {action && <div className="mt-4">{action}</div>}

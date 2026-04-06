@@ -16,10 +16,17 @@ enum UserRole {
   ADMIN
 }
 
+enum UserStatus {
+  ACTIVE
+  DISABLED
+  BANNED
+}
+
 enum PaymentStatus {
   PENDING
   SUCCESS
   FAILED
+  REFUNDED
 }
 
 enum OrderStatus {
@@ -42,6 +49,24 @@ enum ShippingType {
   PICKUP
 }
 
+enum OtpType {
+  LOGIN
+  VERIFY_PHONE
+  RESET_PASSWORD
+  ORDER_CONFIRMATION
+}
+
+enum Currency {
+  NGN
+  USD
+  GBP
+}
+
+enum PaymentProvider {
+  PAYSTACK
+  MONNIFY
+  BANK_TRANSFER
+}
 //////////////////////
 // USER
 //////////////////////
@@ -50,18 +75,40 @@ model User {
   id    String   @id @default(cuid())
   email String   @unique
   name  String?
-  role  UserRole @default(USER)
 
-  passwordHash String?
-  phone        String? @unique
+  role   UserRole   @default(USER)
+  status UserStatus @default(ACTIVE)
+
+  passwordHash    String?
+  phone           String?
+  emailVerifiedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   orders    Order[]
   addresses Address[]
+  sessions  Session[]
+  devices   Device[]
+  auditLogs AuditLog[]
 
   @@index([email])
+  @@index([phone])
+}
+
+//////////////////////
+// CATEGORY
+//////////////////////
+
+model Category {
+  id   String   @id @default(cuid())
+  name String   @unique
+  slug String   @unique
+
+  products Product[] @relation("ProductCategories")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 //////////////////////
@@ -74,15 +121,23 @@ model Product {
   slug        String  @unique
   description String?
 
-  isArchived Boolean   @default(false)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  basePrice Int? // optional base price for admin analytics
+
+  isArchived  Boolean   @default(false)
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   images   ProductImage[]
   variants ProductVariant[]
 
+  categories Category[] @relation("ProductCategories")
+
   @@index([slug])
   @@index([isArchived, createdAt])
+  @@index([isPublished, publishedAt])
 }
 
 model ProductImage {
@@ -102,15 +157,37 @@ model ProductVariant {
 
   name  String
   sku   String @unique
-  price Int
+  price Int // in kobo
 
-  stock Int @default(0)
+  stock         Int @default(0)
+  reservedStock Int @default(0)
+
+  compareAtPrice Int?
+  costPrice     Int?
 
   attributes Json?
 
   orderItems OrderItem[]
+  stockLogs  StockLog[]
 
   @@index([productId])
+}
+
+//////////////////////
+// STOCK LOG
+//////////////////////
+
+model StockLog {
+  id        String   @id @default(cuid())
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  change Int
+  reason String
+
+  createdAt DateTime @default(now())
+
+  @@index([variantId])
 }
 
 //////////////////////
@@ -128,16 +205,26 @@ model Order {
   shippingCost   Int
   discountAmount Int @default(0)
   total          Int
+  refundedAmount Int @default(0)
 
+  currency      Currency @default(NGN)
   paymentMethod PaymentMethod
   orderStatus   OrderStatus @default(CREATED)
 
-  shippingType ShippingType
-
+  shippingType    ShippingType
   shippingAddress Json
 
   deliveryNotes String?
   deliveredAt   DateTime?
+
+  isPaid Boolean @default(false)
+
+  trackingNumber String?
+  carrier        String?
+
+  idempotencyKey String? @unique
+
+  cartSnapshot Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -186,10 +273,17 @@ model Payment {
   reference String @unique
 
   amount Int
+  fee    Int?
 
-  status PaymentStatus
+  currency Currency @default(NGN)
 
-  paidAt DateTime?
+  status PaymentStatus @default(PENDING)
+
+  channel String?
+  raw     Json?
+
+  paidAt    DateTime?
+  settledAt DateTime?
 
   createdAt DateTime @default(now())
 
@@ -213,8 +307,10 @@ model Address {
   line1 String
   line2 String?
 
-  city  String
-  state String
+  city       String
+  state      String
+  lga        String?
+  postalCode String?
 
   country String @default("Nigeria")
 
@@ -233,11 +329,80 @@ model OTP {
   phone String
   code  String
 
+  type OtpType @default(LOGIN)
+
   expiresAt DateTime
   used      Boolean @default(false)
+  attempts  Int     @default(0)
 
   createdAt DateTime @default(now())
 
   @@index([phone])
   @@index([expiresAt])
+}
+
+//////////////////////
+// SESSIONS
+//////////////////////
+
+model Session {
+  id String @id @default(cuid())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+
+  ipAddress  String?
+  userAgent  String?
+  deviceId   String?
+  createdAt  DateTime @default(now())
+  lastActive DateTime @default(now())
+  revokedAt  DateTime?
+
+  riskScore Int @default(0)
+
+  @@index([userId])
+  @@index([deviceId])
+}
+
+//////////////////////
+// DEVICES
+//////////////////////
+
+model Device {
+  id String @id @default(cuid())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+
+  deviceFingerprint String
+  userAgent         String?
+  lastIpAddress     String?
+
+  trusted   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  lastSeen  DateTime @default(now())
+
+  @@unique([userId, deviceFingerprint])
+  @@index([userId])
+}
+
+//////////////////////
+// AUDIT LOG
+//////////////////////
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User? @relation(fields: [userId], references: [id])
+
+  action   String
+  metadata Json?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

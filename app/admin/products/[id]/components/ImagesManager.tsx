@@ -20,6 +20,9 @@ export function ImagesManager({ productId, images }) {
     const from = reordered.findIndex((i) => i.id === draggedId);
     const to = reordered.findIndex((i) => i.id === targetId);
 
+    // Prevent invalid reorder operations
+    if (from === -1 || to === -1 || from === to) return;
+
     const [moved] = reordered.splice(from, 1);
     reordered.splice(to, 0, moved);
 

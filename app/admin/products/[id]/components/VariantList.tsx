@@ -9,6 +9,7 @@ import { SubmitButton } from "@/components/admin/ui/SubmitButton";
 
 export function VariantList({ variants, productId }) {
   const [editing, setEditing] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string[] | undefined>>({});
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -21,26 +22,53 @@ export function VariantList({ variants, productId }) {
             {isEditing ? (
               <form
                 className="space-y-4"
-                action={updateVariant.bind(null, productId, variant.id)}
-                onSubmit={() => setEditing(null)}
+                action={async (formData) => {
+                  setErrors({});
+                  startTransition(async () => {
+                    const result = await updateVariant(productId, variant.id, formData);
+                    if (!result.ok) {
+                      setErrors(result.errors ?? {});
+                    } else {
+                      setEditing(null);
+                    }
+                  });
+                }}
               >
-                <AdminField label="Name">
-                  <AdminInput name="name" defaultValue={variant.name} />
-                </AdminField>
-
-                <AdminField label="SKU">
-                  <AdminInput name="sku" defaultValue={variant.sku} />
-                </AdminField>
-
-                <AdminField label="Price">
+                <AdminField label="Name" error={errors.name?.[0]}>
                   <AdminInput
-                    type="number"
-                    name="price"
-                    step="0.01"
-                    min={0}
-                    defaultValue={variant.price}
+                    name="name"
+                    defaultValue={variant.name}
+                    disabled={isPending}
                   />
                 </AdminField>
+
+                <AdminField label="SKU" error={errors.sku?.[0]}>
+                  <AdminInput
+                    name="sku"
+                    defaultValue={variant.sku}
+                    disabled={isPending}
+                    onBlur={(e) => {
+                      e.target.value = e.target.value.trim().toUpperCase();
+                    }}
+                  />
+                </AdminField>
+
+                <AdminField label="Price" error={errors.price?.[0]}>
+                  <AdminInput
+                    name="price"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    defaultValue={variant.price}
+                    disabled={isPending}
+                  />
+                </AdminField>
+
+                {errors._form && (
+                  <p className="text-danger-foreground text-[11px]">
+                    {errors._form[0]}
+                  </p>
+                )}
 
                 <div className="flex gap-2">
                   <SubmitButton type="submit" size="sm" pendingLabel="Saving…">
@@ -50,6 +78,7 @@ export function VariantList({ variants, productId }) {
                   <button
                     type="button"
                     className="text-xs text-text-muted"
+                    disabled={isPending}
                     onClick={() => setEditing(null)}
                   >
                     Cancel
@@ -69,6 +98,7 @@ export function VariantList({ variants, productId }) {
                 <div className="flex gap-2">
                   <button
                     className="text-xs underline"
+                    disabled={isPending}
                     onClick={(e) => {
                       e.preventDefault();
                       setEditing(variant.id);
@@ -82,6 +112,7 @@ export function VariantList({ variants, productId }) {
                       variant="danger"
                       size="sm"
                       pendingLabel="Deleting…"
+                      disabled={isPending}
                     >
                       Delete
                     </SubmitButton>

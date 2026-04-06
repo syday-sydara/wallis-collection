@@ -19,7 +19,10 @@ export default function ErrorState({
       className="flex flex-col items-center justify-center py-16 px-4 text-center max-w-md mx-auto animate-fadeIn"
     >
       {/* Icon */}
-      <div className="mb-4 text-danger text-4xl leading-none">
+      <div
+        className="mb-4 text-danger text-4xl leading-none"
+        aria-label={title}
+      >
         {icon ?? "⚠️"}
       </div>
 
@@ -27,9 +30,11 @@ export default function ErrorState({
       <p className="text-lg font-semibold text-text">{title}</p>
 
       {/* Description */}
-      <p className="mt-2 text-sm text-text-muted max-w-prose">
-        {description}
-      </p>
+      {description && (
+        <p className="mt-2 text-sm text-text-muted max-w-prose">
+          {description}
+        </p>
+      )}
 
       {/* Optional Action */}
       {action && <div className="mt-4">{action}</div>}

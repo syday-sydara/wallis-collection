@@ -5,6 +5,7 @@ import * as Sentry from "@sentry/nextjs";
 type ResponseData<T> = {
   success: true;
   data: T;
+  meta?: unknown;
 };
 
 type ResponseError = {
@@ -14,18 +15,13 @@ type ResponseError = {
   issues?: unknown;
 };
 
-/* -------------------------------------------------- */
-/* Base JSON helper */
-/* -------------------------------------------------- */
 function json<T>(body: T, init?: ResponseInit) {
   return NextResponse.json(body, init);
 }
 
-/* -------------------------------------------------- */
-/* Success responses */
-/* -------------------------------------------------- */
-export function ok<T>(data: T, init?: ResponseInit) {
-  return json<ResponseData<T>>({ success: true, data }, { status: 200, ...init });
+/* Success */
+export function ok<T>(data: T, meta?: unknown, init?: ResponseInit) {
+  return json<ResponseData<T>>({ success: true, data, meta }, { status: 200, ...init });
 }
 
 export function created<T>(data: T, init?: ResponseInit) {
@@ -36,9 +32,7 @@ export function noContent(init?: ResponseInit) {
   return new NextResponse(null, { status: 204, ...init });
 }
 
-/* -------------------------------------------------- */
-/* Client / validation errors */
-/* -------------------------------------------------- */
+/* Client errors */
 export function badRequest(message: string, issues?: unknown, code?: string, init?: ResponseInit) {
   return json<ResponseError>({ success: false, error: message, issues, code }, { status: 400, ...init });
 }
@@ -59,12 +53,11 @@ export function notFound(message = "Resource not found", code?: string, init?: R
   return json<ResponseError>({ success: false, error: message, code }, { status: 404, ...init });
 }
 
-export function tooManyRequests(
-  message = "Too many requests",
-  code?: string,
-  retryAfter?: number,
-  init?: ResponseInit
-) {
+export function conflict(message = "Conflict", code?: string, init?: ResponseInit) {
+  return json<ResponseError>({ success: false, error: message, code }, { status: 409, ...init });
+}
+
+export function tooManyRequests(message = "Too many requests", code?: string, retryAfter?: number, init?: ResponseInit) {
   return json<ResponseError>(
     { success: false, error: message, code },
     {
@@ -78,9 +71,11 @@ export function tooManyRequests(
   );
 }
 
-/* -------------------------------------------------- */
-/* Server error + logging */
-/* -------------------------------------------------- */
+export function serviceUnavailable(message = "Service unavailable", code?: string, init?: ResponseInit) {
+  return json<ResponseError>({ success: false, error: message, code }, { status: 503, ...init });
+}
+
+/* Server error */
 export function serverError(message = "Something went wrong", err?: unknown, code?: string, init?: ResponseInit) {
   if (err) {
     Sentry.captureException(err, {
@@ -93,9 +88,7 @@ export function serverError(message = "Something went wrong", err?: unknown, cod
   return json<ResponseError>({ success: false, error: message, code }, { status: 500, ...init });
 }
 
-/* -------------------------------------------------- */
-/* Redirect helper */
-/* -------------------------------------------------- */
+/* Redirect */
 export function redirectResponse(url: string, status: 302) {
   return NextResponse.redirect(url, status);
 }

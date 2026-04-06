@@ -5,22 +5,34 @@ export function toProductCardVM(product: ProductWithRelations | RecommendedProdu
   const variants = "variants" in product ? product.variants : [];
   const hasVariants = variants.length > 0;
 
-  const minPrice = hasVariants ? Math.min(...variants.map(v => v.price)) : product.basePrice ?? 0;
-  const maxPrice = hasVariants ? Math.max(...variants.map(v => v.price)) : product.basePrice ?? 0;
+  const minPrice = hasVariants
+    ? Math.min(...variants.map(v => v.price))
+    : product.basePrice ?? 0;
+
+  const maxPrice = hasVariants
+    ? Math.max(...variants.map(v => v.price))
+    : product.basePrice ?? 0;
+
+  const inStock = hasVariants
+    ? variants.some(v => v.stock > 0)
+    : true; // recommended products don't include stock info
 
   return {
     id: product.id,
     name: product.name,
     minPrice,
     maxPrice,
-    inStock: "stock" in product ? product.stock > 0 : true,
+    inStock,
     images: product.images
   };
 }
 
 /** --- Admin product summary --- */
-export function toAdminProductSummary(product: Pick<ProductWithRelations, "id" | "name" | "slug" | "basePrice" | "isArchived" | "variants" | "updatedAt">) {
+export function toAdminProductSummary(product: Pick<ProductWithRelations,
+  "id" | "name" | "slug" | "basePrice" | "isArchived" | "variants" | "updatedAt"
+>) {
   const stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+
   return {
     id: product.id,
     name: product.name,
@@ -36,25 +48,28 @@ export function toAdminProductSummary(product: Pick<ProductWithRelations, "id" |
 export function toAdminProductDetail(product: ProductWithRelations) {
   const stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
 
-  const images = product.images.map((img: ProductImage) => ({
-    id: img.id,
-    url: img.url,
-    alt: img.alt,
-    sortOrder: img.sortOrder
-  }));
-
-  const variants = product.variants.map((v: ProductVariant) => ({
-    id: v.id,
-    name: v.name,
-    sku: v.sku,
-    price: v.price,
-    stock: v.stock
-  }));
-
   return {
-    ...product,
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    description: product.description,
+    basePrice: product.basePrice,
+    isArchived: product.isArchived,
+    createdAt: product.createdAt,
+    updatedAt: product.updatedAt,
     stock,
-    images,
-    variants
+    images: product.images.map(img => ({
+      id: img.id,
+      url: img.url,
+      alt: img.alt,
+      sortOrder: img.sortOrder
+    })),
+    variants: product.variants.map(v => ({
+      id: v.id,
+      name: v.name,
+      sku: v.sku,
+      price: v.price,
+      stock: v.stock
+    }))
   };
 }

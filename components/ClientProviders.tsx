@@ -1,7 +1,7 @@
 "use client";
 
 import { ToastProvider } from "@/components/ui/toast/ToastContext";
-import { CartProvider } from "@/components/cart/useCart";
+import { CartProvider } from "@/lib/cart/store";
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (

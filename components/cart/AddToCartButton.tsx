@@ -6,29 +6,46 @@ import { useCart } from "@/components/cart/useCart";
 
 type Variant = { id: string; price: number; attributes?: Record<string, any> };
 
-type Props = { productId: string; variant?: Variant; disabled?: boolean };
+type Props = {
+  productId: string;
+  name: string;
+  image: string;
+  variant?: Variant;
+  requiresVariant?: boolean;
+  disabled?: boolean;
+};
 
-export default function AddToCartButton({ productId, variant, disabled }: Props) {
+export default function AddToCartButton({
+  productId,
+  name,
+  image,
+  variant,
+  requiresVariant = false,
+  disabled,
+}: Props) {
   const [loading, setLoading] = useState(false);
-  const { addItem } = useCart(); // ✅ add to cart action
+  const { addItem } = useCart();
 
   async function handleClick() {
     if (disabled || loading) return;
-    if (!variant) return console.warn("Variant required");
+
+    if (requiresVariant && !variant) {
+      console.warn("Variant required");
+      return;
+    }
 
     setLoading(true);
 
     addItem({
       id: productId,
-      variantId: variant.id,
-      name: "", // optional — depends on your cart structure
-      image: "",
+      variantId: variant?.id ?? null,
+      name,
+      image,
       quantity: 1,
-      unitPrice: variant.price,
-      attributes: variant.attributes,
+      unitPrice: variant?.price ?? 0,
+      attributes: variant?.attributes,
     });
 
-    // Simulate delay for UX
     setTimeout(() => setLoading(false), 400);
   }
 
@@ -38,6 +55,7 @@ export default function AddToCartButton({ productId, variant, disabled }: Props)
       onClick={handleClick}
       disabled={disabled || loading}
       aria-busy={loading}
+      aria-label={loading ? "Adding to cart" : "Add to cart"}
       className="
         w-full rounded-md bg-primary py-3 font-medium text-primary-foreground
         disabled:opacity-50 disabled:cursor-not-allowed

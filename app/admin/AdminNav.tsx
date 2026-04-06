@@ -8,12 +8,12 @@ import { Package, ShoppingCart, Shield, Webhook } from "lucide-react";
 export function AdminNav() {
   const pathname = usePathname();
 
- const links = [
-  { href: "/admin/products", label: "Products" },
-  { href: "/admin/orders", label: "Orders" },
-  { href: "/admin/security", label: "Security" },
-  { href: "/admin/webhooks", label: "Webhooks" }
-];
+  const links = [
+    { href: "/admin/products", label: "Products", icon: Package },
+    { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
+    { href: "/admin/security", label: "Security", icon: Shield },
+    { href: "/admin/webhooks", label: "Webhooks", icon: Webhook },
+  ];
 
   return (
     <nav
@@ -23,7 +23,9 @@ export function AdminNav() {
     >
       {links.map((link) => {
         const isActive =
-          pathname === link.href || pathname.startsWith(link.href + "/");
+          pathname === link.href ||
+          pathname.startsWith(link.href + "/") ||
+          pathname.startsWith(link.href + "?");
 
         const Icon = link.icon;
 
@@ -34,14 +36,14 @@ export function AdminNav() {
             aria-current={isActive ? "page" : undefined}
             className={clsx(
               "px-3 py-1.5 rounded-md transition-fast active:scale-press flex items-center gap-2",
-              "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--focus-ring))] focus:ring-offset-1",
+              "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
               isActive
                 ? "bg-primary/15 text-text font-semibold shadow-sm relative after:absolute after:left-0 after:right-0 after:-bottom-1 after:h-[2px] after:bg-primary"
                 : "text-text-muted hover:text-text hover:bg-surface-muted"
             )}
           >
-            <Icon className="h-4 w-4" />
-            {link.label}
+            <Icon className="h-4 w-4" aria-hidden="true" />
+            <span>{link.label}</span>
           </Link>
         );
       })}

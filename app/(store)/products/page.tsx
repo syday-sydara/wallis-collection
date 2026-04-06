@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import ProductGrid from "@/components/products/ProductGrid";
 import ProductGridSkeleton from "@/components/products/ProductGridSkeleton";
 import EmptyState from "@/components/products/EmptyState";
 import { Button } from "@/components/ui/Button";
-import { listProducts } from "@/lib/products/storefront/listProducts";
-import type { ProductListParams, ProductListResult, ProductWithRelations } from "@/lib/products/types";
+import { getProducts } from "@/lib/products/service";
+import type {
+  ProductListParams,
+  ProductListResult,
+  ProductCardVM,
+} from "@/lib/products/types";
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<ProductWithRelations[]>([]);
+  const [products, setProducts] = useState<ProductCardVM[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -18,7 +22,8 @@ export default function ProductsPage() {
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
 
-  const params: ProductListParams = {}; // Customize filters as needed
+  // Stable params
+  const params = useMemo<ProductListParams>(() => ({}), []);
 
   // Initial fetch
   useEffect(() => {
@@ -29,7 +34,7 @@ export default function ProductsPage() {
 
     async function fetchProducts() {
       try {
-        const res: ProductListResult = await listProducts(params);
+        const res: ProductListResult = await getProducts(params);
 
         if (requestId !== requestIdRef.current) return;
 
@@ -53,7 +58,7 @@ export default function ProductsPage() {
     const currentCursor = nextCursor;
 
     try {
-      const res: ProductListResult = await listProducts({
+      const res: ProductListResult = await getProducts({
         ...params,
         cursor: currentCursor,
       });
@@ -88,6 +93,7 @@ export default function ProductsPage() {
     };
   }, [loadMore, nextCursor]);
 
+  // UI states
   if (loading) return <ProductGridSkeleton />;
 
   if (error)
@@ -95,9 +101,7 @@ export default function ProductsPage() {
       <EmptyState
         title="Error loading products"
         description="Check your connection and try again."
-        action={
-          <Button onClick={() => location.reload()}>Retry</Button>
-        }
+        action={<Button onClick={() => location.reload()}>Retry</Button>}
       />
     );
 
@@ -109,7 +113,10 @@ export default function ProductsPage() {
       <ProductGrid products={products} />
 
       {nextCursor && (
-        <div ref={loadMoreRef} className="text-center text-sm text-text-muted">
+        <div
+          ref={loadMoreRef}
+          className="text-center text-sm text-text-muted"
+        >
           {loadingMore ? "Loading more products..." : "Scroll down to load more"}
         </div>
       )}

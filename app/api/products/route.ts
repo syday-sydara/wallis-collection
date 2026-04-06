@@ -1,7 +1,11 @@
 // app/api/products/route.ts
-
 import { NextRequest } from "next/server";
-import { ok, badRequest, tooManyRequests, serverError } from "@/lib/api/response";
+import {
+  ok,
+  badRequest,
+  tooManyRequests,
+  serverError,
+} from "@/lib/api/response";
 import { getProducts } from "@/lib/products/service";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 
@@ -16,11 +20,17 @@ const parseNumber = (value: string | null) => {
 export async function GET(req: NextRequest) {
   try {
     // --- Rate Limit ---
-    const ip = req.ip || req.headers.get("x-real-ip") || "unknown";
-    const { allowed, retryAfter } = checkRateLimit(ip);
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      req.ip ||
+      "unknown";
 
+    const { allowed, retryAfter } = checkRateLimit(ip);
     if (!allowed) {
-      return tooManyRequests(`Rate limit exceeded. Retry after ${retryAfter}s`);
+      return tooManyRequests(
+        `Rate limit exceeded. Retry after ${retryAfter}s`
+      );
     }
 
     // --- Query params ---
@@ -31,7 +41,12 @@ export async function GET(req: NextRequest) {
     const maxPrice = parseNumber(url.searchParams.get("maxPrice"));
     const limit = parseNumber(url.searchParams.get("limit"));
     const cursor = url.searchParams.get("cursor") || undefined;
-    const sort = url.searchParams.get("sort") || "latest";
+
+    const allowedSort = ["latest", "price_asc", "price_desc"];
+    const sortParam = url.searchParams.get("sort");
+    const sort = allowedSort.includes(sortParam || "")
+      ? sortParam
+      : "latest";
 
     // --- Validation ---
     if (search && search.length > 100) {
@@ -46,12 +61,20 @@ export async function GET(req: NextRequest) {
       return badRequest("maxPrice must be non-negative");
     }
 
-    if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
+    if (
+      minPrice !== undefined &&
+      maxPrice !== undefined &&
+      minPrice > maxPrice
+    ) {
       return badRequest("minPrice cannot be greater than maxPrice");
     }
 
     if (limit !== undefined && (isNaN(limit) || limit <= 0)) {
       return badRequest("limit must be positive");
+    }
+
+    if (cursor && cursor.length > 100) {
+      return badRequest("Invalid cursor");
     }
 
     const safeLimit = Math.min(limit ?? 20, MAX_LIMIT);

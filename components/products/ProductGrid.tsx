@@ -2,10 +2,10 @@
 
 import ProductCard from "./ProductCard";
 import { Skeleton } from "@/components/ui/Skeleton";
-import type { ProductWithRelations } from "@/lib/products/types";
+import type { ProductCardVM } from "@/lib/products/types";
 
 type ProductGridProps = {
-  products: ProductWithRelations[];
+  products: ProductCardVM[];
   isLoading?: boolean;
 };
 

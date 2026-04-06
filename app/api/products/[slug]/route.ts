@@ -1,24 +1,39 @@
 // app/api/products/[slug]/route.ts
 import { NextRequest } from "next/server";
-import { ok, badRequest, notFound, tooManyRequests, serverError } from "@/lib/api/response";
+import {
+  ok,
+  badRequest,
+  notFound,
+  tooManyRequests,
+  serverError,
+} from "@/lib/api/response";
 import { getProductDetailWithRecommendations } from "@/lib/products/service";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 import { logEvent } from "@/lib/logger";
 import { startTimer } from "@/lib/metrics";
 
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { slug: string } }
+) {
   const stopTimer = startTimer("api_products_slug_ms");
 
   try {
-    const slug = params.slug;
+    // --- Normalize slug ---
+    const slug = params.slug?.trim().toLowerCase();
 
     const slugRegex = /^[a-z0-9-]+$/;
-    if (!slug || slug.length > 200 || !slugRegex.test(slug)) {
+    if (!slug || slug.length < 2 || slug.length > 200 || !slugRegex.test(slug)) {
       return badRequest("Invalid slug");
     }
 
     // --- Rate Limit ---
-    const ip = req.ip || req.headers.get("x-real-ip") || "anonymous";
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      req.ip ||
+      "anonymous";
+
     const { allowed, retryAfter } = checkRateLimit(ip);
 
     if (!allowed) {
@@ -26,12 +41,19 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       return tooManyRequests(`Rate limit exceeded. Try again in ${retryAfter}s`);
     }
 
+    // --- Fetch product ---
     const productVM = await getProductDetailWithRecommendations(slug);
 
     if (!productVM) {
       logEvent("product_not_found", { slug, ip }, "warn");
-      return notFound("Product not found");
+      return notFound("Product not found", undefined, {
+        headers: {
+          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+        },
+      });
     }
+
+    logEvent("product_view", { slug, ip });
 
     return ok(productVM, {
       headers: {

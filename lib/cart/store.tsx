@@ -1,4 +1,5 @@
 "use client";
+
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
 export type CartItem = {
@@ -15,6 +16,7 @@ type CartContextType = {
   items: CartItem[];
   isOpen: boolean;
   subtotal: number;
+  totalItems: number;
   open: () => void;
   close: () => void;
   toggle: () => void;
@@ -30,16 +32,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
+  // Load from localStorage
   useEffect(() => {
     try {
       const stored = localStorage.getItem("cart");
       if (stored) setItems(JSON.parse(stored));
-    } catch { console.warn("Failed to load cart"); }
+    } catch {
+      console.warn("Failed to load cart");
+    }
   }, []);
 
+  // Save to localStorage
   useEffect(() => {
-    try { localStorage.setItem("cart", JSON.stringify(items)); } 
-    catch { console.warn("Failed to save cart"); }
+    try {
+      localStorage.setItem("cart", JSON.stringify(items));
+    } catch {
+      console.warn("Failed to save cart");
+    }
   }, [items]);
 
   const open = useCallback(() => setIsOpen(true), []);
@@ -48,15 +57,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = useCallback((item) => {
     setItems(prev => {
-      const existing = prev.find(i => i.productId === item.productId && JSON.stringify(i.attributes) === JSON.stringify(item.attributes));
-      if (existing) return prev.map(i => i.id === existing.id ? { ...i, quantity: i.quantity + 1 } : i);
+      const existing = prev.find(
+        i =>
+          i.productId === item.productId &&
+          JSON.stringify(i.attributes) === JSON.stringify(item.attributes)
+      );
+
+      if (existing) {
+        return prev.map(i =>
+          i.id === existing.id
+            ? { ...i, quantity: i.quantity + 1 }
+            : i
+        );
+      }
+
       return [...prev, { id: crypto.randomUUID(), quantity: 1, ...item }];
     });
+
     setIsOpen(true);
   }, []);
 
   const updateQuantity = useCallback((id: string, qty: number) => {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, quantity: Math.max(1, qty) } : i));
+    setItems(prev =>
+      prev.map(i =>
+        i.id === id ? { ...i, quantity: Math.max(1, qty) } : i
+      )
+    );
   }, []);
 
   const removeItem = useCallback((id: string) => {
@@ -64,9 +90,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const clear = useCallback(() => setItems([]), []);
-  const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
 
-  return <CartContext.Provider value={{ items, isOpen, subtotal, open, close, toggle, addItem, updateQuantity, removeItem, clear }}>{children}</CartContext.Provider>;
+  const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+  const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
+
+  return (
+    <CartContext.Provider
+      value={{
+        items,
+        isOpen,
+        subtotal,
+        totalItems,
+        open,
+        close,
+        toggle,
+        addItem,
+        updateQuantity,
+        removeItem,
+        clear
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
 }
 
 export function useCart() {
