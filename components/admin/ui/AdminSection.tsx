@@ -25,11 +25,12 @@ export function AdminSection({
     <section
       id={id}
       className={clsx(
-        "space-y-3",
-        compact && "space-y-2",
+        "transition-fast",
+        compact ? "space-y-2" : "space-y-3",
         className
       )}
     >
+      {/* Title + Description */}
       <div className="flex items-start gap-2">
         {icon && (
           <div className="text-text-muted mt-0.5">
@@ -50,7 +51,8 @@ export function AdminSection({
         </div>
       </div>
 
-      <div className={clsx("space-y-3", compact && "space-y-2")}>
+      {/* Content */}
+      <div className={clsx(compact ? "space-y-2" : "space-y-3")}>
         {children}
       </div>
     </section>

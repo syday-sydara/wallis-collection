@@ -28,6 +28,8 @@ export function AdminCard({
         "border-border bg-surface-card shadow-sm",
         // Elevation
         elevated && "shadow-md",
+        // Optional hover elevation (the improvement)
+        !elevated && "hover:shadow-md",
         // Subtle variant (used in dashboards)
         subtle && "bg-surface-muted/40",
         // Danger variant (for alerts, high-risk cards)

@@ -6,7 +6,7 @@ interface AdminTextareaProps
   extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
-  size?: "sm" | "md" | "lg";
+  textareaSize?: "sm" | "md" | "lg";
   invalid?: boolean;
 }
 
@@ -21,7 +21,7 @@ export function AdminTextarea({
   rows = 4,
   leftIcon,
   rightIcon,
-  size = "md",
+  textareaSize = "md",
   invalid = false,
   ...props
 }: AdminTextareaProps) {
@@ -37,17 +37,17 @@ export function AdminTextarea({
         rows={rows}
         {...props}
         className={clsx(
-          "w-full rounded-md border bg-surface-card shadow-sm transition-all resize-none",
-          sizes[size],
+          "w-full rounded-md border bg-surface-card shadow-sm resize-none",
+          "transition-fast active:scale-press",
+          sizes[textareaSize],
           leftIcon && "pl-8",
           rightIcon && "pr-8",
 
           invalid
-            ? "border-danger text-danger"
-            : "border-border text-text",
+            ? "border-danger text-danger placeholder-danger/60"
+            : "border-border text-text placeholder-text-muted",
 
-          "focus:outline-none focus:ring-[var(--focus-ring-width)] focus:ring-[rgb(var(--focus-ring))] focus:ring-offset-1",
-
+          "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
           "disabled:opacity-60 disabled:cursor-not-allowed",
 
           className

@@ -7,7 +7,7 @@ interface SubmitButtonProps {
   children: string;
   pendingLabel?: string;
   variant?: "primary" | "secondary" | "danger";
-  size?: "sm" | "md" | "lg";
+  buttonSize?: "sm" | "md" | "lg";
   fullWidth?: boolean;
   className?: string;
 }
@@ -31,7 +31,7 @@ export function SubmitButton({
   children,
   pendingLabel = "Saving…",
   variant = "primary",
-  size = "md",
+  buttonSize = "md",
   fullWidth = false,
   className,
 }: SubmitButtonProps) {
@@ -42,17 +42,18 @@ export function SubmitButton({
       type="submit"
       disabled={pending}
       className={clsx(
-        "rounded-md font-medium shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed",
-        "focus:outline-none focus:ring-[var(--focus-ring-width)] focus:ring-[rgb(var(--focus-ring))]",
+        "rounded-md font-medium shadow-sm transition-fast active:scale-press",
+        "disabled:opacity-60 disabled:cursor-not-allowed",
+        "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
         variants[variant],
-        sizes[size],
+        sizes[buttonSize],
         fullWidth && "w-full",
         className
       )}
     >
       <span className="flex items-center gap-1.5 justify-center">
         {pending && (
-          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
         )}
         {pending ? pendingLabel : children}
       </span>
