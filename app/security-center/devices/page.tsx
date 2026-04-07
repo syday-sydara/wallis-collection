@@ -4,6 +4,7 @@ export default async function SecurityDevicesPage() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/security/devices`, {
     cache: "no-store",
   });
+
   const { devices } = await res.json();
 
   return (

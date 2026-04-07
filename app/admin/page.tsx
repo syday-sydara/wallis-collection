@@ -13,12 +13,14 @@ interface AdminProductsPageProps {
 }
 
 export default async function AdminProductsPage({ searchParams }: AdminProductsPageProps) {
+  // Permission check (you may later switch to PERMISSIONS.VIEW_PRODUCTS)
   await requirePermission(PERMISSIONS.VIEW_ADMIN);
 
-  const cursor = Array.isArray(searchParams?.cursor)
-    ? searchParams.cursor[0]
-    : searchParams?.cursor;
+  // Normalize cursor
+  const cursorParam = searchParams?.cursor;
+  const cursor = Array.isArray(cursorParam) ? cursorParam[0] : cursorParam;
 
+  // Fetch paginated products
   const data = await adminListProductsPaginated({ cursor });
 
   return <AdminProductsClient initialData={data} />;

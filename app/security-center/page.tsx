@@ -1,22 +1,12 @@
 import { Card } from "@/components/admin/ui/AdminCard";
 
 async function fetchSecurityMetrics() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/security/metrics`, {
-      cache: "no-store", // always fresh data
-      next: { revalidate: 10 }, // optional ISR: refresh every 10s
-    });
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/security/metrics`, {
+    cache: "no-store",
+  });
 
-    if (!res.ok) {
-      console.error("[SecurityOverviewPage] Failed to fetch metrics:", res.status);
-      return { totalEvents: 0, totalUsers: 0, alerts: 0 };
-    }
-
-    return res.json();
-  } catch (err) {
-    console.error("[SecurityOverviewPage] Error fetching metrics:", err);
-    return { totalEvents: 0, totalUsers: 0, alerts: 0 };
-  }
+  if (!res.ok) return { totalEvents: 0, totalUsers: 0, alerts: 0 };
+  return res.json();
 }
 
 export default async function SecurityOverviewPage() {
@@ -28,15 +18,15 @@ export default async function SecurityOverviewPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card header="Security Events">
-          <p className="text-3xl font-semibold">{data.totalEvents ?? 0}</p>
+          <p className="text-3xl font-semibold">{data.totalEvents}</p>
         </Card>
 
         <Card header="Users">
-          <p className="text-3xl font-semibold">{data.totalUsers ?? 0}</p>
+          <p className="text-3xl font-semibold">{data.totalUsers}</p>
         </Card>
 
         <Card header="Alerts (24h)">
-          <p className="text-3xl font-semibold">{data.alerts ?? 0}</p>
+          <p className="text-3xl font-semibold text-danger">{data.alerts}</p>
         </Card>
       </div>
     </div>

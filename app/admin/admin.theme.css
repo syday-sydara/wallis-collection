@@ -1,190 +1,166 @@
-import type { Config } from "tailwindcss";
-import defaultTheme from "tailwindcss/defaultTheme";
+/* ------------------------------------------------------ */
+/* Root Theme Tokens (Light Mode)                         */
+/* ------------------------------------------------------ */
 
-const config: Config = {
-  darkMode: "class",
+:root {
+  /* Surface */
+  --surface: 255 255 255;
+  --surface-muted: 245 245 245;
+  --surface-card: 250 250 250;
+  --surface-foreground: 20 20 20;
 
-  content: [
-    "./app/**/*.{ts,tsx,mdx}",
-    "./components/**/*.{ts,tsx,mdx}",
-    "./lib/**/*.{ts,tsx,mdx}",
-    "./ui/**/*.{ts,tsx,mdx}",
-  ],
+  /* Text */
+  --text: 20 20 20;
+  --text-muted: 110 110 110;
 
-  theme: {
-    container: {
-      center: true,
-      padding: {
-        DEFAULT: "1rem",
-        lg: "2rem",
-      },
-    },
+  /* Border */
+  --border: 225 225 225;
 
-    screens: {
-      xs: "360px",
-      ...defaultTheme.screens,
-    },
+  /* Primary */
+  --color-primary: 0 122 255;
+  --color-primary-hover: 0 112 240;
+  --color-primary-active: 0 102 220;
+  --color-primary-foreground: 255 255 255;
 
-    extend: {
-      /* -------------------------------------------------- */
-      /* Colors (CSS variable driven) */
-      /* -------------------------------------------------- */
-      colors: {
-        surface: {
-          DEFAULT: "rgb(var(--surface) / <alpha-value>)",
-          muted: "rgb(var(--surface-muted) / <alpha-value>)",
-          card: "rgb(var(--surface-card) / <alpha-value>)",
-          foreground: "rgb(var(--surface-foreground) / <alpha-value>)",
-        },
+  /* Success */
+  --color-success: 34 197 94;
+  --color-success-hover: 30 180 85;
+  --color-success-active: 25 160 75;
+  --color-success-foreground: 255 255 255;
 
-        text: {
-          DEFAULT: "rgb(var(--text) / <alpha-value>)",
-          muted: "rgb(var(--text-muted) / <alpha-value>)",
-        },
+  /* Danger */
+  --color-danger: 239 68 68;
+  --color-danger-hover: 220 60 60;
+  --color-danger-active: 200 50 50;
+  --color-danger-foreground: 255 255 255;
 
-        border: "rgb(var(--border) / <alpha-value>)",
+  /* Warning */
+  --color-warning: 245 158 11;
+  --color-warning-hover: 230 145 10;
+  --color-warning-active: 215 135 10;
+  --color-warning-foreground: 255 255 255;
 
-        primary: {
-          DEFAULT: "rgb(var(--color-primary) / <alpha-value>)",
-          hover: "rgb(var(--color-primary-hover) / <alpha-value>)",
-          active: "rgb(var(--color-primary-active) / <alpha-value>)",
-          foreground: "rgb(var(--color-primary-foreground) / <alpha-value>)",
-        },
+  /* Disabled */
+  --color-disabled: 200 200 200;
+  --color-disabled-foreground: 150 150 150;
 
-        success: {
-          DEFAULT: "rgb(var(--color-success) / <alpha-value>)",
-          hover: "rgb(var(--color-success-hover) / <alpha-value>)",
-          active: "rgb(var(--color-success-active) / <alpha-value>)",
-          foreground: "rgb(var(--color-success-foreground) / <alpha-value>)",
-        },
+  /* Skeleton */
+  --skeleton: 230 230 230;
 
-        danger: {
-          DEFAULT: "rgb(var(--color-danger) / <alpha-value>)",
-          hover: "rgb(var(--color-danger-hover) / <alpha-value>)",
-          active: "rgb(var(--color-danger-active) / <alpha-value>)",
-          foreground: "rgb(var(--color-danger-foreground) / <alpha-value>)",
-        },
+  /* Typography */
+  --font-sans: "Inter", system-ui, sans-serif;
 
-        warning: {
-          DEFAULT: "rgb(var(--color-warning) / <alpha-value>)",
-          hover: "rgb(var(--color-warning-hover) / <alpha-value>)",
-          active: "rgb(var(--color-warning-active) / <alpha-value>)",
-          foreground: "rgb(var(--color-warning-foreground) / <alpha-value>)",
-        },
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
 
-        disabled: {
-          DEFAULT: "rgb(var(--color-disabled) / <alpha-value>)",
-          foreground: "rgb(var(--color-disabled-foreground) / <alpha-value>)",
-        },
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
 
-        skeleton: "rgb(var(--skeleton) / <alpha-value>)",
-      },
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 1.75rem;
+  --space-8: 2rem;
 
-      /* -------------------------------------------------- */
-      /* Typography */
-      /* -------------------------------------------------- */
-      fontFamily: {
-        sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
-      },
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-full: 9999px;
 
-      fontSize: {
-        xs: ["var(--font-size-xs)", { lineHeight: "1.2" }],
-        sm: ["var(--font-size-sm)", { lineHeight: "1.3" }],
-        base: ["var(--font-size-md)", { lineHeight: "1.45" }],
-        lg: ["var(--font-size-lg)", { lineHeight: "1.55" }],
-        xl: ["var(--font-size-xl)", { lineHeight: "1.6" }],
-        "2xl": ["var(--font-size-2xl)", { lineHeight: "1.65" }],
-      },
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.1);
 
-      fontWeight: {
-        regular: "var(--font-weight-regular)",
-        medium: "var(--font-weight-medium)",
-        semibold: "var(--font-weight-semibold)",
-      },
+  /* Focus Ring */
+  --focus-ring: 0 122 255;
+  --focus-ring-width: 2px;
 
-      lineHeight: {
-        tight: "1.2",
-        normal: "1.45",
-        relaxed: "1.65",
-      },
+  /* Motion */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.4, 0, 0.2, 1);
 
-      /* -------------------------------------------------- */
-      /* Spacing */
-      /* -------------------------------------------------- */
-      spacing: {
-        1: "var(--space-1)",
-        2: "var(--space-2)",
-        3: "var(--space-3)",
-        4: "var(--space-4)",
-        5: "var(--space-5)",
-        6: "var(--space-6)",
-        7: "var(--space-7)",
-        8: "var(--space-8)",
-      },
+  --transition-fast: 120ms;
+  --transition-medium: 200ms;
+  --transition-slow: 300ms;
+}
 
-      /* -------------------------------------------------- */
-      /* Radii, Shadows, Motion */
-      /* -------------------------------------------------- */
-      borderRadius: {
-        sm: "var(--radius-sm)",
-        md: "var(--radius-md)",
-        lg: "var(--radius-lg)",
-        full: "var(--radius-full)",
-      },
+/* ------------------------------------------------------ */
+/* Dark Mode                                               */
+/* ------------------------------------------------------ */
 
-      boxShadow: {
-        sm: "var(--shadow-sm)",
-        md: "var(--shadow-md)",
-        lg: "var(--shadow-lg)",
-        card: "0 1px 2px rgba(0,0,0,0.06)",
-      },
+.dark {
+  --surface: 20 20 20;
+  --surface-muted: 28 28 28;
+  --surface-card: 32 32 32;
+  --surface-foreground: 240 240 240;
 
-      outlineColor: {
-        focus: "rgb(var(--focus-ring))",
-      },
+  --text: 240 240 240;
+  --text-muted: 160 160 160;
 
-      outlineWidth: {
-        focus: "var(--focus-ring-width)",
-      },
+  --border: 60 60 60;
 
-      transitionTimingFunction: {
-        standard: "var(--ease-standard)",
-        emphasized: "var(--ease-emphasized)",
-      },
+  --color-primary: 0 140 255;
+  --color-primary-hover: 0 130 240;
+  --color-primary-active: 0 120 220;
+  --color-primary-foreground: 255 255 255;
 
-      transitionDuration: {
-        fast: "var(--transition-fast)",
-        medium: "var(--transition-medium)",
-        slow: "var(--transition-slow)",
-      },
+  --color-success: 34 197 94;
+  --color-success-hover: 30 180 85;
+  --color-success-active: 25 160 75;
+  --color-success-foreground: 255 255 255;
 
-      /* -------------------------------------------------- */
-      /* Animations */
-      /* -------------------------------------------------- */
-      keyframes: {
-        shimmer: {
-          from: { backgroundPosition: "-100% 0" },
-          to: { backgroundPosition: "100% 0" },
-        },
-        fadeIn: {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
-        },
-      },
+  --color-danger: 239 68 68;
+  --color-danger-hover: 220 60 60;
+  --color-danger-active: 200 50 50;
+  --color-danger-foreground: 255 255 255;
 
-      animation: {
-        shimmer: "shimmer 1.5s infinite linear",
-        fadeIn: "fadeIn 0.3s ease-out",
-        "fadeIn-fast": "fadeIn 0.15s ease-out",
-      },
-    },
-  },
+  --color-warning: 245 158 11;
+  --color-warning-hover: 230 145 10;
+  --color-warning-active: 215 135 10;
+  --color-warning-foreground: 255 255 255;
 
-  plugins: [
-    require("@tailwindcss/forms"),
-    require("@tailwindcss/typography"),
-    require("@tailwindcss/aspect-ratio"),
-  ],
-};
+  --color-disabled: 80 80 80;
+  --color-disabled-foreground: 120 120 120;
 
-export default config;
+  --skeleton: 60 60 60;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* ------------------------------------------------------ */
+/* Utility Classes                                         */
+/* ------------------------------------------------------ */
+
+html,
+body {
+  background: rgb(var(--surface));
+  color: rgb(var(--text));
+  font-family: var(--font-sans);
+}
+
+.card {
+  background: rgb(var(--surface-card));
+  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4);
+}
+
+.skeleton {
+  background: rgb(var(--skeleton));
+  animation: shimmer 1.5s infinite linear;
+  background-size: 200% 100%;
+}

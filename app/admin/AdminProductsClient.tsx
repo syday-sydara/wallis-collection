@@ -58,23 +58,25 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-text tracking-tight">Products</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-text">Products</h2>
 
         <Link
           href="/admin/products/new"
           className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground
-                     shadow-sm hover:bg-primary-hover active:bg-primary-active transition-all"
+                     shadow-sm hover:bg-primary-hover active:bg-primary-active transition-fast active:scale-press
+                     focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
         >
           New product
         </Link>
       </div>
 
+      {/* Error */}
       {error && (
         <div className="text-danger text-sm mb-4 flex items-center gap-3">
           {error}
           <button
             onClick={loadMore}
-            className="underline text-danger-foreground hover:text-danger"
+            className="underline text-danger-foreground hover:text-danger transition-fast"
           >
             Retry
           </button>
@@ -101,7 +103,10 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
                 className="hover:bg-surface-muted/50 transition-colors cursor-pointer"
               >
                 <td className="py-3 px-4">
-                  <Link href={`/admin/products/${p.id}`} className="font-medium text-text hover:underline">
+                  <Link
+                    href={`/admin/products/${p.id}`}
+                    className="font-medium text-text hover:underline"
+                  >
                     {p.name}
                   </Link>
                   <div className="text-xs text-text-muted">{p.slug}</div>
@@ -156,7 +161,7 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
           <button
             onClick={loadMore}
             disabled={loading}
-            className="text-sm text-text-muted underline hover:text-text disabled:opacity-50"
+            className="text-sm text-text-muted underline hover:text-text disabled:opacity-50 transition-fast"
           >
             {loading ? "Loading…" : "Load more"}
           </button>

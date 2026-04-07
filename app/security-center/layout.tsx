@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import clsx from "clsx";
+import { usePathname } from "next/navigation";
 
 const nav = [
   { href: "/security-center", label: "Overview" },
@@ -10,6 +13,8 @@ const nav = [
 ];
 
 export default function SecurityCenterLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
   return (
     <div className="min-h-screen bg-surface text-text flex flex-col">
       {/* Header */}
@@ -17,25 +22,31 @@ export default function SecurityCenterLayout({ children }: { children: React.Rea
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
           <h1 className="text-lg font-semibold tracking-tight">Security Center</h1>
 
-          {/* Navigation */}
-          <nav className="flex items-center gap-3 text-sm" aria-label="Security Center navigation">
-            {nav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={clsx(
-                  "px-3 py-1.5 rounded-md transition-all",
-                  "text-text-muted hover:text-text hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary",
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
+          <nav className="flex items-center gap-3 text-sm">
+            {nav.map((item) => {
+              const active = pathname === item.href;
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={clsx(
+                    "px-3 py-1.5 rounded-md transition-all",
+                    active
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-text-muted hover:text-text hover:bg-surface-muted",
+                    "focus:outline-none focus:ring-2 focus:ring-primary"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main */}
       <main className="mx-auto max-w-6xl px-4 py-8 flex-1 animate-fadeIn">
         {children}
       </main>
