@@ -1,7 +1,7 @@
 // lib/security/permission-alerts.ts
 
 import { redis } from "@/lib/redis";
-import { emitAlertEvent, emitSecurityEvent } from "@/lib/security/eventBus";
+import { emitAlertEvent, emitSecurityEvent } from "@/lib/events/emitter";
 
 const VERSION = 1;
 

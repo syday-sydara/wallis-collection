@@ -1,4 +1,4 @@
-import { emitSecurityEvent } from "@/lib/security/eventBus";
+import { emitSecurityEvent } from "@/lib/events/emitter";
 
 type LogLevel = "info" | "warn" | "error";
 

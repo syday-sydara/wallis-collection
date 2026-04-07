@@ -1,6 +1,6 @@
 // lib/auth/metrics.ts
 
-import { emitSecurityEvent, emitAlertEvent } from "@/lib/security/eventBus";
+import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 
 const VERSION = 1;
 

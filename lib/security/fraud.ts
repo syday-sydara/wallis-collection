@@ -1,5 +1,5 @@
 import { computeFraudScore } from "@/lib/security/fraud-score";
-import { emitFraudEvent, emitSecurityEvent, emitAlertEvent } from "@/lib/security/eventBus";
+import { emitFraudEvent, emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 import { redis } from "@/lib/redis";
 
 type FraudSignalType =

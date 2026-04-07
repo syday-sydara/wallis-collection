@@ -1,42 +1,67 @@
-import { NextRequest } from "next/server";
-import { checkRateLimit } from "./rate-limit";
+// lib/api/rate-limited.ts
 
-export function rateLimited(
+import { NextRequest } from "next/server";
+import { checkRateLimit } from "@/lib/api/rate-limit";
+
+export interface RateLimitedOptions {
+  max?: number;
+  windowMs?: number;
+  namespace?: string;
+  log?: boolean;
+  route?: string;
+  userId?: string | null;
+}
+
+export async function rateLimited(
   req: NextRequest,
   key: string,
-  options?: {
-    max?: number;
-    windowMs?: number;
-    namespace?: string;
-    log?: boolean;
-  }
+  options?: RateLimitedOptions
 ) {
-  const { max = 10, windowMs = 60_000, namespace, log = false } = options ?? {};
+  const {
+    max = 10,
+    windowMs = 60_000,
+    namespace = "default",
+    log = false,
+    route = null,
+    userId = null,
+  } = options ?? {};
 
-  // Normalize IP
+  /* -------------------------------------------------- */
+  /* Robust IP extraction                                */
+  /* -------------------------------------------------- */
   const forwarded = req.headers.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0].trim() || req.ip || "unknown";
+  const rawIp = forwarded?.split(",")[0] || req.ip || "unknown";
+  const ip = rawIp.trim().replace(/:\d+$/, "");
 
-  const fullKey = `${namespace ?? "default"}:${key}:${ip}`;
-
-  // Forward log option to the underlying limiter
-  const result = checkRateLimit(fullKey, max, windowMs, { log });
+  /* -------------------------------------------------- */
+  /* Rate limit check                                    */
+  /* -------------------------------------------------- */
+  const result = await checkRateLimit(`${namespace}:${key}:${ip}`, {
+    max,
+    windowMs,
+    namespace,
+    log,
+    ip,
+    userId,
+    route,
+  });
 
   const headers = {
     "X-RateLimit-Limit": max.toString(),
     "X-RateLimit-Remaining": result.remaining.toString(),
     "X-RateLimit-Reset": Math.floor(result.resetAt / 1000).toString(),
+    "Retry-After": result.retryAfter.toString(),
   };
 
   if (!result.allowed) {
     return new Response(
-      JSON.stringify({ error: "Rate limit exceeded" }),
+      JSON.stringify({
+        success: false,
+        error: "Rate limit exceeded",
+      }),
       {
         status: 429,
-        headers: {
-          ...headers,
-          "Retry-After": result.retryAfter.toString(),
-        },
+        headers,
       }
     );
   }

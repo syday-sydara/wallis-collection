@@ -1,4 +1,4 @@
-import { emitFraudEvent, emitSecurityEvent, emitAlertEvent } from "@/lib/security/eventBus";
+import { emitFraudEvent, emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 
 type FraudSignal =
   | "WEBHOOK_SIGNATURE_MISMATCH"

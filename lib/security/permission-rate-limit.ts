@@ -1,7 +1,7 @@
 // lib/security/permission-rate.ts
 
 import { redis } from "@/lib/redis";
-import { emitSecurityEvent, emitAlertEvent } from "@/lib/security/eventBus";
+import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 
 const WINDOW_SECONDS = 10 * 60; // 10 minutes
 const MAX = 20;

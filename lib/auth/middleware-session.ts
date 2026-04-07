@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
-import { emitSecurityEvent } from "@/lib/security/eventBus";
+import { emitSecurityEvent } from "@/lib/events/emitter";
 
 export type MiddlewareSession = {
   id: string;

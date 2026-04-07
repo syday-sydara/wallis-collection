@@ -21,6 +21,13 @@ export const PERMISSIONS = {
 
 export type Permission = keyof typeof PERMISSIONS;
 
+export interface SessionUser {
+  id: string;
+  role: Role | Role[];
+  permissions?: Permission[];
+  deniedPermissions?: Permission[];
+}
+
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   SUPER_ADMIN: [...Object.keys(PERMISSIONS) as Permission[]],
   ADMIN: [
@@ -44,15 +51,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   USER: [],
 };
 
-export interface SessionUser {
-  id: string;
-  role: Role | Role[];
-  permissions?: Permission[];
-  deniedPermissions?: Permission[];
-}
-
 /* -------------------------------------------------- */
-/* Core permission logic (pure, no side effects)       */
+/* Core permission logic                               */
 /* -------------------------------------------------- */
 export function hasPermission(
   user: SessionUser | null,
@@ -60,8 +60,9 @@ export function hasPermission(
 ): boolean {
   if (!user) return false;
 
-  // SUPER_ADMIN bypass
   const roles = Array.isArray(user.role) ? user.role : [user.role];
+
+  // SUPER_ADMIN bypass
   if (roles.includes("SUPER_ADMIN")) return true;
 
   // Deny list override

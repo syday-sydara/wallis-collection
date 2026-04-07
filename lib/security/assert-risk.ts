@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { emitSecurityEvent, emitAlertEvent } from "@/lib/security/eventBus";
+import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 
 export async function assertRisk(params: {
   userId: string;

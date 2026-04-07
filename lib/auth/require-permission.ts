@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { hasPermission } from "./permissions";
 import type { MiddlewareSession } from "./middleware-session";
 import type { Permission } from "./permissions";
-import { emitSecurityEvent, emitAlertEvent } from "@/lib/security/eventBus";
+import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 import { trackPermissionDenied } from "@/lib/auth/permission-rate";
 
 const SECRET = process.env.SESSION_SECRET!;

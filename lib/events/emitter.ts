@@ -1,6 +1,17 @@
+// lib/events/emitter.ts (recommended filename)
+
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { encrypt } from "@/lib/security/crypto";
+import {
+  SecurityEventType,
+  FraudSignal,
+  AlertEventType,
+} from "@/lib/events/types";
+
+/* -------------------------------------------------- */
+/* Normalizers                                         */
+/* -------------------------------------------------- */
 
 const VALID_SEVERITIES = ["low", "medium", "high"] as const;
 type Severity = (typeof VALID_SEVERITIES)[number];
@@ -85,7 +96,7 @@ function maybeEncryptMetadata(
 /* -------------------------------------------------- */
 
 export async function emitSecurityEvent(params: {
-  type: string;
+  type: SecurityEventType;
   message: string;
   severity?: Severity;
   userId?: string | null;
@@ -107,7 +118,7 @@ export async function emitSecurityEvent(params: {
     category,
     metadata = {},
     encryptMetadata = false,
-    source = null,
+    source = "system",
     requestId = null,
   } = params;
 
@@ -119,14 +130,14 @@ export async function emitSecurityEvent(params: {
 
   const ctx = extractRequestContext(ip, userAgent);
 
-  const version = 1;
-
   try {
     await prisma.securityEvent.create({
       data: {
-        version,
+        kind: "security",
+        version: 1,
+        timestamp: new Date().toISOString(),
         type,
-        severity: sev.toUpperCase(),
+        severity: sev,
         category: normalizedCategory,
         source,
         requestId,
@@ -134,8 +145,8 @@ export async function emitSecurityEvent(params: {
         ip: ctx.ip,
         userAgent: ctx.userAgent,
         message,
+        encryptedMetadata: encryptMetadata,
         metadata: storedMetadata,
-        timestamp: new Date(),
       },
     });
   } catch (err) {
@@ -148,13 +159,15 @@ export async function emitSecurityEvent(params: {
 /* -------------------------------------------------- */
 
 export async function emitFraudEvent(params: {
-  signal: string;
+  signal: FraudSignal;
   orderId?: string | null;
   userId?: string | null;
   ip?: string | null;
   userAgent?: string | null;
   metadata?: Record<string, any>;
   encryptMetadata?: boolean;
+  source?: string | null;
+  requestId?: string | null;
 }) {
   const {
     signal,
@@ -164,6 +177,8 @@ export async function emitFraudEvent(params: {
     userAgent,
     metadata = {},
     encryptMetadata = false,
+    source = "system",
+    requestId = null,
   } = params;
 
   const safeMetadata = safeCloneMetadata(metadata);
@@ -174,11 +189,17 @@ export async function emitFraudEvent(params: {
   try {
     await prisma.fraudEvent.create({
       data: {
+        kind: "fraud",
+        version: 1,
+        timestamp: new Date().toISOString(),
         signal,
         orderId,
         userId,
+        source,
+        requestId,
         ip: ctx.ip,
         userAgent: ctx.userAgent,
+        encryptedMetadata: encryptMetadata,
         metadata: storedMetadata,
       },
     });
@@ -192,12 +213,14 @@ export async function emitFraudEvent(params: {
 /* -------------------------------------------------- */
 
 export async function emitAlertEvent(params: {
-  event: string;
+  event: AlertEventType;
   userId?: string | null;
   ip?: string | null;
   userAgent?: string | null;
   metadata?: Record<string, any>;
   encryptMetadata?: boolean;
+  source?: string | null;
+  requestId?: string | null;
 }) {
   const {
     event,
@@ -206,6 +229,8 @@ export async function emitAlertEvent(params: {
     userAgent,
     metadata = {},
     encryptMetadata = false,
+    source = "system",
+    requestId = null,
   } = params;
 
   const safeMetadata = safeCloneMetadata(metadata);
@@ -216,10 +241,16 @@ export async function emitAlertEvent(params: {
   try {
     await prisma.alertEvent.create({
       data: {
+        kind: "alert",
+        version: 1,
+        timestamp: new Date().toISOString(),
         event,
         userId,
+        source,
+        requestId,
         ip: ctx.ip,
         userAgent: ctx.userAgent,
+        encryptedMetadata: encryptMetadata,
         metadata: storedMetadata,
       },
     });
