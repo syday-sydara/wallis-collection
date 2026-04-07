@@ -1,4 +1,5 @@
 // lib/risk/rules/default.ts
+
 import type { RiskPolicy, RiskRule } from "@/lib/risk/types";
 
 const rules: RiskRule[] = [
@@ -42,7 +43,7 @@ const rules: RiskRule[] = [
     condition: {
       type: "velocity_above",
       metric: "ipVelocity",
-      value: 60, // requests/min
+      value: 60,
     },
   },
   {
@@ -72,7 +73,7 @@ const rules: RiskRule[] = [
     weight: 15,
     condition: {
       type: "distance_from_last_ip_above",
-      value: 1500, // km
+      value: 1500,
     },
   },
   {
