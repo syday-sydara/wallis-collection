@@ -1,5 +1,5 @@
 // lib/alerts/whatsapp.ts
-import { logEvent } from "@/lib/logger";
+import { logEvent } from "@/lib/auth/logger";
 
 export async function sendWhatsAppAlert(payload: {
   to: string;

@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import type { CheckoutPayload } from "./schema";
-import { logEvent } from "@/lib/logger";
+import { logEvent } from "@/lib/auth/logger";
 
 /**
  * Lean checkout processor

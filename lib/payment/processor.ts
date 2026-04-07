@@ -3,11 +3,11 @@ import { prisma } from "@/lib/db";
 import { verifyPayment } from "@/lib/payments/verification";
 
 // Security logging
-import { logSecurityEvent } from "@/lib/security/events";
+import { logSecurityEvent } from "@/lib/security/logSecurityEvent";
 import { logFraudSignal } from "@/lib/security/fraud";
 
 // Fraud scoring
-import { computeFraudScore, classifyFraudScore, type FraudSignal } from "@/lib/security/fraud-score";
+import { computeFraudScore, classifyFraudScore, type FraudSignal } from "@/lib/security/computeFraudScore";
 
 export async function processPaymentEvent(params: {
   provider: "paystack" | "monnify";

@@ -1,6 +1,6 @@
 // lib/risk/evaluate.ts
 import type { RuleCondition, RiskContext } from "./types";
-import { logEvent } from "@/lib/logger";
+import { logEvent } from "@/lib/auth/logger";
 
 const MAX_DEPTH = 10;
 

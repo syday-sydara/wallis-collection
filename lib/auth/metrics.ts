@@ -1,4 +1,4 @@
-// lib/metrics.ts
+// lib/auth/metrics.ts
 
 /**
  * Starts a performance timer for a given metric label.

@@ -1,10 +1,6 @@
-// lib/security/fraud.ts
-import { logSecurityEvent } from "@/lib/security/events";
-import { logEvent } from "@/lib/logger";
-import { sendWhatsAppAlert } from "@/lib/alerts/whatsapp";
 import { computeFraudScore } from "@/lib/security/fraud-score";
+import { emitFraudEvent, emitSecurityEvent, emitAlertEvent } from "@/lib/security/eventBus";
 import { redis } from "@/lib/redis";
-import { encrypt } from "@/lib/security/crypto";
 
 type FraudSignalType =
   | "WEBHOOK_SIGNATURE_MISMATCH"
@@ -19,7 +15,41 @@ const VALID_SIGNALS = new Set<FraudSignalType>([
   "WEBHOOK_PROVIDER_MISMATCH",
 ]);
 
-const VERSION = 1;
+function normalizeProvider(provider: string) {
+  return provider.trim().toLowerCase();
+}
+
+function buildRateLimitKey(type: FraudSignalType, provider: string, ip?: string | null) {
+  return `fraud:rl:${type}:${provider}:${ip ?? "noip"}`;
+}
+
+function buildIdempotencyKey(type: FraudSignalType, reference?: string) {
+  return reference ? `fraud:idem:${type}:${reference}` : null;
+}
+
+async function checkRateLimit(key: string, limit = 5, ttl = 60) {
+  try {
+    const hits = await redis.incr(key);
+    if (hits === 1) await redis.expire(key, ttl);
+    return hits > limit;
+  } catch {
+    return false;
+  }
+}
+
+async function checkIdempotency(key: string | null) {
+  if (!key) return false;
+
+  try {
+    const exists = await redis.get(key);
+    if (exists) return true;
+
+    await redis.set(key, "1", { EX: 300 });
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 export async function logFraudSignal(params: {
   type: FraudSignalType;
@@ -28,92 +58,78 @@ export async function logFraudSignal(params: {
   ip?: string | null;
   userAgent?: string | null;
   metadata?: Record<string, any>;
-  encryptMetadata?: boolean;
 }) {
-  const {
-    type,
-    provider,
-    reference,
-    ip,
-    userAgent,
-    metadata = {},
-    encryptMetadata = false,
-  } = params;
+  const { type, provider, reference, ip, userAgent, metadata = {} } = params;
 
-  // 1. Validate signal type
   if (!VALID_SIGNALS.has(type)) {
     console.error("Invalid fraud signal:", type);
     return;
   }
 
-  // Normalize provider
-  const normalizedProvider = provider.trim().toLowerCase();
+  const normalizedProvider = normalizeProvider(provider);
 
-  // 2. Rate-limit alerts (avoid spam)
-  let isThrottled = false;
-  try {
-    const rlKey = `fraud:${type}:${reference ?? "none"}`;
-    const hits = await redis.incr(rlKey);
-    await redis.expire(rlKey, 60);
-    isThrottled = hits > 5;
-  } catch (err) {
-    console.error("Redis unavailable for fraud rate-limit:", err);
-  }
+  // Idempotency guard
+  const idemKey = buildIdempotencyKey(type, reference);
+  if (await checkIdempotency(idemKey)) return;
 
-  // 3. Compute fraud score
-  const fraud = computeFraudScore([type]);
+  // Rate limit alerts
+  const rlKey = buildRateLimitKey(type, normalizedProvider, ip);
+  const isThrottled = await checkRateLimit(rlKey);
 
-  // 4. Internal structured log
-  logEvent(
-    "fraud_signal",
-    {
-      version: VERSION,
-      type,
+  // Compute fraud score (v3 engine)
+  const fraud = await computeFraudScore([type], {
+    orderId: null,
+    userId: null,
+    ip,
+    userAgent,
+  });
+
+  // Emit SecurityEvent (dashboard)
+  await emitSecurityEvent({
+    type: "FRAUD_SIGNAL",
+    message: `Fraud signal detected: ${type}`,
+    severity: fraud.severity,
+    ip,
+    userAgent,
+    category: "fraud",
+    metadata: {
       provider: normalizedProvider,
       reference,
-      ip,
-      severity: fraud.severity,
       score: fraud.score,
-      metadata,
+      signals: fraud.signals,
     },
-    fraud.severity === "high" ? "warn" : "info"
-  );
+  });
 
-  // 5. Persist to DB
-  const storedMetadata = encryptMetadata
-    ? { encrypted: encrypt(JSON.stringify(metadata)) }
-    : metadata;
-
-  await logSecurityEvent({
-    type,
-    category: "fraud",
-    message: `Fraud signal detected: ${type} (${normalizedProvider})`,
-    severity: fraud.severity,
+  // Emit FraudEvent (forensics)
+  await emitFraudEvent({
+    signal: type,
+    orderId: null,
+    userId: null,
     ip,
     userAgent,
     metadata: {
       provider: normalizedProvider,
       reference,
       score: fraud.score,
-      signals: fraud.signals,
-      ...storedMetadata,
+      breakdown: fraud.breakdown,
     },
+    encryptMetadata: true,
   });
 
-  // 6. WhatsApp alert (non-blocking)
-  if (fraud.severity === "high" && !isThrottled) {
-    sendWhatsAppAlert({
-      to: process.env.WHATSAPP_ADMIN_NUMBER!,
-      template: "fraud_alert",
-      severity: "high",
-      variables: [
+  // Emit AlertEvent (if needed)
+  if (fraud.decision === "block" && !isThrottled) {
+    await emitAlertEvent({
+      event: "FRAUD_BLOCK",
+      ip,
+      userAgent,
+      metadata: {
         type,
-        normalizedProvider,
-        reference ?? "n/a",
-        ip ?? "n/a",
-      ],
-    }).catch((err) => {
-      console.error("Failed to send WhatsApp alert:", err);
+        provider: normalizedProvider,
+        reference,
+        score: fraud.score,
+      },
     });
   }
+
+  return fraud;
 }
