@@ -1,9 +1,5 @@
 // lib/auth/permissions.ts
-import type { SessionUser } from "./session";
 
-/* -------------------------------------------------- */
-/* Roles */
-/* -------------------------------------------------- */
 export type Role =
   | "SUPER_ADMIN"
   | "ADMIN"
@@ -11,9 +7,6 @@ export type Role =
   | "SECURITY_ADMIN"
   | "USER";
 
-/* -------------------------------------------------- */
-/* Permission constants (prevents typos) */
-/* -------------------------------------------------- */
 export const PERMISSIONS = {
   VIEW_SECURITY_CENTER: "VIEW_SECURITY_CENTER",
   VIEW_RISK_SCORE: "VIEW_RISK_SCORE",
@@ -28,9 +21,6 @@ export const PERMISSIONS = {
 
 export type Permission = keyof typeof PERMISSIONS;
 
-/* -------------------------------------------------- */
-/* Role → Permission mapping */
-/* -------------------------------------------------- */
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   SUPER_ADMIN: [...Object.keys(PERMISSIONS) as Permission[]],
   ADMIN: [
@@ -44,11 +34,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "MANAGE_ROLES",
     "MANAGE_SECURITY",
   ],
-  STAFF: [
-    "VIEW_ADMIN",
-    "VIEW_SECURITY_CENTER",
-    "VIEW_SESSIONS",
-  ],
+  STAFF: ["VIEW_ADMIN", "VIEW_SECURITY_CENTER", "VIEW_SESSIONS"],
   SECURITY_ADMIN: [
     "VIEW_ADMIN",
     "VIEW_SECURITY_CENTER",
@@ -58,8 +44,15 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   USER: [],
 };
 
+export interface SessionUser {
+  id: string;
+  role: Role | Role[];
+  permissions?: Permission[];
+  deniedPermissions?: Permission[];
+}
+
 /* -------------------------------------------------- */
-/* Permission checker */
+/* Core permission logic (pure, no side effects)       */
 /* -------------------------------------------------- */
 export function hasPermission(
   user: SessionUser | null,
@@ -68,26 +61,23 @@ export function hasPermission(
   if (!user) return false;
 
   // SUPER_ADMIN bypass
-  if (user.role === "SUPER_ADMIN" || (Array.isArray(user.role) && user.role.includes("SUPER_ADMIN"))) {
-    return true;
-  }
+  const roles = Array.isArray(user.role) ? user.role : [user.role];
+  if (roles.includes("SUPER_ADMIN")) return true;
 
-  // Deny list first (highest priority)
+  // Deny list override
   if (user.deniedPermissions?.includes(perm)) return false;
 
-  // Direct user-level permissions
+  // Direct user permissions
   if (user.permissions?.includes(perm)) return true;
 
-  // Multi-role support
-  const roles = Array.isArray(user.role) ? user.role : [user.role];
-
+  // Role permissions
   return roles.some((role) =>
-    ROLE_PERMISSIONS[role as Role]?.includes(perm)
+    ROLE_PERMISSIONS[role]?.includes(perm)
   );
 }
 
 /* -------------------------------------------------- */
-/* Check multiple permissions */
+/* Multi-permission helpers                            */
 /* -------------------------------------------------- */
 export function hasAllPermissions(
   user: SessionUser | null,
@@ -104,24 +94,23 @@ export function hasAnyPermission(
 }
 
 /* -------------------------------------------------- */
-/* Get all effective permissions for a user */
+/* Effective permissions                               */
 /* -------------------------------------------------- */
 export function getUserPermissions(user: SessionUser | null): Permission[] {
   if (!user) return [];
 
-  if (user.role === "SUPER_ADMIN" || (Array.isArray(user.role) && user.role.includes("SUPER_ADMIN"))) {
+  const roles = Array.isArray(user.role) ? user.role : [user.role];
+
+  if (roles.includes("SUPER_ADMIN")) {
     return [...Object.keys(PERMISSIONS)] as Permission[];
   }
 
-  const roles = Array.isArray(user.role) ? user.role : [user.role];
-
-  const rolePerms = roles.flatMap(r => ROLE_PERMISSIONS[r as Role] ?? []);
+  const rolePerms = roles.flatMap((r) => ROLE_PERMISSIONS[r] ?? []);
   const directPerms = user.permissions ?? [];
   const denied = user.deniedPermissions ?? [];
 
-  // Merge, remove denied, dedupe
   const merged = new Set<Permission>([...rolePerms, ...directPerms]);
-  denied.forEach(d => merged.delete(d));
+  denied.forEach((d) => merged.delete(d));
 
   return [...merged];
 }
