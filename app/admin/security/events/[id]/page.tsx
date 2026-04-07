@@ -1,8 +1,7 @@
-// app/admin/security/events/[id]/page.tsx
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import clsx from "clsx";
 
 export default async function EventDetailPage({
   params,
@@ -47,15 +46,15 @@ export default async function EventDetailPage({
   ]);
 
   return (
-    <div className="p-6 space-y-10">
+    <div className="space-y-10">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold flex items-center gap-3">
+        <h1 className="text-xl font-semibold flex items-center gap-3 text-text">
           Security Event
           <SeverityBadge severity={event.severity} />
         </h1>
 
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-text-muted">
           {new Date(event.timestamp).toLocaleString()}
         </p>
       </div>
@@ -64,11 +63,12 @@ export default async function EventDetailPage({
       <Section title="Event Details">
         <Detail label="Type" value={event.type} />
         <Detail label="Message" value={event.message} />
+
         <Detail label="User">
           {event.userId ? (
             <Link
               href={`/admin/users/${event.userId}`}
-              className="text-blue-600 hover:underline"
+              className="text-primary hover:underline"
             >
               {event.userId}
             </Link>
@@ -76,6 +76,7 @@ export default async function EventDetailPage({
             "—"
           )}
         </Detail>
+
         <Detail label="IP" value={event.ip ?? "—"} />
         <Detail label="User Agent" value={event.userAgent ?? "—"} />
         <Detail label="Request ID" value={event.requestId ?? "—"} />
@@ -84,7 +85,7 @@ export default async function EventDetailPage({
 
       {/* Metadata */}
       <Section title="Metadata">
-        <pre className="bg-muted p-4 rounded-md text-sm overflow-x-auto">
+        <pre className="bg-surface-muted p-4 rounded-md text-sm text-text overflow-x-auto border border-border">
           {JSON.stringify(event.metadata ?? {}, null, 2)}
         </pre>
       </Section>
@@ -99,6 +100,10 @@ export default async function EventDetailPage({
   );
 }
 
+/* -------------------------------------------------- */
+/* Detail Row                                          */
+/* -------------------------------------------------- */
+
 function Detail({
   label,
   value,
@@ -110,11 +115,15 @@ function Detail({
 }) {
   return (
     <div className="flex justify-between py-1">
-      <span className="text-muted-foreground">{label}</span>
-      <span>{children ?? value}</span>
+      <span className="text-text-muted">{label}</span>
+      <span className="text-text">{children ?? value}</span>
     </div>
   );
 }
+
+/* -------------------------------------------------- */
+/* Section Wrapper                                     */
+/* -------------------------------------------------- */
 
 function Section({
   title,
@@ -124,12 +133,19 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-3">
-      <h2 className="text-lg font-medium">{title}</h2>
-      <div className="rounded-md border p-4 space-y-4 bg-card">{children}</div>
-    </div>
+    <section className="space-y-3">
+      <h2 className="text-lg font-medium text-text">{title}</h2>
+
+      <div className="rounded-md border border-border bg-surface-card p-4 space-y-4 shadow-sm">
+        {children}
+      </div>
+    </section>
   );
 }
+
+/* -------------------------------------------------- */
+/* Related Events Block                                */
+/* -------------------------------------------------- */
 
 function RelatedBlock({
   title,
@@ -138,46 +154,46 @@ function RelatedBlock({
   title: string;
   events: Array<{ id: string; type: string; timestamp: Date | string }>;
 }) {
-  if (!events || events.length === 0) {
-    return (
-      <div>
-        <h3 className="font-medium">{title}</h3>
-        <p className="text-sm text-muted-foreground">No related events.</p>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      <h3 className="font-medium mb-2">{title}</h3>
-      <ul className="space-y-1">
-        {events.map((e) => (
-          <li key={e.id}>
-            <Link
-              href={`/admin/security/events/${e.id}`}
-              className="text-blue-600 hover:underline text-sm"
-            >
-              {e.type} — {new Date(e.timestamp).toLocaleString()}
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <div className="space-y-1">
+      <h3 className="font-medium text-text">{title}</h3>
+
+      {events.length === 0 ? (
+        <p className="text-sm text-text-muted">No related events.</p>
+      ) : (
+        <ul className="space-y-1">
+          {events.map((e) => (
+            <li key={e.id}>
+              <Link
+                href={`/admin/security/events/${e.id}`}
+                className="text-primary hover:underline text-sm"
+              >
+                {e.type} — {new Date(e.timestamp).toLocaleString()}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
 
+/* -------------------------------------------------- */
+/* Severity Badge                                      */
+/* -------------------------------------------------- */
+
 function SeverityBadge({ severity }: { severity: string }) {
-  const colors: Record<string, string> = {
-    low: "bg-green-600/20 text-green-700 border-green-600/30",
-    medium: "bg-yellow-600/20 text-yellow-700 border-yellow-600/30",
-    high: "bg-red-600/20 text-red-700 border-red-600/30",
+  const styles: Record<string, string> = {
+    low: "bg-success/15 text-success border-success/30",
+    medium: "bg-warning/15 text-warning border-warning/30",
+    high: "bg-danger/15 text-danger border-danger/30",
   };
 
   return (
     <span
-      className={cn(
+      className={clsx(
         "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-        colors[severity.toLowerCase()] ?? colors.low
+        styles[severity.toLowerCase()] ?? styles.low
       )}
     >
       {severity}
