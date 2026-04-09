@@ -1,6 +1,4 @@
- 'use client'
-
- import { useEffect } from "react";
+import { useEffect } from "react";
 import { X } from "lucide-react";
 import { useCart } from "@/lib/cart/store";
 import { Button } from "@/components/ui/Button";

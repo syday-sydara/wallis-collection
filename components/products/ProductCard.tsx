@@ -2,14 +2,21 @@
 
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import AddToCartButton from "@/components/cart/AddToCartButton";
 import Link from "next/link";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
-import type { ProductCardVM } from "@/lib/products/types";
+import { formatCurrency } from "@/lib/utils";
 
 type Props = {
-  product: ProductCardVM;
+  product: {
+    id: string;
+    name: string;
+    minPrice: number;
+    maxPrice: number;
+    inStock: boolean;
+    images?: { url: string }[];
+  };
 };
 
 export default function ProductCard({ product }: Props) {
@@ -20,51 +27,59 @@ export default function ProductCard({ product }: Props) {
   return (
     <Card
       padding="none"
-      className={cn(
-        "overflow-hidden group hover:shadow-md transition-shadow duration-300 flex flex-col"
-      )}
+      className="overflow-hidden group animate-fadeIn-fast hover:shadow-md transition-shadow duration-300"
     >
       {/* Product Image */}
       <Link
         href={`/product/${id}`}
         aria-label={`View product ${name}`}
         prefetch={false}
-        className="relative w-full aspect-square bg-surface-muted overflow-hidden rounded-t-lg"
       >
-        <Image
-          src={image}
-          alt={name}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-          sizes="(max-width: 640px) 100vw, 50vw"
-          priority
-        />
+        <div className="relative aspect-square w-full bg-surface-muted overflow-hidden rounded-t-lg">
+          <Image
+            src={image}
+            alt={name}
+            fill
+            sizes="(max-width: 640px) 100vw, 50vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            priority={false}
+            placeholder="/placeholder.png"
+          />
 
-        {/* Out of stock badge */}
-        {!inStock && (
-          <div className="absolute top-3 left-3">
-            <Badge variant="danger">Out of Stock</Badge>
-          </div>
-        )}
+          {/* Badges */}
+          {!inStock && (
+            <div
+              className="absolute top-3 left-3"
+              aria-label="Out of Stock Badge"
+            >
+              <Badge variant="danger">Out of Stock</Badge>
+            </div>
+          )}
+        </div>
       </Link>
 
       {/* Product Content */}
-      <div className="p-4 flex flex-col flex-1 justify-between space-y-2">
-        {/* Product Name */}
+      <div className="p-3 sm:p-4 space-y-1.5">
         <Link href={`/product/${id}`} prefetch={false}>
-          <h3 className="font-medium text-sm sm:text-base text-text line-clamp-1">
+          <h3 className="font-medium text-sm sm:text-base text-text line-clamp-1 leading-tight">
             {name}
           </h3>
         </Link>
 
         {/* Price */}
-        <div className="text-sm sm:text-base font-semibold text-text">
-          {isRange
-            ? `₦${minPrice.toLocaleString()} – ₦${maxPrice.toLocaleString()}`
-            : `₦${minPrice.toLocaleString()}`}
+        <div className="flex items-center gap-1.5 text-sm sm:text-base leading-none">
+          {isRange ? (
+            <span className="font-semibold text-text">
+              {formatCurrency(minPrice)} – {formatCurrency(maxPrice)}
+            </span>
+          ) : (
+            <span className="font-semibold text-text">
+              {formatCurrency(minPrice)}
+            </span>
+          )}
         </div>
 
-        {/* Add to Cart */}
+        {/* Add to Cart / Disabled */}
         {inStock ? (
           <AddToCartButton
             productId={id}
@@ -74,10 +89,7 @@ export default function ProductCard({ product }: Props) {
             fullWidth
           />
         ) : (
-          <button
-            disabled
-            className="w-full mt-2 rounded-md bg-surface text-text opacity-50 cursor-not-allowed py-2 text-sm font-medium"
-          >
+          <Button disabled fullWidth className="min-h-touch">
             Out of Stock
           </button>
         )}

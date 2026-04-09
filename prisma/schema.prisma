@@ -401,9 +401,6 @@ model AuditLog {
   resourceId String?
   metadata   Json?
   createdAt  DateTime @default(now())
-
-  userId String?
-  user   User?   @relation("UserAuditLogs", fields: [userId], references: [id])
 }
 
 //////////////////////
@@ -411,23 +408,23 @@ model AuditLog {
 //////////////////////
 
 model SecurityEvent {
-  id        String  @id @default(cuid())
-  version   Int
-  type      String
-  severity  String
-  category  String?
-  source    String?
-  requestId String?
+  id         String   @id @default(cuid())
+  version    Int
+  type       String
+  severity   String
+  category   String?
+  source     String?
+  requestId  String?
 
-  userId    String?
-  ip        String?
-  userAgent String?
+  userId     String?
+  ip         String?
+  userAgent  String?
 
-  message  String
-  metadata Json?
+  message    String
+  metadata   Json?
 
-  timestamp DateTime @default(now())
-  createdAt DateTime @default(now())
+  timestamp  DateTime @default(now())
+  createdAt  DateTime @default(now())
 
   @@index([userId])
   @@index([type])
