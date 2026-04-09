@@ -50,8 +50,9 @@ export default function ProductList({ params }: ProductListProps) {
 
         setProducts(res.items);
         setNextCursor(res.nextCursor);
-      } catch {
+      } catch (err) {
         if (isMounted && requestId === requestIdRef.current) {
+          console.error("Error fetching products:", err);
           setError(true);
         }
       } finally {
@@ -68,7 +69,7 @@ export default function ProductList({ params }: ProductListProps) {
     };
   }, [params]);
 
-  // Load more
+  // Load more function
   const loadMore = useCallback(async () => {
     if (!nextCursorRef.current || loadingMore) return;
 
@@ -85,14 +86,14 @@ export default function ProductList({ params }: ProductListProps) {
 
       setProducts((prev) => [...prev, ...res.items]);
       setNextCursor(res.nextCursor);
-    } catch {
-      console.error("Failed to load more products");
+    } catch (err) {
+      console.error("Failed to load more products:", err);
     } finally {
       setLoadingMore(false);
     }
   }, [loadingMore, params]);
 
-  // Infinite scroll observer
+  // IntersectionObserver for infinite scroll
   useEffect(() => {
     if (!loadMoreRef.current || !nextCursor) return;
 
@@ -103,10 +104,11 @@ export default function ProductList({ params }: ProductListProps) {
       { rootMargin: "200px" }
     );
 
-    observer.observe(loadMoreRef.current);
+    const el = loadMoreRef.current;
+    observer.observe(el);
 
     return () => {
-      if (loadMoreRef.current) observer.unobserve(loadMoreRef.current);
+      observer.unobserve(el);
       observer.disconnect();
     };
   }, [loadMore, nextCursor]);
@@ -146,6 +148,7 @@ export default function ProductList({ params }: ProductListProps) {
       {nextCursor && (
         <div
           ref={loadMoreRef}
+          role="status"
           aria-busy={loadingMore}
           className="mt-4 text-center text-sm text-text-muted leading-none pb-safe"
         >

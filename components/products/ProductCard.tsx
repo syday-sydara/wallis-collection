@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import AddToCartButton from "@/components/cart/AddToCartButton";
 import Link from "next/link";
+import Image from "next/image";
 import { formatCurrency } from "@/lib/utils";
 
 type Props = {
@@ -26,23 +27,34 @@ export default function ProductCard({ product }: Props) {
   return (
     <Card
       padding="none"
-      className="overflow-hidden group animate-fadeIn-fast hover:shadow-md transition-shadow"
+      className="overflow-hidden group animate-fadeIn-fast hover:shadow-md transition-shadow duration-300"
     >
       {/* Product Image */}
-      <Link href={`/product/${id}`} aria-label={`View product ${name}`} prefetch={false}>
+      <Link
+        href={`/product/${id}`}
+        aria-label={`View product ${name}`}
+        prefetch={false}
+      >
         <div className="relative aspect-square w-full bg-surface-muted overflow-hidden rounded-t-lg">
-          <img
+          <Image
             src={image}
             alt={name}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            fill
+            sizes="(max-width: 640px) 100vw, 50vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            priority={false}
+            placeholder="/placeholder.png"
           />
 
           {/* Badges */}
-          <div className="absolute top-3 left-3 flex flex-col gap-1">
-            {!inStock && <Badge variant="danger">Out of Stock</Badge>}
-          </div>
+          {!inStock && (
+            <div
+              className="absolute top-3 left-3"
+              aria-label="Out of Stock Badge"
+            >
+              <Badge variant="danger">Out of Stock</Badge>
+            </div>
+          )}
         </div>
       </Link>
 
@@ -58,16 +70,16 @@ export default function ProductCard({ product }: Props) {
         <div className="flex items-center gap-1.5 text-sm sm:text-base leading-none">
           {isRange ? (
             <span className="font-semibold text-text">
-              ₦{minPrice.toLocaleString()} – ₦{maxPrice.toLocaleString()}
+              {formatCurrency(minPrice)} – {formatCurrency(maxPrice)}
             </span>
           ) : (
             <span className="font-semibold text-text">
-              ₦{minPrice.toLocaleString()}
+              {formatCurrency(minPrice)}
             </span>
           )}
         </div>
 
-        {/* Add to Cart */}
+        {/* Add to Cart / Disabled */}
         {inStock ? (
           <AddToCartButton
             productId={id}

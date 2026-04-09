@@ -7,6 +7,8 @@ type LoadingStateProps = {
   description?: string;
   spinnerSrc?: string; // path to your spinner image
   className?: string;
+  fullscreen?: boolean; // optional fullscreen overlay
+  spinnerSize?: number; // allows custom spinner size in px
 };
 
 export default function LoadingState({
@@ -14,13 +16,20 @@ export default function LoadingState({
   description = "Please wait while we fetch the data.",
   spinnerSrc = "/spinner.svg", // default spinner
   className,
+  fullscreen = false,
+  spinnerSize = 48,
 }: LoadingStateProps) {
   return (
     <div
       role="status"
       aria-live="polite"
       aria-busy="true"
-      className={`flex flex-col items-center justify-center py-16 px-4 text-center mx-auto animate-fadeIn max-w-full sm:max-w-md ${className ?? ""}`}
+      className={`
+        flex flex-col items-center justify-center
+        text-center px-4 py-16 animate-fadeIn
+        ${fullscreen ? "fixed inset-0 bg-bg-muted/50 z-modal" : ""}
+        ${className ?? ""}
+      `}
     >
       {/* Spinner */}
       <div
@@ -30,19 +39,21 @@ export default function LoadingState({
         <Image
           src={spinnerSrc}
           alt="Loading"
-          width={48}
-          height={48}
-          className="animate-spin w-12 h-12 sm:w-16 sm:h-16"
+          width={spinnerSize}
+          height={spinnerSize}
+          className={`animate-spin w-[${spinnerSize}px] h-[${spinnerSize}px] sm:w-[${spinnerSize * 1.5}px] sm:h-[${spinnerSize * 1.5}px]`}
           priority
         />
       </div>
 
       {/* Title */}
-      <p className="text-lg sm:text-xl font-semibold text-text">{title}</p>
+      <p className="text-lg sm:text-xl font-semibold text-text-primary">
+        {title}
+      </p>
 
       {/* Description */}
       {description && (
-        <p className="mt-2 text-sm sm:text-base text-text-muted max-w-prose">
+        <p className="mt-2 text-sm sm:text-base text-text-secondary max-w-prose">
           {description}
         </p>
       )}

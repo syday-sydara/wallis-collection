@@ -16,11 +16,11 @@ export default function ProductGridSkeleton({ count = 8, className }: Props) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-sm animate-pulse leading-none"
+          className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-sm animate-pulse"
           aria-hidden="true"
         >
           {/* Image placeholder */}
-          <div className="relative w-full aspect-square bg-skeleton rounded-t-lg" />
+          <div className="w-full aspect-square bg-skeleton rounded-t-lg" />
 
           {/* Text placeholders */}
           <div className="flex flex-1 flex-col p-3 space-y-2">

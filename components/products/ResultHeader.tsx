@@ -1,4 +1,10 @@
-export default function ResultHeader({ count }: { count: number }) {
+"use client";
+
+type ResultHeaderProps = {
+  count: number;
+};
+
+export default function ResultHeader({ count }: ResultHeaderProps) {
   const safeCount = Number(count) || 0;
   const label = safeCount === 1 ? "product" : "products";
 

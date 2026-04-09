@@ -16,15 +16,15 @@ export default function ProductGrid({ products, isLoading }: Props) {
       aria-busy={isLoading ? true : undefined}
       aria-live="polite"
     >
-      {isLoading
-        ? <ProductGridSkeleton count={8} />
-        : products.length
-        ? products.map((p) => <ProductCard key={p.id} product={p} />)
-        : (
-          <div className="col-span-full flex flex-col items-center justify-center py-12 text-text-muted text-center max-w-xs mx-auto animate-fadeIn-fast">
-            No products available
-          </div>
-        )}
+      {isLoading ? (
+        <ProductGridSkeleton count={8} />
+      ) : products.length > 0 ? (
+        products.map((p) => <ProductCard key={p.id} product={p} />)
+      ) : (
+        <div className="col-span-full flex flex-col items-center justify-center py-12 text-text-muted text-center max-w-xs mx-auto animate-fadeIn-fast">
+          No products available
+        </div>
+      )}
     </div>
   );
 }

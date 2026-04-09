@@ -12,7 +12,10 @@ type Props = {
   product: ProductDetailVM;
 };
 
-function getDisplayPrice(product: ProductDetailVM, selected?: ProductDetailVM["variants"][0]) {
+function getDisplayPrice(
+  product: ProductDetailVM,
+  selected?: ProductDetailVM["variants"][0]
+) {
   if (selected) return formatCurrency(selected.price);
   if (product.minPrice === product.maxPrice) return formatCurrency(product.minPrice);
   return `${formatCurrency(product.minPrice)} – ${formatCurrency(product.maxPrice)}`;
@@ -26,7 +29,6 @@ export default function ProductClient({ product }: Props) {
   const requiresVariant = product.variants.length > 0;
   const hasSelectedVariant = !requiresVariant || selectedVariant !== undefined;
   const canAddToCart = product.inStock && hasSelectedVariant;
-
   const displayPrice = getDisplayPrice(product, selectedVariant);
 
   return (
@@ -39,29 +41,36 @@ export default function ProductClient({ product }: Props) {
         {/* Product Info */}
         <article className="space-y-4">
           <header>
-            <h1 className="text-xl font-semibold text-text">{product.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-text">{product.name}</h1>
 
-            <p aria-live="polite" className="mt-1 text-text-muted text-lg font-medium">
+            <p
+              aria-live="polite"
+              className="mt-1 text-text-muted text-lg sm:text-xl font-medium"
+            >
               {displayPrice}
             </p>
 
             {!product.inStock && (
-              <p className="mt-2 text-sm text-danger font-medium">Out of stock</p>
+              <p className="mt-2 text-sm sm:text-base text-danger font-medium">
+                Out of stock
+              </p>
             )}
           </header>
 
           {product.description && (
-            <p className="text-sm text-text-muted leading-relaxed max-w-prose">
+            <p className="text-sm sm:text-base text-text-muted leading-relaxed max-w-prose">
               {product.description}
             </p>
           )}
 
           {/* Variant Selector */}
-          <VariantSelector
-            variants={product.variants}
-            selected={selectedVariant ?? null}
-            onChange={setSelectedVariant}
-          />
+          {requiresVariant && (
+            <VariantSelector
+              variants={product.variants}
+              selected={selectedVariant ?? null}
+              onChange={setSelectedVariant}
+            />
+          )}
 
           {/* Desktop AddToCart */}
           <div className="hidden md:block">
@@ -78,7 +87,9 @@ export default function ProductClient({ product }: Props) {
       {/* Recommended Products */}
       {product.recommended?.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-6 animate-fadeIn-fast">
-          <h2 className="text-lg font-semibold mb-4 text-text">You may also like</h2>
+          <h2 className="text-lg sm:text-xl font-semibold mb-4 text-text">
+            You may also like
+          </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {product.recommended.map((r) => (
               <ProductCard key={r.id} product={r} />
