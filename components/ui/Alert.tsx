@@ -15,8 +15,8 @@ const alertVariants = cva(
         danger: "bg-danger/10 border-danger/30 text-danger",
       },
       size: {
-        sm: "text-sm",
-        md: "text-base",
+        sm: "text-sm gap-2 p-3",
+        md: "text-base gap-3 p-4",
       },
     },
     defaultVariants: {
@@ -43,6 +43,7 @@ export function Alert({
   className,
   ...props
 }: AlertProps) {
+  // Choose icon based on variant
   const Icon =
     variant === "success"
       ? CheckCircle2
@@ -55,18 +56,25 @@ export function Alert({
   return (
     <div
       role="alert"
+      aria-live="assertive"
       className={cn(alertVariants({ variant, size }), "animate-fadeIn", className)}
       {...props}
     >
-      <Icon className="h-5 w-5 shrink-0 text-current/90" />
+      {/* Icon */}
+      <Icon
+        className={cn(
+          "shrink-0 text-current/90",
+          size === "sm" ? "h-4 w-4 mt-0.5" : "h-5 w-5"
+        )}
+        aria-hidden="true"
+      />
 
+      {/* Content */}
       <div className="flex flex-col">
         {title && <h4 className="font-semibold leading-snug">{title}</h4>}
-
         {description && (
           <p className="text-text-muted mt-1">{description}</p>
         )}
-
         {children}
       </div>
     </div>

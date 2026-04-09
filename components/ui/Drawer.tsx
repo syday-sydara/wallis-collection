@@ -1,6 +1,5 @@
-"use client";
-
-import { useEffect, useRef } from "react";
+// components/ui/Drawer.tsx
+import { Overlay } from "./Overlay";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 
@@ -27,64 +26,29 @@ export function Drawer({
   closeOnOutsideClick = true,
   height = "md",
 }: DrawerProps) {
-  const drawerRef = useRef<HTMLDivElement>(null);
-
-  // ESC key closes drawer
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
-
-  // Prevent background scroll
-  useEffect(() => {
-    if (!open) return;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open]);
-
-  // Focus drawer on open
-  useEffect(() => {
-    if (open && drawerRef.current) {
-      drawerRef.current.focus();
-    }
-  }, [open]);
-
-  if (!open) return null;
-
-  const heightClass =
-    height === "sm"
-      ? "h-[35vh]"
-      : height === "md"
-      ? "h-[50vh]"
-      : height === "lg"
-      ? "h-[75vh]"
-      : "h-[100vh]";
+  const heightClasses = {
+    sm: "h-[35vh]",
+    md: "h-[50vh]",
+    lg: "h-[75vh]",
+    full: "h-[100vh]",
+  };
 
   return (
-    <div
-      className="fixed inset-0 z-modal bg-black/40 backdrop-blur-sm animate-fadeIn flex items-end"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={title ? "drawer-title" : undefined}
-      aria-describedby={description ? "drawer-description" : undefined}
-      onClick={closeOnOutsideClick ? onClose : undefined}
+    <Overlay
+      open={open}
+      onClose={onClose}
+      closeOnOutsideClick={closeOnOutsideClick}
+      className="items-end justify-center bg-black/40 backdrop-blur-sm"
+      ariaLabelledBy={title ? "drawer-title" : undefined}
+      ariaDescribedBy={description ? "drawer-description" : undefined}
     >
       <div
-        ref={drawerRef}
-        tabIndex={-1}
         className={cn(
           "w-full bg-surface rounded-t-lg border-t border-border shadow-lg animate-fadeIn-fast animate-slideUp overflow-hidden",
-          heightClass
+          heightClasses[height]
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         {(title || !hideCloseButton) && (
           <div className="flex items-center justify-between p-4 border-b border-border">
             <div>
@@ -104,6 +68,7 @@ export function Drawer({
               <button
                 onClick={onClose}
                 className="p-2 -m-2 text-text-muted hover:text-text active:scale-press transition-transform"
+                aria-label="Close drawer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -111,18 +76,16 @@ export function Drawer({
           </div>
         )}
 
-        {/* Body */}
         <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] overflow-y-auto h-full text-text">
           {children}
         </div>
 
-        {/* Footer */}
         {footer && (
           <div className="border-t border-border p-4 flex justify-end gap-2">
             {footer}
           </div>
         )}
       </div>
-    </div>
+    </Overlay>
   );
 }

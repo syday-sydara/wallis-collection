@@ -73,8 +73,8 @@ enum PaymentProvider {
 //////////////////////
 
 model User {
-  id    String   @id @default(cuid())
-  email String   @unique
+  id    String  @id @default(cuid())
+  email String  @unique
   name  String?
 
   role   UserRole   @default(USER)
@@ -91,7 +91,8 @@ model User {
   addresses Address[]
   sessions  Session[]
   devices   Device[]
-  auditLogs AuditLog[]
+
+  auditLogs AuditLog[] @relation("UserAuditLogs")
 
   @@index([email])
   @@index([phone])
@@ -102,9 +103,9 @@ model User {
 //////////////////////
 
 model Category {
-  id   String   @id @default(cuid())
-  name String   @unique
-  slug String   @unique
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
 
   products Product[] @relation("ProductCategories")
 
@@ -164,7 +165,7 @@ model ProductVariant {
   reservedStock Int @default(0)
 
   compareAtPrice Int?
-  costPrice     Int?
+  costPrice      Int?
 
   attributes Json?
 
@@ -179,7 +180,7 @@ model ProductVariant {
 //////////////////////
 
 model StockLog {
-  id        String   @id @default(cuid())
+  id        String         @id @default(cuid())
   variantId String
   variant   ProductVariant @relation(fields: [variantId], references: [id])
 
@@ -208,9 +209,9 @@ model Order {
   total          Int
   refundedAmount Int @default(0)
 
-  currency      Currency @default(NGN)
+  currency      Currency      @default(NGN)
   paymentMethod PaymentMethod
-  orderStatus   OrderStatus @default(CREATED)
+  orderStatus   OrderStatus   @default(CREATED)
 
   shippingType    ShippingType
   shippingAddress Json
@@ -231,7 +232,7 @@ model Order {
   updatedAt DateTime @updatedAt
 
   userId String?
-  user   User? @relation(fields: [userId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
 
   items    OrderItem[]
   payments Payment[]
@@ -245,7 +246,7 @@ model OrderItem {
   id String @id @default(cuid())
 
   orderId String
-  order   Order @relation(fields: [orderId], references: [id])
+  order   Order  @relation(fields: [orderId], references: [id])
 
   variantId String
   variant   ProductVariant @relation(fields: [variantId], references: [id])
@@ -268,7 +269,7 @@ model Payment {
   id String @id @default(cuid())
 
   orderId String
-  order   Order @relation(fields: [orderId], references: [id])
+  order   Order  @relation(fields: [orderId], references: [id])
 
   provider  String
   reference String @unique
@@ -300,7 +301,7 @@ model Address {
   id String @id @default(cuid())
 
   userId String?
-  user   User? @relation(fields: [userId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
 
   fullName String
   phone    String
@@ -333,8 +334,8 @@ model OTP {
   type OtpType @default(LOGIN)
 
   expiresAt DateTime
-  used      Boolean @default(false)
-  attempts  Int     @default(0)
+  used      Boolean  @default(false)
+  attempts  Int      @default(0)
 
   createdAt DateTime @default(now())
 
@@ -350,13 +351,13 @@ model Session {
   id String @id @default(cuid())
 
   userId String
-  user   User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   ipAddress  String?
   userAgent  String?
   deviceId   String?
-  createdAt  DateTime @default(now())
-  lastActive DateTime @default(now())
+  createdAt  DateTime  @default(now())
+  lastActive DateTime  @default(now())
   revokedAt  DateTime?
 
   riskScore Int @default(0)
@@ -373,7 +374,7 @@ model Device {
   id String @id @default(cuid())
 
   userId String
-  user   User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   deviceFingerprint String
   userAgent         String?

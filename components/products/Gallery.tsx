@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
-import Image from "next/image";
+import { useState } from "react";
 
+type ImageType = { id?: string; url: string; alt?: string | null };
+type Props = { images: ImageType[] };
 type ImageType = { id?: string; url: string; alt?: string | null };
 type Props = { images: ImageType[] };
 
@@ -49,44 +50,19 @@ export default function Gallery({ images }: Props) {
   return (
     <div className="space-y-4">
       {/* Main Image */}
-      <div
-        className="relative w-full aspect-square rounded-lg overflow-hidden bg-bg-muted"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onKeyDown={handleKeyDown}
-        tabIndex={0}
-      >
-        {/* Skeleton */}
-        {isLoading && (
-          <div className="absolute inset-0 skeleton rounded-lg" />
-        )}
-
-        <Image
-          key={activeImage.url}
-          src={activeImage.url}
-          alt={activeImage.alt ?? "Product image"}
-          fill
-          className={`object-cover transition-opacity duration-300 ${
-            isLoading ? "opacity-0" : "opacity-100"
-          }`}
-          sizes="(max-width: 640px) 100vw, 50vw"
-          priority
-          onLoad={() => setIsLoading(false)}
-        />
-
-        {/* Click to zoom */}
-        <button
-          type="button"
-          onClick={() => setIsZoomed(true)}
-          className="absolute inset-0 cursor-zoom-in"
-          aria-label="Zoom image"
-        />
-      </div>
+      <img
+        src={active}
+        alt={activeImage?.alt ?? "Product image"}
+        aria-label={activeImage?.alt ?? "Product image"}
+        loading="lazy"
+        decoding="async"
+        className="w-full rounded-lg object-cover aspect-square animate-fadeIn"
+      />
 
       {/* Thumbnails */}
       <div className="flex gap-2 overflow-x-auto scrollbar-none">
-        {images.map((img, index) => {
-          const isActive = index === activeIndex;
+        {images.map((img) => {
+          const isActive = active === img.url;
 
           return (
             <button
@@ -97,25 +73,18 @@ export default function Gallery({ images }: Props) {
                 setIsLoading(true);
               }}
               aria-selected={isActive}
-              className={`
-                rounded-md p-0.5 transition-all
-                focus-ring
-                ${
-                  isActive
-                    ? "border-2 border-primary scale-95"
-                    : "border border-border"
-                }
-              `}
+              aria-pressed={isActive}
+              className={`rounded-md p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
+                isActive ? "border-2 border-primary" : "border border-border-subtle"
+              }`}
             >
-              <div className="relative w-16 h-16 rounded-md overflow-hidden bg-bg-muted">
-                <Image
-                  src={img.url}
-                  alt={img.alt ?? ""}
-                  fill
-                  className="object-cover"
-                  sizes="64px"
-                />
-              </div>
+              <img
+                src={img.url}
+                alt={img.alt ?? ""}
+                loading="lazy"
+                decoding="async"
+                className="w-16 h-16 object-cover rounded-md"
+              />
             </button>
           );
         })}
