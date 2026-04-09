@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import ProductGrid from "./ProductGrid";
 import ProductGridSkeleton from "./ProductGridSkeleton";
-import EmptyState from "@/components/products/EmptyState";
-import ErrorState from "./ErrorState";
+import EmptyState from "@/components/ui/EmptyState";
+import ErrorState from "../ui/ErrorState";
 import ResultHeader from "./ResultHeader";
 import { getProducts } from "@/lib/products/service";
 
@@ -134,12 +134,15 @@ export default function ProductList({ params }: ProductListProps) {
 
   return (
     <>
+      {/* Result Header */}
       <ResultHeader count={products.length} />
 
+      {/* Product Grid */}
       <div className="animate-fadeIn">
         <ProductGrid products={products} />
       </div>
 
+      {/* Infinite Scroll / Load More */}
       {nextCursor && (
         <div
           ref={loadMoreRef}
@@ -150,7 +153,8 @@ export default function ProductList({ params }: ProductListProps) {
         </div>
       )}
 
-      {!nextCursor && (
+      {/* End of list message */}
+      {!nextCursor && products.length > 0 && (
         <p className="mt-4 text-center text-xs text-text-muted animate-fadeIn-fast">
           No more products
         </p>

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import ProductGrid from "@/components/products/ProductGrid";
 import ProductGridSkeleton from "@/components/products/ProductGridSkeleton";
-import EmptyState from "@/components/products/EmptyState";
+import EmptyState from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { getProducts } from "@/lib/products/service";
 import type {

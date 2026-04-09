@@ -4,12 +4,13 @@ export default function ResultHeader({ count }: { count: number }) {
 
   return (
     <div
+      role="status"
       aria-live="polite"
-      aria-label={`${safeCount} ${label} found`}
+      aria-atomic="true"
       className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between animate-fadeIn-fast leading-none"
     >
       <h2 className="text-lg font-semibold text-text">
-        {safeCount} {label}
+        {safeCount} {label} found
       </h2>
     </div>
   );

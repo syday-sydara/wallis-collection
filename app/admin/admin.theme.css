@@ -1,5 +1,5 @@
 /* ------------------------------------------------------ */
-/* Root Theme Tokens (Light Mode)                         */
+/* ROOT: CORE TOKENS (RAW VALUES)                         */
 /* ------------------------------------------------------ */
 
 :root {
@@ -7,45 +7,28 @@
   --surface: 255 255 255;
   --surface-muted: 245 245 245;
   --surface-card: 250 250 250;
-  --surface-foreground: 20 20 20;
+  --surface-inverse: 20 20 20;
 
   /* Text */
   --text: 20 20 20;
   --text-muted: 110 110 110;
+  --text-inverse: 255 255 255;
 
   /* Border */
   --border: 225 225 225;
 
-  /* Primary */
-  --color-primary: 0 122 255;
-  --color-primary-hover: 0 112 240;
-  --color-primary-active: 0 102 220;
-  --color-primary-foreground: 255 255 255;
-
-  /* Success */
-  --color-success: 34 197 94;
-  --color-success-hover: 30 180 85;
-  --color-success-active: 25 160 75;
-  --color-success-foreground: 255 255 255;
-
-  /* Danger */
-  --color-danger: 239 68 68;
-  --color-danger-hover: 220 60 60;
-  --color-danger-active: 200 50 50;
-  --color-danger-foreground: 255 255 255;
-
-  /* Warning */
-  --color-warning: 245 158 11;
-  --color-warning-hover: 230 145 10;
-  --color-warning-active: 215 135 10;
-  --color-warning-foreground: 255 255 255;
+  /* Brand Colors */
+  --blue-500: 0 122 255;
+  --green-500: 34 197 94;
+  --red-500: 239 68 68;
+  --orange-500: 245 158 11;
 
   /* Disabled */
-  --color-disabled: 200 200 200;
-  --color-disabled-foreground: 150 150 150;
+  --gray-300: 200 200 200;
+  --gray-400: 150 150 150;
 
   /* Skeleton */
-  --skeleton: 230 230 230;
+  --gray-200: 230 230 230;
 
   /* Typography */
   --font-sans: "Inter", system-ui, sans-serif;
@@ -60,6 +43,10 @@
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
+
+  --line-height-sm: 1.25;
+  --line-height-md: 1.5;
+  --line-height-lg: 1.75;
 
   /* Spacing */
   --space-1: 0.25rem;
@@ -82,9 +69,10 @@
   --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.1);
 
-  /* Focus Ring */
-  --focus-ring: 0 122 255;
-  --focus-ring-width: 2px;
+  /* Z-index */
+  --z-dropdown: 1000;
+  --z-modal: 1100;
+  --z-toast: 1200;
 
   /* Motion */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
@@ -93,74 +81,211 @@
   --transition-fast: 120ms;
   --transition-medium: 200ms;
   --transition-slow: 300ms;
+
+  /* State opacity */
+  --state-hover-opacity: 0.08;
+  --state-active-opacity: 0.12;
+
+  /* Focus */
+  --focus-ring: var(--blue-500);
+  --focus-ring-width: 2px;
 }
 
 /* ------------------------------------------------------ */
-/* Dark Mode                                               */
+/* SEMANTIC TOKENS (USAGE MEANING)                        */
 /* ------------------------------------------------------ */
 
-.dark {
+:root {
+  --bg-default: var(--surface);
+  --bg-muted: var(--surface-muted);
+  --bg-card: var(--surface-card);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--text-muted);
+
+  --border-default: var(--border);
+
+  --color-primary: var(--blue-500);
+  --color-success: var(--green-500);
+  --color-danger: var(--red-500);
+  --color-warning: var(--orange-500);
+
+  --color-disabled: var(--gray-300);
+  --color-disabled-foreground: var(--gray-400);
+
+  --skeleton: var(--gray-200);
+}
+
+/* ------------------------------------------------------ */
+/* DARK MODE                                              */
+/* ------------------------------------------------------ */
+
+[data-theme="dark"] {
   --surface: 20 20 20;
   --surface-muted: 28 28 28;
   --surface-card: 32 32 32;
-  --surface-foreground: 240 240 240;
 
   --text: 240 240 240;
   --text-muted: 160 160 160;
 
   --border: 60 60 60;
 
+  /* Adjusted semantic mappings */
+  --bg-default: var(--surface);
+  --bg-muted: var(--surface-muted);
+  --bg-card: var(--surface-card);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--text-muted);
+
+  /* Better dark variants */
   --color-primary: 0 140 255;
-  --color-primary-hover: 0 130 240;
-  --color-primary-active: 0 120 220;
-  --color-primary-foreground: 255 255 255;
-
-  --color-success: 34 197 94;
-  --color-success-hover: 30 180 85;
-  --color-success-active: 25 160 75;
-  --color-success-foreground: 255 255 255;
-
-  --color-danger: 239 68 68;
-  --color-danger-hover: 220 60 60;
-  --color-danger-active: 200 50 50;
-  --color-danger-foreground: 255 255 255;
-
-  --color-warning: 245 158 11;
-  --color-warning-hover: 230 145 10;
-  --color-warning-active: 215 135 10;
-  --color-warning-foreground: 255 255 255;
+  --color-success: 40 210 110;
+  --color-danger: 255 90 90;
+  --color-warning: 255 180 50;
 
   --color-disabled: 80 80 80;
   --color-disabled-foreground: 120 120 120;
 
   --skeleton: 60 60 60;
 
+  /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 /* ------------------------------------------------------ */
-/* Utility Classes                                         */
+/* BASE                                                   */
 /* ------------------------------------------------------ */
 
 html,
 body {
-  background: rgb(var(--surface));
-  color: rgb(var(--text));
+  background: rgb(var(--bg-default));
+  color: rgb(var(--text-primary));
   font-family: var(--font-sans);
+  line-height: var(--line-height-md);
 }
 
+/* Focus */
+:focus-visible {
+  outline: var(--focus-ring-width) solid rgb(var(--focus-ring));
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------ */
+/* COMPONENTS                                             */
+/* ------------------------------------------------------ */
+
 .card {
-  background: rgb(var(--surface-card));
-  border: 1px solid rgb(var(--border));
+  background: rgb(var(--bg-card));
+  border: 1px solid rgb(var(--border-default));
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   padding: var(--space-4);
+  transition: box-shadow var(--transition-fast);
 }
 
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Skeleton */
 .skeleton {
-  background: rgb(var(--skeleton));
-  animation: shimmer 1.5s infinite linear;
+  background: linear-gradient(
+    90deg,
+    rgb(var(--skeleton)) 25%,
+    rgb(var(--bg-muted)) 50%,
+    rgb(var(--skeleton)) 75%
+  );
   background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+/* ------------------------------------------------------ */
+/* UTILITIES                                              */
+/* ------------------------------------------------------ */
+
+.bg-primary {
+  background: rgb(var(--color-primary));
+  color: rgb(var(--text-inverse));
+}
+
+.bg-primary-soft {
+  background: rgb(var(--color-primary) / 0.1);
+}
+
+/* ------------------------------------------------------ */
+/* ANIMATIONS                                             */
+/* ------------------------------------------------------ */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ------------------------------------------------------ */
+/* ANIMATION UTILITIES                                    */
+/* ------------------------------------------------------ */
+
+.animate-fade-in {
+  animation: fade-in var(--transition-medium) var(--ease-standard);
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right var(--transition-medium) var(--ease-standard);
+}
+
+.animate-scale-in {
+  animation: scale-in var(--transition-fast) var(--ease-standard);
+}
+
+/* ------------------------------------------------------ */
+/* ACCESSIBILITY                                          */
+/* ------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

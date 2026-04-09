@@ -1,11 +1,10 @@
-"use client";
-
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import { useCart } from "@/lib/cart/store";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import Image from "next/image";
 import { formatCurrency } from "@/lib/utils/formatters/currency";
 
 export function CartDrawer() {
@@ -21,7 +20,6 @@ export function CartDrawer() {
 
   return (
     <>
-      {/* Overlay */}
       <div
         className={cn(
           "fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity z-40",
@@ -30,11 +28,12 @@ export function CartDrawer() {
         onClick={close}
       />
 
-      {/* Drawer */}
       <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Shopping cart"
         className={cn(
-          "fixed right-0 top-0 h-full w-[90%] max-w-sm bg-surface shadow-xl z-50 flex flex-col transition-transform pb-safe",
-          "animate-fadeIn-fast",
+          "fixed right-0 top-0 h-full w-[90%] max-w-sm bg-surface shadow-xl z-50 flex flex-col transition-transform pb-safe animate-fadeIn-fast",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
@@ -49,7 +48,6 @@ export function CartDrawer() {
           </button>
         </div>
 
-        {/* Items */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {items.length === 0 ? (
             <p className="text-text-muted text-sm text-center mt-10">
@@ -58,25 +56,23 @@ export function CartDrawer() {
           ) : (
             items.map((item) => (
               <div key={item.id} className="flex gap-3">
-                <img
+                <Image
                   src={item.image}
                   alt={item.name}
-                  className="w-16 h-16 rounded-md object-cover"
+                  width={64}
+                  height={64}
+                  className="rounded-md object-cover"
                 />
-
                 <div className="flex-1">
                   <p className="font-medium text-text">{item.name}</p>
-
                   {item.attributes && (
                     <p className="text-xs text-text-muted">
                       {Object.values(item.attributes).join(" / ")}
                     </p>
                   )}
-
                   <p className="text-sm text-text-muted mt-1">
                     Qty: {item.quantity}
                   </p>
-
                   <p className="text-sm font-medium text-text mt-1">
                     {formatCurrency(item.unitPrice)}
                   </p>
@@ -86,7 +82,6 @@ export function CartDrawer() {
           )}
         </div>
 
-        {/* Footer */}
         {items.length > 0 && (
           <div className="border-t border-border-subtle p-4 space-y-3">
             <div className="flex justify-between text-text">

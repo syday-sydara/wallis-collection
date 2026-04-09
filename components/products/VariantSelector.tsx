@@ -13,6 +13,9 @@ type Props = {
 export default function VariantSelector({ variants, selected, onChange }: Props) {
   if (!variants?.length) return null;
 
+  const formatCurrency = (value: number) =>
+    `₦${value.toLocaleString("en-NG")}`;
+
   return (
     <div className="space-y-2 animate-fadeIn-fast">
       <p className="text-sm font-medium text-text">Select option</p>
@@ -28,18 +31,19 @@ export default function VariantSelector({ variants, selected, onChange }: Props)
               role="radio"
               aria-pressed={isSelected}
               aria-checked={isSelected}
-              aria-label={`Select variant ${v.name}`}
+              aria-label={`Select variant ${v.name}, ${formatCurrency(v.price)}`}
               title={v.name}
               onClick={() => onChange(v)}
               className={cn(
-                "rounded-md border px-4 py-2 text-sm font-medium transition-all leading-none min-h-touch",
+                "rounded-md border px-4 py-3 text-sm font-medium transition-all leading-none min-h-touch flex justify-between items-center gap-2",
                 "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface active:scale-press",
                 isSelected
                   ? "border-primary bg-primary text-primary-foreground shadow-sm"
                   : "border-border-subtle bg-surface hover:border-primary"
               )}
             >
-              {v.name}
+              <span>{v.name}</span>
+              <span className="text-xs text-text-muted">{formatCurrency(v.price)}</span>
             </button>
           );
         })}

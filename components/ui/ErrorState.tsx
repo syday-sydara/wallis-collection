@@ -1,3 +1,6 @@
+// components/ui/ErrorState.tsx
+import React from "react";
+
 type ErrorStateProps = {
   title?: string;
   description?: string;
@@ -31,9 +34,7 @@ export default function ErrorState({
 
       {/* Description */}
       {description && (
-        <p className="mt-2 text-sm text-text-muted max-w-prose">
-          {description}
-        </p>
+        <p className="mt-2 text-sm text-text-muted max-w-prose">{description}</p>
       )}
 
       {/* Optional Action */}

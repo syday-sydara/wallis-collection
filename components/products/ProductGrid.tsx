@@ -1,25 +1,23 @@
 "use client";
 
 import ProductCard from "./ProductCard";
-import { Skeleton } from "@/components/ui/Skeleton";
+import ProductGridSkeleton from "./ProductGridSkeleton";
 import type { ProductCardVM } from "@/lib/products/types";
 
-type ProductGridProps = {
+type Props = {
   products: ProductCardVM[];
   isLoading?: boolean;
 };
 
-export default function ProductGrid({ products, isLoading }: ProductGridProps) {
+export default function ProductGrid({ products, isLoading }: Props) {
   return (
     <div
-      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-safe animate-fadeIn"
+      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pb-safe animate-fadeIn"
       aria-busy={isLoading ? true : undefined}
       aria-live="polite"
     >
       {isLoading
-        ? Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-square" />
-          ))
+        ? <ProductGridSkeleton count={8} />
         : products.length
         ? products.map((p) => <ProductCard key={p.id} product={p} />)
         : (

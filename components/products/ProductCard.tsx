@@ -3,12 +3,23 @@
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import AddToCartButton from "@/components/cart/AddToCartButton";
 import Link from "next/link";
+import { formatCurrency } from "@/lib/utils";
 
-export function ProductCard({ product }) {
+type Props = {
+  product: {
+    id: string;
+    name: string;
+    minPrice: number;
+    maxPrice: number;
+    inStock: boolean;
+    images?: { url: string }[];
+  };
+};
+
+export default function ProductCard({ product }: Props) {
   const { id, name, minPrice, maxPrice, inStock, images } = product;
-
   const image = images?.[0]?.url ?? "/placeholder.png";
   const isRange = minPrice !== maxPrice;
 
@@ -17,7 +28,7 @@ export function ProductCard({ product }) {
       padding="none"
       className="overflow-hidden group animate-fadeIn-fast hover:shadow-md transition-shadow"
     >
-      {/* Image */}
+      {/* Product Image */}
       <Link href={`/product/${id}`} aria-label={`View product ${name}`} prefetch={false}>
         <div className="relative aspect-square w-full bg-surface-muted overflow-hidden rounded-t-lg">
           <img
@@ -35,22 +46,22 @@ export function ProductCard({ product }) {
         </div>
       </Link>
 
-      {/* Content */}
-      <div className="p-4 space-y-2">
-        <Link href={`/product/${id}`} aria-label={`View product ${name}`} prefetch={false}>
-          <h3 className="font-medium text-base text-text line-clamp-1 leading-none">
+      {/* Product Content */}
+      <div className="p-3 sm:p-4 space-y-1.5">
+        <Link href={`/product/${id}`} prefetch={false}>
+          <h3 className="font-medium text-sm sm:text-base text-text line-clamp-1 leading-tight">
             {name}
           </h3>
         </Link>
 
         {/* Price */}
-        <div className="flex items-center gap-2 leading-none">
+        <div className="flex items-center gap-1.5 text-sm sm:text-base leading-none">
           {isRange ? (
-            <span className="font-semibold text-lg text-text leading-none">
+            <span className="font-semibold text-text">
               ₦{minPrice.toLocaleString()} – ₦{maxPrice.toLocaleString()}
             </span>
           ) : (
-            <span className="font-semibold text-lg text-text leading-none">
+            <span className="font-semibold text-text">
               ₦{minPrice.toLocaleString()}
             </span>
           )}
@@ -66,7 +77,7 @@ export function ProductCard({ product }) {
             fullWidth
           />
         ) : (
-          <Button disabled aria-disabled="true" fullWidth className="min-h-touch">
+          <Button disabled fullWidth className="min-h-touch">
             Out of Stock
           </Button>
         )}

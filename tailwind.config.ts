@@ -1,8 +1,9 @@
 import type { Config } from "tailwindcss";
 import defaultTheme from "tailwindcss/defaultTheme";
+import plugin from "tailwindcss/plugin";
 
 const config: Config = {
-  darkMode: "class",
+  darkMode: ["class", '[data-theme="dark"]'],
 
   content: [
     "./app/**/*.{ts,tsx,mdx}",
@@ -26,129 +27,124 @@ const config: Config = {
     },
 
     extend: {
-      /* -------------------------------------------------- */
-      /* Colors mapped to your CSS variables */
-      /* -------------------------------------------------- */
+      /* ---------------------------------- */
+      /* COLORS (WITH FALLBACKS)            */
+      /* ---------------------------------- */
       colors: {
-        surface: {
-          DEFAULT: "rgb(var(--surface) / <alpha-value>)",
-          muted: "rgb(var(--surface-muted) / <alpha-value>)",
-          card: "rgb(var(--surface-card) / <alpha-value>)",
+        bg: {
+          DEFAULT: "rgb(var(--bg-default, 255 255 255) / <alpha-value>)",
+          muted: "rgb(var(--bg-muted, 245 245 245) / <alpha-value>)",
+          card: "rgb(var(--bg-card, 255 255 255) / <alpha-value>)",
         },
 
         text: {
-          DEFAULT: "rgb(var(--text) / <alpha-value>)",
-          muted: "rgb(var(--text-muted) / <alpha-value>)",
+          primary: "rgb(var(--text-primary, 17 24 39) / <alpha-value>)",
+          secondary:
+            "rgb(var(--text-secondary, 107 114 128) / <alpha-value>)",
         },
 
-        border: "rgb(var(--border) / <alpha-value>)",
+        border: {
+          DEFAULT:
+            "rgb(var(--border-default, 229 231 235) / <alpha-value>)",
+        },
 
         primary: {
-          DEFAULT: "rgb(var(--color-primary) / <alpha-value>)",
-          hover: "rgb(var(--color-primary-hover) / <alpha-value>)",
-          active: "rgb(var(--color-primary-active) / <alpha-value>)",
-          foreground: "rgb(var(--color-primary-foreground) / <alpha-value>)",
+          DEFAULT: "rgb(var(--color-primary, 59 130 246) / <alpha-value>)",
+          foreground:
+            "rgb(var(--color-primary-foreground, 255 255 255) / <alpha-value>)",
         },
 
         success: {
-          DEFAULT: "rgb(var(--color-success) / <alpha-value>)",
-          hover: "rgb(var(--color-success-hover) / <alpha-value>)",
-          active: "rgb(var(--color-success-active) / <alpha-value>)",
-          foreground: "rgb(var(--color-success-foreground) / <alpha-value>)",
+          DEFAULT: "rgb(var(--color-success, 34 197 94) / <alpha-value>)",
+          foreground:
+            "rgb(var(--color-success-foreground, 255 255 255) / <alpha-value>)",
         },
 
         danger: {
-          DEFAULT: "rgb(var(--color-danger) / <alpha-value>)",
-          hover: "rgb(var(--color-danger-hover) / <alpha-value>)",
-          active: "rgb(var(--color-danger-active) / <alpha-value>)",
-          foreground: "rgb(var(--color-danger-foreground) / <alpha-value>)",
+          DEFAULT: "rgb(var(--color-danger, 239 68 68) / <alpha-value>)",
+          foreground:
+            "rgb(var(--color-danger-foreground, 255 255 255) / <alpha-value>)",
         },
 
         warning: {
-          DEFAULT: "rgb(var(--color-warning) / <alpha-value>)",
-          hover: "rgb(var(--color-warning-hover) / <alpha-value>)",
-          active: "rgb(var(--color-warning-active) / <alpha-value>)",
-          foreground: "rgb(var(--color-warning-foreground) / <alpha-value>)",
+          DEFAULT: "rgb(var(--color-warning, 245 158 11) / <alpha-value>)",
+          foreground:
+            "rgb(var(--color-warning-foreground, 0 0 0) / <alpha-value>)",
         },
 
-        disabled: {
-          DEFAULT: "rgb(var(--color-disabled) / <alpha-value>)",
-          foreground: "rgb(var(--color-disabled-foreground) / <alpha-value>)",
+        /* E-commerce */
+        price: {
+          DEFAULT: "rgb(var(--price, 17 24 39) / <alpha-value>)",
+          discounted:
+            "rgb(var(--price-discounted, 220 38 38) / <alpha-value>)",
         },
 
-        skeleton: "rgb(var(--skeleton) / <alpha-value>)",
+        skeleton: "rgb(var(--skeleton, 229 231 235) / <alpha-value>)",
       },
 
-      /* -------------------------------------------------- */
-      /* Typography */
-      /* -------------------------------------------------- */
+      /* ---------------------------------- */
+      /* TYPOGRAPHY                         */
+      /* ---------------------------------- */
       fontFamily: {
         sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
       },
 
       fontSize: {
-        sm: ["0.875rem", { lineHeight: "1.3rem" }],
-        base: ["1.05rem", { lineHeight: "1.65rem" }],
-        lg: ["1.2rem", { lineHeight: "1.75rem" }],
-        xl: ["1.25rem", { lineHeight: "1.8rem" }],
-        "2xl": ["1.5rem", { lineHeight: "2rem" }],
-        "2xs": ["0.7rem", { lineHeight: "1rem" }],
+        "2xs": ["0.75rem", { lineHeight: "1rem" }],
+        body: ["1.05rem", { lineHeight: "1.65rem" }],
+        "display-lg": ["2.5rem", { lineHeight: "3rem", fontWeight: "600" }],
+        "display-md": ["2rem", { lineHeight: "2.5rem", fontWeight: "600" }],
+        "display-sm": ["1.5rem", { lineHeight: "2rem", fontWeight: "600" }],
       },
 
-      /* -------------------------------------------------- */
-      /* Radii, Shadows, Motion */
-      /* -------------------------------------------------- */
+      /* ---------------------------------- */
+      /* SPACING (TOKEN ALIGNED)            */
+      /* ---------------------------------- */
+      spacing: {
+        1: "var(--space-1, 4px)",
+        2: "var(--space-2, 8px)",
+        3: "var(--space-3, 12px)",
+        4: "var(--space-4, 16px)",
+        6: "var(--space-6, 24px)",
+        8: "var(--space-8, 32px)",
+      },
+
       borderRadius: {
-        sm: "var(--radius-sm)",
-        md: "var(--radius-md)",
-        lg: "var(--radius-lg)",
+        sm: "var(--radius-sm, 6px)",
+        md: "var(--radius-md, 10px)",
+        lg: "var(--radius-lg, 14px)",
       },
 
       boxShadow: {
         sm: "var(--shadow-sm)",
         md: "var(--shadow-md)",
         lg: "var(--shadow-lg)",
-        card: "0 1px 2px rgba(0,0,0,0.06)",
       },
 
       zIndex: {
-        header: "10",
-        modal: "40",
-        overlay: "50",
+        10: "10",
+        50: "50",
+        dropdown: "var(--z-dropdown, 1000)",
+        modal: "var(--z-modal, 1100)",
+        toast: "var(--z-toast, 1200)",
       },
 
-      padding: {
-        safe: "env(safe-area-inset-bottom)",
-      },
-
-      minHeight: {
-        touch: "44px",
-      },
-
-      scale: {
-        press: "0.97",
-      },
-
-      transitionTimingFunction: {
-        standard: "var(--ease-standard)",
-        emphasized: "var(--ease-emphasized)",
-      },
-
+      /* ---------------------------------- */
+      /* ANIMATION (UNIFIED)                */
+      /* ---------------------------------- */
       keyframes: {
-        shimmer: {
-          from: { backgroundPosition: "-100% 0" },
-          to: { backgroundPosition: "100% 0" },
-        },
         fadeIn: {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
+        shimmer: {
+          "100%": { transform: "translateX(100%)" },
+        },
       },
 
       animation: {
+        fadeIn: "fadeIn 200ms ease-out",
         shimmer: "shimmer 1.5s infinite linear",
-        fadeIn: "fadeIn 0.3s ease-out",
-        "fadeIn-fast": "fadeIn 0.15s ease-out",
       },
     },
   },
@@ -157,6 +153,30 @@ const config: Config = {
     require("@tailwindcss/forms"),
     require("@tailwindcss/typography"),
     require("@tailwindcss/aspect-ratio"),
+
+    plugin(function ({ addUtilities, addComponents }) {
+      /* Focus */
+      addUtilities({
+        ".focus-ring": {
+          outline: "2px solid rgb(var(--color-primary, 59 130 246))",
+          outlineOffset: "2px",
+        },
+      });
+
+      /* Components (SINGLE SOURCE OF TRUTH) */
+      addComponents({
+        ".card": {
+          backgroundColor: "rgb(var(--bg-card, 255 255 255))",
+          border: "1px solid rgb(var(--border-default, 229 231 235))",
+          borderRadius: "var(--radius-md)",
+          boxShadow: "var(--shadow-sm)",
+        },
+
+        ".card-body": {
+          padding: "var(--space-4)",
+        },
+      });
+    }),
   ],
 };
 
