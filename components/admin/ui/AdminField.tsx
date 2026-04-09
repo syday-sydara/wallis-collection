@@ -25,6 +25,7 @@ export function AdminField({
 }: AdminFieldProps) {
   return (
     <div className={clsx("space-y-1.5", className)}>
+      {/* Label */}
       {label && (
         <label
           htmlFor={id}
@@ -35,16 +36,24 @@ export function AdminField({
         </label>
       )}
 
+      {/* Field */}
       {children}
 
+      {/* Error */}
       {error && (
-        <p className="text-[11px] text-danger font-medium">{error}</p>
+        <p className="text-[11px] text-danger font-medium transition-fast">
+          {error}
+        </p>
       )}
 
+      {/* Helper (only when no error) */}
       {!error && helper && (
-        <p className="text-[11px] text-text-muted">{helper}</p>
+        <p className="text-[11px] text-text-muted transition-fast">
+          {helper}
+        </p>
       )}
 
+      {/* Description (always optional) */}
       {description && (
         <div className="text-[11px] text-text-muted">{description}</div>
       )}

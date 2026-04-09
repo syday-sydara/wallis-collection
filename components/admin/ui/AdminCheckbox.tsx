@@ -4,7 +4,7 @@ import clsx from "clsx";
 
 interface AdminCheckboxProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: ReactNode;
-  size?: "sm" | "md" | "lg";
+  checkboxSize?: "sm" | "md" | "lg";
 }
 
 const sizes = {
@@ -16,7 +16,7 @@ const sizes = {
 export function AdminCheckbox({
   className,
   label,
-  size = "md",
+  checkboxSize = "md",
   ...props
 }: AdminCheckboxProps) {
   const checkbox = (
@@ -24,11 +24,11 @@ export function AdminCheckbox({
       type="checkbox"
       {...props}
       className={clsx(
-        sizes[size],
-        "rounded-[var(--radius-sm)] border-border text-primary",
-        "focus:outline-none focus:ring-[var(--focus-ring-width)] focus:ring-[rgb(var(--focus-ring))]",
+        sizes[checkboxSize],
+        "rounded-[var(--radius-sm)] border-border bg-surface-card text-primary",
+        "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
         "disabled:opacity-60 disabled:cursor-not-allowed",
-        "transition-all",
+        "transition-fast active:scale-press",
         className
       )}
     />

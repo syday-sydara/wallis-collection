@@ -4,6 +4,7 @@ export default async function SecuritySessionsPage() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/security/sessions`, {
     cache: "no-store",
   });
+
   const { sessions } = await res.json();
 
   return (

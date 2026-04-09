@@ -3,7 +3,7 @@
 import { useCart } from "@/lib/cart/store";
 import { formatCurrency } from "@/lib/utils";
 import { Button, Card, Input } from "@/components/ui/";
-import EmptyState from "@/components/products/EmptyState";
+import EmptyState from "@/components/ui/EmptyState";
 import type { CartItem } from "@/lib/cart/types";
 import { useRouter } from "next/navigation";
 

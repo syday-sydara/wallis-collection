@@ -2,58 +2,66 @@
 
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import AddToCartButton from "@/components/cart/AddToCartButton";
 import Link from "next/link";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
+import type { ProductCardVM } from "@/lib/products/types";
 
-export function ProductCard({ product }) {
+type Props = {
+  product: ProductCardVM;
+};
+
+export default function ProductCard({ product }: Props) {
   const { id, name, minPrice, maxPrice, inStock, images } = product;
-
   const image = images?.[0]?.url ?? "/placeholder.png";
   const isRange = minPrice !== maxPrice;
 
   return (
     <Card
       padding="none"
-      className="overflow-hidden group animate-fadeIn-fast hover:shadow-md transition-shadow"
+      className={cn(
+        "overflow-hidden group hover:shadow-md transition-shadow duration-300 flex flex-col"
+      )}
     >
-      {/* Image */}
-      <Link href={`/product/${id}`} aria-label={`View product ${name}`} prefetch={false}>
-        <div className="relative aspect-square w-full bg-surface-muted overflow-hidden rounded-t-lg">
-          <img
-            src={image}
-            alt={name}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
+      {/* Product Image */}
+      <Link
+        href={`/product/${id}`}
+        aria-label={`View product ${name}`}
+        prefetch={false}
+        className="relative w-full aspect-square bg-surface-muted overflow-hidden rounded-t-lg"
+      >
+        <Image
+          src={image}
+          alt={name}
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          sizes="(max-width: 640px) 100vw, 50vw"
+          priority
+        />
 
-          {/* Badges */}
-          <div className="absolute top-3 left-3 flex flex-col gap-1">
-            {!inStock && <Badge variant="danger">Out of Stock</Badge>}
+        {/* Out of stock badge */}
+        {!inStock && (
+          <div className="absolute top-3 left-3">
+            <Badge variant="danger">Out of Stock</Badge>
           </div>
-        </div>
+        )}
       </Link>
 
-      {/* Content */}
-      <div className="p-4 space-y-2">
-        <Link href={`/product/${id}`} aria-label={`View product ${name}`} prefetch={false}>
-          <h3 className="font-medium text-base text-text line-clamp-1 leading-none">
+      {/* Product Content */}
+      <div className="p-4 flex flex-col flex-1 justify-between space-y-2">
+        {/* Product Name */}
+        <Link href={`/product/${id}`} prefetch={false}>
+          <h3 className="font-medium text-sm sm:text-base text-text line-clamp-1">
             {name}
           </h3>
         </Link>
 
         {/* Price */}
-        <div className="flex items-center gap-2 leading-none">
-          {isRange ? (
-            <span className="font-semibold text-lg text-text leading-none">
-              ₦{minPrice.toLocaleString()} – ₦{maxPrice.toLocaleString()}
-            </span>
-          ) : (
-            <span className="font-semibold text-lg text-text leading-none">
-              ₦{minPrice.toLocaleString()}
-            </span>
-          )}
+        <div className="text-sm sm:text-base font-semibold text-text">
+          {isRange
+            ? `₦${minPrice.toLocaleString()} – ₦${maxPrice.toLocaleString()}`
+            : `₦${minPrice.toLocaleString()}`}
         </div>
 
         {/* Add to Cart */}
@@ -66,9 +74,12 @@ export function ProductCard({ product }) {
             fullWidth
           />
         ) : (
-          <Button disabled aria-disabled="true" fullWidth className="min-h-touch">
+          <button
+            disabled
+            className="w-full mt-2 rounded-md bg-surface text-text opacity-50 cursor-not-allowed py-2 text-sm font-medium"
+          >
             Out of Stock
-          </Button>
+          </button>
         )}
       </div>
     </Card>

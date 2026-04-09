@@ -1,46 +1,74 @@
 // lib/security/permission-alerts.ts
-import { sendWhatsAppAlert } from "@/lib/alerts/whatsapp";
+
 import { redis } from "@/lib/redis";
+import { emitAlertEvent, emitSecurityEvent } from "@/lib/events/emitter";
 
 const VERSION = 1;
 
-export async function maybeSendUnauthorizedAlert(ip: string, count: number) {
-  // Normalize IP (strip proxy chains)
-  const normalizedIp = ip.split(",")[0].trim();
+function normalizeIp(ip: string) {
+  return ip.split(",")[0].trim();
+}
 
-  // Optional: rate-limit alerts globally per IP
+export async function maybeSendUnauthorizedAlert(ip: string, count: number) {
+  const normalizedIp = normalizeIp(ip);
+
+  /* -------------------------------------------------- */
+  /* Rate-limit alerts per IP (v3 unified pattern)       */
+  /* -------------------------------------------------- */
   let throttled = false;
+
   try {
-    const rlKey = `unauth-alert:${normalizedIp}`;
+    const rlKey = `alert:unauth:${normalizedIp}`;
     const hits = await redis.incr(rlKey);
-    await redis.expire(rlKey, 60); // 1 minute window
-    throttled = hits > 3; // allow 3 alerts/min per IP
+
+    if (hits === 1) {
+      await redis.expire(rlKey, 60); // 1-minute window
+    }
+
+    throttled = hits > 3;
   } catch {
     // Redis unavailable — continue without rate limiting
   }
 
   if (throttled) return;
 
-  // Threshold alerts
+  /* -------------------------------------------------- */
+  /* Emit SecurityEvent (dashboard visibility)           */
+  /* -------------------------------------------------- */
+  await emitSecurityEvent({
+    type: "UNAUTHORIZED_ACCESS_ATTEMPT",
+    message: `Unauthorized access attempts from ${normalizedIp}: ${count}`,
+    severity: count >= 10 ? "high" : "medium",
+    ip: normalizedIp,
+    category: "auth",
+    metadata: {
+      version: VERSION,
+      attempts: count,
+    },
+  });
+
+  /* -------------------------------------------------- */
+  /* Threshold-based AlertEvent                          */
+  /* -------------------------------------------------- */
   if (count === 5) {
-    sendWhatsAppAlert({
-      to: process.env.SECURITY_PHONE!,
-      template: "unauthorized_access_warning",
-      severity: "medium",
-      variables: [normalizedIp, "5", VERSION.toString()],
-    }).catch((err) => {
-      console.error("Failed to send unauthorized warning:", err);
+    await emitAlertEvent({
+      event: "UNAUTHORIZED_ACCESS_WARNING",
+      ip: normalizedIp,
+      metadata: {
+        attempts: 5,
+        version: VERSION,
+      },
     });
   }
 
   if (count === 10) {
-    sendWhatsAppAlert({
-      to: process.env.SECURITY_PHONE!,
-      template: "unauthorized_access_critical",
-      severity: "high",
-      variables: [normalizedIp, "10", VERSION.toString()],
-    }).catch((err) => {
-      console.error("Failed to send unauthorized critical alert:", err);
+    await emitAlertEvent({
+      event: "UNAUTHORIZED_ACCESS_CRITICAL",
+      ip: normalizedIp,
+      metadata: {
+        attempts: 10,
+        version: VERSION,
+      },
     });
   }
 }

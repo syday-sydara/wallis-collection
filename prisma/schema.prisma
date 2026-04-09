@@ -67,6 +67,7 @@ enum PaymentProvider {
   MONNIFY
   BANK_TRANSFER
 }
+
 //////////////////////
 // USER
 //////////////////////
@@ -121,7 +122,7 @@ model Product {
   slug        String  @unique
   description String?
 
-  basePrice Int? // optional base price for admin analytics
+  basePrice Int?
 
   isArchived  Boolean   @default(false)
   isPublished Boolean   @default(false)
@@ -157,7 +158,7 @@ model ProductVariant {
 
   name  String
   sku   String @unique
-  price Int // in kobo
+  price Int
 
   stock         Int @default(0)
   reservedStock Int @default(0)
@@ -391,18 +392,70 @@ model Device {
 //////////////////////
 
 model AuditLog {
-  id String @id @default(cuid())
+  id         String   @id @default(cuid())
+  action     String
+  actorType  String
+  actorId    String?
+  resource   String?
+  resourceId String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+}
 
-  userId String?
-  user   User? @relation(fields: [userId], references: [id])
+//////////////////////
+// SECURITY CENTER (v3)
+//////////////////////
 
-  action   String
-  metadata Json?
+model SecurityEvent {
+  id         String   @id @default(cuid())
+  version    Int
+  type       String
+  severity   String
+  category   String?
+  source     String?
+  requestId  String?
 
-  ipAddress String?
+  userId     String?
+  ip         String?
+  userAgent  String?
+
+  message    String
+  metadata   Json?
+
+  timestamp  DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([severity])
+  @@index([category])
+  @@index([timestamp])
+}
+
+model FraudEvent {
+  id        String   @id @default(cuid())
+  signal    String
+  orderId   String?
+  userId    String?
+  ip        String?
   userAgent String?
-
+  metadata  Json?
   createdAt DateTime @default(now())
 
-  @@index([userId, createdAt])
+  @@index([orderId])
+  @@index([userId])
+  @@index([signal])
+}
+
+model AlertEvent {
+  id        String   @id @default(cuid())
+  event     String
+  userId    String?
+  ip        String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([event])
+  @@index([userId])
 }

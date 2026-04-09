@@ -1,10 +1,11 @@
+// components/admin/ui/AdminSelect.tsx
 import { SelectHTMLAttributes, ReactNode } from "react";
 import clsx from "clsx";
 
 interface AdminSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
-  size?: "sm" | "md" | "lg";
+  selectSize?: "sm" | "md" | "lg";
   invalid?: boolean;
 }
 
@@ -18,7 +19,7 @@ export function AdminSelect({
   className,
   leftIcon,
   rightIcon,
-  size = "md",
+  selectSize = "md",
   invalid = false,
   children,
   ...props
@@ -34,13 +35,19 @@ export function AdminSelect({
       <select
         {...props}
         className={clsx(
-          "w-full rounded-md border bg-surface-card shadow-sm transition-all appearance-none",
-          sizes[size],
+          "w-full rounded-md border bg-surface-card shadow-sm appearance-none",
+          "transition-fast active:scale-press",
+          sizes[selectSize],
           leftIcon && "pl-8",
           rightIcon && "pr-8",
-          invalid ? "border-danger text-danger" : "border-border text-text",
-          "focus:outline-none focus:ring-[var(--focus-ring-width)] focus:ring-[rgb(var(--focus-ring))] focus:ring-offset-1",
+
+          invalid
+            ? "border-danger text-danger placeholder-danger/60"
+            : "border-border text-text placeholder-text-muted",
+
+          "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
           "disabled:opacity-60 disabled:cursor-not-allowed",
+
           className
         )}
       >

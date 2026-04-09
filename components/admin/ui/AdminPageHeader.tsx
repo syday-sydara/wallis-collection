@@ -24,18 +24,20 @@ export function AdminPageHeader({
   return (
     <header
       className={clsx(
-        "border-b border-border",
+        "border-b border-border transition-fast",
         compact ? "pb-3 space-y-1.5" : "pb-4 space-y-2",
         className
       )}
     >
+      {/* Breadcrumbs */}
       {breadcrumbs && (
         <div className="text-xs text-text-muted">
           {breadcrumbs}
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
+        {/* Title + Subtitle + Icon */}
         <div className="flex items-start gap-2">
           {icon && (
             <div className="text-text-muted mt-0.5">
@@ -56,8 +58,9 @@ export function AdminPageHeader({
           </div>
         </div>
 
+        {/* Actions */}
         {actions && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {actions}
           </div>
         )}

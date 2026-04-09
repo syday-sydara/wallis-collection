@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import ProductGrid from "./ProductGrid";
 import ProductGridSkeleton from "./ProductGridSkeleton";
-import EmptyState from "@/components/products/EmptyState";
-import ErrorState from "./ErrorState";
+import EmptyState from "@/components/ui/EmptyState";
+import ErrorState from "../ui/ErrorState";
 import ResultHeader from "./ResultHeader";
 import { getProducts } from "@/lib/products/service";
 
@@ -50,8 +50,9 @@ export default function ProductList({ params }: ProductListProps) {
 
         setProducts(res.items);
         setNextCursor(res.nextCursor);
-      } catch {
+      } catch (err) {
         if (isMounted && requestId === requestIdRef.current) {
+          console.error("Error fetching products:", err);
           setError(true);
         }
       } finally {
@@ -68,7 +69,7 @@ export default function ProductList({ params }: ProductListProps) {
     };
   }, [params]);
 
-  // Load more
+  // Load more function
   const loadMore = useCallback(async () => {
     if (!nextCursorRef.current || loadingMore) return;
 
@@ -85,14 +86,14 @@ export default function ProductList({ params }: ProductListProps) {
 
       setProducts((prev) => [...prev, ...res.items]);
       setNextCursor(res.nextCursor);
-    } catch {
-      console.error("Failed to load more products");
+    } catch (err) {
+      console.error("Failed to load more products:", err);
     } finally {
       setLoadingMore(false);
     }
   }, [loadingMore, params]);
 
-  // Infinite scroll observer
+  // IntersectionObserver for infinite scroll
   useEffect(() => {
     if (!loadMoreRef.current || !nextCursor) return;
 
@@ -103,10 +104,11 @@ export default function ProductList({ params }: ProductListProps) {
       { rootMargin: "200px" }
     );
 
-    observer.observe(loadMoreRef.current);
+    const el = loadMoreRef.current;
+    observer.observe(el);
 
     return () => {
-      if (loadMoreRef.current) observer.unobserve(loadMoreRef.current);
+      observer.unobserve(el);
       observer.disconnect();
     };
   }, [loadMore, nextCursor]);
@@ -134,15 +136,19 @@ export default function ProductList({ params }: ProductListProps) {
 
   return (
     <>
+      {/* Result Header */}
       <ResultHeader count={products.length} />
 
+      {/* Product Grid */}
       <div className="animate-fadeIn">
         <ProductGrid products={products} />
       </div>
 
+      {/* Infinite Scroll / Load More */}
       {nextCursor && (
         <div
           ref={loadMoreRef}
+          role="status"
           aria-busy={loadingMore}
           className="mt-4 text-center text-sm text-text-muted leading-none pb-safe"
         >
@@ -150,7 +156,8 @@ export default function ProductList({ params }: ProductListProps) {
         </div>
       )}
 
-      {!nextCursor && (
+      {/* End of list message */}
+      {!nextCursor && products.length > 0 && (
         <p className="mt-4 text-center text-xs text-text-muted animate-fadeIn-fast">
           No more products
         </p>

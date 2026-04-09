@@ -1,58 +1,61 @@
+"use client";
+
+import Image from "next/image";
+
 type LoadingStateProps = {
   title?: string;
   description?: string;
-  spinner?: React.ReactNode;
+  spinnerSrc?: string; // path to your spinner image
   className?: string;
+  fullscreen?: boolean; // optional fullscreen overlay
+  spinnerSize?: number; // allows custom spinner size in px
 };
 
 export default function LoadingState({
   title = "Loading...",
   description = "Please wait while we fetch the data.",
-  spinner,
+  spinnerSrc = "/spinner.svg", // default spinner
   className,
+  fullscreen = false,
+  spinnerSize = 48,
 }: LoadingStateProps) {
   return (
     <div
       role="status"
       aria-live="polite"
       aria-busy="true"
-      className={`flex flex-col items-center justify-center py-16 px-4 text-center max-w-md mx-auto animate-fadeIn ${className ?? ""}`}
+      className={`
+        flex flex-col items-center justify-center
+        text-center px-4 py-16 animate-fadeIn
+        ${fullscreen ? "fixed inset-0 bg-bg-muted/50 z-modal" : ""}
+        ${className ?? ""}
+      `}
     >
       {/* Spinner */}
       <div
-        className="mb-4 text-text-muted flex items-center justify-center h-12 w-12"
+        className="mb-4 flex items-center justify-center"
         aria-label="Loading"
       >
-        {spinner || (
-          <svg
-            className="w-10 h-10 animate-spin text-text-muted leading-none"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-            ></path>
-          </svg>
-        )}
+        <Image
+          src={spinnerSrc}
+          alt="Loading"
+          width={spinnerSize}
+          height={spinnerSize}
+          className={`animate-spin w-[${spinnerSize}px] h-[${spinnerSize}px] sm:w-[${spinnerSize * 1.5}px] sm:h-[${spinnerSize * 1.5}px]`}
+          priority
+        />
       </div>
 
       {/* Title */}
-      <p className="text-lg font-semibold text-text">{title}</p>
+      <p className="text-lg sm:text-xl font-semibold text-text-primary">
+        {title}
+      </p>
 
       {/* Description */}
       {description && (
-        <p className="mt-2 text-sm text-text-muted">{description}</p>
+        <p className="mt-2 text-sm sm:text-base text-text-secondary max-w-prose">
+          {description}
+        </p>
       )}
     </div>
   );

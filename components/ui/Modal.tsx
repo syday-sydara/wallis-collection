@@ -1,6 +1,5 @@
-"use client";
-
-import { useEffect, useRef } from "react";
+// components/ui/Modal.tsx
+import { Overlay } from "./Overlay";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 
@@ -27,56 +26,25 @@ export function Modal({
   hideCloseButton = false,
   closeOnOutsideClick = true,
 }: ModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-
-  // ESC key closes modal
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
-
-  // Focus trap
-  useEffect(() => {
-    if (open && dialogRef.current) dialogRef.current.focus();
-  }, [open]);
-
-  // Prevent background scroll
-  useEffect(() => {
-    if (!open) return;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open]);
-
-  if (!open) return null;
-
-  const sizeClass =
-    size === "sm"
-      ? "w-[90%] max-w-sm"
-      : size === "md"
-      ? "w-[90%] max-w-md"
-      : "w-[90%] max-w-lg";
+  const sizeClasses = {
+    sm: "w-[90%] max-w-sm",
+    md: "w-[90%] max-w-md",
+    lg: "w-[90%] max-w-lg",
+  };
 
   return (
-    <div
-      className="fixed inset-0 z-modal flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={title ? "modal-title" : undefined}
-      aria-describedby={description ? "modal-description" : undefined}
-      onClick={closeOnOutsideClick ? onClose : undefined}
+    <Overlay
+      open={open}
+      onClose={onClose}
+      closeOnOutsideClick={closeOnOutsideClick}
+      className="items-center justify-center bg-black/40 backdrop-blur-sm"
+      ariaLabelledBy={title ? "modal-title" : undefined}
+      ariaDescribedBy={description ? "modal-description" : undefined}
     >
       <div
-        ref={dialogRef}
-        tabIndex={-1}
         className={cn(
-          "relative rounded-lg border border-border bg-surface shadow-lg animate-fadeIn-fast overflow-hidden focus:outline-none",
-          sizeClass
+          "relative rounded-lg border border-border bg-surface shadow-lg overflow-hidden animate-fadeIn-fast focus:outline-none",
+          sizeClasses[size]
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -98,7 +66,8 @@ export function Modal({
             {!hideCloseButton && (
               <button
                 onClick={onClose}
-                className="p-2 -m-2 text-text-muted hover:text-text active:scale-press transition-transform"
+                className="p-2 -m-2 text-text-muted hover:text-text active:scale-95 transition-transform"
+                aria-label="Close modal"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -116,6 +85,6 @@ export function Modal({
           </div>
         )}
       </div>
-    </div>
+    </Overlay>
   );
 }

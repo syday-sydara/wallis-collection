@@ -1,3 +1,4 @@
+// components/admin/ui/AdminTable.tsx
 import { ReactNode } from "react";
 import clsx from "clsx";
 
@@ -25,18 +26,19 @@ export function AdminTable({
   return (
     <div
       className={clsx(
-        "overflow-hidden rounded-md border border-border bg-surface-card shadow-sm",
+        "overflow-hidden rounded-md border border-border bg-surface-card shadow-sm transition-fast",
         className
       )}
     >
       <table className="w-full text-sm">
+        {/* Header */}
         <thead className="bg-surface-muted border-b border-border text-xs uppercase text-text-muted">
           <tr>
             {columns.map((col) => (
               <th
                 key={col.key}
                 className={clsx(
-                  "px-4 py-2",
+                  "px-4 py-2 font-medium",
                   col.align === "right" && "text-right",
                   col.align === "center" && "text-center"
                 )}
@@ -47,7 +49,9 @@ export function AdminTable({
           </tr>
         </thead>
 
+        {/* Body */}
         <tbody className="divide-y divide-border">
+          {/* Loading */}
           {loading && (
             <tr>
               <td
@@ -59,6 +63,7 @@ export function AdminTable({
             </tr>
           )}
 
+          {/* Empty */}
           {!loading && rows.length === 0 && (
             <tr>
               <td
@@ -70,15 +75,23 @@ export function AdminTable({
             </tr>
           )}
 
+          {/* Rows */}
           {!loading &&
             rows.length > 0 &&
             rows.map((row, i) => (
               <tr
                 key={i}
-                className="hover:bg-surface-muted/60 transition-colors"
+                className="hover:bg-surface-muted/60 transition-fast"
               >
                 {row.map((cell, j) => (
-                  <td key={j} className="px-4 py-2 align-middle">
+                  <td
+                    key={j}
+                    className={clsx(
+                      "px-4 py-2 align-middle",
+                      columns[j]?.align === "right" && "text-right",
+                      columns[j]?.align === "center" && "text-center"
+                    )}
+                  >
                     {cell}
                   </td>
                 ))}

@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  ReactNode,
 } from "react";
 
 export type CartItem = {
@@ -33,63 +34,72 @@ type CartContextType = {
 
 const CartContext = createContext<CartContextType | null>(null);
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+interface CartProviderProps {
+  children: ReactNode;
+}
+
+export function CartProvider({ children }: CartProviderProps) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Load from localStorage
+  // Load cart from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem("cart");
       if (stored) setItems(JSON.parse(stored));
-    } catch {
-      console.warn("Failed to load cart");
+    } catch (err) {
+      console.warn("Failed to load cart from localStorage", err);
     }
   }, []);
 
-  // Persist to localStorage
+  // Persist cart to localStorage whenever items change
   useEffect(() => {
     try {
       localStorage.setItem("cart", JSON.stringify(items));
-    } catch {
-      console.warn("Failed to save cart");
+    } catch (err) {
+      console.warn("Failed to save cart to localStorage", err);
     }
   }, [items]);
 
+  // Drawer controls
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((v) => !v), []);
 
-  // Add or merge item
-  const addItem = useCallback((item) => {
-    setItems((prev) => {
-      const existing = prev.find(
-        (i) =>
-          i.productId === item.productId &&
-          JSON.stringify(i.attributes) === JSON.stringify(item.attributes)
-      );
-
-      if (existing) {
-        return prev.map((i) =>
-          i.id === existing.id
-            ? { ...i, quantity: i.quantity + 1 }
-            : i
+  // Add or merge item into cart
+  const addItem = useCallback(
+    (item: Omit<CartItem, "id" | "quantity">) => {
+      setItems((prev) => {
+        const existing = prev.find(
+          (i) =>
+            i.productId === item.productId &&
+            JSON.stringify(i.attributes) === JSON.stringify(item.attributes)
         );
-      }
 
-      return [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          quantity: 1,
-          ...item,
-        },
-      ];
-    });
+        if (existing) {
+          return prev.map((i) =>
+            i.id === existing.id
+              ? { ...i, quantity: i.quantity + 1 }
+              : i
+          );
+        }
 
-    setIsOpen(true);
-  }, []);
+        return [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            quantity: 1,
+            ...item,
+          },
+        ];
+      });
 
+      setIsOpen(true); // automatically open drawer
+    },
+    []
+  );
+
+  // Update quantity
   const updateQuantity = useCallback((id: string, qty: number) => {
     setItems((prev) =>
       prev.map((i) =>
@@ -98,12 +108,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  // Remove item
   const removeItem = useCallback((id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
   }, []);
 
+  // Clear cart
   const clear = useCallback(() => setItems([]), []);
 
+  // Calculate subtotal
   const subtotal = items.reduce(
     (sum, i) => sum + i.unitPrice * i.quantity,
     0
@@ -129,6 +142,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Hook to access cart
 export function useCart() {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error("useCart must be used inside <CartProvider>");

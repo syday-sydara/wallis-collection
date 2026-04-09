@@ -9,8 +9,8 @@ import {
 } from "@/lib/api/response";
 import { getProductDetailWithRecommendations } from "@/lib/products/service";
 import { checkRateLimit } from "@/lib/api/rate-limit";
-import { logEvent } from "@/lib/logger";
-import { startTimer } from "@/lib/metrics";
+import { logEvent } from "@/lib/auth/logger";
+import { startTimer } from "@/lib/auth/metrics";
 
 export async function GET(
   req: NextRequest,

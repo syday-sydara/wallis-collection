@@ -5,7 +5,7 @@ import clsx from "clsx";
 interface AdminInputProps extends InputHTMLAttributes<HTMLInputElement> {
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
-  size?: "sm" | "md" | "lg";
+  inputSize?: "sm" | "md" | "lg";
   invalid?: boolean;
 }
 
@@ -20,7 +20,7 @@ export function AdminInput({
   type = "text",
   leftIcon,
   rightIcon,
-  size = "md",
+  inputSize = "md",
   invalid = false,
   ...props
 }: AdminInputProps) {
@@ -36,20 +36,16 @@ export function AdminInput({
         type={type}
         {...props}
         className={clsx(
-          "w-full rounded-md border bg-surface-card shadow-sm transition-all",
-          sizes[size],
+          "w-full rounded-md border bg-surface-card shadow-sm transition-fast active:scale-press",
+          sizes[inputSize],
           leftIcon && "pl-8",
           rightIcon && "pr-8",
 
-          // Border + text colors
           invalid
-            ? "border-danger text-danger"
-            : "border-border text-text",
+            ? "border-danger text-danger placeholder-danger/60"
+            : "border-border text-text placeholder-text-muted",
 
-          // Focus ring
-          "focus:outline-none focus:ring-[var(--focus-ring-width)] focus:ring-[rgb(var(--focus-ring))] focus:ring-offset-1",
-
-          // Disabled
+          "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
           "disabled:opacity-60 disabled:cursor-not-allowed",
 
           className

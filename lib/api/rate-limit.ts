@@ -1,95 +1,113 @@
-// lib/rate-limit.ts
+// lib/api/rate-limit.ts
 
-const DEFAULT_WINDOW_MS = 60_000;
-const DEFAULT_MAX = 10;
+import { redis } from "@/lib/redis";
+import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 
-interface RateLimitEntry {
-  count: number;
+export interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
   resetAt: number;
+  retryAfter: number;
 }
 
-const store = new Map<string, RateLimitEntry>();
-const MAX_KEYS = 50_000;
-
-/* Cleanup */
-export function cleanupRateLimitStore() {
-  const now = Date.now();
-  for (const [key, entry] of store.entries()) {
-    if (entry.resetAt <= now) {
-      store.delete(key);
-    }
-  }
+export interface RateLimitOptions {
+  max?: number;
+  windowMs?: number;
+  namespace?: string;
+  jitter?: boolean;
+  log?: boolean;
+  ip?: string | null;
+  userId?: string | null;
+  route?: string | null;
 }
 
-/* Core limiter */
-export function checkRateLimit(
+export async function checkRateLimit(
   key: string,
-  max = DEFAULT_MAX,
-  windowMs = DEFAULT_WINDOW_MS,
-  options?: {
-    namespace?: string;
-    jitter?: boolean;
-    log?: boolean;
-  }
-) {
-  const { namespace, jitter = true, log = false } = options ?? {};
-
-  // Normalize key
-  const safeKey = key.replace(/\s+/g, "_").toLowerCase();
-  const fullKey = namespace ? `${namespace}:${safeKey}` : safeKey;
+  {
+    max = 10,
+    windowMs = 60_000,
+    namespace = "default",
+    jitter = true,
+    log = false,
+    ip = null,
+    userId = null,
+    route = null,
+  }: RateLimitOptions = {}
+): Promise<RateLimitResult> {
+  const fullKey = `${namespace}:${key}`;
 
   const now = Date.now();
-  const entry = store.get(fullKey);
+  const ttl = Math.floor(windowMs / 1000);
 
-  // Jitter to avoid synchronized resets
-  const resetAt =
-    entry?.resetAt && entry.resetAt > now
-      ? entry.resetAt
-      : now + windowMs + (jitter ? Math.floor(Math.random() * 200) : 0);
+  let count = 0;
+  let resetAt = now + windowMs;
 
-  // New window
-  if (!entry || entry.resetAt <= now) {
-    if (store.size > MAX_KEYS) store.clear();
+  try {
+    count = await redis.incr(fullKey);
 
-    store.set(fullKey, { count: 1, resetAt });
-
-    if (log) console.debug(`[RateLimit] ${fullKey} allowed 1/${max}`);
+    if (count === 1) {
+      const jitterMs = jitter ? Math.floor(Math.random() * 200) : 0;
+      resetAt = now + windowMs + jitterMs;
+      await redis.expire(fullKey, ttl);
+    } else {
+      const ttlRemaining = await redis.ttl(fullKey);
+      resetAt = now + ttlRemaining * 1000;
+    }
+  } catch (err) {
+    console.error("Redis rate-limit error:", err);
 
     return {
       allowed: true,
       remaining: max - 1,
-      retryAfter: 0,
       resetAt,
+      retryAfter: 0,
     };
   }
 
-  // Exceeded
-  if (entry.count >= max) {
-    const retryAfter = Math.max(0, Math.ceil((entry.resetAt - now) / 1000));
+  const allowed = count <= max;
+  const remaining = Math.max(0, max - count);
+  const retryAfter = allowed ? 0 : Math.ceil((resetAt - now) / 1000);
 
-    if (log) console.warn(`[RateLimit] ${fullKey} blocked, retry in ${retryAfter}s`);
+  /* -------------------------------------------------- */
+  /* Security Event Logging                             */
+  /* -------------------------------------------------- */
+  await emitSecurityEvent({
+    type: "RATE_LIMIT_CHECK",
+    message: `Rate limit check for ${fullKey}: ${allowed ? "allowed" : "blocked"}`,
+    severity: allowed ? "low" : "medium",
+    category: "rate_limit",
+    ip,
+    userId,
+    metadata: {
+      key: fullKey,
+      count,
+      max,
+      remaining,
+      resetAt,
+      route,
+    },
+  });
 
-    return {
-      allowed: false,
-      remaining: 0,
-      retryAfter,
-      resetAt: entry.resetAt,
-    };
+  /* -------------------------------------------------- */
+  /* Abuse Alerts                                        */
+  /* -------------------------------------------------- */
+  if (!allowed && count === max + 5) {
+    await emitAlertEvent({
+      event: "RATE_LIMIT_ABUSE",
+      ip,
+      metadata: {
+        key: fullKey,
+        count,
+        max,
+        route,
+      },
+    });
   }
-
-  // Increment
-  const updated = { ...entry, count: entry.count + 1 };
-  store.set(fullKey, updated);
-
-  if (log) console.debug(`[RateLimit] ${fullKey} allowed ${updated.count}/${max}`);
 
   return {
-    allowed: true,
-    remaining: max - updated.count,
-    retryAfter: 0,
-    resetAt: updated.resetAt,
+    allowed,
+    remaining,
+    resetAt,
+    retryAfter,
   };
 }
-
-/* Auto cleanup */
-setInterval(() => cleanupRateLimitStore(), 60_000).unref();

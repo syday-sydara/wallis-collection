@@ -3,17 +3,26 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
+export type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
+  size?: "sm" | "md" | "lg";
+  error?: boolean;
+};
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type = "text", ...props }, ref) => {
+  ({ className, size = "md", error = false, ...props }, ref) => {
+    const sizeClasses = {
+      sm: "h-8 px-2 text-xs",
+      md: "h-10 px-3 text-sm",
+      lg: "h-12 px-4 text-base",
+    };
+
     return (
       <input
-        type={type}
         ref={ref}
         className={cn(
-          "flex h-10 w-full rounded-md border border-border-subtle bg-surface px-3 py-2 text-sm text-text shadow-sm transition-all",
-          "placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface",
+          "flex w-full rounded-md border bg-surface shadow-sm transition-all placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface",
+          error ? "border-danger focus:ring-danger" : "border-border-subtle focus:ring-primary",
+          sizeClasses[size],
           "disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}

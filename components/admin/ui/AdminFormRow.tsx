@@ -1,3 +1,4 @@
+// components/admin/ui/AdminFormRow.tsx
 import { ReactNode } from "react";
 import clsx from "clsx";
 
@@ -15,7 +16,7 @@ export function AdminFormRow({
   return (
     <div
       className={clsx(
-        "grid gap-3",
+        "grid gap-4 transition-fast",
         columns === 1 && "grid-cols-1",
         columns === 2 && "grid-cols-1 sm:grid-cols-2",
         columns === 3 && "grid-cols-1 sm:grid-cols-3",

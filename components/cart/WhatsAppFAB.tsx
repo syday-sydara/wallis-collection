@@ -2,6 +2,7 @@
 
 import { useCart } from "@/lib/cart/store";
 import { formatCurrency } from "@/lib/utils/formatters/currency";
+import Image from "next/image";
 
 export function WhatsAppFAB() {
   const { items, subtotal } = useCart();
@@ -15,10 +16,12 @@ export function WhatsAppFAB() {
       (i) => `${i.name} x${i.quantity} = ${formatCurrency(i.unitPrice * i.quantity)}`
     ),
     "",
-    `Total: ${formatCurrency(subtotal)}`
+    `Total: ${formatCurrency(subtotal)}`,
   ];
 
-  const link = `https://wa.me/?text=${encodeURIComponent(messageLines.join("\n"))}`;
+  const link = `https://wa.me/?text=${encodeURIComponent(
+    messageLines.join("\n")
+  )}`;
 
   return (
     <a
@@ -29,6 +32,26 @@ export function WhatsAppFAB() {
     >
       <span>💬</span>
       <span className="font-medium">Checkout via WhatsApp</span>
+
+      {/* Optional: Show small thumbnails for items */}
+      <div className="flex -space-x-2">
+        {items.slice(0, 3).map((item) => (
+          <div key={item.id} className="relative w-6 h-6 rounded-full overflow-hidden border-2 border-white">
+            <Image
+              src={item.image}
+              alt={item.name}
+              fill
+              className="object-cover"
+              sizes="24px"
+            />
+          </div>
+        ))}
+        {items.length > 3 && (
+          <div className="w-6 h-6 flex items-center justify-center text-xs font-bold bg-white text-green-500 rounded-full border-2 border-white">
+            +{items.length - 3}
+          </div>
+        )}
+      </div>
     </a>
   );
 }

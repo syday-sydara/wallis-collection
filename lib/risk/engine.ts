@@ -1,100 +1,148 @@
 // lib/risk/engine.ts
+
 import { prisma } from "@/lib/db";
-import type { RiskContext, FraudRuleRecord } from "./types";
+import type {
+  RiskContext,
+  RiskRule,
+  RiskPolicy,
+  RiskEvaluationResult,
+} from "./types";
 import { evaluateRule } from "./evaluate";
+import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 import { logAuditEvent } from "@/lib/audit/log";
-import { processAlert } from "@/lib/audit/alerts";
 
-export type RiskResult = {
-  score: number;
-  level: "LOW" | "MEDIUM" | "HIGH";
-  triggered: FraudRuleRecord[];
-};
+/* -------------------------------------------------- */
+/* Classification                                       */
+/* -------------------------------------------------- */
 
-function classify(score: number) {
-  if (score >= 50) return "HIGH";
-  if (score >= 20) return "MEDIUM";
+function classify(score: number, policy: RiskPolicy) {
+  if (policy.blockThreshold && score >= policy.blockThreshold) return "HIGH";
+  if (policy.reviewThreshold && score >= policy.reviewThreshold) return "MEDIUM";
   return "LOW";
 }
 
-export async function calculateRiskScore(context: RiskContext): Promise<RiskResult> {
-  const rules = (await prisma.fraudRule.findMany({
-    where: { enabled: true }
-  })) as unknown as FraudRuleRecord[];
+/* -------------------------------------------------- */
+/* Main Engine                                          */
+/* -------------------------------------------------- */
 
-  let score = 0;
-  const triggered: FraudRuleRecord[] = [];
+export async function evaluatePolicy(
+  context: RiskContext,
+  policyId: string
+): Promise<RiskEvaluationResult> {
+  /* -------------------------------------------------- */
+  /* Load policy + rules                                 */
+  /* -------------------------------------------------- */
+  const policy = (await prisma.riskPolicy.findUnique({
+    where: { id: policyId },
+    include: { rules: true },
+  })) as unknown as RiskPolicy;
 
-  // Evaluate rules in parallel
-  const evaluations = await Promise.all(
-    rules.map(async (rule) => {
-      try {
-        const matched = evaluateRule(rule.condition, context);
+  if (!policy) {
+    throw new Error(`RiskPolicy not found: ${policyId}`);
+  }
 
-        if (matched) {
-          return { rule, matched: true };
-        }
-      } catch (err: any) {
-        await logAuditEvent({
-          action: "RISK_RULE_EVALUATION_ERROR",
-          actorType: "SYSTEM",
-          resource: "fraudRule",
-          resourceId: rule.id,
-          metadata: { message: err?.message }
-        });
-      }
+  const baseScore = policy.baseScore ?? 0;
+  const maxScore = policy.maxScore ?? 100;
 
-      return { rule, matched: false };
-    })
-  );
+  let score = baseScore;
+  const triggeredRules: string[] = [];
+  const details: RiskEvaluationResult["details"] = [];
 
-  // Aggregate results
-  for (const { rule, matched } of evaluations) {
-    if (matched) {
+  /* -------------------------------------------------- */
+  /* Evaluate rules                                      */
+  /* -------------------------------------------------- */
+  for (const rule of policy.rules as RiskRule[]) {
+    let passed = false;
+
+    try {
+      passed = evaluateRule(rule.condition, context);
+    } catch (err: any) {
+      await emitSecurityEvent({
+        type: "SYSTEM_ANOMALY",
+        message: `Risk rule evaluation error: ${rule.id}`,
+        severity: "medium",
+        metadata: { error: err?.message, ruleId: rule.id },
+        category: "risk",
+        source: "risk-engine",
+      });
+
+      await logAuditEvent({
+        action: "RISK_RULE_EVALUATION_ERROR",
+        actorType: "SYSTEM",
+        resource: "riskRule",
+        resourceId: rule.id,
+        metadata: { error: err?.message },
+      });
+    }
+
+    if (passed) {
       score += rule.weight;
-      triggered.push(rule);
+      triggeredRules.push(rule.id);
 
       await logAuditEvent({
         action: "RISK_RULE_TRIGGERED",
         actorType: "SYSTEM",
-        resource: "fraudRule",
+        resource: "riskRule",
         resourceId: rule.id,
-        metadata: { ruleName: rule.name }
+        metadata: { ruleName: rule.label },
       });
     }
+
+    details.push({
+      ruleId: rule.id,
+      weight: rule.weight,
+      passed,
+    });
   }
 
-  // Soft cap to prevent runaway scores
-  score = Math.min(score, 100);
+  /* -------------------------------------------------- */
+  /* Cap score                                           */
+  /* -------------------------------------------------- */
+  score = Math.min(score, maxScore);
 
-  const level = classify(score);
+  /* -------------------------------------------------- */
+  /* Classification                                      */
+  /* -------------------------------------------------- */
+  const level = classify(score, policy);
 
+  /* -------------------------------------------------- */
+  /* Audit logging                                       */
+  /* -------------------------------------------------- */
   await logAuditEvent({
     action: "RISK_SCORE_COMPUTED",
     actorType: "SYSTEM",
     metadata: {
       score,
       level,
-      triggeredRules: triggered.map((r) => r.name),
+      triggeredRules,
       ip: context.ip,
-      email: context.email
-    }
+      email: context.email,
+    },
   });
 
-  // Fire-and-forget alerting
+  /* -------------------------------------------------- */
+  /* Alerting                                            */
+  /* -------------------------------------------------- */
   if (level === "HIGH") {
-    processAlert({
-      action: "ALERT_RISK_SCORE_HIGH",
+    await emitAlertEvent({
+      event: "ALERT_RISK_SCORE_HIGH",
       metadata: {
         score,
+        triggeredRules,
         email: context.email,
         ip: context.ip,
-        triggeredRules: triggered.map((r) => r.name)
-      }
-    }).catch((err) => {
-      console.error("Failed to send risk alert:", err);
+      },
     });
   }
 
-  return { score, level, triggered };
+  /* -------------------------------------------------- */
+  /* Return result                                       */
+  /* -------------------------------------------------- */
+  return {
+    score,
+    triggeredRules,
+    block: level === "HIGH",
+    review: level === "MEDIUM",
+    details,
+  };
 }

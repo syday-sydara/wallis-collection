@@ -1,37 +1,62 @@
+// app/api/security/events/route.ts
+
 import { prisma } from "@/lib/db";
 import { requireSessionUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/auth/permissions";
-import { badRequest, forbidden, tooManyRequests, ok } from "@/lib/api/response";
-import { checkRateLimit } from "@/lib/api/rate-limit";
-import { logSecurityEvent } from "@/lib/security/log";
+import { forbidden, badRequest, tooManyRequests, ok } from "@/lib/api/response";
+import { rateLimited } from "@/lib/api/rate-limited";
+import { emitSecurityEvent } from "@/lib/events/emitter";
 
 export async function GET(req: Request) {
   const user = await requireSessionUser();
 
+  /* -------------------------------------------------- */
+  /* Permission check                                    */
+  /* -------------------------------------------------- */
   if (!hasPermission(user, "VIEW_AUDIT_LOGS")) {
-    await logSecurityEvent({
-      userId: user.id,
-      type: "ADMIN_FORBIDDEN_AUDIT_LOGS",
+    await emitSecurityEvent({
+      type: "PERMISSION_DENIED",
       severity: "medium",
-      message: "Attempted to access security events without permission"
+      userId: user.id,
+      category: "audit",
+      message: "Attempted to access security events without permission",
+      source: "api",
     });
 
     return forbidden("You do not have permission to view security events");
   }
 
-  // Rate-limit per admin user
-  const rate = checkRateLimit(`audit:${user.id}`, 30, 60_000);
-  if (!rate.allowed) {
-    await logSecurityEvent({
+  /* -------------------------------------------------- */
+  /* Rate limiting (per admin user)                     */
+  /* -------------------------------------------------- */
+  const rl = await rateLimited(
+    req as any,
+    `audit:${user.id}`,
+    {
+      max: 30,
+      windowMs: 60_000,
+      namespace: "admin-audit",
       userId: user.id,
-      type: "ADMIN_RATE_LIMITED_AUDIT_LOGS",
+      route: "/api/security/events",
+    }
+  );
+
+  if (rl instanceof Response) {
+    await emitSecurityEvent({
+      type: "AUTH_RATE_LIMIT",
       severity: "low",
-      message: "Rate limited while querying security events"
+      userId: user.id,
+      category: "audit",
+      message: "Rate limited while querying security events",
+      source: "api",
     });
 
-    return tooManyRequests("Too many audit log requests");
+    return rl;
   }
 
+  /* -------------------------------------------------- */
+  /* Parse query params                                  */
+  /* -------------------------------------------------- */
   const { searchParams } = new URL(req.url);
 
   const page = Number(searchParams.get("page") ?? "1");
@@ -53,6 +78,9 @@ export async function GET(req: Request) {
     ? new Date(searchParams.get("to")!)
     : undefined;
 
+  /* -------------------------------------------------- */
+  /* Build Prisma filter                                 */
+  /* -------------------------------------------------- */
   const where: any = {};
 
   if (type) where.type = type;
@@ -60,36 +88,44 @@ export async function GET(req: Request) {
   if (userId) where.userId = userId;
 
   if (from || to) {
-    where.createdAt = {};
-    if (from) where.createdAt.gte = from;
-    if (to) where.createdAt.lte = to;
+    where.timestamp = {};
+    if (from) where.timestamp.gte = from;
+    if (to) where.timestamp.lte = to;
   }
 
+  /* -------------------------------------------------- */
+  /* Query events                                        */
+  /* -------------------------------------------------- */
   const [events, total] = await Promise.all([
     prisma.securityEvent.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { timestamp: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
-      include: {
-        user: { select: { id: true, email: true } }
-      }
     }),
-    prisma.securityEvent.count({ where })
+    prisma.securityEvent.count({ where }),
   ]);
 
-  await logSecurityEvent({
-    userId: user.id,
-    type: "ADMIN_VIEW_AUDIT_LOGS",
+  /* -------------------------------------------------- */
+  /* Log admin access                                    */
+  /* -------------------------------------------------- */
+  await emitSecurityEvent({
+    type: "PERMISSION_CHECK",
     severity: "low",
-    message: `Viewed security events page=${page}, pageSize=${pageSize}`
+    userId: user.id,
+    category: "audit",
+    message: `Viewed security events page=${page}, pageSize=${pageSize}`,
+    source: "api",
   });
 
+  /* -------------------------------------------------- */
+  /* Response                                            */
+  /* -------------------------------------------------- */
   return ok({
     events,
     page,
     pageSize,
     total,
-    totalPages: Math.ceil(total / pageSize)
+    totalPages: Math.ceil(total / pageSize),
   });
 }

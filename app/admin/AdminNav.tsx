@@ -35,11 +35,14 @@ export function AdminNav() {
             href={link.href}
             aria-current={isActive ? "page" : undefined}
             className={clsx(
-              "px-3 py-1.5 rounded-md transition-fast active:scale-press flex items-center gap-2",
+              "px-3 py-1.5 rounded-md flex items-center gap-2 transition-fast active:scale-press",
               "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
+
               isActive
-                ? "bg-primary/15 text-text font-semibold shadow-sm relative after:absolute after:left-0 after:right-0 after:-bottom-1 after:h-[2px] after:bg-primary"
-                : "text-text-muted hover:text-text hover:bg-surface-muted"
+                ? // ACTIVE STATE — matches Security Center nav
+                  "bg-primary/15 text-text font-semibold shadow-sm relative after:absolute after:left-0 after:right-0 after:-bottom-1 after:h-[2px] after:bg-primary"
+                : // INACTIVE STATE — muted, hoverable
+                  "text-text-muted hover:text-text hover:bg-surface-muted"
             )}
           >
             <Icon className="h-4 w-4" aria-hidden="true" />
