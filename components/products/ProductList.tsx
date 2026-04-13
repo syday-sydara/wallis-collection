@@ -6,7 +6,6 @@ import ProductGridSkeleton from "./ProductGridSkeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "../ui/ErrorState";
 import ResultHeader from "./ResultHeader";
-import { getProducts } from "@/lib/products/service";
 
 import type {
   ProductListParams,
@@ -29,12 +28,25 @@ export default function ProductList({ params }: ProductListProps) {
   const requestIdRef = useRef(0);
   const nextCursorRef = useRef<string | null>(null);
 
-  // Keep nextCursorRef in sync
   useEffect(() => {
     nextCursorRef.current = nextCursor;
   }, [nextCursor]);
 
-  // Initial fetch
+  async function fetchFromApi(p: ProductListParams): Promise<ProductListResult> {
+    const query = new URLSearchParams(
+      Object.entries(p)
+        .filter(([_, v]) => v !== undefined && v !== null)
+        .map(([k, v]) => [k, String(v)])
+    );
+
+    const res = await fetch(`/api/products?${query.toString()}`, {
+      method: "GET",
+    });
+
+    if (!res.ok) throw new Error("API error");
+    return res.json();
+  }
+
   useEffect(() => {
     const requestId = ++requestIdRef.current;
     let isMounted = true;
@@ -42,9 +54,9 @@ export default function ProductList({ params }: ProductListProps) {
     setLoading(true);
     setError(false);
 
-    async function fetchProducts() {
+    async function load() {
       try {
-        const res: ProductListResult = await getProducts(params);
+        const res = await fetchFromApi(params);
 
         if (!isMounted || requestId !== requestIdRef.current) return;
 
@@ -62,14 +74,12 @@ export default function ProductList({ params }: ProductListProps) {
       }
     }
 
-    fetchProducts();
-
+    load();
     return () => {
       isMounted = false;
     };
   }, [params]);
 
-  // Load more function
   const loadMore = useCallback(async () => {
     if (!nextCursorRef.current || loadingMore) return;
 
@@ -77,7 +87,7 @@ export default function ProductList({ params }: ProductListProps) {
     const currentCursor = nextCursorRef.current;
 
     try {
-      const res: ProductListResult = await getProducts({
+      const res = await fetchFromApi({
         ...params,
         cursor: currentCursor,
       });
@@ -93,7 +103,6 @@ export default function ProductList({ params }: ProductListProps) {
     }
   }, [loadingMore, params]);
 
-  // IntersectionObserver for infinite scroll
   useEffect(() => {
     if (!loadMoreRef.current || !nextCursor) return;
 
@@ -113,7 +122,6 @@ export default function ProductList({ params }: ProductListProps) {
     };
   }, [loadMore, nextCursor]);
 
-  // UI states
   if (loading) return <ProductGridSkeleton />;
 
   if (error)
@@ -136,15 +144,12 @@ export default function ProductList({ params }: ProductListProps) {
 
   return (
     <>
-      {/* Result Header */}
       <ResultHeader count={products.length} />
 
-      {/* Product Grid */}
       <div className="animate-fadeIn">
         <ProductGrid products={products} />
       </div>
 
-      {/* Infinite Scroll / Load More */}
       {nextCursor && (
         <div
           ref={loadMoreRef}
@@ -156,7 +161,6 @@ export default function ProductList({ params }: ProductListProps) {
         </div>
       )}
 
-      {/* End of list message */}
       {!nextCursor && products.length > 0 && (
         <p className="mt-4 text-center text-xs text-text-muted animate-fadeIn-fast">
           No more products

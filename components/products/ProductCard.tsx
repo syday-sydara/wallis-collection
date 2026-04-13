@@ -91,7 +91,7 @@ export default function ProductCard({ product }: Props) {
         ) : (
           <Button disabled fullWidth className="min-h-touch">
             Out of Stock
-          </button>
+          </Button>
         )}
       </div>
     </Card>
