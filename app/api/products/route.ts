@@ -1,96 +1,28 @@
-// app/api/products/route.ts
-import { NextRequest } from "next/server";
-import {
-  ok,
-  badRequest,
-  tooManyRequests,
-  serverError,
-} from "@/lib/api/response";
+import { NextResponse } from "next/server";
 import { getProducts } from "@/lib/products/service";
-import { checkRateLimit } from "@/lib/api/rate-limit";
+import type { ProductListParams } from "@/lib/products/types";
 
-const MAX_LIMIT = 50;
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const searchParams = url.searchParams;
 
-const parseNumber = (value: string | null) => {
-  if (value === null) return undefined;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : NaN;
-};
+  const params: ProductListParams = {
+    search: searchParams.get("search") || undefined,
+    sort: (searchParams.get("sort") as ProductListParams["sort"]) || undefined,
+    cursor: searchParams.get("cursor") || undefined,
+    includeArchived: searchParams.get("includeArchived") === "true",
+    minPrice: searchParams.get("minPrice")
+      ? Number(searchParams.get("minPrice"))
+      : undefined,
+    maxPrice: searchParams.get("maxPrice")
+      ? Number(searchParams.get("maxPrice"))
+      : undefined,
+    limit: searchParams.get("limit")
+      ? Number(searchParams.get("limit"))
+      : undefined,
+  };
 
-export async function GET(req: NextRequest) {
-  try {
-    // --- Rate Limit ---
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip") ||
-      req.ip ||
-      "unknown";
+  const result = await getProducts(params);
 
-    const { allowed, retryAfter } = checkRateLimit(ip);
-    if (!allowed) {
-      return tooManyRequests(
-        `Rate limit exceeded. Retry after ${retryAfter}s`
-      );
-    }
-
-    // --- Query params ---
-    const url = req.nextUrl;
-
-    const search = url.searchParams.get("search") || undefined;
-    const minPrice = parseNumber(url.searchParams.get("minPrice"));
-    const maxPrice = parseNumber(url.searchParams.get("maxPrice"));
-    const limit = parseNumber(url.searchParams.get("limit"));
-    const cursor = url.searchParams.get("cursor") || undefined;
-
-    const allowedSort = ["latest", "price_asc", "price_desc"];
-    const sortParam = url.searchParams.get("sort");
-    const sort = allowedSort.includes(sortParam || "")
-      ? sortParam
-      : "latest";
-
-    // --- Validation ---
-    if (search && search.length > 100) {
-      return badRequest("Search query too long");
-    }
-
-    if (minPrice !== undefined && (isNaN(minPrice) || minPrice < 0)) {
-      return badRequest("minPrice must be non-negative");
-    }
-
-    if (maxPrice !== undefined && (isNaN(maxPrice) || maxPrice < 0)) {
-      return badRequest("maxPrice must be non-negative");
-    }
-
-    if (
-      minPrice !== undefined &&
-      maxPrice !== undefined &&
-      minPrice > maxPrice
-    ) {
-      return badRequest("minPrice cannot be greater than maxPrice");
-    }
-
-    if (limit !== undefined && (isNaN(limit) || limit <= 0)) {
-      return badRequest("limit must be positive");
-    }
-
-    if (cursor && cursor.length > 100) {
-      return badRequest("Invalid cursor");
-    }
-
-    const safeLimit = Math.min(limit ?? 20, MAX_LIMIT);
-
-    // --- Fetch ---
-    const products = await getProducts({
-      search,
-      minPrice,
-      maxPrice,
-      limit: safeLimit,
-      cursor,
-      sort,
-    });
-
-    return ok(products);
-  } catch (err) {
-    return serverError("Failed to fetch products", err);
-  }
+  return NextResponse.json(result);
 }

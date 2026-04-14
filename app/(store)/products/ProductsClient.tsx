@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Gallery from "./Gallery";
-import VariantSelector from "./VariantSelector";
-import AddToCartButton from "../cart/AddToCartButton";
-import ProductCard from "./ProductCard";
+import Gallery from "../../../components/products/Gallery";
+import VariantSelector from "../../../components/products/VariantSelector";
+import AddToCartButton from "../../../components/cart/AddToCartButton";
+import ProductCard from "../../../components/products/ProductCard";
 import type { ProductDetailVM } from "@/lib/products/types";
 import { formatCurrency } from "@/lib/utils";
 
