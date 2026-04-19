@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, KeyboardEvent, TouchEvent } from "react";
+import Image from "next/image";
 
-type ImageType = { id?: string; url: string; alt?: string | null };
-type Props = { images: ImageType[] };
 type ImageType = { id?: string; url: string; alt?: string | null };
 type Props = { images: ImageType[] };
 
@@ -15,15 +14,14 @@ export default function Gallery({ images }: Props) {
   const [isLoading, setIsLoading] = useState(true);
 
   const touchStartX = useRef<number | null>(null);
-
   const activeImage = images[activeIndex];
 
   /* ---------------- Swipe ---------------- */
-  function handleTouchStart(e: React.TouchEvent) {
+  function handleTouchStart(e: TouchEvent) {
     touchStartX.current = e.touches[0].clientX;
   }
 
-  function handleTouchEnd(e: React.TouchEvent) {
+  function handleTouchEnd(e: TouchEvent) {
     if (touchStartX.current === null) return;
 
     const delta = e.changedTouches[0].clientX - touchStartX.current;
@@ -38,31 +36,58 @@ export default function Gallery({ images }: Props) {
   }
 
   /* ---------------- Keyboard ---------------- */
-  function handleKeyDown(e: React.KeyboardEvent) {
+  function handleKeyDown(e: KeyboardEvent) {
     if (e.key === "ArrowRight" && activeIndex < images.length - 1) {
       setActiveIndex((prev) => prev + 1);
     }
     if (e.key === "ArrowLeft" && activeIndex > 0) {
       setActiveIndex((prev) => prev - 1);
     }
+    if (e.key === "Escape") {
+      setIsZoomed(false);
+    }
   }
+
+  /* ---------------- Scroll Lock on Zoom ---------------- */
+  useEffect(() => {
+    if (isZoomed) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [isZoomed]);
 
   return (
     <div className="space-y-4">
       {/* Main Image */}
-      <img
-        src={active}
-        alt={activeImage?.alt ?? "Product image"}
-        aria-label={activeImage?.alt ?? "Product image"}
-        loading="lazy"
-        decoding="async"
-        className="w-full rounded-lg object-cover aspect-square animate-fadeIn"
-      />
+      <div
+        className="relative w-full aspect-square rounded-lg overflow-hidden bg-surface-muted"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+      >
+        {isLoading && (
+          <div className="absolute inset-0 bg-skeleton animate-shimmer" />
+        )}
+
+        <Image
+          src={activeImage.url}
+          alt={activeImage.alt ?? "Product image"}
+          fill
+          sizes="100vw"
+          className={`object-cover transition-opacity duration-300 ${
+            isLoading ? "opacity-0" : "opacity-100"
+          }`}
+          onLoadingComplete={() => setIsLoading(false)}
+          onClick={() => setIsZoomed(true)}
+        />
+      </div>
 
       {/* Thumbnails */}
       <div className="flex gap-2 overflow-x-auto scrollbar-none">
-        {images.map((img) => {
-          const isActive = active === img.url;
+        {images.map((img, index) => {
+          const isActive = index === activeIndex;
 
           return (
             <button
@@ -73,17 +98,18 @@ export default function Gallery({ images }: Props) {
                 setIsLoading(true);
               }}
               aria-selected={isActive}
-              aria-pressed={isActive}
-              className={`rounded-md p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
-                isActive ? "border-2 border-primary" : "border border-border-subtle"
+              className={`rounded-md p-0.5 transition-colors ${
+                isActive
+                  ? "border-2 border-primary"
+                  : "border border-border"
               }`}
             >
-              <img
+              <Image
                 src={img.url}
                 alt={img.alt ?? ""}
-                loading="lazy"
-                decoding="async"
-                className="w-16 h-16 object-cover rounded-md"
+                width={64}
+                height={64}
+                className="object-cover rounded-md"
               />
             </button>
           );
@@ -93,7 +119,7 @@ export default function Gallery({ images }: Props) {
       {/* Zoom Modal */}
       {isZoomed && (
         <div
-          className="fixed inset-0 z-modal bg-black/80 flex items-center justify-center"
+          className="fixed inset-0 z-modal bg-black/80 flex items-center justify-center animate-fadeIn"
           onClick={() => setIsZoomed(false)}
         >
           <div className="relative w-full max-w-3xl aspect-square">
@@ -106,7 +132,6 @@ export default function Gallery({ images }: Props) {
             />
           </div>
 
-          {/* Close hint */}
           <button
             className="absolute top-4 right-4 text-white text-sm"
             onClick={() => setIsZoomed(false)}

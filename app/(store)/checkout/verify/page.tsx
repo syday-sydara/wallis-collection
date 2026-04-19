@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 export default function VerifyPage({
@@ -10,74 +10,95 @@ export default function VerifyPage({
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "error">("loading");
+  const [attempts, setAttempts] = useState(0);
 
-  useEffect(() => {
-    const orderId = searchParams.orderId;
+  const orderId = searchParams.orderId;
 
+  const verify = useCallback(async () => {
     if (!orderId) {
       setStatus("error");
       return;
     }
 
+    setStatus("loading");
+    setAttempts(0);
+
     let cancelled = false;
 
-    const verify = async () => {
-      for (let attempt = 1; attempt <= 5; attempt++) {
-        try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 8000);
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      setAttempts(attempt);
 
-          const res = await fetch(`/api/checkout/verify?orderId=${orderId}`, {
-            cache: "no-store",
-            signal: controller.signal,
-          });
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
 
-          clearTimeout(timeout);
-          if (cancelled) return;
+        const res = await fetch(`/api/checkout/verify?orderId=${orderId}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
 
-          if (res.status === 200) {
-            router.replace(`/checkout/success?orderId=${orderId}`);
-            return;
-          }
+        clearTimeout(timeout);
+        if (cancelled) return;
 
-          if (res.status === 202) {
-            // Payment still processing — retry
-            await new Promise((r) => setTimeout(r, 1200));
-            continue;
-          }
-
-          // Any other status = error
-          setStatus("error");
+        if (res.status === 200) {
+          // Optional: small UX delay
+          await new Promise((r) => setTimeout(r, 300));
+          router.replace(`/checkout/success?orderId=${orderId}`);
           return;
-        } catch {
-          if (!cancelled) {
-            // Retry on network errors
-            await new Promise((r) => setTimeout(r, 1200));
-          }
+        }
+
+        if (res.status === 202) {
+          // Still processing
+          await new Promise((r) => setTimeout(r, 1200));
+          continue;
+        }
+
+        // Unexpected status
+        console.warn("Unexpected verify status:", res.status);
+        setStatus("error");
+        return;
+      } catch (err) {
+        if (!cancelled) {
+          // Retry on network errors
+          await new Promise((r) => setTimeout(r, 1200));
         }
       }
+    }
 
-      if (!cancelled) setStatus("error");
-    };
-
-    verify();
+    if (!cancelled) setStatus("error");
 
     return () => {
       cancelled = true;
     };
-  }, [searchParams.orderId, router]);
+  }, [orderId, router]);
+
+  useEffect(() => {
+    verify();
+  }, [verify]);
+
+  /* ---------------- UI ---------------- */
 
   if (status === "error") {
     return (
-      <p className="text-center text-red-600 mt-10">
-        Unable to verify payment. Please contact support.
-      </p>
+      <div className="text-center mt-10 space-y-4 animate-fadeIn">
+        <p className="text-red-600 text-sm">
+          Unable to verify payment. Please contact support if this continues.
+        </p>
+
+        <button
+          onClick={verify}
+          className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm"
+        >
+          Retry Verification
+        </button>
+      </div>
     );
   }
 
   return (
-    <p className="text-center mt-10 animate-pulse">
-      Verifying your payment… Please wait.
-    </p>
+    <div className="text-center mt-10 space-y-2 animate-pulse">
+      <p className="text-text">Verifying your payment…</p>
+      <p className="text-xs text-text-muted">Attempt {attempts} of 5</p>
+    </div>
   );
 }
