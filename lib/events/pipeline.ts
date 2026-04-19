@@ -112,7 +112,7 @@ export async function logEvent(event: any) {
 
       case "fraud": {
         const e = fraudSchema.parse(enriched);
-        const { kind, encryptedMetadata, encryptedMetadata, ...payload } = e;
+        const { kind, encryptedMetadata, ...payload } = e;
         await prisma.fraudEvent.create({ data: payload });
         break;
       }

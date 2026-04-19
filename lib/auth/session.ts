@@ -163,9 +163,3 @@ export function createSessionToken(user: {
   const signature = sign(signed);
   return `${signed}.${signature}`;
 }
-    permissions: dbPermissions,
-    deniedPermissions: dbDeniedPermissions,
-  });
-
-  return newToken;
-}

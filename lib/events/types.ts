@@ -36,7 +36,6 @@ export const SECURITY_EVENT_TYPES = [
   "SUSPICIOUS_IP",
   "SYSTEM_ANOMALY",
   "PERFORMANCE_METRIC",
-  "PERFORMANCE_METRIC",
 ] as const;
 
 export type SecurityEventType = (typeof SECURITY_EVENT_TYPES)[number];
@@ -115,7 +114,6 @@ export const ALERT_EVENT_TYPES = [
   "UNAUTHORIZED_ACCESS_WARNING",
   "PERFORMANCE_SLOW_OPERATION",
   "UNAUTHORIZED_ACCESS_CRITICAL",
-  "PERFORMANCE_SLOW_OPERATION",
 ] as const;
 
 export type AlertEventType = (typeof ALERT_EVENT_TYPES)[number];
