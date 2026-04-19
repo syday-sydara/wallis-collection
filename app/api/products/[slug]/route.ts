@@ -14,14 +14,25 @@ import { startTimer } from "@/lib/auth/metrics";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  context: { params: Promise<{ slug: string }> }
 ) {
   const stopTimer = startTimer("api_products_slug_ms");
 
   try {
-    // --- Normalize slug ---
-    const { slug: rawSlug } = await params;
-    const slug = rawSlug?.trim().toLowerCase();
+    // --- Extract slug safely ---
+    const resolved = await context.params.catch(() => null);
+    const rawSlug = resolved?.slug;
+
+    if (!rawSlug) {
+      return badRequest("Missing slug");
+    }
+
+    // Normalize slug
+    const slug = rawSlug
+      .trim()
+      .toLowerCase()
+      .replace(/--+/g, "-") // collapse multiple hyphens
+      .replace(/^-+|-+$/g, ""); // trim hyphens
 
     const slugRegex = /^[a-z0-9-]+$/;
     if (!slug || slug.length < 2 || slug.length > 200 || !slugRegex.test(slug)) {
@@ -32,13 +43,16 @@ export async function GET(
     const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("x-real-ip") ||
+      req.ip ||
       "anonymous";
 
-    const result = await checkRateLimit(ip, { max: 60, windowMs: 60_000 });
+    const rate = await checkRateLimit(ip, { max: 60, windowMs: 60_000 });
 
-    if (!result.allowed) {
+    if (!rate.allowed) {
       logEvent("rate_limited", { ip, slug }, "warn");
-      return tooManyRequests(`Rate limit exceeded. Try again in ${result.retryAfter}s`);
+      return tooManyRequests(
+        `Rate limit exceeded. Try again in ${rate.retryAfter}s`
+      );
     }
 
     // --- Fetch product ---
@@ -48,7 +62,7 @@ export async function GET(
       logEvent("product_not_found", { slug, ip }, "warn");
       return notFound("Product not found", undefined, {
         headers: {
-          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
         },
       });
     }
@@ -57,10 +71,11 @@ export async function GET(
 
     return ok(productVM, {
       headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+        "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
       },
     });
   } catch (err) {
+    logEvent("product_detail_error", { error: String(err) }, "error");
     return serverError("Failed to fetch product", err);
   } finally {
     stopTimer();

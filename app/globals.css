@@ -122,6 +122,27 @@ body {
   pointer-events: none;
 }
 
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn:disabled {
+  background: rgb(var(--color-disabled));
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn:focus-visible {
+  outline: 2px solid rgb(var(--color-primary));
+  outline-offset: 2px;
+}
+
+.btn,
+.input {
+  transition: background 0.2s, border-color 0.2s, color 0.2s, opacity 0.2s;
+}
+
+
 /* ---------------- INPUT ---------------- */
 
 .input {
@@ -138,6 +159,13 @@ body {
 
 .card-body {
   padding: var(--space-4);
+}
+
+.card {
+  background: rgb(var(--bg-card));
+  border: 1px solid rgb(var(--border-default));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ---------------- PRICE ---------------- */

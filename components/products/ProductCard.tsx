@@ -11,58 +11,65 @@ import { formatCurrency } from "@/lib/utils";
 type Props = {
   product: {
     id: string;
+    slug: string;
     name: string;
     minPrice: number;
     maxPrice: number;
     inStock: boolean;
+    discountPercent?: number;
     images?: { url: string }[];
   };
 };
 
 export default function ProductCard({ product }: Props) {
-  const { id, name, minPrice, maxPrice, inStock, images } = product;
+  const { id, slug, name, minPrice, maxPrice, inStock, discountPercent, images } = product;
   const image = images?.[0]?.url ?? "/placeholder.png";
   const isRange = minPrice !== maxPrice;
 
   return (
     <Card
       padding="none"
-      className="overflow-hidden group animate-fadeIn-fast hover:shadow-md transition-shadow duration-300"
+      className="overflow-hidden group animate-fadeIn-fast hover:shadow-md hover:border-border transition-all duration-300"
     >
       {/* Product Image */}
       <Link
-        href={`/product/${id}`}
+        href={`/product/${slug}`}
         aria-label={`View product ${name}`}
         prefetch={false}
       >
         <div className="relative aspect-square w-full bg-surface-muted overflow-hidden rounded-t-lg">
           <Image
             src={image}
-            alt={name}
+            alt={name || "Product image"}
             fill
+            loading="lazy"
             sizes="(max-width: 640px) 100vw, 50vw"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
-            priority={false}
-            placeholder="/placeholder.png"
+            placeholder="blur"
+            blurDataURL="/placeholder.png"
           />
 
-          {/* Badges */}
+          {/* Out of Stock */}
           {!inStock && (
-            <div
-              className="absolute top-3 left-3"
-              aria-label="Out of Stock Badge"
-            >
-              <Badge variant="danger">Out of Stock</Badge>
-            </div>
+            <Badge variant="danger" className="absolute top-3 left-3">
+              Out of Stock
+            </Badge>
+          )}
+
+          {/* Discount */}
+          {discountPercent && discountPercent > 0 && (
+            <Badge variant="warning" className="absolute top-3 right-3">
+              -{discountPercent}%
+            </Badge>
           )}
         </div>
       </Link>
 
       {/* Product Content */}
       <div className="p-3 sm:p-4 space-y-1.5">
-        <Link href={`/product/${id}`} prefetch={false}>
+        <Link href={`/product/${slug}`} prefetch={false}>
           <h3 className="font-medium text-sm sm:text-base text-text line-clamp-1 leading-tight">
-            {name}
+            {name || "Unnamed Product"}
           </h3>
         </Link>
 
@@ -79,7 +86,7 @@ export default function ProductCard({ product }: Props) {
           )}
         </div>
 
-        {/* Add to Cart / Disabled */}
+        {/* Add to Cart */}
         {inStock ? (
           <AddToCartButton
             productId={id}
@@ -87,6 +94,7 @@ export default function ProductCard({ product }: Props) {
             price={minPrice}
             image={image}
             fullWidth
+            className="min-h-touch"
           />
         ) : (
           <Button disabled fullWidth className="min-h-touch">
