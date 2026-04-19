@@ -21,12 +21,13 @@ const baseSchema = z.object({
   requestId: z.string().nullable().optional(),
   source: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
-  severity: z.enum(["low", "medium", "high"]).optional(),
+  severity: z.enum(["low", "medium", "high"]).default("low"),
   userId: z.string().nullable().optional(),
   ip: z.string().nullable().optional(),
   userAgent: z.string().nullable().optional(),
   encryptedMetadata: z.boolean().optional(),
   metadata: z.record(z.any()).optional(),
+  severity: z.enum(["low", "medium", "high"]).default("low"),
   version: z.number().default(1),
 });
 
@@ -93,13 +94,19 @@ export async function logEvent(event: any) {
       timestamp,
       version: event.version ?? 1,
       encryptedMetadata: event.encryptedMetadata ?? false,
+      severity: event.severity ?? "low",
     };
 
     switch (event.kind) {
       case "security": {
         const e = securitySchema.parse(enriched);
         const { kind, encryptedMetadata, ...payload } = e;
-        await prisma.securityEvent.create({ data: payload });
+        await prisma.securityEvent.create({
+          data: {
+            ...payload,
+            severity: e.severity ?? "low",
+          },
+        });
         break;
       }
 

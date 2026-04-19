@@ -1,4 +1,4 @@
-import { computeFraudScore } from "@/lib/security/fraud-score";
+import { computeFraudScore } from "@/lib/security/computeFraudScore";
 import { emitFraudEvent, emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 import { redis } from "@/lib/redis";
 
@@ -6,13 +6,15 @@ type FraudSignalType =
   | "WEBHOOK_SIGNATURE_MISMATCH"
   | "WEBHOOK_UNKNOWN_ORDER"
   | "WEBHOOK_DUPLICATE_EXCESSIVE"
-  | "WEBHOOK_PROVIDER_MISMATCH";
+  | "WEBHOOK_PROVIDER_MISMATCH"
+  | "WEBHOOK_PROCESSING_ERROR";
 
 const VALID_SIGNALS = new Set<FraudSignalType>([
   "WEBHOOK_SIGNATURE_MISMATCH",
   "WEBHOOK_UNKNOWN_ORDER",
   "WEBHOOK_DUPLICATE_EXCESSIVE",
   "WEBHOOK_PROVIDER_MISMATCH",
+  "WEBHOOK_PROCESSING_ERROR",
 ]);
 
 function normalizeProvider(provider: string) {
@@ -44,7 +46,7 @@ async function checkIdempotency(key: string | null) {
     const exists = await redis.get(key);
     if (exists) return true;
 
-    await redis.set(key, "1", { EX: 300 });
+    await redis.set(key, "1", { ex: 300 });
     return false;
   } catch {
     return false;

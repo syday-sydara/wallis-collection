@@ -190,7 +190,6 @@ export async function emitFraudEvent(params: {
         signal,
         orderId,
         userId,
-        requestId,
         ip: ctx.ip,
         userAgent: ctx.userAgent,
         metadata: storedMetadata,
@@ -236,7 +235,6 @@ export async function emitAlertEvent(params: {
       data: {
         event,
         userId,
-        requestId,
         ip: ctx.ip,
         userAgent: ctx.userAgent,
         metadata: storedMetadata,

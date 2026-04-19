@@ -24,8 +24,8 @@ export type Permission = keyof typeof PERMISSIONS;
 export interface SessionUser {
   id: string;
   role: string | string[];
-  permissions?: Permission[];
-  deniedPermissions?: Permission[];
+  permissions?: string[];
+  deniedPermissions?: string[];
 }
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
@@ -113,8 +113,12 @@ export function getUserPermissions(user: SessionUser | null): Permission[] {
     role in ROLE_PERMISSIONS
   );
   const rolePerms = roleNames.flatMap((r) => ROLE_PERMISSIONS[r] ?? []);
-  const directPerms = user.permissions ?? [];
-  const denied = user.deniedPermissions ?? [];
+  const directPerms = (user.permissions ?? []).filter(
+    (item): item is Permission => item in PERMISSIONS
+  );
+  const denied = (user.deniedPermissions ?? []).filter(
+    (item): item is Permission => item in PERMISSIONS
+  );
 
   const merged = new Set<Permission>([...rolePerms, ...directPerms]);
   denied.forEach((d) => merged.delete(d));

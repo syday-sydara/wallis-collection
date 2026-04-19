@@ -1,4 +1,5 @@
 import { emitSecurityEvent } from "@/lib/events/emitter";
+import { SECURITY_EVENT_TYPES, type SecurityEventType } from "@/lib/events/types";
 
 type LogLevel = "info" | "warn" | "error";
 
@@ -98,8 +99,14 @@ export async function logEvent(
   /* -------------------------------------------------- */
   /* Security Center Integration                         */
   /* -------------------------------------------------- */
+  const securityType = SECURITY_EVENT_TYPES.includes(
+    event as SecurityEventType
+  )
+    ? (event as SecurityEventType)
+    : "SYSTEM_ANOMALY";
+
   await emitSecurityEvent({
-    type: event,
+    type: securityType,
     message: `Log event: ${event}`,
     severity: mapLevelToSeverity(level),
     category: context ?? "system",

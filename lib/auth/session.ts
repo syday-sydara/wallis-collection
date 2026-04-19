@@ -105,7 +105,7 @@ export async function getSessionUser(
       email: true,
       name: true,
       role: true,
-      riskScore: true,
+      risk_score: true,
       permissions: true,
       deniedPermissions: true,
     },
@@ -125,7 +125,7 @@ export async function getSessionUser(
     email: dbUser.email,
     name: dbUser.name,
     role: dbUser.role,
-    risk_score: dbUser.riskScore ?? 0,
+    risk_score: dbUser.risk_score ?? 0,
     permissions: dbPermissions,
     deniedPermissions: dbDeniedPermissions,
   };
