@@ -1,9 +1,5 @@
 // lib/analytics.ts
 
-/**
- * Dispatches a structured analytics event for checkout progress.
- * Browser-only. Supports sampling, dataLayer, debug mode, and versioning.
- */
 export function trackCheckoutStep(
   step: string,
   extra: Record<string, any> = {},
@@ -23,19 +19,37 @@ export function trackCheckoutStep(
     dataLayer = false,
   } = options ?? {};
 
-  // Sampling
-  if (Math.random() > sampleRate) return;
+  // Clamp sampling rate
+  const rate = Math.min(Math.max(sampleRate, 0), 1);
+  if (Math.random() > rate) return;
+
+  // Normalize fields
+  const safeStep = step.trim();
+  const safeContext = context.trim().toLowerCase();
+
+  // Shallow clone metadata
+  const safeExtra = { ...extra };
+
+  // Metadata size limit (5 KB)
+  try {
+    const json = JSON.stringify(safeExtra);
+    if (json.length > 5000) {
+      safeExtra._truncated = true;
+    }
+  } catch {
+    safeExtra._error = "invalid_metadata";
+  }
 
   const version = 1;
   const EVENT_NAME = "analytics:checkout_step";
 
-  const detail = {
+  const detail = Object.freeze({
     version,
-    step,
-    context,
+    step: safeStep,
+    context: safeContext,
     timestamp: new Date().toISOString(),
-    ...extra,
-  };
+    ...safeExtra,
+  });
 
   // Dispatch CustomEvent
   try {
@@ -56,7 +70,7 @@ export function trackCheckoutStep(
     }
   }
 
-  // Optional: debug logging
+  // Debug logging
   if (debug) {
     console.log("[analytics]", detail);
   }

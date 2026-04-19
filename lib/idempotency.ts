@@ -2,7 +2,7 @@
 
 type Entry<T = any> = {
   createdAt: number;
-  response: T;
+  value: T | typeof NULL_SENTINEL;
 };
 
 type InFlight = {
@@ -10,92 +10,99 @@ type InFlight = {
   createdAt: number;
 };
 
-const IDEMPOTENCY_TTL_MS = 10 * 60_000;
+const TTL_MS = 10 * 60_000; // 10 minutes
 const MAX_ENTRIES = 5000;
+const NULL_SENTINEL = Symbol("NULL_VALUE");
 
 const store = new Map<string, Entry>();
 const inFlight = new Map<string, InFlight>();
 
-function isExpired(entry: { createdAt: number }) {
-  return Date.now() - entry.createdAt > IDEMPOTENCY_TTL_MS;
+function normalizeKey(key: string) {
+  return key.trim().replace(/\s+/g, "_");
 }
 
-export function getIdempotentResponse<T = any>(key: string): T | null {
-  const entry = store.get(key);
+function isExpired(entry: { createdAt: number }) {
+  return Date.now() - entry.createdAt > TTL_MS;
+}
+
+export function getIdempotentResponse<T>(key: string): T | null {
+  const normalized = normalizeKey(key);
+  const entry = store.get(normalized);
   if (!entry) return null;
 
   if (isExpired(entry)) {
-    store.delete(key);
+    store.delete(normalized);
     return null;
   }
 
-  return entry.response as T;
+  return entry.value === NULL_SENTINEL ? null : (entry.value as T);
 }
 
-export function saveIdempotentResponse<T = any>(key: string, response: T) {
+export function saveIdempotentResponse<T>(key: string, value: T) {
+  const normalized = normalizeKey(key);
+
+  // Evict oldest if needed (O(1))
   if (store.size >= MAX_ENTRIES) {
-    // Simple eviction: remove oldest entry
-    const oldest = [...store.entries()].sort(
-      (a, b) => a[1].createdAt - b[1].createdAt
-    )[0];
-    if (oldest) store.delete(oldest[0]);
+    const oldestKey = store.keys().next().value;
+    if (oldestKey) store.delete(oldestKey);
   }
 
-  store.set(key, {
+  store.set(normalized, {
     createdAt: Date.now(),
-    response
+    value: value === null ? NULL_SENTINEL : value,
   });
 }
 
-/**
- * Ensures only one execution happens per key.
- * If another request is already computing the value, this waits for it.
- */
 export async function runIdempotent<T>(
   key: string,
-  fn: () => Promise<T>
+  fn: () => Promise<T>,
+  timeoutMs = 30_000
 ): Promise<T> {
-  // 1. Return cached response if available
-  const cached = getIdempotentResponse<T>(key);
+  const normalized = normalizeKey(key);
+
+  // 1. Cached response
+  const cached = getIdempotentResponse<T>(normalized);
   if (cached !== null) return cached;
 
-  // 2. If computation is in-flight, wait for it
-  const existing = inFlight.get(key);
+  // 2. In-flight response
+  const existing = inFlight.get(normalized);
   if (existing && !isExpired(existing)) {
     return existing.promise as Promise<T>;
   }
 
-  // 3. Start new computation
-  const promise = fn()
+  // 3. Start new computation with timeout
+  const promise = Promise.race([
+    fn(),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Idempotent operation timed out")), timeoutMs)
+    ),
+  ])
     .then((result) => {
-      saveIdempotentResponse(key, result);
-      inFlight.delete(key);
+      saveIdempotentResponse(normalized, result);
+      inFlight.delete(normalized);
       return result;
     })
     .catch((err) => {
-      inFlight.delete(key);
+      inFlight.delete(normalized);
       throw err;
     });
 
-  inFlight.set(key, { promise, createdAt: Date.now() });
+  inFlight.set(normalized, { promise, createdAt: Date.now() });
 
   return promise;
 }
 
-/**
- * Optional: periodic cleanup
- */
 export function cleanupIdempotencyStore() {
   const now = Date.now();
 
   for (const [key, entry] of store.entries()) {
-    if (now - entry.createdAt > IDEMPOTENCY_TTL_MS) {
+    if (now - entry.createdAt > TTL_MS) {
       store.delete(key);
     }
   }
 
   for (const [key, entry] of inFlight.entries()) {
-    if (now - entry.createdAt > IDEMPOTENCY_TTL_MS) {
+    if (now - entry.createdAt > TTL_MS) {
       inFlight.delete(key);
     }
   }
