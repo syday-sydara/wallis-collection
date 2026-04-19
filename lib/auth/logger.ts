@@ -25,6 +25,37 @@ function mapLevelToSeverity(level: LogLevel): "low" | "medium" | "high" {
   }
 }
 
+function normalizeContext(ctx?: string) {
+  if (!ctx) return undefined;
+  return ctx.toLowerCase().replace(/[^a-z0-9_\-]/g, "").slice(0, 40);
+}
+
+function clampSampleRate(rate: number) {
+  if (rate <= 0) return 0;
+  if (rate >= 1) return 1;
+  return rate;
+}
+
+function safeClone<T>(obj: T): T {
+  try {
+    return JSON.parse(JSON.stringify(obj));
+  } catch {
+    return {} as T;
+  }
+}
+
+function limitMetadataSize(obj: any, maxBytes = 5000) {
+  try {
+    const json = JSON.stringify(obj);
+    if (json.length > maxBytes) {
+      return { truncated: true };
+    }
+    return obj;
+  } catch {
+    return { error: "metadata_serialization_failed" };
+  }
+}
+
 /**
  * Structured logger with Security Center integration.
  */
@@ -54,8 +85,11 @@ export async function logEvent(
     userAgent = null,
   } = options ?? {};
 
+  const normalizedContext = normalizeContext(context);
+  const rate = clampSampleRate(sampleRate);
+
   // Sampling
-  if (Math.random() > sampleRate) return;
+  if (Math.random() > rate) return;
 
   const version = 1;
 
@@ -67,8 +101,8 @@ export async function logEvent(
     env: process.env.NODE_ENV,
     requestId,
     source,
-    ...(context ? { context } : {}),
-    ...data,
+    ...(normalizedContext ? { context: normalizedContext } : {}),
+    ...safeClone(data),
   };
 
   // Safe serialization
@@ -99,21 +133,23 @@ export async function logEvent(
   /* -------------------------------------------------- */
   /* Security Center Integration                         */
   /* -------------------------------------------------- */
-  const securityType = SECURITY_EVENT_TYPES.includes(
+
+  const securityType: SecurityEventType = SECURITY_EVENT_TYPES.includes(
     event as SecurityEventType
   )
     ? (event as SecurityEventType)
     : "SYSTEM_ANOMALY";
 
-  await emitSecurityEvent({
+  // Non-blocking
+  void emitSecurityEvent({
     type: securityType,
     message: `Log event: ${event}`,
     severity: mapLevelToSeverity(level),
-    category: context ?? "system",
+    category: normalizedContext ?? "system",
     ip,
     userAgent,
     requestId,
     source,
-    metadata: payload,
+    metadata: limitMetadataSize(payload),
   });
 }

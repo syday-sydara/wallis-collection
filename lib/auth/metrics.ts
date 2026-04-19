@@ -10,9 +10,24 @@ function classifyDuration(durationMs: number): "low" | "medium" | "high" {
   return "low";
 }
 
-/**
- * v3 Security Center integrated performance timer.
- */
+function clampSampleRate(rate: number) {
+  if (rate <= 0) return 0;
+  if (rate >= 1) return 1;
+  return rate;
+}
+
+function limitMetadataSize(obj: any, maxBytes = 5000) {
+  try {
+    const json = JSON.stringify(obj);
+    if (json.length > maxBytes) {
+      return { truncated: true };
+    }
+    return obj;
+  } catch {
+    return { error: "metadata_serialization_failed" };
+  }
+}
+
 export function startTimer(
   label: string,
   options?: {
@@ -41,6 +56,7 @@ export function startTimer(
   } = options ?? {};
 
   const env = process.env.NODE_ENV;
+  const rate = clampSampleRate(sampleRate);
 
   return async (extra: Record<string, any> = {}) => {
     const end =
@@ -49,7 +65,7 @@ export function startTimer(
     const durationMs = end - start;
 
     // Sampling
-    if (Math.random() > sampleRate) return durationMs;
+    if (Math.random() > rate) return durationMs;
 
     const payload = {
       version: VERSION,
@@ -68,16 +84,20 @@ export function startTimer(
       try {
         logger(JSON.stringify(payload));
       } catch {
-        logger(
-          JSON.stringify({
-            version: VERSION,
-            metric: label,
-            durationMs,
-            timestamp: new Date().toISOString(),
-            env,
-            error: "Failed to serialize metric payload",
-          })
-        );
+        try {
+          logger(
+            JSON.stringify({
+              version: VERSION,
+              metric: label,
+              durationMs,
+              timestamp: new Date().toISOString(),
+              env,
+              error: "Failed to serialize metric payload",
+            })
+          );
+        } catch {
+          // swallow logger failures
+        }
       }
     }
 
@@ -86,7 +106,7 @@ export function startTimer(
     /* -------------------------------------------------- */
     const severity = classifyDuration(durationMs);
 
-    await emitSecurityEvent({
+    void emitSecurityEvent({
       type: "PERFORMANCE_METRIC",
       message: `Metric ${label} took ${durationMs.toFixed(1)}ms`,
       severity,
@@ -95,19 +115,19 @@ export function startTimer(
       userAgent,
       requestId,
       source,
-      metadata: {
+      metadata: limitMetadataSize({
         metric: label,
         durationMs,
         ...metadata,
         ...extra,
-      },
+      }),
     });
 
     /* -------------------------------------------------- */
     /* AlertEvent (slow operations)                        */
     /* -------------------------------------------------- */
     if (severity === "high") {
-      await emitAlertEvent({
+      void emitAlertEvent({
         event: "PERFORMANCE_SLOW_OPERATION",
         ip,
         userAgent,
