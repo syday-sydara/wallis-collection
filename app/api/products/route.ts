@@ -3,41 +3,41 @@ import { NextRequest } from "next/server";
 import { getProducts } from "@/lib/products/service";
 import type { ProductListParams } from "@/lib/products/types";
 
+const ALLOWED_SORT = new Set(["newest", "price-asc", "price-desc", "popular"]);
+const ALLOWED_CATEGORIES = new Set(["bags", "shoes", "accessories"]);
+
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const searchParams = url.searchParams;
 
-    // Helper to safely parse numbers
     const toNumber = (value: string | null) => {
       if (!value) return undefined;
       const n = Number(value);
       return Number.isFinite(n) ? n : undefined;
     };
 
+    const rawSearch = searchParams.get("search")?.trim() || undefined;
+    const rawSort = searchParams.get("sort") || "newest";
+    const rawCategory = searchParams.get("category") || undefined;
+
     const params: ProductListParams = {
-      search: searchParams.get("search") || undefined,
-      sort: searchParams.get("sort") || "newest",
-      category: searchParams.get("category") || undefined,
+      search: rawSearch || undefined,
+      sort: ALLOWED_SORT.has(rawSort) ? rawSort : "newest",
+      category: rawCategory && ALLOWED_CATEGORIES.has(rawCategory)
+        ? rawCategory
+        : undefined,
       cursor: searchParams.get("cursor") || undefined,
       includeArchived: searchParams.get("includeArchived") === "true",
       minPrice: toNumber(searchParams.get("minPrice")),
       maxPrice: toNumber(searchParams.get("maxPrice")),
-      limit: toNumber(searchParams.get("limit")) ?? 20, // safe default
+      limit: Math.min(toNumber(searchParams.get("limit")) ?? 20, 50),
     };
-
-    // Optional: early return if params are empty
-    // (useful for caching and performance)
-    if (!params.search && !params.category && !params.cursor) {
-      // You can choose to return featured products here
-      // or simply continue normally.
-    }
 
     const result = await getProducts(params);
 
     return Response.json(result, {
       headers: {
-        // Better caching for Vercel / Edge
         "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
       },
     });
