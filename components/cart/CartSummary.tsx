@@ -1,3 +1,4 @@
+'use client';
 import { formatCurrency } from "@/lib/utils/formatters/currency";
 import type { CartItem } from "@/lib/cart/store";
 import Image from "next/image";

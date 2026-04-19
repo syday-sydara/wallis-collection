@@ -7,6 +7,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 
 import { trackPermissionDenied } from "@/lib/security/permission-rate-limit";
 import { maybeSendUnauthorizedAlert } from "@/lib/security/permission-alerts";
+import { run } from "node:test";
 
 export async function middleware(req: NextRequest) {
   const { pathname, origin } = req.nextUrl;
@@ -77,4 +78,5 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: ["/security-center/:path*"],
+  runtime: "nodejs",
 };

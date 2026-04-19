@@ -1,7 +1,5 @@
 import { Inter } from "next/font/google";
 import { ClientProviders } from "@/components/ClientProviders";
-import { Toaster } from "@/components/ui/toast/Toaster";
-import { CartDrawer } from "@/components/cart/CartDrawer";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
@@ -27,16 +25,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
       >
         <ClientProviders>
-          {/* Global UI */}
-          <Toaster />
-          <CartDrawer />
-
-          {/* Portal root for modals */}
-          <div id="portal-root" />
-
-          {/* Main content */}
-          <main className="min-h-screen">{children}</main>
+          {children}
         </ClientProviders>
+
+        <div id="portal-root" />
       </body>
     </html>
   );
