@@ -2,7 +2,8 @@
 import { verifyPaystackReference } from "./providers/paystack";
 import { verifyMonnifyReference } from "./providers/monnify";
 import type { PaymentProvider, PaymentVerificationResult } from "./types";
-import { logFraudSignal, logEvent } from "@/lib/security/fraud";
+import { logFraudSignal } from "@/lib/security/fraud";
+import { logEvent } from "@/lib/auth/logger";
 
 export async function verifyPayment(provider: PaymentProvider, reference: string): Promise<PaymentVerificationResult> {
   const normalized = provider.toLowerCase() as PaymentProvider;

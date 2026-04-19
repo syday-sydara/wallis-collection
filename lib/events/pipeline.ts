@@ -27,7 +27,6 @@ const baseSchema = z.object({
   userAgent: z.string().nullable().optional(),
   encryptedMetadata: z.boolean().optional(),
   metadata: z.record(z.any()).optional(),
-  severity: z.enum(["low", "medium", "high"]).default("low"),
   version: z.number().default(1),
 });
 
