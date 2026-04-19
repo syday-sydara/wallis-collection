@@ -4,79 +4,153 @@ import type { NextRequest } from "next/server";
 
 import { parseMiddlewareSession } from "@/lib/auth/middleware-session";
 import { hasPermission } from "@/lib/auth/permissions";
-
 import { trackPermissionDenied } from "@/lib/security/permission-rate-limit";
 import { maybeSendUnauthorizedAlert } from "@/lib/security/permission-alerts";
-import { run } from "node:test";
+
+/* -------------------------------------------------- */
+/* Helpers */
+/* -------------------------------------------------- */
+
+function redirectToLogin(req: NextRequest) {
+  const loginUrl = new URL("/login", req.url);
+  loginUrl.searchParams.set("next", req.nextUrl.pathname);
+  return NextResponse.redirect(loginUrl);
+}
+
+function redirectToHome(req: NextRequest) {
+  return NextResponse.redirect(new URL("/", req.url));
+}
+
+function blockRisk(req: NextRequest) {
+  void fetch(`${req.nextUrl.origin}/api/_internal/security-log`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      type: "RISK_BLOCK",
+      message: `User blocked due to high risk`,
+      ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.ip || "unknown",
+      userAgent: req.headers.get("user-agent")?.slice(0, 300) ?? "unknown",
+      timestamp: Date.now(),
+    }),
+    keepalive: true,
+  }).catch(() => {});
+
+  return NextResponse.redirect(new URL("/risk-blocked", req.url));
+}
+
+/* -------------------------------------------------- */
+/* Main Middleware Pipeline */
+/* -------------------------------------------------- */
 
 export async function middleware(req: NextRequest) {
   const { pathname, origin } = req.nextUrl;
 
-  // Only enforce /security-center/*
-  if (!pathname.startsWith("/security-center")) {
-    return NextResponse.next();
-  }
-
   /* -------------------------------------------------- */
-  /* 1. Parse session (edge-safe) */
+  /* 1. Parse session (Node-safe) */
   /* -------------------------------------------------- */
   const user = parseMiddlewareSession(req);
 
   /* -------------------------------------------------- */
-  /* 2. Permission check */
+  /* 2. Risk Enforcement (Fail Closed) */
+  /* Applies to ALL protected routes */
   /* -------------------------------------------------- */
-  const allowed = hasPermission(user, "VIEW_SECURITY_CENTER");
+  const risk = (user as any)?.riskScore ?? (user as any)?.risk_score;
 
-  if (allowed) {
+  if (!user || risk == null || risk >= 70) {
+    return blockRisk(req);
+  }
+
+  /* -------------------------------------------------- */
+  /* 3. Admin Routes */
+  /* -------------------------------------------------- */
+  if (pathname.startsWith("/admin")) {
+    if (!user?.id) {
+      return redirectToLogin(req);
+    }
+
+    const allowed = hasPermission(user, "VIEW_ADMIN");
+
+    if (!allowed) {
+      const forwarded = req.headers.get("x-forwarded-for");
+      const ip =
+        forwarded?.split(",")[0]?.trim().replace(/:\d+$/, "") ||
+        req.ip ||
+        "unknown";
+
+      void fetch(`${origin}/api/_internal/security-log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "ADMIN_ACCESS_DENIED",
+          message: "Denied access to admin route",
+          path: pathname.slice(0, 200),
+          userId: user.id,
+          ip,
+          userAgent: req.headers.get("user-agent")?.slice(0, 300) ?? "unknown",
+          timestamp: Date.now(),
+        }),
+        keepalive: true,
+      }).catch(() => {});
+
+      return redirectToHome(req);
+    }
+
     return NextResponse.next();
   }
 
   /* -------------------------------------------------- */
-  /* 3. Extract IP + User-Agent safely */
+  /* 4. Security Center Routes */
   /* -------------------------------------------------- */
-  const forwarded = req.headers.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0].trim() || req.ip || "unknown";
-  const userAgent = req.headers.get("user-agent")?.slice(0, 300) ?? "unknown";
+  if (pathname.startsWith("/security-center")) {
+    const allowed = hasPermission(user, "VIEW_SECURITY_CENTER");
 
-  /* -------------------------------------------------- */
-  /* 4. Rate-limit permission-denied events */
-  /* -------------------------------------------------- */
-  const rate = trackPermissionDenied(ip);
+    if (allowed) {
+      return NextResponse.next();
+    }
 
-  /* -------------------------------------------------- */
-  /* 5. Trigger alerts at thresholds (async) */
-  /* -------------------------------------------------- */
-  if (rate.allowed) {
-    maybeSendUnauthorizedAlert(ip, rate.count);
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = forwarded?.split(",")[0]?.trim() || req.ip || "unknown";
+    const userAgent = req.headers.get("user-agent")?.slice(0, 300) ?? "unknown";
+
+    const rate = trackPermissionDenied(ip);
+
+    if (rate.allowed) {
+      maybeSendUnauthorizedAlert(ip, rate.count);
+    }
+
+    if (rate.allowed) {
+      void fetch(`${origin}/api/_internal/security-log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user?.id ?? null,
+          type: "PERMISSION_DENIED",
+          message: `Denied access to ${pathname}`,
+          ip,
+          userAgent,
+          timestamp: Date.now(),
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    }
+
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
   /* -------------------------------------------------- */
-  /* 6. Log only if rate-limit allows (fire-and-forget) */
+  /* 5. Default: allow */
   /* -------------------------------------------------- */
-  if (rate.allowed) {
-    void fetch(`${origin}/api/_internal/security-log`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: user?.id ?? null,
-        type: "PERMISSION_DENIED",
-        message: `Denied access to ${pathname}`,
-        ip,
-        userAgent,
-        timestamp: Date.now(),
-      }),
-      keepalive: true,
-    }).catch(() => {});
-  }
-
-  /* -------------------------------------------------- */
-  /* 7. Redirect unauthorized users */
-  /* -------------------------------------------------- */
-  const redirectUrl = new URL("/", req.url);
-  return NextResponse.redirect(redirectUrl);
+  return NextResponse.next();
 }
 
+/* -------------------------------------------------- */
+/* Node Runtime + Route Matching */
+/* -------------------------------------------------- */
+
 export const config = {
-  matcher: ["/security-center/:path*"],
   runtime: "nodejs",
+  matcher: [
+    "/security-center/:path*",
+    "/admin/:path*",
+  ],
 };
