@@ -134,7 +134,7 @@ export async function emitSecurityEvent(params: {
     await prisma.securityEvent.create({
       data: {
         version: 1,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(),
         type,
         severity: sev,
         category: normalizedCategory,
@@ -144,7 +144,6 @@ export async function emitSecurityEvent(params: {
         ip: ctx.ip,
         userAgent: ctx.userAgent,
         message,
-        encryptedMetadata: encryptMetadata,
         metadata: storedMetadata,
       },
     });
@@ -188,16 +187,12 @@ export async function emitFraudEvent(params: {
   try {
     await prisma.fraudEvent.create({
       data: {
-        version: 1,
-        timestamp: new Date().toISOString(),
         signal,
         orderId,
         userId,
-        source,
         requestId,
         ip: ctx.ip,
         userAgent: ctx.userAgent,
-        encryptedMetadata: encryptMetadata,
         metadata: storedMetadata,
       },
     });
@@ -239,15 +234,11 @@ export async function emitAlertEvent(params: {
   try {
     await prisma.alertEvent.create({
       data: {
-        version: 1,
-        timestamp: new Date().toISOString(),
         event,
         userId,
-        source,
         requestId,
         ip: ctx.ip,
         userAgent: ctx.userAgent,
-        encryptedMetadata: encryptMetadata,
         metadata: storedMetadata,
       },
     });

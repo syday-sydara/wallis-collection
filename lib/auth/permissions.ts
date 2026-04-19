@@ -23,7 +23,7 @@ export type Permission = keyof typeof PERMISSIONS;
 
 export interface SessionUser {
   id: string;
-  role: Role | Role[];
+  role: string | string[];
   permissions?: Permission[];
   deniedPermissions?: Permission[];
 }
@@ -72,7 +72,10 @@ export function hasPermission(
   if (user.permissions?.includes(perm)) return true;
 
   // Role permissions
-  return roles.some((role) =>
+  const roleNames = roles.filter((role): role is Role =>
+    role in ROLE_PERMISSIONS
+  );
+  return roleNames.some((role) =>
     ROLE_PERMISSIONS[role]?.includes(perm)
   );
 }
@@ -103,10 +106,13 @@ export function getUserPermissions(user: SessionUser | null): Permission[] {
   const roles = Array.isArray(user.role) ? user.role : [user.role];
 
   if (roles.includes("SUPER_ADMIN")) {
-    return [...Object.keys(PERMISSIONS)] as Permission[];
+    return [...Object.keys(PERMISSIONS) as Permission[]];
   }
 
-  const rolePerms = roles.flatMap((r) => ROLE_PERMISSIONS[r] ?? []);
+  const roleNames = roles.filter((role): role is Role =>
+    role in ROLE_PERMISSIONS
+  );
+  const rolePerms = roleNames.flatMap((r) => ROLE_PERMISSIONS[r] ?? []);
   const directPerms = user.permissions ?? [];
   const denied = user.deniedPermissions ?? [];
 

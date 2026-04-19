@@ -84,6 +84,10 @@ model User {
   phone           String?
   emailVerifiedAt DateTime?
 
+  risk_score      Int    @default(0)
+  permissions     Json?
+  deniedPermissions Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

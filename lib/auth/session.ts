@@ -45,8 +45,9 @@ function safeCompare(a: string, b: string) {
 
 /* -------------------------------------------------- */
 /* Cookie helpers */
-function getSessionToken(): string | null {
-  return cookies().get(COOKIE_NAME)?.value ?? null;
+async function getSessionToken(): Promise<string | null> {
+  const cookiesList = await cookies();
+  return cookiesList.get(COOKIE_NAME)?.value ?? null;
 }
 
 /* -------------------------------------------------- */
@@ -71,7 +72,7 @@ async function resolveToken(token: string | null): Promise<SessionUser | null> {
 /* -------------------------------------------------- */
 /* Edge-safe fast session (no DB hit) */
 export async function getSessionFast(): Promise<SessionUser | null> {
-  const token = getSessionToken();
+  const token = await getSessionToken();
   return resolveToken(token);
 }
 
@@ -84,21 +85,19 @@ type GetSessionOptions = {
 export async function getSessionUser(
   options?: GetSessionOptions
 ): Promise<SessionUser | null> {
-  const token = getSessionToken();
+  const token = await getSessionToken();
   const session = await resolveToken(token);
   if (!session?.id) return null;
 
   // Fast path (use token only)
   if (!options?.fresh) {
-    // Auto-escalation: check if token lacks critical fields
     if (session.permissions === undefined || session.risk_score === undefined) {
-      options = { fresh: true }; // force DB
+      options = { fresh: true };
     } else {
       return session;
     }
   }
 
-  // Slow path (authoritative)
   const dbUser = await prisma.user.findUnique({
     where: { id: session.id },
     select: {
@@ -106,14 +105,30 @@ export async function getSessionUser(
       email: true,
       name: true,
       role: true,
-      risk_score: true,
+      riskScore: true,
       permissions: true,
       deniedPermissions: true,
     },
   });
 
   if (!dbUser) return null;
-  return dbUser;
+
+  const dbPermissions = Array.isArray(dbUser.permissions)
+    ? dbUser.permissions.filter((item): item is string => typeof item === "string")
+    : undefined;
+  const dbDeniedPermissions = Array.isArray(dbUser.deniedPermissions)
+    ? dbUser.deniedPermissions.filter((item): item is string => typeof item === "string")
+    : undefined;
+
+  return {
+    id: dbUser.id,
+    email: dbUser.email,
+    name: dbUser.name,
+    role: dbUser.role,
+    risk_score: dbUser.riskScore ?? 0,
+    permissions: dbPermissions,
+    deniedPermissions: dbDeniedPermissions,
+  };
 }
 
 /* -------------------------------------------------- */
@@ -141,38 +156,15 @@ export function createSessionToken(user: {
     risk_score: user.risk_score,
     permissions: user.permissions ?? [],
     deniedPermissions: user.deniedPermissions ?? [],
-    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 7 days
+    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
   };
 
-  const payloadB64 = encode(payload);
-  const signature = sign(payloadB64);
-  return `${payloadB64}.${signature}`;
+  const signed = encode(payload);
+  const signature = sign(signed);
+  return `${signed}.${signature}`;
 }
-
-/* -------------------------------------------------- */
-/* Optional: refresh token if risk/permissions changed */
-export async function refreshSessionTokenIfNeeded(userId: string) {
-  const dbUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      role: true,
-      email: true,
-      risk_score: true,
-      permissions: true,
-      deniedPermissions: true,
-    },
-  });
-
-  if (!dbUser) return null;
-
-  const newToken = createSessionToken({
-    id: dbUser.id,
-    role: dbUser.role,
-    email: dbUser.email ?? undefined,
-    risk_score: dbUser.risk_score ?? 0,
-    permissions: dbUser.permissions ?? [],
-    deniedPermissions: dbUser.deniedPermissions ?? [],
+    permissions: dbPermissions,
+    deniedPermissions: dbDeniedPermissions,
   });
 
   return newToken;

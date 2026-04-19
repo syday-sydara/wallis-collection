@@ -98,21 +98,21 @@ export async function logEvent(event: any) {
     switch (event.kind) {
       case "security": {
         const e = securitySchema.parse(enriched);
-        const { kind, ...payload } = e;
+        const { kind, encryptedMetadata, ...payload } = e;
         await prisma.securityEvent.create({ data: payload });
         break;
       }
 
       case "audit": {
         const e = auditSchema.parse(enriched);
-        const { kind, ...payload } = e;
+        const { kind, encryptedMetadata, ...payload } = e;
         await prisma.auditLog.create({ data: payload });
         break;
       }
 
       case "fraud": {
         const e = fraudSchema.parse(enriched);
-        const { kind, ...payload } = e;
+        const { kind, encryptedMetadata, encryptedMetadata, ...payload } = e;
         await prisma.fraudEvent.create({ data: payload });
         break;
       }
