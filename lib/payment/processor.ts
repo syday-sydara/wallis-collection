@@ -17,12 +17,13 @@ export async function processPaymentEvent(params: {
 }) {
   const { provider, reference, rawPayload, source } = params;
 
-  // --- Fetch order by payment reference ---
-  const order = await prisma.order.findUnique({
-    where: { paymentReference: reference },
+  // --- Fetch payment by reference ---
+  const payment = await prisma.payment.findUnique({
+    where: { reference },
+    include: { order: true },
   });
 
-  if (!order) {
+  if (!payment || !payment.order) {
     await logFraudSignal({
       type: "WEBHOOK_UNKNOWN_ORDER",
       provider,
@@ -31,13 +32,19 @@ export async function processPaymentEvent(params: {
     return { ok: false, reason: "unknown_order" };
   }
 
+  const order = payment.order;
+
   // --- Idempotency ---
-  if (order.paymentStatus === "PAID") {
+  if (payment.status === "SUCCESS" || order.isPaid) {
     return { ok: true, reason: "already_paid" };
   }
 
   // --- Verify payment with provider ---
   const verification = await verifyPayment(provider, reference);
+
+  if (verification.status === "pending") {
+    return { ok: false, reason: "pending" };
+  }
 
   const signals: FraudSignal[] = [];
 
@@ -67,17 +74,23 @@ export async function processPaymentEvent(params: {
   }
 
   // --- Compute fraud score ---
-  const score = computeFraudScore(signals);
+  const score = await computeFraudScore(signals, { orderId: order.id });
   const severity = classifyFraudScore(score);
 
   // --- Transaction-safe update ---
   return await prisma.$transaction(async (tx) => {
-    const fresh = await tx.order.findUnique({ where: { id: order.id } });
+    const freshPayment = await tx.payment.findUnique({
+      where: { id: payment.id },
+      include: { order: true },
+    });
 
-    if (!fresh) return { ok: false, reason: "order_disappeared" };
+    if (!freshPayment || !freshPayment.order) {
+      return { ok: false, reason: "order_disappeared" };
+    }
 
-    // Idempotency inside transaction
-    if (fresh.paymentStatus === "PAID") {
+    const freshOrder = freshPayment.order;
+
+    if (freshPayment.status === "SUCCESS" || freshOrder.isPaid) {
       return { ok: true, reason: "already_paid" };
     }
 
@@ -86,10 +99,14 @@ export async function processPaymentEvent(params: {
       await tx.order.update({
         where: { id: order.id },
         data: {
-          paymentStatus: "PAID",
-          orderStatus: "PROCESSING",
-          fraudScore: score,
+          isPaid: true,
+          orderStatus: "CONFIRMED",
         },
+      });
+
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: { status: "SUCCESS" },
       });
 
       await logSecurityEvent({
@@ -103,12 +120,10 @@ export async function processPaymentEvent(params: {
     }
 
     // --- Fraud or mismatch ---
-    await tx.order.update({
-      where: { id: order.id },
+    await tx.payment.update({
+      where: { id: payment.id },
       data: {
-        paymentStatus:
-          verification.status === "success" ? "REVIEW" : "FAILED",
-        fraudScore: score,
+        status: verification.status === "success" ? "SUCCESS" : "FAILED",
       },
     });
 

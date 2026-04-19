@@ -17,7 +17,7 @@ export async function riskMiddleware(req: NextRequest) {
   }
 
   // --- 1️⃣ Session check ---
-  const user = parseMiddlewareSession(req);
+  const user = await parseMiddlewareSession(req);
   if (!user?.id) {
     return NextResponse.redirect(new URL("/", req.url));
   }

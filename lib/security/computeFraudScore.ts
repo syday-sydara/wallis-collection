@@ -1,6 +1,6 @@
 import { emitFraudEvent, emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 
-type FraudSignal =
+export type FraudSignal =
   | "WEBHOOK_SIGNATURE_MISMATCH"
   | "WEBHOOK_UNKNOWN_ORDER"
   | "WEBHOOK_DUPLICATE_EXCESSIVE"
@@ -137,7 +137,7 @@ export async function computeFraudScore(inputSignals: string[], context: {
   };
 }
 
-function classifyFraudScore(
+export function classifyFraudScore(
   score: number,
   hasCritical: boolean
 ): "low" | "medium" | "high" {

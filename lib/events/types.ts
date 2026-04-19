@@ -20,21 +20,24 @@ export type BaseEvent = {
 /* -------------------------------------------------- */
 /* Security Events                                     */
 /* -------------------------------------------------- */
-export type SecurityEventType =
-  | "SESSION_MISSING"
-  | "SESSION_MALFORMED"
-  | "SESSION_SIGNATURE_INVALID"
-  | "SESSION_DECODE_FAILED"
-  | "SESSION_EXPIRED"
-  | "SESSION_HIGH_RISK"
-  | "PERMISSION_CHECK"
-  | "PERMISSION_DENIED"
-  | "RATE_LIMIT_CHECK"
-  | "AUTH_RATE_LIMIT"
-  | "UNAUTHORIZED_ACCESS_WARNING"
-  | "UNAUTHORIZED_ACCESS_CRITICAL"
-  | "SUSPICIOUS_IP"
-  | "SYSTEM_ANOMALY";
+export const SECURITY_EVENT_TYPES = [
+  "SESSION_MISSING",
+  "SESSION_MALFORMED",
+  "SESSION_SIGNATURE_INVALID",
+  "SESSION_DECODE_FAILED",
+  "SESSION_EXPIRED",
+  "SESSION_HIGH_RISK",
+  "PERMISSION_CHECK",
+  "PERMISSION_DENIED",
+  "RATE_LIMIT_CHECK",
+  "AUTH_RATE_LIMIT",
+  "UNAUTHORIZED_ACCESS_WARNING",
+  "UNAUTHORIZED_ACCESS_CRITICAL",
+  "SUSPICIOUS_IP",
+  "SYSTEM_ANOMALY",
+] as const;
+
+export type SecurityEventType = (typeof SECURITY_EVENT_TYPES)[number];
 
 export type SecurityEventInput = BaseEvent & {
   kind: "security";
@@ -45,17 +48,20 @@ export type SecurityEventInput = BaseEvent & {
 /* -------------------------------------------------- */
 /* Audit Events                                        */
 /* -------------------------------------------------- */
-export type AuditAction =
-  | "ORDER_CREATED"
-  | "ORDER_UPDATED"
-  | "ORDER_CANCELLED"
-  | "PRODUCT_CREATED"
-  | "PRODUCT_UPDATED"
-  | "ADMIN_LOGIN"
-  | "RISK_RULE_TRIGGERED"
-  | "RISK_SCORE_COMPUTED"
-  | "USER_PERMISSION_CHANGED"
-  | "USER_ROLE_CHANGED";
+export const AUDIT_ACTIONS = [
+  "ORDER_CREATED",
+  "ORDER_UPDATED",
+  "ORDER_CANCELLED",
+  "PRODUCT_CREATED",
+  "PRODUCT_UPDATED",
+  "ADMIN_LOGIN",
+  "RISK_RULE_TRIGGERED",
+  "RISK_SCORE_COMPUTED",
+  "USER_PERMISSION_CHANGED",
+  "USER_ROLE_CHANGED",
+] as const;
+
+export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 export type AuditEventInput = BaseEvent & {
   kind: "audit";
@@ -68,14 +74,17 @@ export type AuditEventInput = BaseEvent & {
 /* -------------------------------------------------- */
 /* Fraud Events                                        */
 /* -------------------------------------------------- */
-export type FraudSignal =
-  | "FRAUD_IP_BLACKLISTED"
-  | "FRAUD_EMAIL_MISMATCH"
-  | "FRAUD_AMOUNT_MISMATCH"
-  | "FRAUD_PROVIDER_MISMATCH"
-  | "FRAUD_HIGH_RISK_SCORE"
-  | "FRAUD_VELOCITY"
-  | "FRAUD_DEVICE_MISMATCH";
+export const FRAUD_SIGNALS = [
+  "FRAUD_IP_BLACKLISTED",
+  "FRAUD_EMAIL_MISMATCH",
+  "FRAUD_AMOUNT_MISMATCH",
+  "FRAUD_PROVIDER_MISMATCH",
+  "FRAUD_HIGH_RISK_SCORE",
+  "FRAUD_VELOCITY",
+  "FRAUD_DEVICE_MISMATCH",
+] as const;
+
+export type FraudSignal = (typeof FRAUD_SIGNALS)[number];
 
 export type FraudEventInput = BaseEvent & {
   kind: "fraud";
@@ -94,15 +103,18 @@ export type FraudEventInput = BaseEvent & {
 /* -------------------------------------------------- */
 /* Alert Events                                        */
 /* -------------------------------------------------- */
-export type AlertEventType =
-  | "ALERT_RISK_SCORE_HIGH"
-  | "ALERT_FRAUD_SIGNAL"
-  | "ALERT_SYSTEM_FAILURE"
-  | "PERMISSION_DENIED_THRESHOLD_MEDIUM"
-  | "PERMISSION_DENIED_THRESHOLD_HIGH"
-  | "RATE_LIMIT_ABUSE"
-  | "UNAUTHORIZED_ACCESS_WARNING"
-  | "UNAUTHORIZED_ACCESS_CRITICAL";
+export const ALERT_EVENT_TYPES = [
+  "ALERT_RISK_SCORE_HIGH",
+  "ALERT_FRAUD_SIGNAL",
+  "ALERT_SYSTEM_FAILURE",
+  "PERMISSION_DENIED_THRESHOLD_MEDIUM",
+  "PERMISSION_DENIED_THRESHOLD_HIGH",
+  "RATE_LIMIT_ABUSE",
+  "UNAUTHORIZED_ACCESS_WARNING",
+  "UNAUTHORIZED_ACCESS_CRITICAL",
+] as const;
+
+export type AlertEventType = (typeof ALERT_EVENT_TYPES)[number];
 
 export type AlertEventInput = BaseEvent & {
   kind: "alert";
