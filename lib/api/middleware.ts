@@ -3,7 +3,7 @@
 import { NextRequest } from "next/server";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 
-export function rateLimited(
+export async function rateLimited(
   req: NextRequest,
   key: string,
   options?: {
@@ -20,7 +20,7 @@ export function rateLimited(
   /* Robust IP extraction                                */
   /* -------------------------------------------------- */
   const forwarded = req.headers.get("x-forwarded-for");
-  const rawIp = forwarded?.split(",")[0] || req.ip || "unknown";
+  const rawIp = forwarded?.split(",")[0] || "unknown";
 
   // Strip IPv6 port suffix
   const ip = rawIp.trim().replace(/:\d+$/, "");
@@ -30,7 +30,7 @@ export function rateLimited(
   /* -------------------------------------------------- */
   /* Rate limit check                                    */
   /* -------------------------------------------------- */
-  const result = checkRateLimit(fullKey, max, windowMs, { log });
+  const result = await checkRateLimit(fullKey, { max, windowMs: windowMs * 1000, log });
 
   const headers = {
     "X-RateLimit-Limit": max.toString(),

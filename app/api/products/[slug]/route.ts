@@ -14,13 +14,14 @@ import { startTimer } from "@/lib/auth/metrics";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   const stopTimer = startTimer("api_products_slug_ms");
 
   try {
     // --- Normalize slug ---
-    const slug = params.slug?.trim().toLowerCase();
+    const { slug: rawSlug } = await params;
+    const slug = rawSlug?.trim().toLowerCase();
 
     const slugRegex = /^[a-z0-9-]+$/;
     if (!slug || slug.length < 2 || slug.length > 200 || !slugRegex.test(slug)) {
@@ -31,14 +32,13 @@ export async function GET(
     const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("x-real-ip") ||
-      req.ip ||
       "anonymous";
 
-    const { allowed, retryAfter } = checkRateLimit(ip);
+    const result = await checkRateLimit(ip, { max: 60, windowMs: 60_000 });
 
-    if (!allowed) {
+    if (!result.allowed) {
       logEvent("rate_limited", { ip, slug }, "warn");
-      return tooManyRequests(`Rate limit exceeded. Try again in ${retryAfter}s`);
+      return tooManyRequests(`Rate limit exceeded. Try again in ${result.retryAfter}s`);
     }
 
     // --- Fetch product ---
