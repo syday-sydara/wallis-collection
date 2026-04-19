@@ -50,7 +50,8 @@ export async function requirePermission(
   const requestId = req?.requestId ?? null;
   const source = req?.source ?? "app";
 
-  const raw = cookies().get(COOKIE_NAME)?.value;
+  const cookiesList = await cookies();
+  const raw = cookiesList.get(COOKIE_NAME)?.value;
 
   /* -------------------------------------------------- */
   /* Missing cookie                                      */

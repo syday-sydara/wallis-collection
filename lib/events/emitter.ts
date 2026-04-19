@@ -38,12 +38,12 @@ function normalizeIp(ip?: string | null): string | null {
   return ip.split(":")[0];
 }
 
-function extractRequestContext(ip?: string | null, userAgent?: string | null) {
+async function extractRequestContext(ip?: string | null, userAgent?: string | null) {
   let detectedIp = ip ?? null;
   let detectedUA = userAgent ?? null;
 
   try {
-    const h = headers();
+    const h = await headers();
 
     detectedIp =
       detectedIp ??
@@ -128,14 +128,13 @@ export async function emitSecurityEvent(params: {
   const safeMetadata = safeCloneMetadata(metadata);
   const storedMetadata = maybeEncryptMetadata(safeMetadata, encryptMetadata);
 
-  const ctx = extractRequestContext(ip, userAgent);
+  const ctx = await extractRequestContext(ip, userAgent);
 
   try {
     await prisma.securityEvent.create({
       data: {
-        kind: "security",
         version: 1,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(),
         type,
         severity: sev,
         category: normalizedCategory,
@@ -145,7 +144,6 @@ export async function emitSecurityEvent(params: {
         ip: ctx.ip,
         userAgent: ctx.userAgent,
         message,
-        encryptedMetadata: encryptMetadata,
         metadata: storedMetadata,
       },
     });
@@ -184,22 +182,16 @@ export async function emitFraudEvent(params: {
   const safeMetadata = safeCloneMetadata(metadata);
   const storedMetadata = maybeEncryptMetadata(safeMetadata, encryptMetadata);
 
-  const ctx = extractRequestContext(ip, userAgent);
+  const ctx = await extractRequestContext(ip, userAgent);
 
   try {
     await prisma.fraudEvent.create({
       data: {
-        kind: "fraud",
-        version: 1,
-        timestamp: new Date().toISOString(),
         signal,
         orderId,
         userId,
-        source,
-        requestId,
         ip: ctx.ip,
         userAgent: ctx.userAgent,
-        encryptedMetadata: encryptMetadata,
         metadata: storedMetadata,
       },
     });
@@ -236,21 +228,15 @@ export async function emitAlertEvent(params: {
   const safeMetadata = safeCloneMetadata(metadata);
   const storedMetadata = maybeEncryptMetadata(safeMetadata, encryptMetadata);
 
-  const ctx = extractRequestContext(ip, userAgent);
+  const ctx = await extractRequestContext(ip, userAgent);
 
   try {
     await prisma.alertEvent.create({
       data: {
-        kind: "alert",
-        version: 1,
-        timestamp: new Date().toISOString(),
         event,
         userId,
-        source,
-        requestId,
         ip: ctx.ip,
         userAgent: ctx.userAgent,
-        encryptedMetadata: encryptMetadata,
         metadata: storedMetadata,
       },
     });

@@ -51,7 +51,7 @@ export async function apiMiddleware(
   /* Extract request context                             */
   /* -------------------------------------------------- */
   const forwarded = req.headers.get("x-forwarded-for");
-  const rawIp = forwarded?.split(",")[0] || req.ip || null;
+  const rawIp = forwarded?.split(",")[0] ?? null;
   const ip = normalizeIp(rawIp);
   const userAgent = req.headers.get("user-agent") ?? null;
   const requestId = generateRequestId();

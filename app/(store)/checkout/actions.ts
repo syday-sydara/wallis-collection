@@ -41,12 +41,12 @@ export async function submitCheckout(
     async () => {
       const endTimer = startTimer("checkout_server_action");
 
-      const hdrs = headers();
+      const hdrs = await headers();
       const ip = hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
       const userAgent = hdrs.get("user-agent") ?? "unknown";
 
       // Rate limit
-      const rate = checkRateLimit(`checkout:${ip}`);
+      const rate = await checkRateLimit({ route: "checkout", ip });
       if (!rate.allowed) {
         logEvent("checkout_rate_limited", { ip, userAgent }, "warn");
         endTimer();

@@ -12,16 +12,24 @@ type Props = {
 export default function ProductGrid({ products, isLoading }: Props) {
   return (
     <div
-      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pb-safe animate-fadeIn"
+      role="list"
       aria-busy={isLoading ? true : undefined}
       aria-live="polite"
+      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pb-safe animate-fadeIn"
     >
       {isLoading ? (
         <ProductGridSkeleton count={8} />
       ) : products.length > 0 ? (
-        products.map((p) => <ProductCard key={p.id} product={p} />)
+        products.map((p) => (
+          <div role="listitem" key={p.id} className="animate-fadeIn-fast">
+            <ProductCard product={p} />
+          </div>
+        ))
       ) : (
-        <div className="col-span-full flex flex-col items-center justify-center py-12 text-text-muted text-center max-w-xs mx-auto animate-fadeIn-fast">
+        <div
+          className="col-span-full flex flex-col items-center justify-center py-12 text-text-muted text-center max-w-xs mx-auto animate-fadeIn-fast min-h-touch"
+          role="status"
+        >
           No products available
         </div>
       )}

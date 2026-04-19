@@ -14,13 +14,25 @@ import { startTimer } from "@/lib/auth/metrics";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { slug: string } }
+  context: { params: Promise<{ slug: string }> }
 ) {
   const stopTimer = startTimer("api_products_slug_ms");
 
   try {
-    // --- Normalize slug ---
-    const slug = params.slug?.trim().toLowerCase();
+    // --- Extract slug safely ---
+    const resolved = await context.params.catch(() => null);
+    const rawSlug = resolved?.slug;
+
+    if (!rawSlug) {
+      return badRequest("Missing slug");
+    }
+
+    // Normalize slug
+    const slug = rawSlug
+      .trim()
+      .toLowerCase()
+      .replace(/--+/g, "-") // collapse multiple hyphens
+      .replace(/^-+|-+$/g, ""); // trim hyphens
 
     const slugRegex = /^[a-z0-9-]+$/;
     if (!slug || slug.length < 2 || slug.length > 200 || !slugRegex.test(slug)) {
@@ -34,11 +46,13 @@ export async function GET(
       req.ip ||
       "anonymous";
 
-    const { allowed, retryAfter } = checkRateLimit(ip);
+    const rate = await checkRateLimit(ip, { max: 60, windowMs: 60_000 });
 
-    if (!allowed) {
+    if (!rate.allowed) {
       logEvent("rate_limited", { ip, slug }, "warn");
-      return tooManyRequests(`Rate limit exceeded. Try again in ${retryAfter}s`);
+      return tooManyRequests(
+        `Rate limit exceeded. Try again in ${rate.retryAfter}s`
+      );
     }
 
     // --- Fetch product ---
@@ -48,7 +62,7 @@ export async function GET(
       logEvent("product_not_found", { slug, ip }, "warn");
       return notFound("Product not found", undefined, {
         headers: {
-          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
         },
       });
     }
@@ -57,10 +71,11 @@ export async function GET(
 
     return ok(productVM, {
       headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+        "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
       },
     });
   } catch (err) {
+    logEvent("product_detail_error", { error: String(err) }, "error");
     return serverError("Failed to fetch product", err);
   } finally {
     stopTimer();

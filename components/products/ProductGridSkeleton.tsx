@@ -15,19 +15,22 @@ export default function ProductGridSkeleton({ count = 8, className }: Props) {
     >
       {Array.from({ length: count }).map((_, i) => (
         <div
+          role="listitem"
           key={i}
-          className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-sm animate-pulse"
+          className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-sm animate-fadeIn-fast"
           aria-hidden="true"
         >
           {/* Image placeholder */}
-          <div className="w-full aspect-square bg-skeleton rounded-t-lg" />
+          <div className="w-full aspect-square bg-skeleton rounded-t-lg animate-shimmer" />
 
           {/* Text placeholders */}
           <div className="flex flex-1 flex-col p-3 space-y-2">
-            <div className="h-3 w-3/4 rounded bg-skeleton" />
-            <div className="h-4 w-1/2 rounded bg-skeleton" />
-            <div className="h-3 w-1/4 rounded bg-skeleton" />
-            <div className="mt-2 h-6 w-full rounded bg-skeleton" />
+            <div className="h-3 w-3/4 rounded bg-skeleton animate-shimmer" />
+            <div className="h-4 w-1/2 rounded bg-skeleton animate-shimmer" />
+            <div className="h-3 w-1/4 rounded bg-skeleton animate-shimmer" />
+
+            {/* Button placeholder */}
+            <div className="mt-2 h-10 w-full rounded bg-skeleton animate-shimmer min-h-touch" />
           </div>
         </div>
       ))}

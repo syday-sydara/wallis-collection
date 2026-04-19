@@ -6,7 +6,6 @@ import ProductGridSkeleton from "./ProductGridSkeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "../ui/ErrorState";
 import ResultHeader from "./ResultHeader";
-import { getProducts } from "@/lib/products/service";
 
 import type {
   ProductListParams,
@@ -14,11 +13,15 @@ import type {
   ProductCardVM,
 } from "@/lib/products/types";
 
-type ProductListProps = {
-  params: ProductListParams;
-};
+function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), delay);
+  };
+}
 
-export default function ProductList({ params }: ProductListProps) {
+export default function ProductList({ params }: { params: ProductListParams }) {
   const [products, setProducts] = useState<ProductCardVM[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,12 +32,27 @@ export default function ProductList({ params }: ProductListProps) {
   const requestIdRef = useRef(0);
   const nextCursorRef = useRef<string | null>(null);
 
-  // Keep nextCursorRef in sync
   useEffect(() => {
     nextCursorRef.current = nextCursor;
   }, [nextCursor]);
 
-  // Initial fetch
+  async function fetchFromApi(p: ProductListParams): Promise<ProductListResult> {
+    const query = new URLSearchParams(
+      Object.entries(p)
+        .filter(([_, v]) => v !== undefined && v !== null)
+        .map(([k, v]) => [k, String(v)])
+    );
+
+    const res = await fetch(`/api/products?${query.toString()}`);
+    if (!res.ok) throw new Error("API error");
+    return res.json();
+  }
+
+  // Reset scroll on filter change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [params]);
+
   useEffect(() => {
     const requestId = ++requestIdRef.current;
     let isMounted = true;
@@ -42,9 +60,9 @@ export default function ProductList({ params }: ProductListProps) {
     setLoading(true);
     setError(false);
 
-    async function fetchProducts() {
+    async function load() {
       try {
-        const res: ProductListResult = await getProducts(params);
+        const res = await fetchFromApi(params);
 
         if (!isMounted || requestId !== requestIdRef.current) return;
 
@@ -62,38 +80,38 @@ export default function ProductList({ params }: ProductListProps) {
       }
     }
 
-    fetchProducts();
-
+    load();
     return () => {
       isMounted = false;
     };
   }, [params]);
 
-  // Load more function
-  const loadMore = useCallback(async () => {
-    if (!nextCursorRef.current || loadingMore) return;
+  const loadMore = useCallback(
+    debounce(async () => {
+      if (!nextCursorRef.current || loadingMore) return;
 
-    setLoadingMore(true);
-    const currentCursor = nextCursorRef.current;
+      setLoadingMore(true);
+      const currentCursor = nextCursorRef.current;
 
-    try {
-      const res: ProductListResult = await getProducts({
-        ...params,
-        cursor: currentCursor,
-      });
+      try {
+        const res = await fetchFromApi({
+          ...params,
+          cursor: currentCursor,
+        });
 
-      if (currentCursor !== nextCursorRef.current) return;
+        if (currentCursor !== nextCursorRef.current) return;
 
-      setProducts((prev) => [...prev, ...res.items]);
-      setNextCursor(res.nextCursor);
-    } catch (err) {
-      console.error("Failed to load more products:", err);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [loadingMore, params]);
+        setProducts((prev) => [...prev, ...res.items]);
+        setNextCursor(res.nextCursor);
+      } catch (err) {
+        console.error("Failed to load more products:", err);
+      } finally {
+        setLoadingMore(false);
+      }
+    }, 150),
+    [loadingMore, params]
+  );
 
-  // IntersectionObserver for infinite scroll
   useEffect(() => {
     if (!loadMoreRef.current || !nextCursor) return;
 
@@ -113,7 +131,6 @@ export default function ProductList({ params }: ProductListProps) {
     };
   }, [loadMore, nextCursor]);
 
-  // UI states
   if (loading) return <ProductGridSkeleton />;
 
   if (error)
@@ -122,29 +139,28 @@ export default function ProductList({ params }: ProductListProps) {
         title="Error loading products"
         description="Check your connection and try again."
         action={
-          <button
-            onClick={() => location.reload()}
-            className="btn btn-primary mt-2"
-          >
+          <button onClick={() => location.reload()} className="btn btn-primary mt-2">
             Retry
           </button>
         }
       />
     );
 
-  if (!products.length) return <EmptyState title="No products found" />;
+  if (!products.length)
+    return (
+      <div className="animate-fadeIn">
+        <EmptyState title="No products found" />
+      </div>
+    );
 
   return (
     <>
-      {/* Result Header */}
       <ResultHeader count={products.length} />
 
-      {/* Product Grid */}
-      <div className="animate-fadeIn">
+      <div className="animate-fadeIn duration-300">
         <ProductGrid products={products} />
       </div>
 
-      {/* Infinite Scroll / Load More */}
       {nextCursor && (
         <div
           ref={loadMoreRef}
@@ -156,9 +172,15 @@ export default function ProductList({ params }: ProductListProps) {
         </div>
       )}
 
-      {/* End of list message */}
+      {/* Load More button fallback */}
+      {nextCursor && !loadingMore && (
+        <button onClick={loadMore} className="btn btn-outline mt-4 mx-auto block">
+          Load More
+        </button>
+      )}
+
       {!nextCursor && products.length > 0 && (
-        <p className="mt-4 text-center text-xs text-text-muted animate-fadeIn-fast">
+        <p className="mt-4 text-center text-xs text-text-muted opacity-80 animate-fadeIn">
           No more products
         </p>
       )}

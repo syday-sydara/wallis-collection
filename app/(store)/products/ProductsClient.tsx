@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Gallery from "./Gallery";
-import VariantSelector from "./VariantSelector";
-import AddToCartButton from "../cart/AddToCartButton";
-import ProductCard from "./ProductCard";
+import Gallery from "@/components/products/Gallery";
+import VariantSelector from "@/components/products/VariantSelector";
+import AddToCartButton from "@/components/cart/AddToCartButton";
+import ProductCard from "@/components/products/ProductCard";
 import type { ProductDetailVM } from "@/lib/products/types";
 import { formatCurrency } from "@/lib/utils";
 
@@ -35,13 +35,16 @@ export default function ProductClient({ product }: Props) {
     <>
       {/* Main Product Section */}
       <main className="mx-auto max-w-6xl px-4 py-6 grid gap-6 md:grid-cols-2 animate-fadeIn">
+        
         {/* Gallery */}
         <Gallery images={product.images} />
 
         {/* Product Info */}
         <article className="space-y-4">
           <header>
-            <h1 className="text-xl sm:text-2xl font-semibold text-text">{product.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-text">
+              {product.name}
+            </h1>
 
             <p
               aria-live="polite"
@@ -55,8 +58,16 @@ export default function ProductClient({ product }: Props) {
                 Out of stock
               </p>
             )}
+
+            {/* Low stock */}
+            {product.inStock && product.stock !== undefined && product.stock < 5 && (
+              <p className="mt-1 text-warning text-sm font-medium">
+                Only {product.stock} left
+              </p>
+            )}
           </header>
 
+          {/* Description */}
           {product.description && (
             <p className="text-sm sm:text-base text-text-muted leading-relaxed max-w-prose">
               {product.description}
@@ -71,6 +82,13 @@ export default function ProductClient({ product }: Props) {
               onChange={setSelectedVariant}
             />
           )}
+
+          {/* Delivery Info */}
+          <div className="border border-border rounded-md p-3 text-sm text-text-muted space-y-1">
+            <p>Delivery: 1–3 days within Lagos, 2–5 days nationwide</p>
+            <p>Returns: 7‑day return policy</p>
+            <p>Shipping fee calculated at checkout</p>
+          </div>
 
           {/* Desktop AddToCart */}
           <div className="hidden md:block">
@@ -90,9 +108,12 @@ export default function ProductClient({ product }: Props) {
           <h2 className="text-lg sm:text-xl font-semibold mb-4 text-text">
             You may also like
           </h2>
+
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {product.recommended.map((r) => (
-              <ProductCard key={r.id} product={r} />
+              <div key={r.id} className="animate-fadeIn-fast">
+                <ProductCard product={r} />
+              </div>
             ))}
           </div>
         </section>

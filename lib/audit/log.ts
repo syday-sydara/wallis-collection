@@ -3,9 +3,9 @@ import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import type { AuditLogInput } from "./types";
 
-function extractRequestContext() {
+async function extractRequestContext() {
   try {
-    const h = headers();
+    const h = await headers();
     const ip =
       h.get("cf-connecting-ip") ??
       h.get("true-client-ip") ??
@@ -25,25 +25,20 @@ export async function logAuditEvent(input: AuditLogInput) {
   const { action, actorType, userId = null, resource = null, resourceId = null, metadata = {} } =
     input;
 
-  const ctx = extractRequestContext();
+  const ctx = await extractRequestContext();
 
   try {
-    await prisma.auditEvent.create({
+    await prisma.auditLog.create({
       data: {
-        kind: "audit",
-        version: 1,
-        timestamp: new Date().toISOString(),
         action,
         actorType,
         userId,
         resource,
         resourceId,
-        ip: ctx.ip,
-        userAgent: ctx.userAgent,
         metadata,
       },
     });
   } catch (err) {
-    console.error("[AuditEvent] Failed to write:", err);
+    console.error("[AuditLog] Failed to write:", err);
   }
 }

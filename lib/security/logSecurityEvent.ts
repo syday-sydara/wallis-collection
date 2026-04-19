@@ -101,7 +101,7 @@ export async function logSecurityEvent(params: {
   let detectedUA = userAgent ?? null;
 
   try {
-    const h = headers();
+    const h = await headers();
     detectedIp = detectedIp ?? extractClientIp(h.get("x-forwarded-for"));
     detectedUA = detectedUA ?? h.get("user-agent");
   } catch {}

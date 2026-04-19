@@ -5,10 +5,10 @@ import { headers } from "next/headers";
 import crypto from "crypto";
 import { z } from "zod";
 import {
-  SecurityEventType,
-  AuditAction,
-  FraudSignal,
-  AlertEventType,
+  SECURITY_EVENT_TYPES,
+  AUDIT_ACTIONS,
+  FRAUD_SIGNALS,
+  ALERT_EVENT_TYPES,
 } from "@/lib/events/types";
 import { processAlert } from "@/lib/audit/alerts";
 
@@ -21,7 +21,7 @@ const baseSchema = z.object({
   requestId: z.string().nullable().optional(),
   source: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
-  severity: z.enum(["low", "medium", "high"]).optional(),
+  severity: z.enum(["low", "medium", "high"]).default("low"),
   userId: z.string().nullable().optional(),
   ip: z.string().nullable().optional(),
   userAgent: z.string().nullable().optional(),
@@ -35,7 +35,7 @@ const baseSchema = z.object({
 /* -------------------------------------------------- */
 const securitySchema = baseSchema.extend({
   kind: z.literal("security"),
-  type: z.nativeEnum(SecurityEventType),
+  type: z.enum(SECURITY_EVENT_TYPES),
   message: z.string(),
 });
 
@@ -44,7 +44,7 @@ const securitySchema = baseSchema.extend({
 /* -------------------------------------------------- */
 const auditSchema = baseSchema.extend({
   kind: z.literal("audit"),
-  action: z.nativeEnum(AuditAction),
+  action: z.enum(AUDIT_ACTIONS),
   actorType: z.enum(["USER", "ADMIN", "SYSTEM", "JOB"]),
   resource: z.string().nullable().optional(),
   resourceId: z.string().nullable().optional(),
@@ -55,7 +55,7 @@ const auditSchema = baseSchema.extend({
 /* -------------------------------------------------- */
 const fraudSchema = baseSchema.extend({
   kind: z.literal("fraud"),
-  signal: z.nativeEnum(FraudSignal),
+  signal: z.enum(FRAUD_SIGNALS),
   orderId: z.string().nullable().optional(),
 });
 
@@ -64,7 +64,7 @@ const fraudSchema = baseSchema.extend({
 /* -------------------------------------------------- */
 const alertSchema = baseSchema.extend({
   kind: z.literal("alert"),
-  event: z.nativeEnum(AlertEventType),
+  event: z.enum(ALERT_EVENT_TYPES),
 });
 
 /* -------------------------------------------------- */
@@ -72,7 +72,7 @@ const alertSchema = baseSchema.extend({
 /* -------------------------------------------------- */
 export async function logEvent(event: any) {
   try {
-    const h = headers();
+    const h = await headers();
 
     const ip =
       event.ip ??
@@ -93,24 +93,33 @@ export async function logEvent(event: any) {
       timestamp,
       version: event.version ?? 1,
       encryptedMetadata: event.encryptedMetadata ?? false,
+      severity: event.severity ?? "low",
     };
 
     switch (event.kind) {
       case "security": {
         const e = securitySchema.parse(enriched);
-        await prisma.securityEvent.create({ data: e });
+        const { kind, encryptedMetadata, ...payload } = e;
+        await prisma.securityEvent.create({
+          data: {
+            ...payload,
+            severity: e.severity ?? "low",
+          },
+        });
         break;
       }
 
       case "audit": {
         const e = auditSchema.parse(enriched);
-        await prisma.auditEvent.create({ data: e });
+        const { kind, encryptedMetadata, ...payload } = e;
+        await prisma.auditLog.create({ data: payload });
         break;
       }
 
       case "fraud": {
         const e = fraudSchema.parse(enriched);
-        await prisma.fraudEvent.create({ data: e });
+        const { kind, encryptedMetadata, ...payload } = e;
+        await prisma.fraudEvent.create({ data: payload });
         break;
       }
 

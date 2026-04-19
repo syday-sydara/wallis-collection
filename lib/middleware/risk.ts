@@ -17,13 +17,13 @@ export async function riskMiddleware(req: NextRequest) {
   }
 
   // --- 1️⃣ Session check ---
-  const user = parseMiddlewareSession(req);
+  const user = await parseMiddlewareSession(req);
   if (!user?.id) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
   // --- 2️⃣ Rate limiting ---
-  const rate = rateLimited(req, `risk:${user.id}`, {
+  const rate = await rateLimited(req, `risk:${user.id}`, {
     max: RATE_LIMIT_MAX,
     windowMs: RATE_LIMIT_WINDOW,
     namespace: "risk",

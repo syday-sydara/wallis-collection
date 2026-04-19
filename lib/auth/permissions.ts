@@ -23,9 +23,9 @@ export type Permission = keyof typeof PERMISSIONS;
 
 export interface SessionUser {
   id: string;
-  role: Role | Role[];
-  permissions?: Permission[];
-  deniedPermissions?: Permission[];
+  role: string | string[];
+  permissions?: string[];
+  deniedPermissions?: string[];
 }
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
@@ -72,7 +72,10 @@ export function hasPermission(
   if (user.permissions?.includes(perm)) return true;
 
   // Role permissions
-  return roles.some((role) =>
+  const roleNames = roles.filter((role): role is Role =>
+    role in ROLE_PERMISSIONS
+  );
+  return roleNames.some((role) =>
     ROLE_PERMISSIONS[role]?.includes(perm)
   );
 }
@@ -103,12 +106,19 @@ export function getUserPermissions(user: SessionUser | null): Permission[] {
   const roles = Array.isArray(user.role) ? user.role : [user.role];
 
   if (roles.includes("SUPER_ADMIN")) {
-    return [...Object.keys(PERMISSIONS)] as Permission[];
+    return [...Object.keys(PERMISSIONS) as Permission[]];
   }
 
-  const rolePerms = roles.flatMap((r) => ROLE_PERMISSIONS[r] ?? []);
-  const directPerms = user.permissions ?? [];
-  const denied = user.deniedPermissions ?? [];
+  const roleNames = roles.filter((role): role is Role =>
+    role in ROLE_PERMISSIONS
+  );
+  const rolePerms = roleNames.flatMap((r) => ROLE_PERMISSIONS[r] ?? []);
+  const directPerms = (user.permissions ?? []).filter(
+    (item): item is Permission => item in PERMISSIONS
+  );
+  const denied = (user.deniedPermissions ?? []).filter(
+    (item): item is Permission => item in PERMISSIONS
+  );
 
   const merged = new Set<Permission>([...rolePerms, ...directPerms]);
   denied.forEach((d) => merged.delete(d));

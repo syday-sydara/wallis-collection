@@ -1,7 +1,7 @@
 // app/api/orders/reconcile/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { ok } from "@/lib/api/response";
-import { reconcilePendingPayments } from "@/lib/payment/reconciliation";
+import { reconcilePendingPayments } from "@/lib/payments/reconciliation";
 
 function timeout(ms: number) {
   return new Promise((_, reject) =>

@@ -30,7 +30,7 @@ export async function rateLimited(
   /* Robust IP extraction                                */
   /* -------------------------------------------------- */
   const forwarded = req.headers.get("x-forwarded-for");
-  const rawIp = forwarded?.split(",")[0] || req.ip || "unknown";
+  const rawIp = forwarded?.split(",")[0] ?? "unknown";
   const ip = rawIp.trim().replace(/:\d+$/, "");
 
   /* -------------------------------------------------- */

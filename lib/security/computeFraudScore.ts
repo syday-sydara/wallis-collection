@@ -1,10 +1,12 @@
 import { emitFraudEvent, emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 
-type FraudSignal =
+export type FraudSignal =
   | "WEBHOOK_SIGNATURE_MISMATCH"
   | "WEBHOOK_UNKNOWN_ORDER"
   | "WEBHOOK_DUPLICATE_EXCESSIVE"
   | "WEBHOOK_PROVIDER_MISMATCH"
+  | "PROVIDER_ERROR"
+  | "PROVIDER_REPORTED_FAILURE"
   | "AMOUNT_MISMATCH"
   | "SUSPICIOUS_IP"
   | "HIGH_VALUE_ORDER";
@@ -14,6 +16,8 @@ const FRAUD_WEIGHTS: Record<FraudSignal, number> = {
   WEBHOOK_UNKNOWN_ORDER: 50,
   WEBHOOK_DUPLICATE_EXCESSIVE: 25,
   WEBHOOK_PROVIDER_MISMATCH: 40,
+  PROVIDER_ERROR: 30,
+  PROVIDER_REPORTED_FAILURE: 35,
   AMOUNT_MISMATCH: 40,
   SUSPICIOUS_IP: 30,
   HIGH_VALUE_ORDER: 25,
@@ -137,7 +141,7 @@ export async function computeFraudScore(inputSignals: string[], context: {
   };
 }
 
-function classifyFraudScore(
+export function classifyFraudScore(
   score: number,
   hasCritical: boolean
 ): "low" | "medium" | "high" {
