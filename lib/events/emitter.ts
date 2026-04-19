@@ -1,5 +1,3 @@
-// lib/events/emitter.ts (recommended filename)
-
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { encrypt } from "@/lib/security/crypto";
@@ -8,10 +6,6 @@ import {
   FraudSignal,
   AlertEventType,
 } from "@/lib/events/types";
-
-/* -------------------------------------------------- */
-/* Normalizers                                         */
-/* -------------------------------------------------- */
 
 const VALID_SEVERITIES = ["low", "medium", "high"] as const;
 type Severity = (typeof VALID_SEVERITIES)[number];
@@ -31,16 +25,28 @@ function normalizeCategory(category?: string | null) {
 function normalizeIp(ip?: string | null): string | null {
   if (!ip) return null;
 
-  // IPv6
-  if (ip.includes(":") && !ip.includes(".")) return ip;
+  let clean = ip.split(",")[0].trim();
 
-  // IPv4 with port
-  return ip.split(":")[0];
+  // Strip port
+  clean = clean.replace(/:\d+$/, "");
+
+  // IPv4-mapped IPv6
+  const ipv4Match = clean.match(/::ffff:(\d+\.\d+\.\d+\.\d+)/);
+  if (ipv4Match) return ipv4Match[1];
+
+  return clean || null;
 }
 
 async function extractRequestContext(ip?: string | null, userAgent?: string | null) {
   let detectedIp = ip ?? null;
   let detectedUA = userAgent ?? null;
+
+  if (detectedIp && detectedUA) {
+    return {
+      ip: normalizeIp(detectedIp),
+      userAgent: detectedUA,
+    };
+  }
 
   try {
     const h = await headers();
@@ -66,7 +72,12 @@ async function extractRequestContext(ip?: string | null, userAgent?: string | nu
 
 function safeCloneMetadata(meta: Record<string, any>) {
   try {
-    return JSON.parse(JSON.stringify(meta));
+    const cloned = JSON.parse(JSON.stringify(meta));
+    const json = JSON.stringify(cloned);
+    if (json.length > 5000) {
+      return { _truncated: true };
+    }
+    return cloned;
   } catch {
     return { _error: "Invalid metadata structure" };
   }
@@ -84,11 +95,19 @@ function maybeEncryptMetadata(
     };
   }
 
-  return {
-    _encrypted: true,
-    encVersion: 1,
-    payload: encrypt(JSON.stringify(metadata)),
-  };
+  try {
+    return {
+      _encrypted: true,
+      encVersion: 1,
+      payload: encrypt(JSON.stringify(metadata)),
+    };
+  } catch {
+    return {
+      _encrypted: false,
+      encVersion: 1,
+      data: { _error: "encryption_failed" },
+    };
+  }
 }
 
 /* -------------------------------------------------- */
