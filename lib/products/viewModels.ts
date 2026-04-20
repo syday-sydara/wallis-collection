@@ -55,7 +55,6 @@ export function toAdminProductDetail(product: ProductWithRelations) {
     description: product.description,
     basePrice: product.basePrice,
     isArchived: product.isArchived,
-    createdAt: product.createdAt,
     updatedAt: product.updatedAt,
     stock,
     images: product.images.map(img => ({

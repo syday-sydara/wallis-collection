@@ -1,5 +1,5 @@
 // lib/products/admin.ts
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 // ------------------------------
 // Update Product
@@ -283,4 +283,49 @@ export async function adminCreateProduct(data: {
 
     return product;
   });
+}
+
+// ------------------------------
+// Get Full Product (for Admin)
+// ------------------------------
+export async function adminGetProduct(productId: string): Promise<AdminProductDetail | null> {
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    include: {
+      variants: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          price: true,
+          stock: true,
+        },
+      },
+      images: {
+        orderBy: { sortOrder: "asc" },
+        select: {
+          id: true,
+          url: true,
+          alt: true,
+          sortOrder: true,
+        },
+      },
+    },
+  });
+
+  if (!product) return null;
+
+  return {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    description: product.description,
+    basePrice: product.basePrice,
+    isArchived: product.isArchived,
+    updatedAt: product.updatedAt,
+    images: product.images,
+    variants: product.variants,
+    stock: product.variants.reduce((sum, v) => sum + v.stock, 0),
+  };
 }

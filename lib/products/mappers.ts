@@ -58,25 +58,27 @@ export function toAdminProductSummary(
 export function toAdminProductDetail(product: ProductWithRelations) {
   const stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
 
-  const images = product.images.map((img: ProductImage) => ({
-    id: img.id,
-    url: img.url,
-    alt: img.alt,
-    sortOrder: img.sortOrder,
-  }));
-
-  const variants = product.variants.map((v: ProductVariant) => ({
-    id: v.id,
-    name: v.name,
-    sku: v.sku,
-    price: v.price,
-    stock: v.stock,
-  }));
-
   return {
-    ...product,
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    description: product.description,
+    basePrice: product.basePrice,
+    isArchived: product.isArchived,
+    updatedAt: product.updatedAt,
     stock,
-    images,
-    variants,
+    images: product.images.map((img) => ({
+      id: img.id,
+      url: img.url,
+      alt: img.alt,
+      sortOrder: img.sortOrder,
+    })),
+    variants: product.variants.map((v) => ({
+      id: v.id,
+      name: v.name,
+      sku: v.sku,
+      price: v.price,
+      stock: v.stock,
+    })),
   };
 }

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import type { ProductListParams, ProductListResult, ProductClientVM } from "./types";
 import { toProductCardVM } from "./mappers";
 
