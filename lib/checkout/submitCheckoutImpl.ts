@@ -4,19 +4,23 @@ import { processCheckout } from "@/lib/checkout/service";
 export async function submitCheckoutImpl(prevState: any, formData: FormData) {
   const raw: Record<string, any> = {};
 
+  // Normalize form fields
   formData.forEach((value, key) => {
     raw[key] = typeof value === "string" ? value.trim() : value;
   });
 
-  // Parse cart items
-  let items: any;
+  /* -------------------------------------------------- */
+  /* Parse cart items                                    */
+  /* -------------------------------------------------- */
+  let items: unknown;
+
   try {
     items = JSON.parse(raw.items);
   } catch {
     return {
       success: false,
       message: "Invalid cart data",
-      fieldErrors: { items: ["Invalid items format"] }
+      fieldErrors: { items: ["Invalid items format"] },
     };
   }
 
@@ -24,37 +28,46 @@ export async function submitCheckoutImpl(prevState: any, formData: FormData) {
     return {
       success: false,
       message: "Invalid cart data",
-      fieldErrors: { items: ["Items must be an array"] }
+      fieldErrors: { items: ["Items must be an array"] },
     };
   }
 
-  // Build payload
+  /* -------------------------------------------------- */
+  /* Build payload (server‑side authoritative fields)    */
+  /* -------------------------------------------------- */
   const payload = {
     email: raw.email,
     phone: raw.phone,
     fullName: raw.fullName,
     paymentMethod: raw.paymentMethod,
     shippingType: raw.shippingType,
-    address: raw.address?.trim(),
-    city: raw.city?.trim(),
-    state: raw.state?.trim(),
-    items
+    address: raw.address,
+    city: raw.city,
+    state: raw.state,
+    items,
   };
 
-  // Validate with Zod
-  const parsed = CheckoutPayloadSchema
-    .omit({ total: true, shippingCost: true })
-    .safeParse(payload);
+  /* -------------------------------------------------- */
+  /* Validate with Zod                                   */
+  /* -------------------------------------------------- */
+  const schema = CheckoutPayloadSchema.omit({
+    total: true,
+    shippingCost: true,
+  });
+
+  const parsed = schema.safeParse(payload);
 
   if (!parsed.success) {
     return {
       success: false,
       message: "Please correct the highlighted fields",
-      fieldErrors: parsed.error.flatten().fieldErrors
+      fieldErrors: parsed.error.flatten().fieldErrors,
     };
   }
 
-  // Server-side processing
+  /* -------------------------------------------------- */
+  /* Server‑side checkout processing                     */
+  /* -------------------------------------------------- */
   try {
     const result = await processCheckout(parsed.data);
 
@@ -63,13 +76,13 @@ export async function submitCheckoutImpl(prevState: any, formData: FormData) {
       message: null,
       fieldErrors: {},
       orderId: result.orderId,
-      paymentUrl: result.paymentUrl
+      paymentUrl: result.paymentUrl,
     };
   } catch (err: any) {
     return {
       success: false,
       message: err.message || "An error occurred during checkout.",
-      fieldErrors: { items: [err.message] }
+      fieldErrors: { items: [err.message] },
     };
   }
 }

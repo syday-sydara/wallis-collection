@@ -8,6 +8,11 @@ export interface ShippingPreview {
 }
 
 const METRO_STATES = new Set(["Lagos", "FCT"]);
+const STATE_SET = new Set<string>(NIGERIAN_STATES);
+
+function normalizeState(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
 
 export function getShippingPreview(
   state: string,
@@ -15,10 +20,10 @@ export function getShippingPreview(
 ): ShippingPreview | null {
   if (!state) return null;
 
-  const normalized = state.trim();
+  const normalized = normalizeState(state);
 
-  if (!NIGERIAN_STATES.includes(normalized)) {
-    console.warn(`Unknown state "${state}" for shipping calculation.`);
+  if (!STATE_SET.has(normalized)) {
+    console.warn(`Unknown Nigerian state provided for shipping calculation.`);
     return null;
   }
 
@@ -27,7 +32,10 @@ export function getShippingPreview(
 
   return {
     cost: base + extra,
-    eta: shippingType === "EXPRESS" ? "1–2 business days" : "3–5 business days"
+    eta:
+      shippingType === "EXPRESS"
+        ? "1–2 business days"
+        : "3–5 business days",
   };
 }
 
@@ -39,11 +47,15 @@ export function validateExpressAddress(params: {
 }): string | null {
   if (params.shippingType !== "EXPRESS") return null;
 
-  if (!params.address || !params.city || !params.state) {
+  const address = params.address?.trim();
+  const city = params.city?.trim();
+  const state = normalizeState(params.state);
+
+  if (!address || !city || !state) {
     return "Express shipping requires a full address (street, city, and state).";
   }
 
-  if (!NIGERIAN_STATES.includes(params.state.trim())) {
+  if (!STATE_SET.has(state)) {
     return "Please select a valid Nigerian state for express shipping.";
   }
 
