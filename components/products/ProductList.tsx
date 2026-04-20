@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import ProductGrid from "./ProductGrid";
 import ProductGridSkeleton from "./ProductGridSkeleton";
 import EmptyState from "@/components/ui/EmptyState";
@@ -9,10 +9,15 @@ import ResultHeader from "./ResultHeader";
 
 import type {
   ProductListParams,
-  ProductListResult,
   ProductCardVM,
 } from "@/lib/products/types";
 
+import { fetchProductsClient } from "@/lib/products/client";
+import { toProductCardVM } from "@/lib/products/viewModels";
+
+/* ---------------------------------------------
+ * Debounced callback
+ * --------------------------------------------- */
 function useDebouncedCallback<T extends (...args: any[]) => any>(fn: T, delay: number) {
   const timeoutRef = useRef<NodeJS.Timeout>();
 
@@ -25,6 +30,9 @@ function useDebouncedCallback<T extends (...args: any[]) => any>(fn: T, delay: n
   );
 }
 
+/* ---------------------------------------------
+ * Product List Component
+ * --------------------------------------------- */
 export default function ProductList({ params }: { params: ProductListParams }) {
   const [products, setProducts] = useState<ProductCardVM[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -40,34 +48,16 @@ export default function ProductList({ params }: { params: ProductListParams }) {
     nextCursorRef.current = nextCursor;
   }, [nextCursor]);
 
-  async function fetchFromApi(p: ProductListParams): Promise<ProductListResult> {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
-    try {
-      const query = new URLSearchParams(
-        Object.entries(p)
-          .filter(([_, v]) => v !== undefined && v !== null)
-          .map(([k, v]) => [k, String(v)])
-      );
-
-      const res = await fetch(`/api/products?${query.toString()}`, {
-        signal: controller.signal,
-      });
-
-      if (!res.ok) throw new Error("API error");
-      return res.json();
-    } finally {
-      clearTimeout(timeout);
-    }
-  }
-
-  // Reset scroll on filter change
+  /* ---------------------------------------------
+   * Reset scroll on filter change
+   * --------------------------------------------- */
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [params]);
 
-  // Initial load
+  /* ---------------------------------------------
+   * Initial load
+   * --------------------------------------------- */
   useEffect(() => {
     const requestId = ++requestIdRef.current;
     let isMounted = true;
@@ -77,11 +67,11 @@ export default function ProductList({ params }: { params: ProductListParams }) {
 
     async function load() {
       try {
-        const res = await fetchFromApi(params);
+        const res = await fetchProductsClient(params);
 
         if (!isMounted || requestId !== requestIdRef.current) return;
 
-        setProducts(res.items);
+        setProducts(res.items.map(toProductCardVM));
         setNextCursor(res.nextCursor);
       } catch (err) {
         if (isMounted && requestId === requestIdRef.current) {
@@ -101,6 +91,9 @@ export default function ProductList({ params }: { params: ProductListParams }) {
     };
   }, [params]);
 
+  /* ---------------------------------------------
+   * Load more (infinite scroll)
+   * --------------------------------------------- */
   const loadMore = useDebouncedCallback(async () => {
     if (!nextCursorRef.current || loadingMore) return;
 
@@ -108,14 +101,18 @@ export default function ProductList({ params }: { params: ProductListParams }) {
     const currentCursor = nextCursorRef.current;
 
     try {
-      const res = await fetchFromApi({
+      const res = await fetchProductsClient({
         ...params,
         cursor: currentCursor,
       });
 
       if (currentCursor !== nextCursorRef.current) return;
 
-      setProducts((prev) => [...prev, ...res.items]);
+      setProducts((prev) => [
+        ...prev,
+        ...res.items.map(toProductCardVM),
+      ]);
+
       setNextCursor(res.nextCursor);
     } catch (err) {
       console.error("Failed to load more products:", err);
@@ -124,7 +121,9 @@ export default function ProductList({ params }: { params: ProductListParams }) {
     }
   }, 150);
 
-  // Infinite scroll observer
+  /* ---------------------------------------------
+   * Infinite scroll observer
+   * --------------------------------------------- */
   useEffect(() => {
     if (!loadMoreRef.current || !nextCursor) return;
 
@@ -144,7 +143,9 @@ export default function ProductList({ params }: { params: ProductListParams }) {
     };
   }, [loadMore, nextCursor]);
 
-  /* ---------------- UI ---------------- */
+  /* ---------------------------------------------
+   * UI
+   * --------------------------------------------- */
 
   if (loading) return <ProductGridSkeleton />;
 

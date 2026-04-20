@@ -16,7 +16,6 @@ export function toProductCardVM(product: ProductWithRelations | RecommendedProdu
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
-  // Recommended products may not include stock info
   const inStock = hasVariants
     ? variants.some(v => v.stock > 0)
     : true;
@@ -30,10 +29,12 @@ export function toProductCardVM(product: ProductWithRelations | RecommendedProdu
     images: product.images.map(img => ({
       id: img.id,
       url: img.url,
-      alt: img.alt ?? null
-    }))
+      alt: img.alt ?? null,
+      sortOrder: img.sortOrder,   // ⭐ REQUIRED FIX
+    })),
   };
 }
+
 
 /* ---------------------------------------------
  * Admin Product Summary
