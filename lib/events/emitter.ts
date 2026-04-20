@@ -1,12 +1,6 @@
-// lib/events/emitter.ts
-
 import crypto from "crypto";
 import { enqueueEvent } from "@/lib/events/queue/dispatch";
-import type { AnyEventInput, EventMetadata } from "@/lib/events/types";
-
-/* -------------------------------------------------- */
-/* Metadata sanitizer                                  */
-/* -------------------------------------------------- */
+import { EventInput, EventMetadata, EventSeverity } from "@/lib/events/types";
 
 function sanitizeMetadata(meta: EventMetadata = {}): EventMetadata {
   try {
@@ -19,11 +13,7 @@ function sanitizeMetadata(meta: EventMetadata = {}): EventMetadata {
   }
 }
 
-/* -------------------------------------------------- */
-/* Unified emitter                                     */
-/* -------------------------------------------------- */
-
-export function emitEvent(event: AnyEventInput) {
+export async function emitEvent(event: EventInput<any, any>) {
   const enriched = {
     ...event,
     version: 1,

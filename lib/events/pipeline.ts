@@ -23,7 +23,9 @@ function normalizeIp(ip?: string | null): string | null {
   clean = clean.replace(/:\d+$/, "");
 
   const ipv4Match = clean.match(/::ffff:(\d+\.\d+\.\d+\.\d+)/);
-  return ipv4Match ? ipv4Match[1] : clean;
+  if (ipv4Match) return ipv4Match[1];
+
+  return clean || null;
 }
 
 async function enrichContext(ip?: string | null, userAgent?: string | null) {

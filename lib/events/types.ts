@@ -35,24 +35,25 @@ export type EventCategory =
   | "admin";
 
 /* -------------------------------------------------- */
-/* Input envelope for emitters                         */
+/* Base Event Envelope                                 */
 /* -------------------------------------------------- */
 
-export type EventInput<K extends string, P> = {
-  kind: K;
-  source: EventSource;
-  category: EventCategory;
-  severity?: EventSeverity;
+export type BaseEvent = {
+  id?: string;
+  timestamp?: string;
+  requestId?: string | null;
+  source?: EventSource | null;
+  category?: EventCategory | null;
+  severity: EventSeverity;
   userId?: string | null;
   ip?: string | null;
   userAgent?: string | null;
-  correlationId?: string | null;
   encryptedMetadata?: boolean;
   metadata?: EventMetadata;
 } & P;
 
 /* -------------------------------------------------- */
-/* Security events                                     */
+/* Security Events                                     */
 /* -------------------------------------------------- */
 
 export const SECURITY_EVENT_TYPES = [
@@ -82,16 +83,14 @@ export const SECURITY_EVENT_TYPES = [
 
 export type SecurityEventType = (typeof SECURITY_EVENT_TYPES)[number];
 
-export type SecurityEventInput = EventInput<
-  "security",
-  {
-    type: SecurityEventType;
-    message: string;
-  }
->;
+export type SecurityEventInput = BaseEvent & {
+  kind: "security";
+  type: SecurityEventType;
+  message: string;
+};
 
 /* -------------------------------------------------- */
-/* Audit events                                        */
+/* Audit Events                                        */
 /* -------------------------------------------------- */
 
 export const AUDIT_ACTIONS = [
@@ -109,18 +108,16 @@ export const AUDIT_ACTIONS = [
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
-export type AuditEventInput = EventInput<
-  "audit",
-  {
-    action: AuditAction;
-    actorType: "USER" | "ADMIN" | "SYSTEM" | "JOB";
-    resource?: string | null;
-    resourceId?: string | null;
-  }
->;
+export type AuditEventInput = BaseEvent & {
+  kind: "audit";
+  action: AuditAction;
+  actorType: "USER" | "ADMIN" | "SYSTEM" | "JOB";
+  resource?: string;
+  resourceId?: string;
+};
 
 /* -------------------------------------------------- */
-/* Fraud events                                        */
+/* Fraud Events                                        */
 /* -------------------------------------------------- */
 
 export const FRAUD_SIGNALS = [
@@ -147,16 +144,15 @@ export const FRAUD_SIGNALS = [
 
 export type FraudSignal = (typeof FRAUD_SIGNALS)[number];
 
-export type FraudEventInput = EventInput<
-  "fraud",
-  {
-    signal: FraudSignal;
-    orderId?: string | null;
-  }
->;
+export type FraudEventInput = BaseEvent & {
+  kind: "fraud";
+  signal: FraudSignal;
+  orderId?: string;
+  metadata?: EventMetadata;
+};
 
 /* -------------------------------------------------- */
-/* Alert events                                        */
+/* Alert Events                                        */
 /* -------------------------------------------------- */
 
 export const ALERT_EVENT_TYPES = [
