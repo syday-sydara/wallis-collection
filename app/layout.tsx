@@ -1,7 +1,10 @@
 import { Inter } from "next/font/google";
 import { ClientProviders } from "@/components/ClientProviders";
 import { cn } from "@/lib/utils";
+import { initEventQueue } from "@/lib/events/queue";   // ← add this
 import "./globals.css";
+
+initEventQueue();   // ← start background worker once
 
 const inter = Inter({
   subsets: ["latin"],
