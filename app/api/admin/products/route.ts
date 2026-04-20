@@ -1,52 +1,35 @@
 // app/api/admin/products/route.ts
+import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { adminListProductsPaginated } from "@/lib/products/admin";
-import { PERMISSIONS } from "@/lib/auth/permissions";
-import { unauthorized, forbidden, serverError } from "@/lib/api/response";
-import { requirePermission } from "@/lib/auth/require-permission";
-
-export function requireAdmin(req?: {
-  ip?: string | null;
-  userAgent?: string | null;
-  requestId?: string | null;
-  source?: string | null;
-}) {
-  return requirePermission("VIEW_ADMIN", req);
-}
-
 
 export async function GET(req: Request) {
-  try {
-    // Permission check
-    await requirePermission(PERMISSIONS.VIEW_ADMIN);
+  const { searchParams } = new URL(req.url);
+  const cursor = searchParams.get("cursor") || undefined;
 
-    const { searchParams } = new URL(req.url);
+  const products = await prisma.product.findMany({
+    take: 20,
+    skip: cursor ? 1 : 0,
+    cursor: cursor ? { id: cursor } : undefined,
+    orderBy: { updatedAt: "desc" },
+  });
 
-    const rawCursor = searchParams.get("cursor");
-    const cursor = rawCursor && rawCursor.trim() !== "" ? rawCursor : undefined;
+  const nextCursor = products.length === 20 ? products[19].id : null;
 
-    const data = await adminListProductsPaginated({ cursor });
+  return NextResponse.json({ items: products, nextCursor });
+}
 
-    return NextResponse.json(data, {
-      headers: {
-        "Cache-Control": "no-store",
-      },
-    });
-  } catch (err: any) {
-    console.error("Admin products error:", err);
+export async function POST(req: Request) {
+  const body = await req.json();
 
-    // Permission errors
-    if (err?.code === "UNAUTHORIZED") {
-      return unauthorized("Unauthorized", { code: "UNAUTHORIZED" });
-    }
+  const product = await prisma.product.create({
+    data: {
+      name: body.name,
+      slug: body.slug,
+      basePrice: body.basePrice,
+      stock: body.stock ?? 0,
+      description: body.description ?? "",
+    },
+  });
 
-    if (err?.code === "FORBIDDEN") {
-      return forbidden("Forbidden", { code: "FORBIDDEN" });
-    }
-
-    // Unexpected errors
-    return serverError("Failed to load admin products", err, {
-      code: "SERVER_ERROR",
-    });
-  }
+  return NextResponse.json(product);
 }
