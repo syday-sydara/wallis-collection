@@ -1,7 +1,7 @@
 // lib/auth/session.ts
 
 import { cookies } from "next/headers";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { createHmac, timingSafeEqual } from "crypto";
 import {
   normalizeRoles,

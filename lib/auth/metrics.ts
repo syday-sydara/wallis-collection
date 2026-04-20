@@ -4,6 +4,10 @@ import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 
 const VERSION = 1;
 
+/* -------------------------------------------------- */
+/* Helpers                                             */
+/* -------------------------------------------------- */
+
 function classifyDuration(durationMs: number): "low" | "medium" | "high" {
   if (durationMs >= 1500) return "high";
   if (durationMs >= 500) return "medium";
@@ -11,22 +15,63 @@ function classifyDuration(durationMs: number): "low" | "medium" | "high" {
 }
 
 function clampSampleRate(rate: number) {
-  if (rate <= 0) return 0;
-  if (rate >= 1) return 1;
-  return rate;
+  return Math.min(1, Math.max(0, rate));
+}
+
+function hashString(str: string) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
+function deterministicSample(requestId: string, rate: number) {
+  const h = hashString(requestId) % 10000;
+  return h / 10000 <= rate;
+}
+
+function safeClone<T>(obj: T): T {
+  try {
+    if (obj instanceof Error) {
+      return {
+        name: obj.name,
+        message: obj.message,
+        stack: obj.stack,
+      } as T;
+    }
+    return JSON.parse(JSON.stringify(obj));
+  } catch {
+    return { error: "clone_failed" } as T;
+  }
+}
+
+function utf8ByteLength(str: string) {
+  return new TextEncoder().encode(str).length;
 }
 
 function limitMetadataSize(obj: any, maxBytes = 5000) {
   try {
     const json = JSON.stringify(obj);
-    if (json.length > maxBytes) {
-      return { truncated: true };
+    const bytes = utf8ByteLength(json);
+
+    if (bytes > maxBytes) {
+      return {
+        truncated: true,
+        preview: json.slice(0, 2000),
+        originalBytes: bytes,
+      };
     }
+
     return obj;
   } catch {
     return { error: "metadata_serialization_failed" };
   }
 }
+
+/* -------------------------------------------------- */
+/* Main API                                            */
+/* -------------------------------------------------- */
 
 export function startTimer(
   label: string,
@@ -64,8 +109,14 @@ export function startTimer(
 
     const durationMs = end - start;
 
-    // Sampling
-    if (Math.random() > rate) return durationMs;
+    /* -------------------------------------------------- */
+    /* Sampling (deterministic when requestId exists)      */
+    /* -------------------------------------------------- */
+    if (requestId) {
+      if (!deterministicSample(requestId, rate)) return durationMs;
+    } else {
+      if (Math.random() > rate) return durationMs;
+    }
 
     const payload = {
       version: VERSION,
@@ -73,8 +124,8 @@ export function startTimer(
       durationMs,
       timestamp: new Date().toISOString(),
       env,
-      ...metadata,
-      ...extra,
+      ...safeClone(metadata),
+      ...safeClone(extra),
     };
 
     /* -------------------------------------------------- */
@@ -82,19 +133,17 @@ export function startTimer(
     /* -------------------------------------------------- */
     if (!silent) {
       try {
-        logger(JSON.stringify(payload));
+        logger(payload); // structured logging
       } catch {
         try {
-          logger(
-            JSON.stringify({
-              version: VERSION,
-              metric: label,
-              durationMs,
-              timestamp: new Date().toISOString(),
-              env,
-              error: "Failed to serialize metric payload",
-            })
-          );
+          logger({
+            version: VERSION,
+            metric: label,
+            durationMs,
+            timestamp: new Date().toISOString(),
+            env,
+            error: "Failed to serialize metric payload",
+          });
         } catch {
           // swallow logger failures
         }

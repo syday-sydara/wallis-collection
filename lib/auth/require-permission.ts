@@ -1,11 +1,14 @@
 // lib/auth/require-permission.ts
 
 import { cookies } from "next/headers";
-import { hasPermission } from "./permissions";
+import { hasPermission, type Permission } from "./permissions";
 import { parseMiddlewareSession } from "./middleware-session";
 import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 import { trackPermissionDenied } from "@/lib/auth/permission-rate";
-import type { Permission } from "./permissions";
+
+/* -------------------------------------------------- */
+/* Errors                                              */
+/* -------------------------------------------------- */
 
 class UnauthorizedError extends Error {
   constructor(message: string) {
@@ -21,10 +24,37 @@ class ForbiddenError extends Error {
   }
 }
 
+/* -------------------------------------------------- */
+/* Helpers                                             */
+/* -------------------------------------------------- */
+
 function normalizeIp(ip: string | null): string | null {
   if (!ip) return null;
   return ip.split(",")[0].trim().replace(/:\d+$/, "");
 }
+
+function limitMetadataSize(obj: any, maxBytes = 5000) {
+  try {
+    const json = JSON.stringify(obj);
+    const bytes = new TextEncoder().encode(json).length;
+
+    if (bytes > maxBytes) {
+      return {
+        truncated: true,
+        preview: json.slice(0, 2000),
+        originalBytes: bytes,
+      };
+    }
+
+    return obj;
+  } catch {
+    return { error: "metadata_serialization_failed" };
+  }
+}
+
+/* -------------------------------------------------- */
+/* Main API                                            */
+/* -------------------------------------------------- */
 
 export async function requirePermission(
   perm: Permission,
@@ -41,9 +71,11 @@ export async function requirePermission(
   const source = req?.source ?? "app";
 
   const cookieStore = await cookies();
-  const raw = cookieStore.get("wallis_session")?.value;
+  const raw = cookieStore.get("wallis_session")?.value ?? null;
 
-  // Prevent oversized cookie attacks
+  /* -------------------------------------------------- */
+  /* Cookie presence + size check                        */
+  /* -------------------------------------------------- */
   if (!raw || raw.length > 4096) {
     void emitSecurityEvent({
       type: "SESSION_MISSING",
@@ -55,25 +87,33 @@ export async function requirePermission(
       requestId,
       source,
     });
+
     throw new UnauthorizedError("Unauthorized: No session cookie");
   }
 
-  // Reuse your unified session parser
+  /* -------------------------------------------------- */
+  /* Parse session using your unified parser             */
+  /* -------------------------------------------------- */
   const user = await parseMiddlewareSession({
     cookies: cookieStore,
-    ip,
-    userAgent,
-    requestId,
-    source,
+    headers: {
+      get: (key: string) => {
+        if (key.toLowerCase() === "x-forwarded-for") return ip ?? null;
+        if (key.toLowerCase() === "user-agent") return userAgent ?? null;
+        return null;
+      },
+    },
   } as any);
 
   if (!user) {
     throw new UnauthorizedError("Unauthorized: Invalid session");
   }
 
+  /* -------------------------------------------------- */
+  /* Permission check                                    */
+  /* -------------------------------------------------- */
   const allowed = hasPermission(user, perm);
 
-  // Log permission check
   void emitSecurityEvent({
     type: "PERMISSION_CHECK",
     message: `Permission check for ${perm}: ${allowed ? "allowed" : "denied"}`,
@@ -84,15 +124,18 @@ export async function requirePermission(
     source,
     category: "auth",
     userId: user.id,
-    metadata: {
+    metadata: limitMetadataSize({
       permission: perm,
       allowed,
       roles: user.role,
       directPermissions: user.permissions,
       deniedPermissions: user.deniedPermissions,
-    },
+    }),
   });
 
+  /* -------------------------------------------------- */
+  /* Denied → Rate limit + Alerts                        */
+  /* -------------------------------------------------- */
   if (!allowed) {
     const { count } = await trackPermissionDenied(ip ?? "unknown");
 
