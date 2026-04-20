@@ -1,138 +1,77 @@
-"use client";
+import { prisma } from "@/lib/prisma";
+import {ProductForm} from "./components/ProductForm";
+import {ImagesManager} from "./components/ImagesManager";
+import {VariantList} from "./components/VariantList";
+import {InventorySection} from "./components/InventorySection";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { createProduct } from "@/app/admin/products/actions";  // Adjust according to your server-side actions file path
+export default async function ProductDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const product = await prisma.product.findUnique({
+    where: { id: params.id },
+    include: {
+      images: true,
+      variants: true,
+    },
+  });
 
-import { AdminField } from "@/components/admin/ui/AdminField";
-import { AdminInput } from "@/components/admin/ui/AdminInput";
-import { AdminTextarea } from "@/components/admin/ui/AdminTextarea";
-import { AdminButton } from "@/components/admin/ui/AdminButton";
-import { AdminMessage } from "@/components/admin/ui/AdminMessage"; // Optional, for showing messages
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-export default function NewProductPage() {
-  const router = useRouter();
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
-  const [basePrice, setBasePrice] = useState("");
-  const [image, setImage] = useState<File | null>(null);
-  const [errors, setErrors] = useState<Record<string, string[]>>({});
-  const [isPending, startTransition] = useTransition();
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  async function onSubmit(formData: FormData) {
-    startTransition(async () => {
-      const result = await createProduct(formData);
-
-      if (!result.ok) {
-        setErrors(result.errors ?? {});
-        return;
-      }
-
-      setSuccessMessage("Product created successfully!");
-      router.push(`/admin/products/${result.id}`);
-    });
-  }
-
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files) {
-      setImage(e.target.files[0]);
-    }
+  if (!product) {
+    return (
+      <div className="text-danger-foreground text-sm">
+        Product not found.
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-xl space-y-6">
-      <h2 className="text-lg font-semibold text-text tracking-tight">New Product</h2>
+    <div className="space-y-10 animate-fadeIn">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold tracking-tight">
+          Edit Product
+        </h1>
 
-      {/* Success Message */}
-      {successMessage && (
-        <AdminMessage type="success">{successMessage}</AdminMessage>
-      )}
+        <a
+          href="/admin/products"
+          className="btn btn-outline"
+        >
+          Back to Products
+        </a>
+      </div>
 
-      <form
-        action={onSubmit}
-        method="POST"
-        encType="multipart/form-data"
-        className="space-y-4 text-sm"
-      >
-        {/* Product Name */}
-        <AdminField label="Name" error={errors.name?.[0]}>
-          <AdminInput
-            name="name"
-            required
-            value={name}
-            aria-invalid={!!errors.name}
-            onChange={(e) => {
-              const v = e.target.value;
-              setName(v);
-              if (!slug) setSlug(slugify(v));
-            }}
-          />
-        </AdminField>
+      {/* GENERAL INFO */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-medium">General</h2>
+        <div className="card">
+          <ProductForm product={product} />
+        </div>
+      </section>
 
-        {/* Slug */}
-        <AdminField label="Slug" error={errors.slug?.[0]}>
-          <AdminInput
-            name="slug"
-            required
-            value={slug}
-            aria-invalid={!!errors.slug}
-            onChange={(e) => setSlug(slugify(e.target.value))}
-          />
-        </AdminField>
+      {/* IMAGES */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-medium">Images</h2>
+        <div className="card">
+          <ImagesManager productId={product.id} images={product.images} />
+        </div>
+      </section>
 
-        {/* Description */}
-        <AdminField label="Description" error={errors.description?.[0]}>
-          <AdminTextarea
-            name="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={4}
-          />
-        </AdminField>
+      {/* INVENTORY */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-medium">Inventory</h2>
+        <div className="card">
+          <InventorySection product={product} />
+        </div>
+      </section>
 
-        {/* Base Price */}
-        <AdminField label="Base Price (Kobo)" error={errors.basePrice?.[0]}>
-          <AdminInput
-            name="basePrice"
-            type="number"
-            required
-            value={basePrice}
-            aria-invalid={!!errors.basePrice}
-            onChange={(e) => setBasePrice(e.target.value)}
-          />
-        </AdminField>
-
-        {/* Product Image */}
-        <AdminField label="Product Image" error={errors.image?.[0]}>
-          <input
-            type="file"
-            name="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="block w-full text-sm"
-          />
-        </AdminField>
-
-        {/* Display form errors */}
-        {errors._form && (
-          <p className="text-xs text-danger-foreground">{errors._form[0]}</p>
-        )}
-
-        {/* Submit Button */}
-        <AdminButton type="submit" disabled={isPending}>
-          {isPending ? "Saving…" : "Create Product"}
-        </AdminButton>
-      </form>
+      {/* VARIANTS */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-medium">Variants</h2>
+        <div className="card">
+          <VariantList productId={product.id} variants={product.variants} />
+        </div>
+      </section>
     </div>
   );
 }

@@ -289,3 +289,35 @@ body {
     transition: none !important;
   }
 }
+
+/* ------------------------------------------------------ */
+/* ADMIN THEME                                             */
+/* ------------------------------------------------------ */
+
+[data-theme="admin"] {
+  /* Surfaces */
+  --surface: 245 248 255;        /* Light bluish admin background */
+  --surface-muted: 235 240 250;
+  --surface-card: 255 255 255;
+
+  /* Text */
+  --text: 15 30 60;              /* Dark navy text */
+  --text-muted: 100 120 150;
+
+  /* Borders */
+  --border: 210 220 235;
+
+  /* Brand accents (admin-specific) */
+  --color-primary: 30 90 255;    /* Stronger blue */
+  --color-success: 0 180 120;
+  --color-danger: 230 70 70;
+  --color-warning: 255 160 40;
+
+  /* Skeleton */
+  --skeleton: 220 230 245;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 20, 60, 0.05);
+  --shadow-md: 0 2px 4px rgba(0, 20, 60, 0.08);
+  --shadow-lg: 0 4px 8px rgba(0, 20, 60, 0.1);
+}
