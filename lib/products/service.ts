@@ -1,9 +1,17 @@
 import { prisma } from "@/lib/prisma";
-import type { ProductListParams, ProductListResult, ProductClientVM } from "./types";
+import type {
+  ProductListParams,
+  ProductListResult,
+  ProductClientVM,
+} from "./types";
 import { toProductCardVM } from "./mappers";
 
-/** --- List products --- */
-export async function getProducts(params: ProductListParams = {}): Promise<ProductListResult> {
+/* ---------------------------------------------
+ * LIST PRODUCTS (Storefront)
+ * --------------------------------------------- */
+export async function getProducts(
+  params: ProductListParams = {}
+): Promise<ProductListResult> {
   const {
     search,
     minPrice,
@@ -14,21 +22,24 @@ export async function getProducts(params: ProductListParams = {}): Promise<Produ
     sort,
   } = params;
 
+  // Default sort: newest first
   let orderBy: any = [
     { createdAt: "desc" },
     { id: "desc" },
   ];
 
+  // Sort by lowest variant price
   if (sort === "price-asc") {
     orderBy = [
-      { variants: { some: { price: "asc" } } },
+      { variants: { _min: { price: "asc" } } },
       { id: "asc" },
     ];
   }
 
+  // Sort by highest variant price
   if (sort === "price-desc") {
     orderBy = [
-      { variants: { some: { price: "desc" } } },
+      { variants: { _max: { price: "desc" } } },
       { id: "desc" },
     ];
   }
@@ -77,7 +88,9 @@ export async function getProducts(params: ProductListParams = {}): Promise<Produ
   };
 }
 
-/** --- Get product detail + recommendations --- */
+/* ---------------------------------------------
+ * PRODUCT DETAIL + RECOMMENDATIONS
+ * --------------------------------------------- */
 export async function getProductDetailWithRecommendations(
   slug: string
 ): Promise<ProductClientVM | null> {
@@ -93,6 +106,12 @@ export async function getProductDetailWithRecommendations(
 
   if (!product || product.isArchived) return null;
 
+  // If product has no variants, return empty recommendations
+  if (product.variants.length === 0) {
+    return { ...product, recommended: [] };
+  }
+
+  // Determine price range for recommendations
   const prices = product.variants.map((v) => v.price);
   const basePrice = Math.min(...prices);
 
@@ -103,7 +122,11 @@ export async function getProductDetailWithRecommendations(
     where: {
       id: { not: product.id },
       isArchived: false,
-      variants: { some: { price: { gte: priceMin, lte: priceMax } } },
+      variants: {
+        some: {
+          price: { gte: priceMin, lte: priceMax },
+        },
+      },
     },
     take: 6,
     orderBy: [

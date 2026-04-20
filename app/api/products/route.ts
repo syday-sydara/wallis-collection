@@ -3,8 +3,7 @@ import { NextRequest } from "next/server";
 import { getProducts } from "@/lib/products/service";
 import type { ProductListParams } from "@/lib/products/types";
 
-const ALLOWED_SORT = new Set(["newest", "price-asc", "price-desc", "popular"]);
-const ALLOWED_CATEGORIES = new Set(["bags", "shoes", "accessories"]);
+const ALLOWED_SORT = new Set(["newest", "price-asc", "price-desc"]);
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,14 +18,10 @@ export async function GET(req: NextRequest) {
 
     const rawSearch = searchParams.get("search")?.trim() || undefined;
     const rawSort = searchParams.get("sort") || "newest";
-    const rawCategory = searchParams.get("category") || undefined;
 
     const params: ProductListParams = {
       search: rawSearch || undefined,
       sort: ALLOWED_SORT.has(rawSort) ? rawSort : "newest",
-      category: rawCategory && ALLOWED_CATEGORIES.has(rawCategory)
-        ? rawCategory
-        : undefined,
       cursor: searchParams.get("cursor") || undefined,
       includeArchived: searchParams.get("includeArchived") === "true",
       minPrice: toNumber(searchParams.get("minPrice")),
