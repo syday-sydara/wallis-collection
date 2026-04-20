@@ -1,17 +1,20 @@
-import { v2 as cloudinary } from "cloudinary";
+// lib/cloudinary/signature.ts
+import { cloudinary } from "@/lib/cloudinary/config";
 
-const { CLOUDINARY_API_SECRET } = process.env;
-
-/**
- * Generate a Cloudinary upload signature for client-side uploads.
- * Useful for secure unsigned uploads.
- */
 export function generateUploadSignature(
   params: Record<string, string | number>
 ) {
-  if (!CLOUDINARY_API_SECRET) {
-    throw new Error("Missing CLOUDINARY_API_SECRET");
-  }
+  const timestamp = Math.floor(Date.now() / 1000);
 
-  return cloudinary.utils.api_sign_request(params, CLOUDINARY_API_SECRET);
+  const payload = {
+    ...params,
+    timestamp,
+  };
+
+  const signature = cloudinary.utils.api_sign_request(
+    payload,
+    process.env.CLOUDINARY_API_SECRET!
+  );
+
+  return { signature, timestamp };
 }

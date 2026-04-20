@@ -34,6 +34,20 @@ export type EventCategory =
   | "performance"
   | "admin";
 
+
+  export type EventInput<K extends string, P> = {
+  kind: K;
+  source: EventSource;
+  category: EventCategory;
+  severity?: EventSeverity;
+  userId?: string | null;
+  ip?: string | null;
+  userAgent?: string | null;
+  correlationId?: string | null;
+  encryptedMetadata?: boolean;
+  metadata?: EventMetadata;
+} & P;
+
 /* -------------------------------------------------- */
 /* Base Event Envelope                                 */
 /* -------------------------------------------------- */
