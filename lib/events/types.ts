@@ -1,5 +1,19 @@
 /* -------------------------------------------------- */
-/* Shared Types                                        */
+/* JSON-safe metadata                                  */
+/* -------------------------------------------------- */
+
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+export type EventMetadata = Record<string, JsonValue>;
+
+/* -------------------------------------------------- */
+/* Shared types                                        */
 /* -------------------------------------------------- */
 
 export type EventSeverity = "low" | "medium" | "high";
@@ -8,53 +22,56 @@ export type EventSource =
   | "api"
   | "auth"
   | "system"
-  | "job"
+  | "worker"
   | "middleware"
-  | "worker";
+  | "cron";
 
 export type EventCategory =
   | "auth"
-  | "rate_limit"
   | "fraud"
-  | "system"
-  | "performance"
   | "risk"
-  | "admin"
-  | "api";
-
-/* Safe metadata type */
-export type EventMetadata = Record<
-  string,
-  | string
-  | number
-  | boolean
-  | null
-  | string[]
-  | number[]
-  | boolean[]
-  | Record<string, unknown>
->;
+  | "security"
+  | "performance"
+  | "admin";
 
 /* -------------------------------------------------- */
-/* Base Event Envelope                                 */
+/* Base event envelope                                 */
 /* -------------------------------------------------- */
 
 export type BaseEvent = {
-  id?: string;
-  timestamp?: string;
-  requestId?: string | null;
-  source?: EventSource | null;
-  category?: EventCategory | null;
+  version: number;
+  timestamp: Date;
+  requestId: string;
+  correlationId?: string | null;
+  source: EventSource;
+  category: EventCategory;
   severity: EventSeverity;
   userId?: string | null;
   ip?: string | null;
   userAgent?: string | null;
-  encryptedMetadata?: boolean;
-  metadata?: EventMetadata;
+  encryptedMetadata: boolean;
+  metadata: EventMetadata;
 };
 
 /* -------------------------------------------------- */
-/* Security Events                                     */
+/* Input envelope for emitters                         */
+/* -------------------------------------------------- */
+
+export type EventInput<K extends string, P> = {
+  kind: K;
+  source: EventSource;
+  category: EventCategory;
+  severity?: EventSeverity;
+  userId?: string | null;
+  ip?: string | null;
+  userAgent?: string | null;
+  correlationId?: string | null;
+  encryptedMetadata?: boolean;
+  metadata?: EventMetadata;
+} & P;
+
+/* -------------------------------------------------- */
+/* Security events                                     */
 /* -------------------------------------------------- */
 
 export const SECURITY_EVENT_TYPES = [
@@ -84,14 +101,16 @@ export const SECURITY_EVENT_TYPES = [
 
 export type SecurityEventType = (typeof SECURITY_EVENT_TYPES)[number];
 
-export type SecurityEventInput = BaseEvent & {
-  kind: "security";
-  type: SecurityEventType;
-  message: string;
-};
+export type SecurityEventInput = EventInput<
+  "security",
+  {
+    type: SecurityEventType;
+    message: string;
+  }
+>;
 
 /* -------------------------------------------------- */
-/* Audit Events                                        */
+/* Audit events                                        */
 /* -------------------------------------------------- */
 
 export const AUDIT_ACTIONS = [
@@ -109,16 +128,18 @@ export const AUDIT_ACTIONS = [
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
-export type AuditEventInput = BaseEvent & {
-  kind: "audit";
-  action: AuditAction;
-  actorType: "USER" | "ADMIN" | "SYSTEM" | "JOB";
-  resource?: string;
-  resourceId?: string;
-};
+export type AuditEventInput = EventInput<
+  "audit",
+  {
+    action: AuditAction;
+    actorType: "USER" | "ADMIN" | "SYSTEM" | "JOB";
+    resource?: string | null;
+    resourceId?: string | null;
+  }
+>;
 
 /* -------------------------------------------------- */
-/* Fraud Events                                        */
+/* Fraud events                                        */
 /* -------------------------------------------------- */
 
 export const FRAUD_SIGNALS = [
@@ -145,15 +166,16 @@ export const FRAUD_SIGNALS = [
 
 export type FraudSignal = (typeof FRAUD_SIGNALS)[number];
 
-export type FraudEventInput = BaseEvent & {
-  kind: "fraud";
-  signal: FraudSignal;
-  orderId?: string;
-  metadata?: EventMetadata;
-};
+export type FraudEventInput = EventInput<
+  "fraud",
+  {
+    signal: FraudSignal;
+    orderId?: string | null;
+  }
+>;
 
 /* -------------------------------------------------- */
-/* Alert Events                                        */
+/* Alert events                                        */
 /* -------------------------------------------------- */
 
 export const ALERT_EVENT_TYPES = [
@@ -173,8 +195,19 @@ export const ALERT_EVENT_TYPES = [
 
 export type AlertEventType = (typeof ALERT_EVENT_TYPES)[number];
 
-export type AlertEventInput = BaseEvent & {
-  kind: "alert";
-  event: AlertEventType;
-  metadata?: EventMetadata;
-};
+export type AlertEventInput = EventInput<
+  "alert",
+  {
+    event: AlertEventType;
+  }
+>;
+
+/* -------------------------------------------------- */
+/* Discriminated union for pipeline                    */
+/* -------------------------------------------------- */
+
+export type AnyEventInput =
+  | SecurityEventInput
+  | AuditEventInput
+  | FraudEventInput
+  | AlertEventInput;
