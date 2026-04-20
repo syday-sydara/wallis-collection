@@ -1,10 +1,7 @@
 // lib/utils/whatsapp.ts
-import type { CartItem } from "@/lib/cart/types";
-import { formatCurrency } from "@/lib/utils/formatters/currency";
-
-function normalizePhone(phone: string): string {
-  return phone.replace(/[^\d]/g, ""); // digits only
-}
+import type { CartItem } from "../cart/types";
+import { formatCurrency } from "./formatters/currency";
+import { normalizePhoneForWhatsApp } from "./formatters/phone";
 
 function sanitizeText(text: string): string {
   return text.normalize("NFC").trim();
@@ -23,7 +20,7 @@ function formatCartLine(item: CartItem): string {
 
   return `${sanitizeText(item.name)}${variant} x${item.quantity} - ${formatCurrency(
     total,
-    "NGN"
+    false
   )}`;
 }
 
@@ -41,7 +38,7 @@ export function generateWhatsAppMessage(
   return (
     `${name}I would like to place an order:\n\n` +
     lines +
-    `\n\nTotal: ${formatCurrency(total, "NGN")}`
+    `\n\nTotal: ${formatCurrency(total, false)}`
   ).trim();
 }
 
@@ -49,7 +46,7 @@ export function generateWhatsAppLink(message: string) {
   const rawPhone =
     process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "234XXXXXXXXXX";
 
-  const phone = normalizePhone(rawPhone);
+  const phone = normalizePhoneForWhatsApp(rawPhone) ?? "234XXXXXXXXXX";
   const encoded = encodeURIComponent(sanitizeText(message));
 
   return `https://wa.me/${phone}?text=${encoded}`;
