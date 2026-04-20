@@ -2,6 +2,10 @@
 
 import type { RiskPolicy, RiskRule } from "@/lib/risk/types";
 
+/* -------------------------------------------------- */
+/* Default Rule Set                                    */
+/* -------------------------------------------------- */
+
 const rules: RiskRule[] = [
   {
     id: "high_amount",
@@ -15,6 +19,7 @@ const rules: RiskRule[] = [
       value: 150_000,
     },
   },
+
   {
     id: "free_email",
     label: "Free email provider",
@@ -22,9 +27,19 @@ const rules: RiskRule[] = [
     weight: 10,
     condition: {
       type: "email_domain_in_list",
-      list: ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com"],
+      list: [
+        "gmail.com",
+        "yahoo.com",
+        "outlook.com",
+        "hotmail.com",
+        "icloud.com",
+        "live.com",
+        "proton.me",
+        "ymail.com",
+      ],
     },
   },
+
   {
     id: "nigeria_phone_prefix",
     label: "Nigerian phone prefix",
@@ -33,8 +48,10 @@ const rules: RiskRule[] = [
     condition: {
       type: "phone_prefix_in_list",
       list: ["+234", "070", "080", "081", "090", "091"],
+      length: 4,
     },
   },
+
   {
     id: "ip_velocity_high",
     label: "High IP velocity",
@@ -46,6 +63,7 @@ const rules: RiskRule[] = [
       value: 60,
     },
   },
+
   {
     id: "failed_logins",
     label: "Multiple failed logins",
@@ -56,6 +74,7 @@ const rules: RiskRule[] = [
       value: 5,
     },
   },
+
   {
     id: "device_reputation_low",
     label: "Low device reputation",
@@ -66,6 +85,7 @@ const rules: RiskRule[] = [
       value: 40,
     },
   },
+
   {
     id: "distance_jump",
     label: "Large IP distance jump",
@@ -76,6 +96,7 @@ const rules: RiskRule[] = [
       value: 1500,
     },
   },
+
   {
     id: "bot_ua",
     label: "Bot-like user agent",
@@ -85,12 +106,37 @@ const rules: RiskRule[] = [
       type: "is_bot",
     },
   },
+
+  {
+    id: "private_ip",
+    label: "Private IP address",
+    description: "User is connecting from a private network",
+    weight: 5,
+    condition: {
+      type: "is_private_ip",
+    },
+  },
+
+  {
+    id: "short_user_agent",
+    label: "Suspiciously short user agent",
+    description: "User agent string is unusually short",
+    weight: 10,
+    condition: {
+      type: "min_user_agent_length",
+      value: 20,
+    },
+  },
 ];
+
+/* -------------------------------------------------- */
+/* Default Policy                                      */
+/* -------------------------------------------------- */
 
 export const defaultRiskPolicy: RiskPolicy = {
   id: "default",
   label: "Default Risk Policy",
-  description: "Baseline risk policy for checkout and auth flows",
+  description: "Baseline risk policy for checkout and authentication flows",
   rules,
   baseScore: 0,
   maxScore: 100,

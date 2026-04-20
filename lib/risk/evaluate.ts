@@ -62,30 +62,32 @@ export function evaluateRule(
 
     /* ---------------- Identity mismatch ---------------- */
     case "email_phone_mismatch":
-      return context.emailDomain !== context.phonePrefix;
+      return (context.emailDomain ?? "") !== (context.phonePrefix ?? "");
 
     /* ---------------- Numeric threshold ---------------- */
     case "numeric_threshold": {
-      const value = context[c.metric];
+      const metric = c.metric;
+      if (!metric) return false;
 
-      if (typeof value !== "number") {
+      const raw = context[metric];
+      if (typeof raw !== "number") {
         emitSecurityEvent({
           type: "SYSTEM_ANOMALY",
           message: "Invalid numeric metric in rule",
           severity: "medium",
           category: "risk",
-          metadata: { metric: c.metric, value },
+          metadata: { metric, value: raw },
         });
         return false;
       }
 
       switch (c.operator) {
-        case ">": return value > c.value;
-        case ">=": return value >= c.value;
-        case "<": return value < c.value;
-        case "<=": return value <= c.value;
-        case "==": return value === c.value;
-        case "!=": return value !== c.value;
+        case ">": return raw > c.value;
+        case ">=": return raw >= c.value;
+        case "<": return raw < c.value;
+        case "<=": return raw <= c.value;
+        case "==": return raw === c.value;
+        case "!=": return raw !== c.value;
         default:
           emitSecurityEvent({
             type: "SYSTEM_ANOMALY",
@@ -123,8 +125,11 @@ export function evaluateRule(
 
     /* ---------------- Behavior rules ---------------- */
     case "velocity_above": {
-      const value = context[c.metric];
-      return typeof value === "number" && value > c.value;
+      const metric = c.metric;
+      if (!metric) return false;
+
+      const raw = context[metric];
+      return typeof raw === "number" && raw > c.value;
     }
 
     case "failed_logins_above":
@@ -139,18 +144,24 @@ export function evaluateRule(
 
     /* ---------------- User agent rules ---------------- */
     case "min_user_agent_length":
-      return (context.userAgent ?? "").length < c.value;
+      return (context.userAgent ?? "").length >= c.value;
 
     /* ---------------- String rules ---------------- */
     case "string_contains": {
-      const fieldValue = context[c.field] ?? "";
-      return typeof fieldValue === "string" && fieldValue.includes(c.value);
+      const field = c.field;
+      if (!field) return false;
+
+      const raw = context[field] ?? "";
+      return typeof raw === "string" && raw.includes(c.value);
     }
 
     case "string_matches": {
-      const fieldValue = context[c.field] ?? "";
+      const field = c.field;
+      if (!field) return false;
+
+      const raw = context[field] ?? "";
       const regex = safeRegex(c.regex);
-      return regex ? regex.test(fieldValue) : false;
+      return regex ? regex.test(raw) : false;
     }
 
     /* ---------------- List membership ---------------- */
@@ -158,7 +169,7 @@ export function evaluateRule(
       return c.list.includes((context.region ?? "").toLowerCase());
 
     case "email_domain_in_list":
-      return c.list.includes(context.emailDomain ?? "");
+      return c.list.includes((context.emailDomain ?? "").toLowerCase());
 
     case "phone_prefix_in_list": {
       const len = c.length ?? 4;

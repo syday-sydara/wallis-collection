@@ -1,6 +1,6 @@
 // lib/risk/engine.ts
 
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import type {
   RiskContext,
   RiskRule,
@@ -32,13 +32,35 @@ export async function evaluatePolicy(
   /* -------------------------------------------------- */
   /* Load policy + rules                                 */
   /* -------------------------------------------------- */
-  const policy = (await prisma.riskPolicy.findUnique({
+
+  const dbPolicy = await prisma.riskPolicy.findUnique({
     where: { id: policyId },
     include: { rules: true },
-  })) as unknown as RiskPolicy;
+  });
 
-  if (!policy) {
+  if (!dbPolicy) {
     throw new Error(`RiskPolicy not found: ${policyId}`);
+  }
+
+  // Convert Prisma → RiskPolicy
+  const policy: RiskPolicy = {
+    id: dbPolicy.id,
+    label: dbPolicy.label,
+    description: dbPolicy.description ?? undefined,
+    rules: dbPolicy.rules as unknown as RiskRule[],
+    baseScore: dbPolicy.baseScore ?? 0,
+    maxScore: dbPolicy.maxScore ?? 100,
+    minScore: dbPolicy.minScore ?? 0,
+    blockThreshold: dbPolicy.blockThreshold ?? undefined,
+    reviewThreshold: dbPolicy.reviewThreshold ?? undefined,
+  };
+
+  /* -------------------------------------------------- */
+  /* Validate policy                                     */
+  /* -------------------------------------------------- */
+
+  if (!Array.isArray(policy.rules)) {
+    throw new Error(`RiskPolicy ${policyId} has invalid rules array`);
   }
 
   const baseScore = policy.baseScore ?? 0;
@@ -51,12 +73,14 @@ export async function evaluatePolicy(
   /* -------------------------------------------------- */
   /* Evaluate rules                                      */
   /* -------------------------------------------------- */
-  for (const rule of policy.rules as RiskRule[]) {
+
+  for (const rule of policy.rules) {
     let passed = false;
 
     try {
       passed = evaluateRule(rule.condition, context);
     } catch (err: any) {
+      // Log anomaly
       await emitSecurityEvent({
         type: "SYSTEM_ANOMALY",
         message: `Risk rule evaluation error: ${rule.id}`,
@@ -73,6 +97,9 @@ export async function evaluatePolicy(
         resourceId: rule.id,
         metadata: { error: err?.message },
       });
+
+      // Mark as failed
+      passed = false;
     }
 
     if (passed) {
@@ -98,16 +125,19 @@ export async function evaluatePolicy(
   /* -------------------------------------------------- */
   /* Cap score                                           */
   /* -------------------------------------------------- */
+
   score = Math.min(score, maxScore);
 
   /* -------------------------------------------------- */
   /* Classification                                      */
   /* -------------------------------------------------- */
+
   const level = classify(score, policy);
 
   /* -------------------------------------------------- */
   /* Audit logging                                       */
   /* -------------------------------------------------- */
+
   await logAuditEvent({
     action: "RISK_SCORE_COMPUTED",
     actorType: "SYSTEM",
@@ -117,12 +147,14 @@ export async function evaluatePolicy(
       triggeredRules,
       ip: context.ip,
       email: context.email,
+      userId: context.userId,
     },
   });
 
   /* -------------------------------------------------- */
   /* Alerting                                            */
   /* -------------------------------------------------- */
+
   if (level === "HIGH") {
     await emitAlertEvent({
       event: "ALERT_RISK_SCORE_HIGH",
@@ -131,6 +163,7 @@ export async function evaluatePolicy(
         triggeredRules,
         email: context.email,
         ip: context.ip,
+        userId: context.userId,
       },
     });
   }
@@ -138,6 +171,7 @@ export async function evaluatePolicy(
   /* -------------------------------------------------- */
   /* Return result                                       */
   /* -------------------------------------------------- */
+
   return {
     score,
     triggeredRules,
