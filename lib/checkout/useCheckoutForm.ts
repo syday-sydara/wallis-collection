@@ -75,9 +75,10 @@ export function useCheckoutForm(
   /* -------------------------------------------------- */
 
   useEffect(() => {
-    const saved = typeof window !== "undefined"
-      ? localStorage.getItem(STORAGE_KEY)
-      : null;
+    const saved =
+      typeof window !== "undefined"
+        ? localStorage.getItem(STORAGE_KEY)
+        : null;
 
     if (saved) {
       try {
@@ -167,7 +168,7 @@ export function useCheckoutForm(
         return prev.map((i) =>
           i.id === item.id ? { ...i, quantity: newQty } : i
         );
-        }
+      }
       return [...prev, item];
     });
   }
