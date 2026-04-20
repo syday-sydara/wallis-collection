@@ -21,7 +21,11 @@ function json<T>(body: T, init?: ResponseInit) {
 
 /* Success */
 export function ok<T>(data: T, meta?: unknown, init?: ResponseInit) {
-  return json<ResponseData<T>>({ success: true, data, meta }, { status: 200, ...init });
+  const body: ResponseData<T> = meta
+    ? { success: true, data, meta }
+    : { success: true, data };
+
+  return json(body, { status: 200, ...init });
 }
 
 export function created<T>(data: T, init?: ResponseInit) {
@@ -29,7 +33,10 @@ export function created<T>(data: T, init?: ResponseInit) {
 }
 
 export function noContent(init?: ResponseInit) {
-  return new NextResponse(null, { status: 204, ...init });
+  const res = new NextResponse(null, { status: 204, ...init });
+  res.headers.delete("Content-Type");
+  res.headers.delete("Content-Length");
+  return res;
 }
 
 /* Client errors */
@@ -91,4 +98,8 @@ export function serverError(message = "Something went wrong", err?: unknown, cod
 /* Redirect */
 export function redirectResponse(url: string, status: 302) {
   return NextResponse.redirect(url, status);
+}
+
+export function seeOther(url: string) {
+  return NextResponse.redirect(url, 303);
 }

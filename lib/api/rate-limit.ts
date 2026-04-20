@@ -1,7 +1,7 @@
 // lib/api/rate-limit.ts
 
-import { redis } from "@/lib/redis";
-import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
+import { redis } from "../redis";
+import { emitSecurityEvent, emitAlertEvent } from "../events/emitter";
 
 export interface RateLimitResult {
   allowed: boolean;
