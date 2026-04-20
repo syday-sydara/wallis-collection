@@ -1,21 +1,25 @@
-import type { ProductWithRelations, RecommendedProduct, ProductImage, ProductVariant } from "./types";
+import type {
+  ProductWithRelations,
+  RecommendedProduct,
+  ProductImage,
+  ProductVariant
+} from "./types";
 
-/** --- Storefront card view --- */
+/* ---------------------------------------------
+ * Storefront Card View
+ * --------------------------------------------- */
 export function toProductCardVM(product: ProductWithRelations | RecommendedProduct) {
   const variants = "variants" in product ? product.variants : [];
   const hasVariants = variants.length > 0;
 
-  const minPrice = hasVariants
-    ? Math.min(...variants.map(v => v.price))
-    : product.basePrice ?? 0;
+  const prices = hasVariants ? variants.map(v => v.price) : [product.basePrice ?? 0];
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
 
-  const maxPrice = hasVariants
-    ? Math.max(...variants.map(v => v.price))
-    : product.basePrice ?? 0;
-
+  // Recommended products may not include stock info
   const inStock = hasVariants
     ? variants.some(v => v.stock > 0)
-    : true; // recommended products don't include stock info
+    : true;
 
   return {
     id: product.id,
@@ -23,14 +27,23 @@ export function toProductCardVM(product: ProductWithRelations | RecommendedProdu
     minPrice,
     maxPrice,
     inStock,
-    images: product.images
+    images: product.images.map(img => ({
+      id: img.id,
+      url: img.url,
+      alt: img.alt ?? null
+    }))
   };
 }
 
-/** --- Admin product summary --- */
-export function toAdminProductSummary(product: Pick<ProductWithRelations,
-  "id" | "name" | "slug" | "basePrice" | "isArchived" | "variants" | "updatedAt"
->) {
+/* ---------------------------------------------
+ * Admin Product Summary
+ * --------------------------------------------- */
+export function toAdminProductSummary(
+  product: Pick<
+    ProductWithRelations,
+    "id" | "name" | "slug" | "basePrice" | "isArchived" | "variants" | "updatedAt"
+  >
+) {
   const stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
 
   return {
@@ -44,7 +57,9 @@ export function toAdminProductSummary(product: Pick<ProductWithRelations,
   };
 }
 
-/** --- Admin product detail --- */
+/* ---------------------------------------------
+ * Admin Product Detail
+ * --------------------------------------------- */
 export function toAdminProductDetail(product: ProductWithRelations) {
   const stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
 
@@ -57,12 +72,14 @@ export function toAdminProductDetail(product: ProductWithRelations) {
     isArchived: product.isArchived,
     updatedAt: product.updatedAt,
     stock,
-    images: product.images.map(img => ({
-      id: img.id,
-      url: img.url,
-      alt: img.alt,
-      sortOrder: img.sortOrder
-    })),
+    images: product.images
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(img => ({
+        id: img.id,
+        url: img.url,
+        alt: img.alt ?? null,
+        sortOrder: img.sortOrder
+      })),
     variants: product.variants.map(v => ({
       id: v.id,
       name: v.name,

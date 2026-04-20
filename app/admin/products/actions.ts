@@ -26,18 +26,20 @@ export async function createProduct(formData: FormData) {
       return { ok: false, errors };
     }
 
+    // Upload image if provided
     let uploadedUrl: string | null = null;
 
     if (file && file.size > 0) {
       uploadedUrl = await uploadImageFromFormData(file);
     }
 
+    // Create product
     const product = await adminCreateProduct({
       name,
       slug,
       description,
       basePrice,
-      image: uploadedUrl ? file : null, // adminCreateProduct expects File | null
+      imageUrl: uploadedUrl, // <-- FIXED
     });
 
     return { ok: true, id: product.id };

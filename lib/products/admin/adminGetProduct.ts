@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { AdminProductDetail } from "./types";
+import type { AdminProductDetail } from "../types";
 
 export async function adminGetProduct(id: string): Promise<AdminProductDetail | null> {
   const product = await prisma.product.findUnique({

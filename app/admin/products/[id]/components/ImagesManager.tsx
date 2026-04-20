@@ -10,34 +10,41 @@ export function ImagesManager({ productId, images }) {
   const [isPending, startTransition] = useTransition();
 
   function handleDragStart(e, id) {
-    e.dataTransfer.setData("id", id);
+    e.dataTransfer.setData("id", String(id));
   }
 
   function handleDrop(e, targetId) {
     const draggedId = e.dataTransfer.getData("id");
+    const target = String(targetId);
 
     const reordered = [...items];
-    const from = reordered.findIndex((i) => i.id === draggedId);
-    const to = reordered.findIndex((i) => i.id === targetId);
+    const from = reordered.findIndex((i) => String(i.id) === draggedId);
+    const to = reordered.findIndex((i) => String(i.id) === target);
 
-    // Prevent invalid reorder operations
     if (from === -1 || to === -1 || from === to) return;
 
     const [moved] = reordered.splice(from, 1);
     reordered.splice(to, 0, moved);
 
+    // Optimistic update
+    const previous = items;
     setItems(reordered);
 
-    startTransition(() => {
-      reorderImages(
-        productId,
-        reordered.map((i) => i.id)
-      );
+    startTransition(async () => {
+      try {
+        await reorderImages(
+          productId,
+          reordered.map((i) => i.id)
+        );
+      } catch (err) {
+        console.error("Reorder failed:", err);
+        setItems(previous); // revert
+      }
     });
   }
 
   return (
-    <div className="space-y-3">
+    <div className={`space-y-3 ${isPending ? "opacity-60 pointer-events-none" : ""}`}>
       {items.map((img) => {
         const filename = img.url.split("/").pop();
 
@@ -50,7 +57,7 @@ export function ImagesManager({ productId, images }) {
             onDrop={(e) => handleDrop(e, img.id)}
           >
             <div className="flex items-center gap-4">
-              <div className="cursor-grab active:cursor-grabbing text-text-muted">
+              <div className="cursor-grab active:cursor-grabbing text-text-muted select-none">
                 ⋮⋮
               </div>
 

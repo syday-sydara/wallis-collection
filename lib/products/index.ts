@@ -24,18 +24,11 @@ export {
   toAdminProductDetail,
 } from "./viewModels";
 
-// ------------------------------
-// Admin Services
-// ------------------------------
-export { adminCreateProduct } from "./adminCreateProduct";
-export { adminUpdateProduct } from "./adminUpdateProduct";
-export { adminGetProduct } from "./adminGetProduct";
 
 // ------------------------------
 // Storefront Services
 // ------------------------------
 export {
-  getProductBySlug,
-  listProducts,
-  getRecommendedProducts,
+  getProducts,
+  getProductDetailWithRecommendations,
 } from "./service";

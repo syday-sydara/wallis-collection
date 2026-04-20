@@ -10,15 +10,27 @@ export async function fetchProductsClient(
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null) continue;
 
+    // Normalize cursor: empty string → skip
+    if (key === "cursor" && value === "") continue;
+
     if (Array.isArray(value)) {
-      value.forEach(v => query.append(key, String(v)));
+      for (const v of value) {
+        if (v !== undefined && v !== null) {
+          query.append(key, String(v));
+        }
+      }
     } else {
       query.set(key, String(value));
     }
   }
 
-  const res = await fetch(`/api/products?${query.toString()}`, {
+  const qs = query.toString();
+  const url = qs ? `/api/products?${qs}` : `/api/products`;
+
+  const res = await fetch(url, {
     method: "GET",
+    cache: "no-store",
+    next: { revalidate: 0 },
   });
 
   if (!res.ok) {
