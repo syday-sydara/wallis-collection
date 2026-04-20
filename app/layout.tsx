@@ -1,16 +1,13 @@
 import { Inter } from "next/font/google";
 import { ClientProviders } from "@/components/ClientProviders";
-import { Toaster } from "@/components/ui/toast/Toaster";
-import { CartDrawer } from "@/components/cart/CartDrawer";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
-// Load Inter font with Tailwind variable
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
-  weight: ["400", "500", "600"], // optimized weights
+  weight: ["400", "500", "600"],
 });
 
 export const metadata = {
@@ -23,18 +20,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning className="h-full">
       <body
         className={cn(
-          inter.variable, // Use variable for Tailwind consistency
-          "h-full antialiased bg-surface text-text"
+          inter.variable,
+          "h-full antialiased bg-surface text-text pt-safe pb-safe"
         )}
       >
         <ClientProviders>
-          {/* Global UI Components */}
-          <Toaster />
-          <CartDrawer />
-
-          {/* Main content */}
-          <main className="min-h-screen pb-safe">{children}</main>
+          {children}
         </ClientProviders>
+
+        <div id="portal-root" />
       </body>
     </html>
   );

@@ -1,65 +1,85 @@
+// lib/auth/require-permission.ts
+
 import { cookies } from "next/headers";
-import { createHmac, timingSafeEqual } from "crypto";
-import { hasPermission } from "./permissions";
-import type { MiddlewareSession } from "./middleware-session";
-import type { Permission } from "./permissions";
+import { hasPermission, type Permission } from "./permissions";
+import { parseMiddlewareSession } from "./middleware-session";
 import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 import { trackPermissionDenied } from "@/lib/auth/permission-rate";
 
-const SECRET = process.env.SESSION_SECRET!;
-const COOKIE_NAME = "wallis_session";
+/* -------------------------------------------------- */
+/* Errors                                              */
+/* -------------------------------------------------- */
 
-/* -------------------------------------------------- */
-/* Safe compare                                        */
-/* -------------------------------------------------- */
-function safeCompare(a: string, b: string) {
-  const bufA = Buffer.from(a, "utf8");
-  const bufB = Buffer.from(b, "utf8");
-  if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
+class UnauthorizedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
 }
 
-/* -------------------------------------------------- */
-/* Base64 decode                                       */
-/* -------------------------------------------------- */
-function decode<T>(b64: string): T | null {
-  try {
-    return JSON.parse(Buffer.from(b64, "base64url").toString("utf8"));
-  } catch {
-    return null;
+class ForbiddenError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ForbiddenError";
   }
 }
 
 /* -------------------------------------------------- */
-/* Normalize IP                                        */
+/* Helpers                                             */
 /* -------------------------------------------------- */
+
 function normalizeIp(ip: string | null): string | null {
   if (!ip) return null;
-  return ip.split(",")[0].trim();
+  return ip.split(",")[0].trim().replace(/:\d+$/, "");
+}
+
+function limitMetadataSize(obj: any, maxBytes = 5000) {
+  try {
+    const json = JSON.stringify(obj);
+    const bytes = new TextEncoder().encode(json).length;
+
+    if (bytes > maxBytes) {
+      return {
+        truncated: true,
+        preview: json.slice(0, 2000),
+        originalBytes: bytes,
+      };
+    }
+
+    return obj;
+  } catch {
+    return { error: "metadata_serialization_failed" };
+  }
 }
 
 /* -------------------------------------------------- */
-/* v3 Security Center integrated permission enforcement */
+/* Main API                                            */
 /* -------------------------------------------------- */
+
 export async function requirePermission(
   perm: Permission,
-  req?: { ip?: string | null; userAgent?: string | null; requestId?: string | null; source?: string | null }
-): Promise<MiddlewareSession> {
+  req?: {
+    ip?: string | null;
+    userAgent?: string | null;
+    requestId?: string | null;
+    source?: string | null;
+  }
+) {
   const ip = normalizeIp(req?.ip ?? null);
   const userAgent = req?.userAgent ?? null;
   const requestId = req?.requestId ?? null;
   const source = req?.source ?? "app";
 
-  const cookiesList = await cookies();
-  const raw = cookiesList.get(COOKIE_NAME)?.value;
+  const cookieStore = await cookies();
+  const raw = cookieStore.get("wallis_session")?.value ?? null;
 
   /* -------------------------------------------------- */
-  /* Missing cookie                                      */
+  /* Cookie presence + size check                        */
   /* -------------------------------------------------- */
-  if (!raw) {
-    await emitSecurityEvent({
+  if (!raw || raw.length > 4096) {
+    void emitSecurityEvent({
       type: "SESSION_MISSING",
-      message: "No session cookie present",
+      message: "Missing or oversized session cookie",
       severity: "medium",
       ip,
       userAgent,
@@ -67,84 +87,34 @@ export async function requirePermission(
       requestId,
       source,
     });
-    throw new Error("Unauthorized: No session cookie");
-  }
 
-  const [payloadB64, signature] = raw.split(".");
-  if (!payloadB64 || !signature) {
-    await emitSecurityEvent({
-      type: "SESSION_MALFORMED",
-      message: "Malformed session token",
-      severity: "medium",
-      ip,
-      userAgent,
-      category: "auth",
-      requestId,
-      source,
-    });
-    throw new Error("Unauthorized: Invalid session format");
+    throw new UnauthorizedError("Unauthorized: No session cookie");
   }
 
   /* -------------------------------------------------- */
-  /* Signature validation                                */
+  /* Parse session using your unified parser             */
   /* -------------------------------------------------- */
-  const expected = createHmac("sha256", SECRET).update(payloadB64).digest("hex");
-  if (!safeCompare(expected, signature)) {
-    await emitSecurityEvent({
-      type: "SESSION_SIGNATURE_INVALID",
-      message: "Invalid session signature",
-      severity: "high",
-      ip,
-      userAgent,
-      category: "auth",
-      requestId,
-      source,
-    });
-    throw new Error("Unauthorized: Invalid session signature");
-  }
+  const user = await parseMiddlewareSession({
+    cookies: cookieStore,
+    headers: {
+      get: (key: string) => {
+        if (key.toLowerCase() === "x-forwarded-for") return ip ?? null;
+        if (key.toLowerCase() === "user-agent") return userAgent ?? null;
+        return null;
+      },
+    },
+  } as any);
 
-  /* -------------------------------------------------- */
-  /* Decode payload                                      */
-  /* -------------------------------------------------- */
-  const payload = decode<MiddlewareSession & { exp?: number }>(payloadB64);
-  if (!payload) {
-    await emitSecurityEvent({
-      type: "SESSION_DECODE_FAILED",
-      message: "Failed to decode session payload",
-      severity: "medium",
-      ip,
-      userAgent,
-      category: "auth",
-      requestId,
-      source,
-    });
-    throw new Error("Unauthorized: Invalid session payload");
-  }
-
-  /* -------------------------------------------------- */
-  /* Expiration check                                    */
-  /* -------------------------------------------------- */
-  if (payload.exp && Date.now() / 1000 > payload.exp) {
-    await emitSecurityEvent({
-      type: "SESSION_EXPIRED",
-      message: "Expired session token",
-      severity: "medium",
-      ip,
-      userAgent,
-      category: "auth",
-      requestId,
-      source,
-      metadata: { exp: payload.exp },
-    });
-    throw new Error("Unauthorized: Session expired");
+  if (!user) {
+    throw new UnauthorizedError("Unauthorized: Invalid session");
   }
 
   /* -------------------------------------------------- */
   /* Permission check                                    */
   /* -------------------------------------------------- */
-  const allowed = hasPermission(payload, perm);
+  const allowed = hasPermission(user, perm);
 
-  await emitSecurityEvent({
+  void emitSecurityEvent({
     type: "PERMISSION_CHECK",
     message: `Permission check for ${perm}: ${allowed ? "allowed" : "denied"}`,
     severity: allowed ? "low" : "medium",
@@ -153,24 +123,24 @@ export async function requirePermission(
     requestId,
     source,
     category: "auth",
-    userId: payload.id,
-    metadata: {
+    userId: user.id,
+    metadata: limitMetadataSize({
       permission: perm,
       allowed,
-      roles: payload.role,
-      directPermissions: payload.permissions,
-      deniedPermissions: payload.deniedPermissions,
-    },
+      roles: user.role,
+      directPermissions: user.permissions,
+      deniedPermissions: user.deniedPermissions,
+    }),
   });
 
   /* -------------------------------------------------- */
-  /* Permission denial handling                          */
+  /* Denied → Rate limit + Alerts                        */
   /* -------------------------------------------------- */
   if (!allowed) {
     const { count } = await trackPermissionDenied(ip ?? "unknown");
 
     if (count === 10) {
-      await emitAlertEvent({
+      void emitAlertEvent({
         event: "PERMISSION_DENIED_THRESHOLD_MEDIUM",
         ip,
         userAgent,
@@ -179,7 +149,7 @@ export async function requirePermission(
     }
 
     if (count === 20) {
-      await emitAlertEvent({
+      void emitAlertEvent({
         event: "PERMISSION_DENIED_THRESHOLD_HIGH",
         ip,
         userAgent,
@@ -187,8 +157,8 @@ export async function requirePermission(
       });
     }
 
-    throw new Error("Forbidden: Missing permission " + perm);
+    throw new ForbiddenError(`Forbidden: Missing permission ${perm}`);
   }
 
-  return payload;
+  return user;
 }

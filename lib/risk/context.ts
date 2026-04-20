@@ -2,7 +2,11 @@
 
 import type { RiskContext } from "./types";
 
-const FREE_EMAIL_PROVIDERS = [
+/* -------------------------------------------------- */
+/* Constants                                           */
+/* -------------------------------------------------- */
+
+const FREE_EMAIL_PROVIDERS = new Set([
   "gmail.com",
   "yahoo.com",
   "outlook.com",
@@ -11,11 +15,31 @@ const FREE_EMAIL_PROVIDERS = [
   "live.com",
   "ymail.com",
   "proton.me",
-];
+]);
 
 const NIGERIA_CARRIER_PREFIXES = ["070", "080", "081", "090", "091"];
 
-function isPrivateIp(ip: string) {
+/* -------------------------------------------------- */
+/* Helpers                                             */
+/* -------------------------------------------------- */
+
+function normalizeIp(ip: string): string {
+  if (!ip) return "unknown";
+
+  // Handle IPv6-mapped IPv4: ::ffff:192.168.0.1
+  if (ip.startsWith("::ffff:")) {
+    return ip.replace("::ffff:", "");
+  }
+
+  // Remove port if present
+  if (ip.includes(":") && ip.includes(".")) {
+    return ip.split(":")[0];
+  }
+
+  return ip.trim();
+}
+
+function isPrivateIp(ip: string): boolean {
   return (
     ip.startsWith("10.") ||
     ip.startsWith("192.168.") ||
@@ -24,19 +48,34 @@ function isPrivateIp(ip: string) {
 }
 
 function extractEmailDomain(email: string): string {
-  return email.split("@")[1]?.toLowerCase() ?? "";
+  return email.split("@")[1]?.toLowerCase().trim() ?? "";
 }
 
 function extractPhonePrefix(phone: string): string | null {
-  if (phone.startsWith("+234")) return "+234";
-  return NIGERIA_CARRIER_PREFIXES.find((p) => phone.startsWith(p)) ?? null;
+  const cleaned = phone.replace(/[\s()-]/g, "");
+
+  if (cleaned.startsWith("+234")) return "+234";
+
+  return (
+    NIGERIA_CARRIER_PREFIXES.find((p) => cleaned.startsWith(p)) ?? null
+  );
 }
+
+function normalizeUserAgent(ua: string): string {
+  return ua?.trim() || "unknown";
+}
+
+/* -------------------------------------------------- */
+/* Main Builder                                        */
+/* -------------------------------------------------- */
 
 export function buildRiskContext(args: {
   ip: string;
   email: string;
   phone: string;
   userAgent: string;
+
+  userId?: string | null;
 
   // Behavior
   sessionVelocity?: number;
@@ -61,26 +100,29 @@ export function buildRiskContext(args: {
   deviceReputation?: number;
   deviceConfidence?: number;
 }): RiskContext {
+  const normalizedIp = normalizeIp(args.ip);
   const emailDomain = extractEmailDomain(args.email);
   const phonePrefix = extractPhonePrefix(args.phone);
+  const ua = normalizeUserAgent(args.userAgent);
 
-  const isMobile = /Android|iPhone|iPad/i.test(args.userAgent);
-  const isBot = /bot|crawl|spider|headless/i.test(args.userAgent);
+  const isMobile = /Android|iPhone|iPad/i.test(ua);
+  const isBot = /bot|crawl|spider|headless|selenium|puppeteer/i.test(ua);
 
   return {
     // Identity
-    userId: null,
+    userId: args.userId ?? null,
     email: args.email,
     emailDomain,
+    isFreeEmail: FREE_EMAIL_PROVIDERS.has(emailDomain),
     phone: args.phone,
     phonePrefix,
 
     // IP / Geo
-    ip: args.ip,
+    ip: normalizedIp,
+    isPrivateIp: isPrivateIp(normalizedIp),
     country: args.country ?? null,
     region: args.region ?? null,
     city: args.city ?? null,
-    isPrivateIp: isPrivateIp(args.ip),
     distanceFromLastIpKm: args.distanceFromLastIpKm ?? null,
 
     // Device Intelligence
@@ -107,6 +149,6 @@ export function buildRiskContext(args: {
     triggeredRules: [],
 
     // User Agent
-    userAgent: args.userAgent,
+    userAgent: ua,
   };
 }

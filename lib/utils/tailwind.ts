@@ -2,35 +2,42 @@
 import { twMerge } from "tailwind-merge";
 
 /**
- * Unified Tailwind-aware className utility.
- * Accepts strings, arrays, nested arrays, and falsy values.
- *
- * @example
- * cnx("p-4", isActive && "bg-primary")
- *
- * @example
- * cnx("p-4", ["bg-primary", isActive && "text-white"])
- *
- * @example
- * cnx(["p-4", ["bg-primary", ["text-white"]]])
+ * Tailwind-aware className utility.
+ * Supports strings, arrays, objects, nested structures, and falsy values.
  */
 
-function flattenClasses(
-  items: Array<string | string[] | undefined | null | false>
-): string[] {
+type ClassValue =
+  | string
+  | number
+  | null
+  | false
+  | undefined
+  | ClassValue[]
+  | Record<string, boolean>;
+
+function flatten(input: ClassValue[]): string[] {
   const result: string[] = [];
-  for (const item of items) {
+  const stack = [...input];
+
+  while (stack.length) {
+    const item = stack.pop();
+
+    if (!item && item !== 0) continue;
+
     if (Array.isArray(item)) {
-      result.push(...flattenClasses(item)); // recursive
-    } else if (item) {
-      result.push(item);
+      stack.push(...item);
+    } else if (typeof item === "object") {
+      for (const [key, value] of Object.entries(item)) {
+        if (value) result.push(key);
+      }
+    } else {
+      result.push(String(item));
     }
   }
+
   return result;
 }
 
-export function cn(
-  ...classes: Array<string | string[] | undefined | null | false>
-): string {
-  return twMerge(flattenClasses(classes).join(" "));
+export function cn(...classes: ClassValue[]): string {
+  return twMerge(flatten(classes).join(" "));
 }

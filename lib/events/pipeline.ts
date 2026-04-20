@@ -13,8 +13,56 @@ import {
 import { processAlert } from "@/lib/audit/alerts";
 
 /* -------------------------------------------------- */
-/* Base Envelope (v3 unified)                          */
+/* Helpers                                             */
 /* -------------------------------------------------- */
+
+function normalizeIp(ip?: string | null): string | null {
+  if (!ip) return null;
+
+  let clean = ip.split(",")[0].trim();
+  clean = clean.replace(/:\d+$/, "");
+
+  const ipv4Match = clean.match(/::ffff:(\d+\.\d+\.\d+\.\d+)/);
+  if (ipv4Match) return ipv4Match[1];
+
+  return clean || null;
+}
+
+function safeMetadata(meta: Record<string, any> = {}) {
+  try {
+    const cloned = JSON.parse(JSON.stringify(meta));
+    const json = JSON.stringify(cloned);
+    if (json.length > 5000) {
+      return { _truncated: true };
+    }
+    return cloned;
+  } catch {
+    return { _error: "Invalid metadata" };
+  }
+}
+
+async function enrichContext(ip?: string | null, userAgent?: string | null) {
+  if (ip && userAgent) {
+    return { ip: normalizeIp(ip), userAgent };
+  }
+
+  try {
+    const h = await headers();
+    return {
+      ip:
+        normalizeIp(ip) ??
+        normalizeIp(h.get("x-forwarded-for")?.split(",")[0].trim() ?? null),
+      userAgent: userAgent ?? h.get("user-agent") ?? null,
+    };
+  } catch {
+    return { ip: normalizeIp(ip), userAgent };
+  }
+}
+
+/* -------------------------------------------------- */
+/* Schemas                                             */
+/* -------------------------------------------------- */
+
 const baseSchema = z.object({
   kind: z.enum(["security", "audit", "fraud", "alert"]),
   timestamp: z.string().optional(),
@@ -30,18 +78,12 @@ const baseSchema = z.object({
   version: z.number().default(1),
 });
 
-/* -------------------------------------------------- */
-/* Security Event Schema                               */
-/* -------------------------------------------------- */
 const securitySchema = baseSchema.extend({
   kind: z.literal("security"),
   type: z.enum(SECURITY_EVENT_TYPES),
   message: z.string(),
 });
 
-/* -------------------------------------------------- */
-/* Audit Event Schema                                  */
-/* -------------------------------------------------- */
 const auditSchema = baseSchema.extend({
   kind: z.literal("audit"),
   action: z.enum(AUDIT_ACTIONS),
@@ -50,18 +92,12 @@ const auditSchema = baseSchema.extend({
   resourceId: z.string().nullable().optional(),
 });
 
-/* -------------------------------------------------- */
-/* Fraud Event Schema                                  */
-/* -------------------------------------------------- */
 const fraudSchema = baseSchema.extend({
   kind: z.literal("fraud"),
   signal: z.enum(FRAUD_SIGNALS),
   orderId: z.string().nullable().optional(),
 });
 
-/* -------------------------------------------------- */
-/* Alert Event Schema                                  */
-/* -------------------------------------------------- */
 const alertSchema = baseSchema.extend({
   kind: z.literal("alert"),
   event: z.enum(ALERT_EVENT_TYPES),
@@ -70,42 +106,28 @@ const alertSchema = baseSchema.extend({
 /* -------------------------------------------------- */
 /* Main Pipeline                                       */
 /* -------------------------------------------------- */
+
 export async function logEvent(event: any) {
   try {
-    const h = await headers();
-
-    const ip =
-      event.ip ??
-      h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      null;
-
-    const userAgent = event.userAgent ?? h.get("user-agent") ?? null;
-
-    const requestId = event.requestId ?? crypto.randomUUID();
-
-    const timestamp = new Date().toISOString();
+    const ctx = await enrichContext(event.ip, event.userAgent);
 
     const enriched = {
       ...event,
-      ip,
-      userAgent,
-      requestId,
-      timestamp,
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+      requestId: event.requestId ?? crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
       version: event.version ?? 1,
-      encryptedMetadata: event.encryptedMetadata ?? false,
       severity: event.severity ?? "low",
+      encryptedMetadata: event.encryptedMetadata ?? false,
+      metadata: safeMetadata(event.metadata),
     };
 
-    switch (event.kind) {
+    switch (enriched.kind) {
       case "security": {
         const e = securitySchema.parse(enriched);
         const { kind, encryptedMetadata, ...payload } = e;
-        await prisma.securityEvent.create({
-          data: {
-            ...payload,
-            severity: e.severity ?? "low",
-          },
-        });
+        await prisma.securityEvent.create({ data: payload });
         break;
       }
 
@@ -125,15 +147,12 @@ export async function logEvent(event: any) {
 
       case "alert": {
         const e = alertSchema.parse(enriched);
-
-        // Alerts are processed, not stored
         processAlert({
           action: e.event,
           metadata: e.metadata ?? {},
         }).catch((err) =>
           console.error("Alert processing failed:", err)
         );
-
         break;
       }
     }

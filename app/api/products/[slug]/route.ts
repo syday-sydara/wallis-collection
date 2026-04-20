@@ -14,32 +14,31 @@ import { startTimer } from "@/lib/auth/metrics";
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ slug: string }> }
+  context: { params: { slug: string } }
 ) {
   const stopTimer = startTimer("api_products_slug_ms");
 
   try {
-    // --- Extract slug safely ---
-    const resolved = await context.params.catch(() => null);
-    const rawSlug = resolved?.slug;
+    const rawSlug = context.params.slug;
 
     if (!rawSlug) {
-      return badRequest("Missing slug");
+      return badRequest("Missing slug", { code: "MISSING_SLUG" });
     }
 
     // Normalize slug
     const slug = rawSlug
       .trim()
       .toLowerCase()
-      .replace(/--+/g, "-") // collapse multiple hyphens
-      .replace(/^-+|-+$/g, ""); // trim hyphens
+      .replace(/--+/g, "-")
+      .replace(/^-+|-+$/g, "");
 
     const slugRegex = /^[a-z0-9-]+$/;
-    if (!slug || slug.length < 2 || slug.length > 200 || !slugRegex.test(slug)) {
-      return badRequest("Invalid slug");
+
+    if (!slug || slug.length < 2 || slug.length > 120 || !slugRegex.test(slug)) {
+      return badRequest("Invalid slug", { code: "INVALID_SLUG" });
     }
 
-    // --- Rate Limit ---
+    // Rate limit
     const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("x-real-ip") ||
@@ -51,23 +50,28 @@ export async function GET(
     if (!rate.allowed) {
       logEvent("rate_limited", { ip, slug }, "warn");
       return tooManyRequests(
-        `Rate limit exceeded. Try again in ${rate.retryAfter}s`
+        `Rate limit exceeded. Try again in ${rate.retryAfter}s`,
+        { code: "RATE_LIMITED" }
       );
     }
 
-    // --- Fetch product ---
+    // Fetch product
     const productVM = await getProductDetailWithRecommendations(slug);
 
     if (!productVM) {
       logEvent("product_not_found", { slug, ip }, "warn");
-      return notFound("Product not found", undefined, {
+      return notFound("Product not found", { code: "NOT_FOUND" }, {
         headers: {
           "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
         },
       });
     }
 
-    logEvent("product_view", { slug, ip });
+    logEvent("product_view", {
+      slug,
+      productId: productVM.id,
+      ip,
+    });
 
     return ok(productVM, {
       headers: {
@@ -76,7 +80,9 @@ export async function GET(
     });
   } catch (err) {
     logEvent("product_detail_error", { error: String(err) }, "error");
-    return serverError("Failed to fetch product", err);
+    return serverError("Failed to fetch product", err, {
+      code: "SERVER_ERROR",
+    });
   } finally {
     stopTimer();
   }

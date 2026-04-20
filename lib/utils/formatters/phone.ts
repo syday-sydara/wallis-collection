@@ -1,33 +1,39 @@
+// lib/utils/formatters/phone.ts
+
 /**
- * Format Nigerian phone numbers into a consistent international format.
+ * Normalize a Nigerian phone number into WhatsApp-safe format:
+ *   2348031234567
  *
- * Examples:
- *  - 0803 123 4567      => +234 803 123 4567
- *  - +2348031234567     => +234 803 123 4567
- *  - 2348031234567      => +234 803 123 4567
- *  - 8031234567         => +234 803 123 4567
- *
- * Returns the original input if the number cannot be normalized.
+ * Returns null if the number cannot be normalized.
  */
-export function formatPhoneNumber(input: string): string {
-  if (!input) return "";
+export function normalizePhoneForWhatsApp(input: string): string | null {
+  if (!input) return null;
 
-  // Strip all non‑digits
-  let digits = input.replace(/\D/g, "");
+  // Normalize Unicode and trim
+  const raw = input.normalize("NFC").trim();
 
-  // Normalize prefixes
-  if (digits.startsWith("234")) {
+  // Strip all non-digits
+  let digits = raw.replace(/\D/g, "");
+
+  // Handle +2340..., 2340..., 0..., and bare 10-digit numbers
+  if (digits.startsWith("2340")) {
+    digits = digits.slice(4);
+  } else if (digits.startsWith("234")) {
     digits = digits.slice(3);
   } else if (digits.startsWith("0")) {
     digits = digits.slice(1);
   }
 
-  // Nigerian mobile numbers should now be exactly 10 digits
-  const NIGERIAN_NUMBER_LENGTH = 10;
-  if (digits.length !== NIGERIAN_NUMBER_LENGTH) {
-    return input.trim(); // fallback gracefully
+  // Nigerian mobile numbers must now be exactly 10 digits
+  if (digits.length !== 10) {
+    return null;
   }
 
-  // Format: +234 XXX XXX XXXX
-  return `+234 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+  // Validate mobile prefix (7, 8, 9)
+  if (!/^[789]/.test(digits)) {
+    return null;
+  }
+
+  // WhatsApp requires digits only, no plus sign
+  return `234${digits}`;
 }

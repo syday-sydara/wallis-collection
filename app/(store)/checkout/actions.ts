@@ -12,30 +12,9 @@ import { buildRiskContext } from "@/lib/risk/context";
 import { prisma } from "@/lib/db";
 import { normalizePhone, maskEmail } from "@/lib/security/normalize";
 
-import type { CheckoutActionState } from "./state"; // ✔ types allowed
+import type { CheckoutActionState } from "./state";
 
-
-
-export type CheckoutActionState = {
-  success: boolean | null;
-  message: string | null;
-  fieldErrors: Record<string, string[] | undefined>;
-  orderId?: string;
-  paymentUrl?: string | null;
-};
-
-const initialState: CheckoutActionState = {
-  success: null,
-  message: null,
-  fieldErrors: {}
-};
-
-export { initialState as checkoutInitialState };
-
-export async function submitCheckout(
-  prevState: CheckoutActionState,
-  formData: FormData
-): Promise<CheckoutActionState> {
+export async function submitCheckout(formData: FormData): Promise<CheckoutActionState> {
   return Sentry.startSpan(
     { name: "checkout.submit", op: "server.action" },
     async () => {
@@ -45,10 +24,9 @@ export async function submitCheckout(
       const ip = hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
       const userAgent = hdrs.get("user-agent") ?? "unknown";
 
-      // Rate limit
+      /* ---------------- Rate Limit ---------------- */
       const rate = await checkRateLimit({ route: "checkout", ip });
       if (!rate.allowed) {
-        logEvent("checkout_rate_limited", { ip, userAgent }, "warn");
         endTimer();
         return {
           success: false,
@@ -57,12 +35,8 @@ export async function submitCheckout(
         };
       }
 
-      // Idempotency
-      const idempotencyKey =
-        hdrs.get("x-idempotency-key") ??
-        (formData.get("idempotencyKey") as string | null) ??
-        null;
-
+      /* ---------------- Idempotency ---------------- */
+      const idempotencyKey = formData.get("idempotencyKey") as string | null;
       if (!idempotencyKey) {
         endTimer();
         return {
@@ -74,24 +48,22 @@ export async function submitCheckout(
 
       const cached = getIdempotentResponse(idempotencyKey);
       if (cached) {
-        logEvent("checkout_idempotent_reuse", { idempotencyKey, ip });
         endTimer();
         return cached;
       }
 
       try {
-        // Extract raw form data
+        /* ---------------- Extract Raw Form Data ---------------- */
         const raw: Record<string, any> = {};
         formData.forEach((value, key) => {
           raw[key] = typeof value === "string" ? value.trim() : value;
         });
 
-        // Parse items JSON
+        /* ---------------- Parse Items ---------------- */
         let items;
         try {
           items = JSON.parse(raw.items);
         } catch {
-          logEvent("checkout_invalid_items_json", { rawItems: raw.items }, "warn");
           endTimer();
           return {
             success: false,
@@ -100,7 +72,16 @@ export async function submitCheckout(
           };
         }
 
-        // Normalize sensitive fields
+        if (!Array.isArray(items) || items.length === 0) {
+          endTimer();
+          return {
+            success: false,
+            message: "Your cart is empty",
+            fieldErrors: {}
+          };
+        }
+
+        /* ---------------- Normalize Sensitive Fields ---------------- */
         const normalizedPhone = normalizePhone(raw.phone);
         const maskedEmail = maskEmail(raw.email);
 
@@ -116,14 +97,10 @@ export async function submitCheckout(
           items
         };
 
-        // Validate payload
+        /* ---------------- Validate Payload ---------------- */
         const parsed = CheckoutPayloadSchema.safeParse(payload);
         if (!parsed.success) {
           const flattened = parsed.error.flatten().fieldErrors;
-          logEvent("checkout_validation_failed", {
-            email: maskedEmail,
-            fieldErrors: flattened
-          });
           endTimer();
           return {
             success: false,
@@ -132,23 +109,51 @@ export async function submitCheckout(
           };
         }
 
-        // Fetch server-side prices
+        /* ---------------- Fetch Server Prices ---------------- */
         const productIds = parsed.data.items.map(i => i.productId);
         const products = await prisma.product.findMany({
           where: { id: { in: productIds } },
-          select: { id: true, basePrice: true, name: true }
+          select: { id: true, basePrice: true, name: true, inStock: true }
         });
 
         const priceMap = new Map(products.map(p => [p.id, p]));
 
-        // Compute cart value securely
+        /* ---------------- Validate Cart Items ---------------- */
+        for (const item of parsed.data.items) {
+          const product = priceMap.get(item.productId);
+
+          if (!product) {
+            return {
+              success: false,
+              message: "One or more items are no longer available",
+              fieldErrors: {}
+            };
+          }
+
+          if (!product.inStock) {
+            return {
+              success: false,
+              message: `${product.name} is out of stock`,
+              fieldErrors: {}
+            };
+          }
+
+          if (item.quantity < 1 || item.quantity > 10) {
+            return {
+              success: false,
+              message: "Invalid quantity selected",
+              fieldErrors: {}
+            };
+          }
+        }
+
+        /* ---------------- Compute Cart Value ---------------- */
         const cartValue = parsed.data.items.reduce((sum, item) => {
           const product = priceMap.get(item.productId);
-          const unitPrice = product?.basePrice ?? 0;
-          return sum + unitPrice * item.quantity;
+          return sum + (product?.basePrice ?? 0) * item.quantity;
         }, 0);
 
-        // Build risk context
+        /* ---------------- Build Risk Context ---------------- */
         const riskContext = buildRiskContext({
           ip,
           email: parsed.data.email,
@@ -159,14 +164,8 @@ export async function submitCheckout(
           shippingState: parsed.data.state
         });
 
-        // Process checkout (creates order + payment intent)
+        /* ---------------- Process Checkout ---------------- */
         const result = await processCheckout(parsed.data, riskContext);
-
-        logEvent("checkout_success", {
-          email: maskedEmail,
-          orderId: result.orderId,
-          hasPaymentUrl: Boolean(result.paymentUrl)
-        });
 
         const response: CheckoutActionState = {
           success: true,
@@ -177,16 +176,10 @@ export async function submitCheckout(
         };
 
         saveIdempotentResponse(idempotencyKey, response);
-
         endTimer();
         return response;
       } catch (err: any) {
         Sentry.captureException(err);
-        logEvent(
-          "checkout_unexpected_error",
-          { message: err?.message, stack: err?.stack },
-          "error"
-        );
         endTimer();
         return {
           success: false,

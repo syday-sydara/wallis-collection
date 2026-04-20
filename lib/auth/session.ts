@@ -1,23 +1,32 @@
 // lib/auth/session.ts
+
 import { cookies } from "next/headers";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { createHmac, timingSafeEqual } from "crypto";
+import {
+  normalizeRoles,
+  normalizePermissions,
+  type Role,
+  type Permission,
+} from "./permissions";
 
 export type SessionUser = {
   id: string;
   email: string;
   name: string | null;
-  role: string | string[];
+  role: Role[]; // normalized
   risk_score: number;
-  permissions?: string[];
-  deniedPermissions?: string[];
+  permissions: Permission[];
+  deniedPermissions: Permission[];
 };
 
 const SECRET = process.env.SESSION_SECRET!;
 const COOKIE_NAME = "wallis_session";
 
 /* -------------------------------------------------- */
-/* Helper: Base64 encode / decode */
+/* Base64 helpers                                      */
+/* -------------------------------------------------- */
+
 function encode(data: object) {
   return Buffer.from(JSON.stringify(data)).toString("base64url");
 }
@@ -31,7 +40,9 @@ function decode<T>(b64: string): T | null {
 }
 
 /* -------------------------------------------------- */
-/* HMAC signing + timing-safe compare */
+/* HMAC signing + timing-safe compare                  */
+/* -------------------------------------------------- */
+
 function sign(payload: string) {
   return createHmac("sha256", SECRET).update(payload).digest("hex");
 }
@@ -44,16 +55,22 @@ function safeCompare(a: string, b: string) {
 }
 
 /* -------------------------------------------------- */
-/* Cookie helpers */
+/* Cookie access                                       */
+/* -------------------------------------------------- */
+
 async function getSessionToken(): Promise<string | null> {
-  const cookiesList = await cookies();
-  return cookiesList.get(COOKIE_NAME)?.value ?? null;
+  const cookieStore = await cookies();
+  return cookieStore.get(COOKIE_NAME)?.value ?? null;
 }
 
 /* -------------------------------------------------- */
-/* Decode + verify token */
-async function resolveToken(token: string | null): Promise<SessionUser | null> {
-  if (!token) return null;
+/* Unified token parser (NO logging here)              */
+/* -------------------------------------------------- */
+
+export async function parseSessionToken(
+  token: string | null
+): Promise<SessionUser | null> {
+  if (!token || token.length > 4096) return null;
 
   const [payloadB64, signature] = token.split(".");
   if (!payloadB64 || !signature) return null;
@@ -66,38 +83,50 @@ async function resolveToken(token: string | null): Promise<SessionUser | null> {
 
   if (payload.exp && Date.now() / 1000 > payload.exp) return null;
 
-  return payload;
+  // Normalize roles + permissions
+  const roles = normalizeRoles(payload.role);
+  const permissions = normalizePermissions(payload.permissions);
+  const denied = normalizePermissions(payload.deniedPermissions);
+
+  return {
+    id: payload.id,
+    email: payload.email,
+    name: payload.name ?? null,
+    role: roles,
+    risk_score: payload.risk_score ?? 0,
+    permissions,
+    deniedPermissions: denied,
+  };
 }
 
 /* -------------------------------------------------- */
-/* Edge-safe fast session (no DB hit) */
+/* Fast session (token only)                           */
+/* -------------------------------------------------- */
+
 export async function getSessionFast(): Promise<SessionUser | null> {
   const token = await getSessionToken();
-  return resolveToken(token);
+  return parseSessionToken(token);
 }
 
 /* -------------------------------------------------- */
-/* Hybrid session with optional DB fetch */
-type GetSessionOptions = {
-  fresh?: boolean; // force DB refresh
-};
+/* Hybrid session with optional DB refresh             */
+/* -------------------------------------------------- */
 
 export async function getSessionUser(
-  options?: GetSessionOptions
+  options?: { fresh?: boolean }
 ): Promise<SessionUser | null> {
   const token = await getSessionToken();
-  const session = await resolveToken(token);
-  if (!session?.id) return null;
+  const session = await parseSessionToken(token);
+  if (!session) return null;
 
-  // Fast path (use token only)
+  // Fast path
   if (!options?.fresh) {
-    if (session.permissions === undefined || session.risk_score === undefined) {
-      options = { fresh: true };
-    } else {
+    if (session.permissions.length > 0 && session.risk_score !== undefined) {
       return session;
     }
   }
 
+  // DB refresh
   const dbUser = await prisma.user.findUnique({
     where: { id: session.id },
     select: {
@@ -113,26 +142,21 @@ export async function getSessionUser(
 
   if (!dbUser) return null;
 
-  const dbPermissions = Array.isArray(dbUser.permissions)
-    ? dbUser.permissions.filter((item): item is string => typeof item === "string")
-    : undefined;
-  const dbDeniedPermissions = Array.isArray(dbUser.deniedPermissions)
-    ? dbUser.deniedPermissions.filter((item): item is string => typeof item === "string")
-    : undefined;
-
   return {
     id: dbUser.id,
     email: dbUser.email,
     name: dbUser.name,
-    role: dbUser.role,
+    role: normalizeRoles(dbUser.role),
     risk_score: dbUser.risk_score ?? 0,
-    permissions: dbPermissions,
-    deniedPermissions: dbDeniedPermissions,
+    permissions: normalizePermissions(dbUser.permissions),
+    deniedPermissions: normalizePermissions(dbUser.deniedPermissions),
   };
 }
 
 /* -------------------------------------------------- */
-/* Require user for critical operations */
+/* Require user for critical operations                */
+/* -------------------------------------------------- */
+
 export async function requireSessionUser(): Promise<SessionUser> {
   const user = await getSessionUser({ fresh: true });
   if (!user) throw new Error("Unauthorized");
@@ -140,7 +164,9 @@ export async function requireSessionUser(): Promise<SessionUser> {
 }
 
 /* -------------------------------------------------- */
-/* Create session token for login or refresh */
+/* Create session token                                */
+/* -------------------------------------------------- */
+
 export function createSessionToken(user: {
   id: string;
   role: string | string[];
@@ -156,7 +182,7 @@ export function createSessionToken(user: {
     risk_score: user.risk_score,
     permissions: user.permissions ?? [],
     deniedPermissions: user.deniedPermissions ?? [],
-    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
+    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 7 days
   };
 
   const signed = encode(payload);

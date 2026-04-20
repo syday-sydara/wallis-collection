@@ -1,5 +1,4 @@
-"use client";
-
+import { ClientProviders } from "@/components/ClientProviders";
 import Link from "next/link";
 import clsx from "clsx";
 import { usePathname } from "next/navigation";
@@ -13,11 +12,20 @@ const nav = [
 ];
 
 export default function SecurityCenterLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ClientProviders>
+      <SecurityCenterShell>{children}</SecurityCenterShell>
+    </ClientProviders>
+  );
+}
+
+// Move client logic into a separate client component
+"use client";
+function SecurityCenterShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
     <div className="min-h-screen bg-surface text-text flex flex-col">
-      {/* Header */}
       <header className="border-b border-border bg-surface-card shadow-sm">
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
           <h1 className="text-lg font-semibold tracking-tight">Security Center</h1>
@@ -46,7 +54,6 @@ export default function SecurityCenterLayout({ children }: { children: React.Rea
         </div>
       </header>
 
-      {/* Main */}
       <main className="mx-auto max-w-6xl px-4 py-8 flex-1 animate-fadeIn">
         {children}
       </main>

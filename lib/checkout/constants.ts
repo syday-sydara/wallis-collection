@@ -1,4 +1,6 @@
-export const NIGERIAN_STATES = [
+// lib/constants/nigerian-states.ts
+
+export const NIGERIAN_STATES = Object.freeze([
   "Abia",
   "Adamawa",
   "Akwa Ibom",
@@ -35,7 +37,50 @@ export const NIGERIAN_STATES = [
   "Sokoto",
   "Taraba",
   "Yobe",
-  "Zamfara"
-] as const;
+  "Zamfara",
+] as const);
 
-export type NigerianState = typeof NIGERIAN_STATES[number];
+export type NigerianState = (typeof NIGERIAN_STATES)[number];
+
+/* -------------------------------------------------- */
+/* Fast lookup set                                     */
+/* -------------------------------------------------- */
+
+const STATE_SET = new Set<string>(NIGERIAN_STATES);
+
+/* -------------------------------------------------- */
+/* Normalizer                                          */
+/* -------------------------------------------------- */
+
+export function normalizeNigerianState(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+/* -------------------------------------------------- */
+/* Safe parser                                         */
+/* -------------------------------------------------- */
+
+export function parseNigerianState(
+  value: string | null | undefined
+): NigerianState | null {
+  if (!value) return null;
+
+  const normalized = normalizeNigerianState(value);
+
+  // Case-insensitive match
+  for (const state of NIGERIAN_STATES) {
+    if (state.toLowerCase() === normalized.toLowerCase()) {
+      return state;
+    }
+  }
+
+  return null;
+}
+
+/* -------------------------------------------------- */
+/* Membership check                                    */
+/* -------------------------------------------------- */
+
+export function isNigerianState(value: string): value is NigerianState {
+  return STATE_SET.has(value);
+}

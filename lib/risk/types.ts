@@ -21,6 +21,7 @@ export interface RiskContext {
   userId?: string | null;
   email?: string | null;
   emailDomain?: string | null;
+  isFreeEmail?: boolean; // <-- added here
   phone?: string | null;
   phonePrefix?: string | null;
 
@@ -53,7 +54,7 @@ export interface RiskContext {
   orderVelocity?: number | null;
 
   // Risk Engine
-  riskScore?: number; // existing score
+  riskScore?: number;
   triggeredRules?: string[];
 
   // User Agent
@@ -112,7 +113,7 @@ export type RuleCondition =
   // User agent rules
   | { type: "min_user_agent_length"; value: number; not?: boolean }
 
-  // String rules (restricted to string fields)
+  // String rules
   | {
       type: "string_contains";
       field: StringFields<RiskContext>;
@@ -136,19 +137,19 @@ export type RuleCondition =
   | { type: "or"; conditions: [RuleCondition, ...RuleCondition[]]; not?: boolean };
 
 /* -------------------------------------------------- */
-/* Risk Rule (named rule with weight)                  */
+/* Risk Rule                                           */
 /* -------------------------------------------------- */
 
 export interface RiskRule {
-  id: string; // unique rule ID
-  label: string; // human-readable name
+  id: string;
+  label: string;
   description?: string;
-  weight: number; // how much this rule contributes to score
+  weight: number;
   condition: RuleCondition;
 }
 
 /* -------------------------------------------------- */
-/* Risk Policy (group of rules + scoring model)        */
+/* Risk Policy                                         */
 /* -------------------------------------------------- */
 
 export interface RiskPolicy {
@@ -156,18 +157,13 @@ export interface RiskPolicy {
   label: string;
   description?: string;
 
-  // Rules included in this policy
   rules: RiskRule[];
 
-  // Scoring model
-  baseScore?: number; // default 0
-  maxScore?: number; // default 100
-  minScore?: number; // default 0
+  baseScore?: number;
+  maxScore?: number;
+  minScore?: number;
 
-  // Optional: auto-block threshold
   blockThreshold?: number;
-
-  // Optional: auto-review threshold
   reviewThreshold?: number;
 }
 

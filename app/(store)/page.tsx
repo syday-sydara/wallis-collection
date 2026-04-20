@@ -40,21 +40,25 @@ export default function StorePage() {
 
         {/* Category Filters */}
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {CATEGORIES.map((c) => (
-            <Button
-              key={c.id}
-              variant={category === c.id ? "default" : "outline"}
-              onClick={() => setCategory(c.id)}
-              className={cn(
-                "whitespace-nowrap min-h-touch",
-                category === c.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-surface text-text hover:bg-surface-muted"
-              )}
-            >
-              {c.label}
-            </Button>
-          ))}
+          {CATEGORIES.map((c) => {
+            const active = category === c.id;
+
+            return (
+              <Button
+                key={c.id}
+                variant={active ? "default" : "outline"}
+                onClick={() => setCategory(c.id)}
+                className={cn(
+                  "whitespace-nowrap min-h-touch transition-all",
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-surface text-text hover:bg-surface-muted"
+                )}
+              >
+                {c.label}
+              </Button>
+            );
+          })}
         </div>
 
         {/* Sorting */}
@@ -62,7 +66,7 @@ export default function StorePage() {
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
-            className="border border-border-subtle rounded-md px-3 py-2 bg-surface text-text"
+            className="border border-border rounded-md px-3 py-2 bg-surface text-text"
           >
             {SORT_OPTIONS.map((s) => (
               <option key={s.id} value={s.id}>
@@ -73,7 +77,7 @@ export default function StorePage() {
         </div>
       </header>
 
-      <div className="border-b border-border-subtle" />
+      <div className="border-b border-border" />
 
       {/* Product List */}
       <ProductList params={params} />

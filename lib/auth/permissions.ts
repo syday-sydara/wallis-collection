@@ -52,30 +52,49 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 };
 
 /* -------------------------------------------------- */
+/* Helpers                                             */
+/* -------------------------------------------------- */
+
+export function isRole(value: string): value is Role {
+  return Object.hasOwn(ROLE_PERMISSIONS, value);
+}
+
+export function normalizeRoles(role: string | string[]): Role[] {
+  const roles = Array.isArray(role) ? role : [role];
+  return roles
+    .map((r) => r.toUpperCase())
+    .filter(isRole);
+}
+
+export function normalizePermissions(
+  perms?: string[]
+): Permission[] {
+  if (!perms) return [];
+  return perms.filter((p): p is Permission => p in PERMISSIONS);
+}
+
+/* -------------------------------------------------- */
 /* Core permission logic                               */
 /* -------------------------------------------------- */
+
 export function hasPermission(
   user: SessionUser | null,
   perm: Permission
 ): boolean {
   if (!user) return false;
 
-  const roles = Array.isArray(user.role) ? user.role : [user.role];
+  const roles = normalizeRoles(user.role);
 
   // SUPER_ADMIN bypass
   if (roles.includes("SUPER_ADMIN")) return true;
 
-  // Deny list override
-  if (user.deniedPermissions?.includes(perm)) return false;
+  const denied = normalizePermissions(user.deniedPermissions);
+  if (denied.includes(perm)) return false;
 
-  // Direct user permissions
-  if (user.permissions?.includes(perm)) return true;
+  const direct = normalizePermissions(user.permissions);
+  if (direct.includes(perm)) return true;
 
-  // Role permissions
-  const roleNames = roles.filter((role): role is Role =>
-    role in ROLE_PERMISSIONS
-  );
-  return roleNames.some((role) =>
+  return roles.some((role) =>
     ROLE_PERMISSIONS[role]?.includes(perm)
   );
 }
@@ -83,6 +102,7 @@ export function hasPermission(
 /* -------------------------------------------------- */
 /* Multi-permission helpers                            */
 /* -------------------------------------------------- */
+
 export function hasAllPermissions(
   user: SessionUser | null,
   perms: Permission[]
@@ -100,25 +120,19 @@ export function hasAnyPermission(
 /* -------------------------------------------------- */
 /* Effective permissions                               */
 /* -------------------------------------------------- */
+
 export function getUserPermissions(user: SessionUser | null): Permission[] {
   if (!user) return [];
 
-  const roles = Array.isArray(user.role) ? user.role : [user.role];
+  const roles = normalizeRoles(user.role);
 
   if (roles.includes("SUPER_ADMIN")) {
     return [...Object.keys(PERMISSIONS) as Permission[]];
   }
 
-  const roleNames = roles.filter((role): role is Role =>
-    role in ROLE_PERMISSIONS
-  );
-  const rolePerms = roleNames.flatMap((r) => ROLE_PERMISSIONS[r] ?? []);
-  const directPerms = (user.permissions ?? []).filter(
-    (item): item is Permission => item in PERMISSIONS
-  );
-  const denied = (user.deniedPermissions ?? []).filter(
-    (item): item is Permission => item in PERMISSIONS
-  );
+  const rolePerms = roles.flatMap((r) => ROLE_PERMISSIONS[r] ?? []);
+  const directPerms = normalizePermissions(user.permissions);
+  const denied = normalizePermissions(user.deniedPermissions);
 
   const merged = new Set<Permission>([...rolePerms, ...directPerms]);
   denied.forEach((d) => merged.delete(d));
