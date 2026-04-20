@@ -1,13 +1,16 @@
 // lib/audit/types.ts
-import type { AuditAction } from "@/lib/events/types";
+
+import type { AuditAction, EventInput, EventMetadata } from "@/lib/events/types";
 
 export type AuditActorType = "USER" | "ADMIN" | "SYSTEM" | "JOB";
 
-export interface AuditLogInput {
-  action: AuditAction | string;
-  actorType: AuditActorType;
-  userId?: string | null;
-  resource?: string | null;
-  resourceId?: string | null;
-  metadata?: Record<string, any>;
-}
+export type AuditLogInput = EventInput<
+  "audit",
+  {
+    action: AuditAction;
+    actorType: AuditActorType;
+    resource?: string | null;
+    resourceId?: string | null;
+    metadata?: EventMetadata;
+  }
+>;

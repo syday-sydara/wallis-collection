@@ -1,6 +1,6 @@
 // lib/events/pipeline.ts
 
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import crypto from "crypto";
 import { z } from "zod";
@@ -23,29 +23,10 @@ function normalizeIp(ip?: string | null): string | null {
   clean = clean.replace(/:\d+$/, "");
 
   const ipv4Match = clean.match(/::ffff:(\d+\.\d+\.\d+\.\d+)/);
-  if (ipv4Match) return ipv4Match[1];
-
-  return clean || null;
-}
-
-function safeMetadata(meta: Record<string, any> = {}) {
-  try {
-    const cloned = JSON.parse(JSON.stringify(meta));
-    const json = JSON.stringify(cloned);
-    if (json.length > 5000) {
-      return { _truncated: true };
-    }
-    return cloned;
-  } catch {
-    return { _error: "Invalid metadata" };
-  }
+  return ipv4Match ? ipv4Match[1] : clean;
 }
 
 async function enrichContext(ip?: string | null, userAgent?: string | null) {
-  if (ip && userAgent) {
-    return { ip: normalizeIp(ip), userAgent };
-  }
-
   try {
     const h = await headers();
     return {
@@ -60,22 +41,23 @@ async function enrichContext(ip?: string | null, userAgent?: string | null) {
 }
 
 /* -------------------------------------------------- */
-/* Schemas                                             */
+/* Zod schemas                                         */
 /* -------------------------------------------------- */
 
 const baseSchema = z.object({
   kind: z.enum(["security", "audit", "fraud", "alert"]),
-  timestamp: z.string().optional(),
-  requestId: z.string().nullable().optional(),
-  source: z.string().nullable().optional(),
-  category: z.string().nullable().optional(),
-  severity: z.enum(["low", "medium", "high"]).default("low"),
+  version: z.number(),
+  timestamp: z.date(),
+  requestId: z.string(),
+  correlationId: z.string().nullable().optional(),
+  source: z.string(),
+  category: z.string(),
+  severity: z.enum(["low", "medium", "high"]),
   userId: z.string().nullable().optional(),
   ip: z.string().nullable().optional(),
   userAgent: z.string().nullable().optional(),
-  encryptedMetadata: z.boolean().optional(),
-  metadata: z.record(z.any()).optional(),
-  version: z.number().default(1),
+  encryptedMetadata: z.boolean(),
+  metadata: z.record(z.any()),
 });
 
 const securitySchema = baseSchema.extend({
@@ -104,7 +86,7 @@ const alertSchema = baseSchema.extend({
 });
 
 /* -------------------------------------------------- */
-/* Main Pipeline                                       */
+/* Main pipeline                                       */
 /* -------------------------------------------------- */
 
 export async function logEvent(event: any) {
@@ -115,32 +97,27 @@ export async function logEvent(event: any) {
       ...event,
       ip: ctx.ip,
       userAgent: ctx.userAgent,
-      requestId: event.requestId ?? crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      version: event.version ?? 1,
-      severity: event.severity ?? "low",
-      encryptedMetadata: event.encryptedMetadata ?? false,
-      metadata: safeMetadata(event.metadata),
+      correlationId: event.correlationId ?? crypto.randomUUID(),
     };
 
     switch (enriched.kind) {
       case "security": {
         const e = securitySchema.parse(enriched);
-        const { kind, encryptedMetadata, ...payload } = e;
+        const { kind, ...payload } = e;
         await prisma.securityEvent.create({ data: payload });
         break;
       }
 
       case "audit": {
         const e = auditSchema.parse(enriched);
-        const { kind, encryptedMetadata, ...payload } = e;
+        const { kind, ...payload } = e;
         await prisma.auditLog.create({ data: payload });
         break;
       }
 
       case "fraud": {
         const e = fraudSchema.parse(enriched);
-        const { kind, encryptedMetadata, ...payload } = e;
+        const { kind, ...payload } = e;
         await prisma.fraudEvent.create({ data: payload });
         break;
       }
