@@ -36,14 +36,10 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
 
     try {
       const res = await fetch(`/api/admin/products?cursor=${nextCursor}`);
-
       if (!res.ok) throw new Error("Request failed");
 
       const data: PaginatedProducts = await res.json();
-
-      if (!data || !Array.isArray(data.items)) {
-        throw new Error("Invalid response");
-      }
+      if (!data || !Array.isArray(data.items)) throw new Error("Invalid response");
 
       setItems((prev) => [...prev, ...data.items]);
       setNextCursor(data.nextCursor);
@@ -58,15 +54,10 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold tracking-tight text-text">Products</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Products</h2>
 
-        <Link
-          href="/admin/products/new"
-          className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground
-                     shadow-sm hover:bg-primary-hover active:bg-primary-active transition-fast active:scale-press
-                     focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
-        >
-          New product
+        <Link href="/admin/products/new" className="btn btn-primary">
+          New Product
         </Link>
       </div>
 
@@ -83,8 +74,51 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
         </div>
       )}
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-lg border border-border bg-surface-card shadow-sm">
+      {/* MOBILE CARD VIEW */}
+      <div className="grid gap-4 sm:hidden">
+        {items.map((p) => (
+          <Link
+            key={p.id}
+            href={`/admin/products/${p.id}`}
+            className="card p-4 flex flex-col gap-2 active:scale-95 transition-fast"
+          >
+            <div className="flex justify-between items-center">
+              <h3 className="font-medium">{p.name}</h3>
+              {p.isArchived ? (
+                <span className="rounded-md bg-danger px-2 py-0.5 text-xs text-danger-foreground">
+                  Archived
+                </span>
+              ) : (
+                <span className="rounded-md bg-success px-2 py-0.5 text-xs text-success-foreground">
+                  Active
+                </span>
+              )}
+            </div>
+
+            <div className="text-xs text-text-muted">{p.slug}</div>
+
+            <div className="flex justify-between text-sm mt-2">
+              <span>
+                {p.basePrice != null
+                  ? `₦${(p.basePrice / 100).toLocaleString("en-NG")}`
+                  : "—"}
+              </span>
+              <span>{p.stock ?? "—"} in stock</span>
+            </div>
+
+            <div className="text-xs text-text-muted mt-1">
+              Updated {new Date(p.updatedAt).toLocaleDateString("en-US")}
+            </div>
+          </Link>
+        ))}
+
+        {loading && (
+          <div className="animate-shimmer bg-skeleton h-4 rounded-md w-1/3" />
+        )}
+      </div>
+
+      {/* DESKTOP TABLE VIEW */}
+      <div className="hidden sm:block overflow-hidden rounded-lg border border-border bg-surface-card shadow-sm">
         <table className="w-full text-left text-sm" aria-busy={loading}>
           <thead className="border-b border-border bg-surface-muted text-xs uppercase text-text-muted">
             <tr>
@@ -105,7 +139,7 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
                 <td className="py-3 px-4">
                   <Link
                     href={`/admin/products/${p.id}`}
-                    className="font-medium text-text hover:underline"
+                    className="font-medium hover:underline"
                   >
                     {p.name}
                   </Link>
@@ -113,11 +147,9 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
                 </td>
 
                 <td className="px-4">
-                  {p.basePrice != null ? (
-                    <>₦{(p.basePrice / 100).toLocaleString("en-NG")}</>
-                  ) : (
-                    <span className="text-xs text-text-muted">—</span>
-                  )}
+                  {p.basePrice != null
+                    ? `₦${(p.basePrice / 100).toLocaleString("en-NG")}`
+                    : "—"}
                 </td>
 
                 <td className="px-4">{p.stock ?? "—"}</td>
@@ -135,11 +167,7 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
                 </td>
 
                 <td className="px-4 text-xs text-text-muted">
-                  {new Date(p.updatedAt).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
+                  {new Date(p.updatedAt).toLocaleDateString("en-US")}
                 </td>
               </tr>
             ))}

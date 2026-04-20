@@ -1,70 +1,179 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateProduct } from "../../actions";
-import { AdminField } from "@/components/admin/ui/AdminField";
-import { AdminInput } from "@/components/admin/ui/AdminInput";
-import { AdminTextarea } from "@/components/admin/ui/AdminTextarea";
-import { SubmitButton } from "@/components/admin/ui/SubmitButton";
 
-export function ProductForm({ product }) {
-  const [error, setError] = useState(null);
-  const [isPending, startTransition] = useTransition();
+interface ProductFormProps {
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    basePrice: number | null;
+    description?: string | null;
+  };
+}
+
+export default function ProductForm({ product }: ProductFormProps) {
+  const [name, setName] = useState(product.name);
+  const [slug, setSlug] = useState(product.slug);
+  const [price, setPrice] = useState(
+    product.basePrice ? product.basePrice / 100 : ""
+  );
+  const [description, setDescription] = useState(product.description || "");
+
+  const [pending, startTransition] = useTransition();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function autoSlug(value: string) {
+    setName(value);
+    setSlug(
+      value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "")
+    );
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/admin/products/${product.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          slug,
+          basePrice: price ? Math.round(Number(price) * 100) : null,
+          description,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to save");
+
+      startTransition(() => {});
+    } catch {
+      setError("Failed to save changes");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
-    <form
-      action={(formData) => {
-        startTransition(async () => {
-          const result = await updateProduct(product.id, formData);
-          if (!result.ok) setError(result.error);
-        });
-      }}
-      className="space-y-6"
-    >
-      <AdminField label="Name">
-        <AdminInput name="name" defaultValue={product.name} required />
-      </AdminField>
-
-      <AdminField label="Slug" description="Used in the product URL.">
-        <AdminInput
-          name="slug"
-          defaultValue={product.slug}
-          required
-          onBlur={(e) => {
-            e.target.value = e.target.value
-              .toLowerCase()
-              .trim()
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/^-+|-+$/g, "");
-          }}
-        />
-      </AdminField>
-
-      <AdminField label="Base Price" description="Price in kobo">
-        <AdminInput
-          type="number"
-          name="basePrice"
-          defaultValue={product.basePrice ?? ""}
-          step="1"
-          min="0"
-        />
-      </AdminField>
-
-      <AdminField label="Description">
-        <AdminTextarea
-          name="description"
-          defaultValue={product.description ?? ""}
-          rows={4}
-        />
-      </AdminField>
-
+    <form onSubmit={onSubmit} className="space-y-6">
+      {/* Error */}
       {error && (
-        <p className="text-xs text-danger-foreground">{error}</p>
+        <div className="text-danger text-sm bg-danger/10 p-2 rounded-md">
+          {error}
+        </div>
       )}
 
-      <SubmitButton type="submit" pendingLabel="Saving product…">
-        Save Changes
-      </SubmitButton>
+      {/* MOBILE-FIRST STACKED FIELDS */}
+      <div className="flex flex-col gap-4 sm:hidden">
+        {/* Name */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => autoSlug(e.target.value)}
+            className="input"
+            placeholder="Product name"
+          />
+        </div>
+
+        {/* Slug */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Slug</label>
+          <input
+            type="text"
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            className="input"
+            placeholder="product-slug"
+          />
+        </div>
+
+        {/* Price */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Price (₦)</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="input"
+            placeholder="0.00"
+          />
+        </div>
+
+        {/* Description */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            className="input resize-none"
+            placeholder="Optional description"
+          />
+        </div>
+      </div>
+
+      {/* DESKTOP TWO-COLUMN LAYOUT */}
+      <div className="hidden sm:grid sm:grid-cols-2 sm:gap-6">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => autoSlug(e.target.value)}
+            className="input"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Slug</label>
+          <input
+            type="text"
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            className="input"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Price (₦)</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="input"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1 col-span-2">
+          <label className="text-sm font-medium">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            className="input resize-none"
+          />
+        </div>
+      </div>
+
+      {/* Save Button */}
+      <button
+        type="submit"
+        disabled={saving || pending}
+        className="btn btn-primary w-full sm:w-auto disabled:opacity-50"
+      >
+        {saving ? "Saving…" : "Save Changes"}
+      </button>
     </form>
   );
 }

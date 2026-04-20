@@ -1,128 +1,268 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { updateVariant, deleteVariant } from "../../actions";
-import { AdminCard } from "@/components/admin/ui/AdminCard";
-import { AdminField } from "@/components/admin/ui/AdminField";
-import { AdminInput } from "@/components/admin/ui/AdminInput";
-import { SubmitButton } from "@/components/admin/ui/SubmitButton";
+import { useState } from "react";
 
-export function VariantList({ variants, productId }) {
-  const [editing, setEditing] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Record<string, string[] | undefined>>({});
-  const [isPending, startTransition] = useTransition();
+interface Variant {
+  id: string;
+  name: string;
+  price: number | null;
+  stock: number;
+}
+
+interface VariantListProps {
+  productId: string;
+  variants: Variant[];
+}
+
+export default function VariantList({ productId, variants }: VariantListProps) {
+  const [items, setItems] = useState(variants);
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Variant | null>(null);
+
+  async function deleteVariant(id: string) {
+    const confirmed = confirm("Delete this variant");
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/admin/products/${productId}/variants/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("Failed");
+
+      setItems((prev) => prev.filter((v) => v.id !== id));
+    } catch {
+      alert("Failed to delete variant");
+    }
+  }
 
   return (
-    <div className="space-y-3">
-      {variants.map((variant) => {
-        const isEditing = editing === variant.id;
+    <div className="space-y-4">
+      {/* Add Variant Button */}
+      <button
+        onClick={() => setCreating(true)}
+        className="btn btn-primary w-full sm:w-auto"
+      >
+        Add Variant
+      </button>
 
-        return (
-          <AdminCard key={variant.id}>
-            {isEditing ? (
-              <form
-                className="space-y-4"
-                action={async (formData) => {
-                  setErrors({});
-                  startTransition(async () => {
-                    const result = await updateVariant(productId, variant.id, formData);
-                    if (!result.ok) {
-                      setErrors(result.errors ?? {});
-                    } else {
-                      setEditing(null);
-                    }
-                  });
-                }}
+      {/* CREATE / EDIT FORM */}
+      {(creating || editing) && (
+        <VariantForm
+          productId={productId}
+          variant={editing}
+          onClose={() => {
+            setCreating(false);
+            setEditing(null);
+          }}
+          onSaved={(v) => {
+            if (editing) {
+              setItems((prev) =>
+                prev.map((x) => (x.id === v.id ? v : x))
+              );
+            } else {
+              setItems((prev) => [...prev, v]);
+            }
+            setCreating(false);
+            setEditing(null);
+          }}
+        />
+      )}
+
+      {/* MOBILE CARD VIEW */}
+      <div className="grid gap-4 sm:hidden">
+        {items.map((v) => (
+          <div
+            key={v.id}
+            className="card p-4 flex flex-col gap-2 active:scale-95 transition-fast"
+          >
+            <div className="flex justify-between items-center">
+              <h3 className="font-medium">{v.name}</h3>
+
+              <button
+                onClick={() => deleteVariant(v.id)}
+                className="text-danger text-xs underline"
               >
-                <AdminField label="Name" error={errors.name?.[0]}>
-                  <AdminInput
-                    name="name"
-                    defaultValue={variant.name}
-                    disabled={isPending}
-                  />
-                </AdminField>
+                Delete
+              </button>
+            </div>
 
-                <AdminField label="SKU" error={errors.sku?.[0]}>
-                  <AdminInput
-                    name="sku"
-                    defaultValue={variant.sku}
-                    disabled={isPending}
-                    onBlur={(e) => {
-                      e.target.value = e.target.value.trim().toUpperCase();
-                    }}
-                  />
-                </AdminField>
+            <div className="text-sm flex justify-between">
+              <span>
+                {v.price != null
+                  ? `₦${(v.price / 100).toLocaleString("en-NG")}`
+                  : "—"}
+              </span>
+              <span>{v.stock} in stock</span>
+            </div>
 
-                <AdminField label="Price" error={errors.price?.[0]}>
-                  <AdminInput
-                    name="price"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    defaultValue={variant.price}
-                    disabled={isPending}
-                  />
-                </AdminField>
+            <button
+              onClick={() => setEditing(v)}
+              className="btn btn-outline w-full mt-2"
+            >
+              Edit Variant
+            </button>
+          </div>
+        ))}
+      </div>
 
-                {errors._form && (
-                  <p className="text-danger-foreground text-[11px]">
-                    {errors._form[0]}
-                  </p>
-                )}
+      {/* DESKTOP TABLE VIEW */}
+      <div className="hidden sm:block overflow-hidden rounded-lg border border-border bg-surface-card shadow-sm">
+        <table className="w-full text-left text-sm">
+          <thead className="border-b border-border bg-surface-muted text-xs uppercase text-text-muted">
+            <tr>
+              <th className="py-3 px-4">Name</th>
+              <th className="px-4">Price</th>
+              <th className="px-4">Stock</th>
+              <th className="px-4"></th>
+            </tr>
+          </thead>
 
-                <div className="flex gap-2">
-                  <SubmitButton type="submit" size="sm" pendingLabel="Saving…">
-                    Save
-                  </SubmitButton>
+          <tbody className="divide-y divide-border">
+            {items.map((v) => (
+              <tr key={v.id}>
+                <td className="py-3 px-4">{v.name}</td>
 
+                <td className="px-4">
+                  {v.price != null
+                    ? `₦${(v.price / 100).toLocaleString("en-NG")}`
+                    : "—"}
+                </td>
+
+                <td className="px-4">{v.stock}</td>
+
+                <td className="px-4 flex gap-3">
                   <button
-                    type="button"
-                    className="text-xs text-text-muted"
-                    disabled={isPending}
-                    onClick={() => setEditing(null)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-medium">{variant.name}</p>
-                  <p className="text-xs text-text-muted">SKU: {variant.sku}</p>
-                  <p className="text-xs text-text-muted">
-                    ${variant.price.toFixed(2)} — {variant.stock} in stock
-                  </p>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    className="text-xs underline"
-                    disabled={isPending}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setEditing(variant.id);
-                    }}
+                    onClick={() => setEditing(v)}
+                    className="text-primary underline text-xs"
                   >
                     Edit
                   </button>
 
-                  <form action={deleteVariant.bind(null, variant.id, productId)}>
-                    <SubmitButton
-                      variant="danger"
-                      size="sm"
-                      pendingLabel="Deleting…"
-                      disabled={isPending}
-                    >
-                      Delete
-                    </SubmitButton>
-                  </form>
-                </div>
-              </div>
-            )}
-          </AdminCard>
-        );
-      })}
+                  <button
+                    onClick={() => deleteVariant(v.id)}
+                    className="text-danger underline text-xs"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
+  );
+}
+
+/* ------------------------------------------------------ */
+/* VARIANT FORM (MOBILE-FIRST)                            */
+/* ------------------------------------------------------ */
+
+function VariantForm({
+  productId,
+  variant,
+  onClose,
+  onSaved,
+}: {
+  productId: string;
+  variant: Variant | null;
+  onClose: () => void;
+  onSaved: (v: Variant) => void;
+}) {
+  const [name, setName] = useState(variant?.name || "");
+  const [price, setPrice] = useState(
+    variant?.price ? variant.price / 100 : ""
+  );
+  const [stock, setStock] = useState(variant?.stock || 0);
+  const [saving, setSaving] = useState(false);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const res = await fetch(
+        variant
+          ? `/api/admin/products/${productId}/variants/${variant.id}`
+          : `/api/admin/products/${productId}/variants`,
+        {
+          method: variant ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            price: price ? Math.round(Number(price) * 100) : null,
+            stock: Number(stock),
+          }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed");
+
+      const saved = await res.json();
+      onSaved(saved);
+    } catch {
+      alert("Failed to save variant");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="card p-4 space-y-4">
+      <h3 className="text-lg font-medium">
+        {variant ? "Edit Variant" : "New Variant"}
+      </h3>
+
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium">Name</label>
+        <input
+          className="input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Variant name"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium">Price (₦)</label>
+        <input
+          type="number"
+          inputMode="decimal"
+          className="input"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          placeholder="0.00"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium">Stock</label>
+        <input
+          type="number"
+          className="input"
+          value={stock}
+          onChange={(e) => setStock(Number(e.target.value))}
+        />
+      </div>
+
+      <div className="flex gap-3 pt-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="btn btn-primary flex-1"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="btn btn-outline flex-1"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }
