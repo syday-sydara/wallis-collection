@@ -8,7 +8,7 @@ import { signRiderLink } from "../rider/sign";
 
 /**
  * Send a generic tracking update using a WhatsApp template.
- * This is used for normal status changes (PENDING, IN_TRANSIT, etc.)
+ * Used for normal status changes (PENDING, IN_TRANSIT, etc.)
  */
 export async function sendTrackingUpdate(order: any) {
   const status = order.fulfillments?.[0]?.status || "PENDING";
@@ -59,6 +59,7 @@ export async function sendOutForDelivery(order: any) {
 
 /**
  * Notify customer when order is delivered.
+ * Also sends a WhatsApp receipt.
  */
 export async function sendDelivered(order: any) {
   await sendWhatsAppAlert({
@@ -68,7 +69,7 @@ export async function sendDelivered(order: any) {
     severity: "low",
   });
 
-  // Optionally send receipt
+  // Optional: send receipt
   await sendWhatsAppReceipt(order);
 }
 
