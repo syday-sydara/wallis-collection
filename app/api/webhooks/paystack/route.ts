@@ -16,7 +16,6 @@ export async function POST(req: NextRequest) {
       metadata: { truncatedBody: rawBody.slice(0, 500) }
     });
 
-    // Signature mismatch → return 400 so Paystack drops it
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
@@ -25,7 +24,6 @@ export async function POST(req: NextRequest) {
   try {
     body = JSON.parse(rawBody);
   } catch {
-    // Invalid JSON → still return 200 to avoid retries
     return NextResponse.json({ ok: false }, { status: 200 });
   }
 
@@ -69,7 +67,6 @@ export async function POST(req: NextRequest) {
       metadata: { message: err?.message }
     });
 
-    // Do NOT return 500 → Paystack will retry forever
     return NextResponse.json({ ok: false }, { status: 200 });
   }
 }

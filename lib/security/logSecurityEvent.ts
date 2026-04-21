@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { encrypt } from "@/lib/security/crypto";
 import { randomUUID } from "crypto";
@@ -11,7 +11,7 @@ type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue };
 
-const VALID_SEVERITIES = ["low", "medium", "high"] as const;
+const VALID_SEVERITIES = ["low", "medium", "high", "critical"] as const;
 const MAX_METADATA_SIZE = 5000;
 
 function extractClientIp(xff: string | null): string | null {
@@ -20,9 +20,19 @@ function extractClientIp(xff: string | null): string | null {
 }
 
 export async function logSecurityEvent(params: {
-  userId?: string | null;
   type: string;
   message: string;
+
+  // NEW
+  actorType?: "system" | "admin" | "rider" | "customer" | "unknown";
+  actorId?: string | null;
+  context?: "delivery" | "payment" | "whatsapp" | "admin" | "rider" | "system";
+  operation?: "create" | "update" | "delete" | "access" | null;
+  tags?: string[];
+  riskScore?: number | null;
+
+  // EXISTING
+  userId?: string | null;
   severity?: (typeof VALID_SEVERITIES)[number];
   ip?: string | null;
   userAgent?: string | null;
@@ -32,13 +42,26 @@ export async function logSecurityEvent(params: {
   timestamp?: Date;
   source?: string | null;
   requestId?: string | null;
+
+  // DELIVERY CONTEXT
+  orderId?: string | null;
+  fulfillmentId?: string | null;
+  riderId?: string | null;
 }) {
   const eventId = randomUUID();
 
   const {
-    userId = null,
     type,
     message,
+
+    actorType = "unknown",
+    actorId = null,
+    context = "system",
+    operation = null,
+    tags = [],
+    riskScore = null,
+
+    userId = null,
     severity = "low",
     ip,
     userAgent,
@@ -48,6 +71,10 @@ export async function logSecurityEvent(params: {
     timestamp,
     source = null,
     requestId = null,
+
+    orderId = null,
+    fulfillmentId = null,
+    riderId = null,
   } = params;
 
   /* -------------------------------------------------- */
@@ -80,7 +107,7 @@ export async function logSecurityEvent(params: {
   }
 
   /* -------------------------------------------------- */
-  /* Encryption (v3 standard format)                     */
+  /* Encryption                                          */
   /* -------------------------------------------------- */
   const storedMetadata = encryptMetadata
     ? {
@@ -109,7 +136,7 @@ export async function logSecurityEvent(params: {
   /* -------------------------------------------------- */
   /* Event versioning                                    */
   /* -------------------------------------------------- */
-  const version = 1;
+  const eventVersion = 3;
 
   /* -------------------------------------------------- */
   /* Write to DB                                         */
@@ -118,11 +145,20 @@ export async function logSecurityEvent(params: {
     await prisma.securityEvent.create({
       data: {
         id: eventId,
-        version,
-        userId,
+        version: eventVersion,
+
         type,
         message,
         severity: sev,
+
+        actorType,
+        actorId,
+        context,
+        operation,
+        tags,
+        riskScore,
+
+        userId,
         ip: detectedIp,
         userAgent: detectedUA,
         metadata: storedMetadata,
@@ -130,6 +166,10 @@ export async function logSecurityEvent(params: {
         source,
         requestId,
         timestamp: timestamp ?? new Date(),
+
+        orderId,
+        fulfillmentId,
+        riderId,
       },
     });
   } catch (err) {

@@ -47,19 +47,35 @@ async function enrichContext(ip?: string | null, userAgent?: string | null) {
 /* -------------------------------------------------- */
 
 const baseSchema = z.object({
-  kind: z.enum(["security", "audit", "fraud", "alert"]),
+  kind: z.enum([
+    "security",
+    "audit",
+    "fraud",
+    "alert",
+    "operational",
+    "business",
+  ]),
   version: z.number(),
-  timestamp: z.date(),
-  requestId: z.string(),
+  timestamp: z.string().datetime(),
+  requestId: z.string().nullable().optional(),
   correlationId: z.string().nullable().optional(),
-  source: z.string(),
-  category: z.string(),
+  source: z.enum(["api", "auth", "system", "worker", "middleware", "cron"]),
+  category: z.enum([
+    "auth",
+    "fraud",
+    "risk",
+    "security",
+    "performance",
+    "admin",
+    "business",
+    "operational",
+  ]),
   severity: z.enum(["low", "medium", "high"]),
   userId: z.string().nullable().optional(),
   ip: z.string().nullable().optional(),
   userAgent: z.string().nullable().optional(),
   encryptedMetadata: z.boolean(),
-  metadata: z.record(z.any()),
+  metadata: z.record(z.any()).nullable().optional(),
 });
 
 const securitySchema = baseSchema.extend({
@@ -87,6 +103,22 @@ const alertSchema = baseSchema.extend({
   event: z.enum(ALERT_EVENT_TYPES),
 });
 
+const operationalSchema = baseSchema.extend({
+  kind: z.literal("operational"),
+  operation: z.string(),
+  durationMs: z.number().optional(),
+  success: z.boolean(),
+});
+
+const businessSchema = baseSchema.extend({
+  kind: z.literal("business"),
+  event: z.enum(["ORDER_STATUS_CHANGED", "PAYMENT_STATUS_CHANGED"]),
+  orderId: z.string().nullable().optional(),
+  paymentId: z.string().nullable().optional(),
+  from: z.string().nullable().optional(),
+  to: z.string().nullable().optional(),
+});
+
 /* -------------------------------------------------- */
 /* Main pipeline                                       */
 /* -------------------------------------------------- */
@@ -100,27 +132,25 @@ export async function logEvent(event: any) {
       ip: ctx.ip,
       userAgent: ctx.userAgent,
       correlationId: event.correlationId ?? crypto.randomUUID(),
+      timestamp: event.timestamp ?? new Date().toISOString(),
     };
 
     switch (enriched.kind) {
       case "security": {
         const e = securitySchema.parse(enriched);
-        const { kind, ...payload } = e;
-        await prisma.securityEvent.create({ data: payload });
+        await prisma.securityEvent.create({ data: e });
         break;
       }
 
       case "audit": {
         const e = auditSchema.parse(enriched);
-        const { kind, ...payload } = e;
-        await prisma.auditLog.create({ data: payload });
+        await prisma.auditLog.create({ data: e });
         break;
       }
 
       case "fraud": {
         const e = fraudSchema.parse(enriched);
-        const { kind, ...payload } = e;
-        await prisma.fraudEvent.create({ data: payload });
+        await prisma.fraudEvent.create({ data: e });
         break;
       }
 
@@ -132,6 +162,18 @@ export async function logEvent(event: any) {
         }).catch((err) =>
           console.error("Alert processing failed:", err)
         );
+        break;
+      }
+
+      case "operational": {
+        const e = operationalSchema.parse(enriched);
+        await prisma.operationalEvent.create({ data: e });
+        break;
+      }
+
+      case "business": {
+        const e = businessSchema.parse(enriched);
+        await prisma.businessEvent.create({ data: e });
         break;
       }
     }

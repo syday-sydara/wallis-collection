@@ -8,18 +8,14 @@ import { getRiskPolicy, listRiskPolicies } from "@/lib/risk/rules/policy";
 /* -------------------------------------------------- */
 
 export function getPolicyForAdmin(id: string = "default"): RiskPolicy {
+  // getRiskPolicy() already throws if not found
   const policy = getRiskPolicy(id);
 
-  if (!policy) {
-    throw new Error(`RiskPolicy not found: ${id}`);
-  }
-
-  // Ensure rules array exists
-  if (!Array.isArray(policy.rules)) {
-    throw new Error(`RiskPolicy ${id} has invalid rules array`);
-  }
-
-  return policy;
+  // Ensure rules array is always valid
+  return {
+    ...policy,
+    rules: policy.rules.map((r) => ({ ...r })),
+  };
 }
 
 /* -------------------------------------------------- */
@@ -27,11 +23,9 @@ export function getPolicyForAdmin(id: string = "default"): RiskPolicy {
 /* -------------------------------------------------- */
 
 export function listPoliciesForAdmin(): RiskPolicy[] {
-  const policies = listRiskPolicies();
-
-  return policies.map((p) => ({
+  return listRiskPolicies().map((p) => ({
     ...p,
-    rules: Array.isArray(p.rules) ? p.rules : [],
+    rules: p.rules.map((r) => ({ ...r })),
   }));
 }
 
@@ -63,7 +57,7 @@ export function describePolicy(policy: RiskPolicy) {
     minScore: policy.minScore ?? 0,
     blockThreshold: policy.blockThreshold ?? null,
     reviewThreshold: policy.reviewThreshold ?? null,
-    rules: (policy.rules ?? []).map(describeRule),
+    rules: policy.rules.map(describeRule),
   };
 }
 
@@ -75,7 +69,7 @@ export function summarizePolicy(policy: RiskPolicy) {
   return {
     id: policy.id,
     label: policy.label,
-    ruleCount: policy.rules?.length ?? 0,
+    ruleCount: policy.rules.length,
     blockThreshold: policy.blockThreshold ?? null,
     reviewThreshold: policy.reviewThreshold ?? null,
   };

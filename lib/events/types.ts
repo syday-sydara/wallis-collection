@@ -32,21 +32,9 @@ export type EventCategory =
   | "risk"
   | "security"
   | "performance"
-  | "admin";
-
-
-  export type EventInput<K extends string, P> = {
-  kind: K;
-  source: EventSource;
-  category: EventCategory;
-  severity?: EventSeverity;
-  userId?: string | null;
-  ip?: string | null;
-  userAgent?: string | null;
-  correlationId?: string | null;
-  encryptedMetadata?: boolean;
-  metadata?: EventMetadata;
-} & P;
+  | "admin"
+  | "business"
+  | "operational";
 
 /* -------------------------------------------------- */
 /* Base Event Envelope                                 */
@@ -54,7 +42,7 @@ export type EventCategory =
 
 export type BaseEvent = {
   id?: string;
-  timestamp?: string;
+  timestamp?: string; // ISO string
   requestId?: string | null;
   source?: EventSource | null;
   category?: EventCategory | null;
@@ -62,8 +50,17 @@ export type BaseEvent = {
   userId?: string | null;
   ip?: string | null;
   userAgent?: string | null;
+  correlationId?: string | null;
   encryptedMetadata?: boolean;
   metadata?: EventMetadata;
+};
+
+/* -------------------------------------------------- */
+/* Generic Event Input                                 */
+/* -------------------------------------------------- */
+
+export type EventInput<K extends string, P> = BaseEvent & {
+  kind: K;
 } & P;
 
 /* -------------------------------------------------- */
@@ -97,11 +94,13 @@ export const SECURITY_EVENT_TYPES = [
 
 export type SecurityEventType = (typeof SECURITY_EVENT_TYPES)[number];
 
-export type SecurityEventInput = BaseEvent & {
-  kind: "security";
-  type: SecurityEventType;
-  message: string;
-};
+export type SecurityEventInput = EventInput<
+  "security",
+  {
+    type: SecurityEventType;
+    message: string;
+  }
+>;
 
 /* -------------------------------------------------- */
 /* Audit Events                                        */
@@ -122,13 +121,15 @@ export const AUDIT_ACTIONS = [
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
-export type AuditEventInput = BaseEvent & {
-  kind: "audit";
-  action: AuditAction;
-  actorType: "USER" | "ADMIN" | "SYSTEM" | "JOB";
-  resource?: string;
-  resourceId?: string;
-};
+export type AuditEventInput = EventInput<
+  "audit",
+  {
+    action: AuditAction;
+    actorType: "USER" | "ADMIN" | "SYSTEM" | "JOB";
+    resource?: string;
+    resourceId?: string;
+  }
+>;
 
 /* -------------------------------------------------- */
 /* Fraud Events                                        */
@@ -158,12 +159,13 @@ export const FRAUD_SIGNALS = [
 
 export type FraudSignal = (typeof FRAUD_SIGNALS)[number];
 
-export type FraudEventInput = BaseEvent & {
-  kind: "fraud";
-  signal: FraudSignal;
-  orderId?: string;
-  metadata?: EventMetadata;
-};
+export type FraudEventInput = EventInput<
+  "fraud",
+  {
+    signal: FraudSignal;
+    orderId?: string;
+  }
+>;
 
 /* -------------------------------------------------- */
 /* Alert Events                                        */
@@ -194,6 +196,34 @@ export type AlertEventInput = EventInput<
 >;
 
 /* -------------------------------------------------- */
+/* Operational Events                                  */
+/* -------------------------------------------------- */
+
+export type OperationalEventInput = EventInput<
+  "operational",
+  {
+    operation: string; // e.g. "reconciliation.run", "queue.process"
+    durationMs?: number;
+    success: boolean;
+  }
+>;
+
+/* -------------------------------------------------- */
+/* Business Events                                     */
+/* -------------------------------------------------- */
+
+export type BusinessEventInput = EventInput<
+  "business",
+  {
+    event: "ORDER_STATUS_CHANGED" | "PAYMENT_STATUS_CHANGED";
+    orderId?: string;
+    paymentId?: string;
+    from?: string;
+    to?: string;
+  }
+>;
+
+/* -------------------------------------------------- */
 /* Discriminated union for pipeline                    */
 /* -------------------------------------------------- */
 
@@ -201,4 +231,6 @@ export type AnyEventInput =
   | SecurityEventInput
   | AuditEventInput
   | FraudEventInput
-  | AlertEventInput;
+  | AlertEventInput
+  | OperationalEventInput
+  | BusinessEventInput;

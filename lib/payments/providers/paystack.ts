@@ -12,7 +12,10 @@ function sanitizePaystackReference(reference: string): string | null {
 }
 
 // --- Webhook signature ---
-export function verifyPaystackWebhookSignature(rawBody: string, signature: string | null) {
+export function verifyPaystackWebhookSignature(
+  rawBody: string,
+  signature: string | null
+) {
   if (!signature) return false;
 
   const computed = crypto
@@ -20,14 +23,24 @@ export function verifyPaystackWebhookSignature(rawBody: string, signature: strin
     .update(rawBody)
     .digest("hex");
 
-  // Prevent timingSafeEqual crash
   if (computed.length !== signature.length) return false;
 
-  return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(signature));
+  return crypto.timingSafeEqual(
+    Buffer.from(computed),
+    Buffer.from(signature)
+  );
 }
 
 // --- Verify reference ---
-export async function verifyPaystackReference(reference: string): Promise<PaymentVerificationResult> {
+interface PaystackVerificationOptions {
+  rawPayload?: unknown;
+  source?: "webhook" | "reconciliation" | "manual";
+}
+
+export async function verifyPaystackReference(
+  reference: string,
+  _options: PaystackVerificationOptions = {}
+): Promise<PaymentVerificationResult> {
   const safeReference = sanitizePaystackReference(reference);
   if (!safeReference) {
     return {
@@ -35,11 +48,16 @@ export async function verifyPaystackReference(reference: string): Promise<Paymen
       provider: "paystack",
       reference,
       message: "Invalid Paystack reference format",
+      raw: null,
     };
   }
 
   try {
-    const url = new URL(`/transaction/verify/${encodeURIComponent(safeReference)}`, PAYSTACK_BASE_URL);
+    const url = new URL(
+      `/transaction/verify/${encodeURIComponent(safeReference)}`,
+      PAYSTACK_BASE_URL
+    );
+
     const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` },
       cache: "no-store",
@@ -92,32 +110,38 @@ export async function verifyPaystackReference(reference: string): Promise<Paymen
         break;
     }
 
-    const amount = Number(tx.amount);
-    const paidAt = tx.paid_at ? new Date(tx.paid_at) : undefined;
+    // Paystack amount is in kobo – normalize to Naira
+    const amount = typeof tx.amount === "number" ? tx.amount / 100 : NaN;
+    const paidAt =
+      tx.paid_at != null ? new Date(tx.paid_at).toISOString() : undefined;
+    const currency = (tx.currency || "NGN").toUpperCase();
+    const channel = tx.channel ?? tx.authorization?.channel ?? undefined;
+    const providerStatus = tx.status;
 
-    return status === "success"
-      ? {
-          status,
-          provider: "paystack",
-          reference: safeReference,
-          amount,
-          currency: (tx.currency || "NGN").toUpperCase(),
-          paidAt: paidAt!,
-          providerTransactionId: tx.id?.toString() ?? safeReference,
-          isFinal,
-          customer: {
-            email: tx.customer?.email,
-            name: tx.customer?.first_name,
-          },
-          raw: data,
-        }
-      : {
-          status,
-          provider: "paystack",
-          reference: safeReference,
-          message: tx.gateway_response,
-          raw: data,
-        };
+    if (status === "success") {
+      return {
+        status,
+        provider: "paystack",
+        reference: safeReference,
+        amount,
+        currency,
+        paidAt,
+        providerTransactionId: tx.id?.toString() ?? safeReference,
+        channel,
+        isFinal,
+        // providerStatus,
+        raw: data,
+      };
+    }
+
+    return {
+      status,
+      provider: "paystack",
+      reference: safeReference,
+      message: tx.gateway_response || `Status: ${tx.status}`,
+      // providerStatus,
+      raw: data,
+    };
   } catch (err) {
     return {
       status: "error",

@@ -1,13 +1,13 @@
 import { z } from "zod";
-import { NIGERIAN_STATES } from "@/lib/checkout/constants";
+import { NIGERIAN_STATES } from "@/lib/constants/nigerian-states";
 
 /* -------------------------------------------------- */
 /* Helpers                                             */
 /* -------------------------------------------------- */
 
-// Nigerian phone validation
+// Nigerian phone validation (strict but realistic)
 const nigeriaPhoneRegex =
-  /^(?:\+234|0)(7[0-9]|8[0-9]|9[0-9])\d{8}$/;
+  /^(?:\+234|0)(7\d|8\d|9\d)\d{8}$/;
 
 // Trim AFTER validation
 const trimmedString = z.string().min(1).transform((v) => v.trim());
@@ -42,10 +42,10 @@ export const CheckoutItemSchema = z.object({
     ])
     .transform((v) => Number(v)),
 
-  price: integerField, // validated first, then transformed
+  price: integerField,
 
   name: trimmedString,
-  image: z.string().optional(),
+  image: z.string().url().optional(),
 
   stock: integerField.optional(),
 });

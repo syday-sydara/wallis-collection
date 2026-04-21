@@ -4,7 +4,9 @@ import { processCheckout } from "@/lib/checkout/service";
 export async function submitCheckoutImpl(prevState: any, formData: FormData) {
   const raw: Record<string, any> = {};
 
-  // Normalize form fields
+  /* -------------------------------------------------- */
+  /* Normalize form fields                               */
+  /* -------------------------------------------------- */
   formData.forEach((value, key) => {
     raw[key] = typeof value === "string" ? value.trim() : value;
   });

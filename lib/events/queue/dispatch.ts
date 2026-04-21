@@ -1,13 +1,13 @@
 // lib/events/queue/dispatch.ts
 
-import crypto from "crypto";
-import { enqueue } from "./store";
+import { redis, redisKey } from "@/lib/redis";
 
-export function enqueueEvent(payload: any) {
-  enqueue({
-    id: crypto.randomUUID(),
-    payload,
-    attempts: 0,
-    maxAttempts: 5,
-  });
+const QUEUE_KEY = redisKey("events", "queue");
+
+export async function enqueueEvent(event: any) {
+  try {
+    await redis.rpush(QUEUE_KEY, JSON.stringify(event));
+  } catch (err) {
+    console.error("[events] Failed to enqueue event:", err);
+  }
 }

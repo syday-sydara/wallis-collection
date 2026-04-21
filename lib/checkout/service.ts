@@ -4,18 +4,84 @@ import { prisma } from "@/lib/prisma";
 import type { CheckoutPayload } from "./schema";
 import { logEvent } from "@/lib/auth/logger";
 
-/**
- * Secure checkout processor
- * - Validates cart items
- * - Validates stock atomically
- * - Prevents price tampering
- * - Computes totals securely
- * - Creates order + order items
- * - Logs audit + fraud signals
- */
-export async function processCheckout(payload: CheckoutPayload) {
+import { evaluateRisk } from "@/lib/risk/rules/service";
+import { buildRiskContext } from "@/lib/risk/context";
+
+export async function processCheckout(
+  payload: CheckoutPayload,
+  meta: { ip: string; userAgent: string; userId?: string | null }
+) {
   const variantIds = payload.items.map((i) => i.variantId);
 
+  /* -------------------------------------------------- */
+  /* 1. Compute totals BEFORE risk evaluation            */
+  /* -------------------------------------------------- */
+  const subtotal = payload.items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
+  const shippingCost =
+    payload.shippingType === "EXPRESS" ? 2500 : 1500;
+
+  const total = subtotal + shippingCost;
+
+  /* -------------------------------------------------- */
+  /* 2. Build risk context                               */
+  /* -------------------------------------------------- */
+  const riskContext = buildRiskContext({
+    ip: meta.ip,
+    email: payload.email,
+    phone: payload.phone,
+    userAgent: meta.userAgent,
+    userId: meta.userId ?? null,
+
+    // Transaction
+    amount: total,
+
+    // Geo
+    country: "Nigeria",
+    city: payload.city,
+    region: null,
+    distanceFromLastIpKm: null,
+
+    // Device (placeholder)
+    deviceId: null,
+    deviceReputation: 100,
+    deviceConfidence: 100,
+  });
+
+  /* -------------------------------------------------- */
+  /* 3. Evaluate risk policy                             */
+  /* -------------------------------------------------- */
+  const risk = await evaluateRisk({
+    policyId: "default",
+    ...riskContext,
+  });
+
+  const riskLevel = risk.block
+    ? "HIGH"
+    : risk.review
+    ? "MEDIUM"
+    : "LOW";
+
+  if (risk.block) {
+    throw new Error(
+      "Your order could not be completed due to a security check. Please contact support."
+    );
+  }
+
+  if (risk.review) {
+    logEvent("checkout_risk_review", {
+      email: payload.email,
+      score: risk.score,
+      triggeredRules: risk.triggeredRules,
+    });
+  }
+
+  /* -------------------------------------------------- */
+  /* 4. Continue with normal checkout flow               */
+  /* -------------------------------------------------- */
   return prisma.$transaction(async (tx) => {
     /* -------------------------------------------------- */
     /* Fetch variants                                      */
@@ -36,38 +102,21 @@ export async function processCheckout(payload: CheckoutPayload) {
     /* -------------------------------------------------- */
     for (const item of payload.items) {
       const variant = variantMap.get(item.variantId);
-      if (!variant) {
-        throw new Error("A product variant no longer exists");
-      }
+      if (!variant) throw new Error("A product variant no longer exists");
 
-      // Stock check
       if (item.quantity > variant.stock) {
-        throw new Error(`Insufficient stock for ${variant.name}`);
+        throw new Error(`Insufficient stock for ${variant.product.name}`);
       }
 
-      // Price integrity check
       if (item.price !== variant.price) {
         throw new Error(
-          `Price changed for ${variant.name}. Refresh your cart.`
+          `Price changed for ${variant.product.name}. Refresh your cart.`
         );
       }
     }
 
     /* -------------------------------------------------- */
-    /* Compute totals securely                             */
-    /* -------------------------------------------------- */
-    const subtotal = payload.items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-
-    const shippingCost =
-      payload.shippingType === "EXPRESS" ? 2500 : 1500;
-
-    const total = subtotal + shippingCost;
-
-    /* -------------------------------------------------- */
-    /* Create address record                               */
+    /* Create shipping address                             */
     /* -------------------------------------------------- */
     const address = await tx.address.create({
       data: {
@@ -84,10 +133,9 @@ export async function processCheckout(payload: CheckoutPayload) {
     /* Reserve stock atomically                            */
     /* -------------------------------------------------- */
     for (const item of payload.items) {
-      const updated = await tx.productVariant.update({
+      const updated = await tx.productVariant.updateMany({
         where: {
           id: item.variantId,
-          // Prevent race conditions: ensure stock is still enough
           stock: { gte: item.quantity },
         },
         data: {
@@ -95,7 +143,7 @@ export async function processCheckout(payload: CheckoutPayload) {
         },
       });
 
-      if (!updated) {
+      if (updated.count === 0) {
         throw new Error(
           `Stock changed for ${item.name}. Please refresh your cart.`
         );
@@ -110,23 +158,35 @@ export async function processCheckout(payload: CheckoutPayload) {
         email: payload.email,
         phone: payload.phone,
         fullName: payload.fullName,
-        paymentMethod: payload.paymentMethod,
-        paymentStatus: "PENDING",
-        orderStatus: "CREATED",
-        shippingType: payload.shippingType,
+
+        subtotal,
         shippingCost,
         total,
-        addressId: address.id,
 
-        // Safe cart snapshot (prevents tampering)
-        cartSnapshot: payload.items.map((i) => ({
-          productId: i.productId,
-          variantId: i.variantId,
-          name: i.name,
-          image: i.image,
-          quantity: i.quantity,
-          price: i.price,
-        })),
+        currency: "NGN",
+        paymentMethod: payload.paymentMethod,
+        paymentStatus: "PENDING",
+        orderStatus: risk.review ? "REVIEW" : "CREATED",
+
+        shippingType: payload.shippingType,
+        shippingAddress: {
+          fullName: payload.fullName,
+          phone: payload.phone,
+          line1: payload.address,
+          city: payload.city,
+          state: payload.state,
+          country: "Nigeria",
+        },
+
+        // ⭐ Risk Engine fields
+        riskScore: risk.score,
+        riskTriggeredRules: risk.triggeredRules,
+        riskLevel,
+        riskContextSnapshot: riskContext,
+
+        cartSnapshot: payload.items,
+
+        addressId: address.id,
 
         items: {
           create: payload.items.map((item) => ({
@@ -147,16 +207,14 @@ export async function processCheckout(payload: CheckoutPayload) {
     logEvent("checkout_order_created", {
       orderId: order.id,
       email: payload.email,
-      itemsCount: payload.items.length,
       total,
+      riskScore: risk.score,
+      riskLevel,
     });
 
-    /* -------------------------------------------------- */
-    /* Return response                                      */
-    /* -------------------------------------------------- */
     return {
       orderId: order.id,
-      paymentUrl: null, // Payment integration can be added here
+      paymentUrl: null,
     };
   });
 }

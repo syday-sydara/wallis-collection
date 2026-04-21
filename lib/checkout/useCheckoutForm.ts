@@ -17,7 +17,6 @@ const ClientSchema = CheckoutPayloadSchema.omit({
   total: true,
   shippingCost: true,
 }).extend({
-  // Allow empty string on client; server enforces enum
   state: z.string().min(1, "State is required"),
 });
 
@@ -151,7 +150,7 @@ export function useCheckoutForm(
     key: K,
     value: CheckoutFormState[K]
   ) {
-    const v = typeof value === "string" ? value.trim() : value;
+    const v = typeof value === "string" ? value : value;
     setForm((prev) => ({ ...prev, [key]: v }));
     setClientErrors((prev) => ({ ...prev, [key]: undefined }));
   }
