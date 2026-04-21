@@ -22,8 +22,37 @@ export default function ImagesTab({ product }) {
   const [images, setImages] = useState(product.images);
   const [isPending, startTransition] = useTransition();
   const [uploading, setUploading] = useState(false);
-  const [uploadCount, setUploadCount] = useState(0);
+  const [progress, setProgress] = useState(0);
+
   const sensors = useSensors(useSensor(PointerSensor));
+
+  async function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    setProgress(0);
+
+    const fileArray = Array.from(files);
+
+    try {
+      await admin.products.images.upload(product.id, fileArray);
+      toast.success("Images uploaded");
+      location.reload();
+    } catch {
+      toast.error("Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function onDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    handleFiles(e.dataTransfer.files);
+  }
+
+  function onDragOver(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+  }
 
   function handleDragEnd(event) {
     const { active, over } = event;
@@ -43,72 +72,38 @@ export default function ImagesTab({ product }) {
         );
         toast.success("Images reordered");
       } catch {
-        toast.error("Failed to reorder images");
+        toast.error("Failed to reorder");
       }
     });
   }
 
-  async function handleFiles(files: FileList | null) {
-    if (!files || files.length === 0) return;
-    setUploading(true);
-    setUploadCount(files.length);
-
-    let success = 0;
-
-    for (const file of Array.from(files)) {
-      try {
-        await admin.products.images.upload(product.id, file);
-        success++;
-      } catch {
-        // continue
-      }
-    }
-
-    setUploading(false);
-
-    if (success > 0) {
-      toast.success(`Uploaded ${success} image${success > 1 ? "s" : ""}`);
-      location.reload();
-    } else {
-      toast.error("Upload failed");
-    }
-  }
-
-  function onDrop(e: DragEvent<HTMLDivElement>) {
-    e.preventDefault();
-    handleFiles(e.dataTransfer.files);
-  }
-
-  function onDragOver(e: DragEvent<HTMLDivElement>) {
-    e.preventDefault();
-  }
-
   return (
     <div className="space-y-4">
-      {/* Dropzone + multi-upload */}
+      {/* Dropzone */}
       <div
         onDrop={onDrop}
         onDragOver={onDragOver}
         className="border-2 border-dashed border-border-default rounded-md p-6 text-center cursor-pointer bg-[rgb(var(--surface-muted))]"
-        onClick={() => document.getElementById("image-upload-input")?.click()}
+        onClick={() => document.getElementById("upload-input")?.click()}
       >
         <p className="text-sm text-text-secondary">
           Drag & drop images here, or click to browse
         </p>
+
         <input
-          id="image-upload-input"
+          id="upload-input"
           type="file"
           multiple
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
         />
+
         {uploading && (
-          <p className="mt-2 text-xs text-text-secondary">
-            Uploading {uploadCount} file{uploadCount > 1 ? "s" : ""}…
-          </p>
+          <p className="mt-2 text-xs text-text-secondary">Uploading…</p>
         )}
       </div>
 
+      {/* Sortable grid */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

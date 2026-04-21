@@ -18,6 +18,25 @@ export default function SortableImage({ image, productId }) {
     transition,
   };
 
+  function replaceImage() {
+    fileInputRef.current?.click();
+  }
+
+  async function onReplace(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    startTransition(async () => {
+      try {
+        await admin.products.images.replace(productId, image.id, file);
+        toast.success("Image replaced");
+        location.reload();
+      } catch {
+        toast.error("Failed to replace");
+      }
+    });
+  }
+
   function deleteImage() {
     startTransition(async () => {
       try {
@@ -25,7 +44,7 @@ export default function SortableImage({ image, productId }) {
         toast.success("Image deleted");
         location.reload();
       } catch {
-        toast.error("Failed to delete image");
+        toast.error("Failed to delete");
       }
     });
   }
@@ -37,26 +56,7 @@ export default function SortableImage({ image, productId }) {
         toast.success("Primary image updated");
         location.reload();
       } catch {
-        toast.error("Failed to update primary image");
-      }
-    });
-  }
-
-  function triggerReplace() {
-    fileInputRef.current?.click();
-  }
-
-  async function onReplaceChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    startTransition(async () => {
-      try {
-        await admin.products.images.replace(productId, image.id, file);
-        toast.success("Image replaced");
-        location.reload();
-      } catch {
-        toast.error("Failed to replace image");
+        toast.error("Failed to update primary");
       }
     });
   }
@@ -92,7 +92,7 @@ export default function SortableImage({ image, productId }) {
         )}
 
         <button
-          onClick={triggerReplace}
+          onClick={replaceImage}
           className="btn btn-sm btn-outline"
           disabled={isPending}
         >
@@ -111,7 +111,7 @@ export default function SortableImage({ image, productId }) {
           ref={fileInputRef}
           type="file"
           className="hidden"
-          onChange={onReplaceChange}
+          onChange={onReplace}
         />
       </div>
     </div>

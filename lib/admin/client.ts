@@ -159,9 +159,9 @@ export class AdminClient {
 const admin = {
   products: {
     images: {
-      async upload(productId: string, file: File) {
+      async upload(productId: string, files: File[]) {
         const form = new FormData();
-        form.append("file", file);
+        files.forEach((f) => form.append("file", f));
 
         const res = await fetch(`/api/admin/products/${productId}/images/upload`, {
           method: "POST",
@@ -173,54 +173,38 @@ const admin = {
       },
 
       async delete(productId: string, imageId: string) {
-        const res = await fetch(
-          `/api/admin/products/${productId}/images/${imageId}`,
-          { method: "DELETE" }
-        );
-        if (!res.ok) throw new Error("Delete failed");
+        await fetch(`/api/admin/products/${productId}/images/${imageId}`, {
+          method: "DELETE",
+        });
       },
 
       async reorder(productId: string, imageIds: string[]) {
-        const res = await fetch(
-          `/api/admin/products/${productId}/images/reorder`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ imageIds }),
-          }
-        );
-        if (!res.ok) throw new Error("Reorder failed");
+        await fetch(`/api/admin/products/${productId}/images/reorder`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageIds }),
+        });
       },
 
       async setPrimary(productId: string, imageId: string) {
-        const res = await fetch(
-          `/api/admin/products/${productId}/images/primary`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ imageId }),
-          }
-        );
-        if (!res.ok) throw new Error("Set primary failed");
+        await fetch(`/api/admin/products/${productId}/images/primary`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageId }),
+        });
       },
 
       async replace(productId: string, imageId: string, file: File) {
         const form = new FormData();
         form.append("file", file);
 
-        const res = await fetch(
+        await fetch(
           `/api/admin/products/${productId}/images/${imageId}/replace`,
-          {
-            method: "POST",
-            body: form,
-          }
+          { method: "POST", body: form }
         );
-        if (!res.ok) throw new Error("Replace failed");
-        return res.json();
       },
     },
   },
 };
 
 export default admin;
-

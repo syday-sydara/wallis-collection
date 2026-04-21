@@ -5,16 +5,10 @@ export async function POST(
   req: Request,
   { params }: { params: { productId: string } }
 ) {
-  const productId = params.productId;
-  const body = await req.json();
-  const { imageIds } = body as { imageIds: string[] };
-
-  if (!Array.isArray(imageIds) || imageIds.length === 0) {
-    return NextResponse.json({ error: "imageIds required" }, { status: 400 });
-  }
+  const { imageIds } = await req.json();
 
   await Promise.all(
-    imageIds.map((id, index) =>
+    imageIds.map((id: string, index: number) =>
       prisma.productImage.update({
         where: { id },
         data: { sortOrder: index },
