@@ -1,15 +1,14 @@
 // lib/payments/processor.ts
 import { prisma } from "@/lib/prisma";
 import { verifyPayment } from "@/lib/payments/verification";
-
 import { logSecurityEvent } from "@/lib/security/logSecurityEvent";
 import { logFraudSignal } from "@/lib/security/fraud";
-
 import {
   computeFraudScore,
   classifyFraudScore,
   type FraudSignal,
 } from "@/lib/security/computeFraudScore";
+import { sendWhatsAppAlert } from "@/lib/alerts/whatsapp";
 
 type Provider = "paystack" | "monnify";
 type Source = "webhook" | "reconciliation";
@@ -48,7 +47,7 @@ export async function processPaymentEvent(params: {
 
   const order = payment.order;
 
-  // --- Idempotency ---
+  // --- Idempotency: already paid ---
   if (payment.status === "SUCCESS" && order.isPaid) {
     return { ok: true, reason: "already_paid" as const };
   }
@@ -61,7 +60,7 @@ export async function processPaymentEvent(params: {
 
   const signals: FraudSignal[] = [];
 
-  // Signature invalid
+  // Signature invalid (if your verifyPayment exposes this)
   if ((verification as any).signatureValid === false) {
     signals.push("INVALID_SIGNATURE");
     return { ok: false, reason: "invalid_signature" as const };
@@ -77,7 +76,7 @@ export async function processPaymentEvent(params: {
     signals.push("PROVIDER_REPORTED_FAILURE");
   }
 
-  // Domain checks
+  // Domain checks on success
   if (verification.status === "success") {
     const amount = (verification as any).amount;
     const currency = (verification as any).currency;
@@ -106,7 +105,7 @@ export async function processPaymentEvent(params: {
 
   const severity = classifyFraudScore(score);
 
-  // --- Transaction ---
+  // --- Transactional update ---
   return await prisma.$transaction(async (tx) => {
     const fresh = await tx.payment.findUnique({
       where: { id: payment.id },
@@ -124,6 +123,44 @@ export async function processPaymentEvent(params: {
       return { ok: true, reason: "already_paid" as const };
     }
 
+    // Ensure order enters PENDING_PAYMENT when payment exists but order is still CREATED
+    if (freshOrder.orderStatus === "CREATED") {
+      await tx.order.update({
+        where: { id: freshOrder.id },
+        data: { orderStatus: "PENDING_PAYMENT" },
+      });
+    }
+
+    // --- EXPIRED (if your verifyPayment can return this) ---
+    if (verification.status === "expired") {
+      await tx.payment.update({
+        where: { id: fresh.id },
+        data: { status: "EXPIRED" },
+      });
+
+      await tx.order.update({
+        where: { id: freshOrder.id },
+        data: { orderStatus: "CANCELLED" },
+      });
+
+      return { ok: false, reason: "expired" as const };
+    }
+
+    // --- PARTIAL (if supported by provider) ---
+    if (verification.status === "partial") {
+      await tx.payment.update({
+        where: { id: fresh.id },
+        data: { status: "PARTIAL" },
+      });
+
+      await tx.order.update({
+        where: { id: freshOrder.id },
+        data: { orderStatus: "PENDING_PAYMENT" },
+      });
+
+      return { ok: false, reason: "partial" as const };
+    }
+
     // --- Provider says FAILED ---
     if (verification.status === "failed") {
       await tx.payment.update({
@@ -131,10 +168,15 @@ export async function processPaymentEvent(params: {
         data: { status: "FAILED" },
       });
 
+      await tx.order.update({
+        where: { id: freshOrder.id },
+        data: { orderStatus: "CANCELLED" },
+      });
+
       return { ok: false, reason: "failed" as const, score };
     }
 
-    // --- Provider says SUCCESS but suspicious ---
+    // --- Provider says SUCCESS but suspicious → REVIEW ---
     const isSuspicious = severity !== "low" || signals.length > 0;
 
     if (verification.status === "success" && isSuspicious) {
@@ -143,12 +185,26 @@ export async function processPaymentEvent(params: {
         data: { status: "REVIEW" },
       });
 
+      await tx.order.update({
+        where: { id: freshOrder.id },
+        data: { orderStatus: "REVIEW" },
+      });
+
       await logSecurityEvent({
         type: "PAYMENT_REVIEW",
         message: `Payment ${reference} flagged for review`,
         severity,
         metadata: { provider, reference, score, signals },
       });
+
+      if (process.env.OPS_WHATSAPP_NUMBER) {
+        await sendWhatsAppAlert({
+          to: process.env.OPS_WHATSAPP_NUMBER,
+          template: "payment_review_required",
+          variables: [freshOrder.id, reference, score.toString()],
+          severity: "high",
+        });
+      }
 
       return { ok: false, reason: "review" as const, score };
     }

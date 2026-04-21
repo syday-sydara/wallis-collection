@@ -2,13 +2,14 @@
 import { prisma } from "@/lib/prisma";
 import { logSecurityEvent } from "@/lib/security/logSecurityEvent";
 import { logFraudSignal } from "@/lib/security/fraud";
+import { sendWhatsAppAlert } from "@/lib/alerts/whatsapp";
 
 type Provider = "paystack" | "monnify";
 
 interface RefundEventInput {
   provider: Provider;
   reference: string;
-  amount?: number; // in your internal unit (same as order.total)
+  amount?: number;
   raw?: unknown;
 }
 
@@ -20,7 +21,11 @@ interface ChargebackEventInput {
   raw?: unknown;
 }
 
-// --- Automated REFUND handling ---
+const OPS_WHATSAPP = process.env.OPS_WHATSAPP_NUMBER ?? ""; // internal alerts
+
+// ============================================================
+// REFUND HANDLER
+// ============================================================
 export async function handleRefundEvent(input: RefundEventInput) {
   const { provider, reference, amount, raw } = input;
 
@@ -36,29 +41,24 @@ export async function handleRefundEvent(input: RefundEventInput) {
       severity: "medium",
       metadata: { provider, reference, amount, raw },
     });
+
     return { ok: false, reason: "unknown_payment" as const };
   }
 
   const order = payment.order;
 
   return await prisma.$transaction(async (tx) => {
-    // Mark payment as refunded
+    const refundAmount = amount ?? payment.amount ?? 0;
+
     await tx.payment.update({
       where: { id: payment.id },
-      data: {
-        status: "REFUNDED",
-      },
+      data: { status: "REFUNDED" },
     });
-
-    // Update order refundedAmount
-    const refundAmount = amount ?? payment.amount ?? 0;
 
     await tx.order.update({
       where: { id: order.id },
       data: {
         refundedAmount: (order.refundedAmount ?? 0) + refundAmount,
-        // Optional: if fully refunded, you may want to cancel the order
-        // orderStatus: "CANCELLED",
       },
     });
 
@@ -66,14 +66,44 @@ export async function handleRefundEvent(input: RefundEventInput) {
       type: "PAYMENT_REFUNDED",
       message: `Payment ${reference} refunded via ${provider}`,
       severity: "medium",
-      metadata: { provider, reference, amount: refundAmount, raw },
+      metadata: { provider, reference, refundAmount, raw },
     });
+
+    // OPTIONAL ALERT: Notify customer
+    if (order.customerPhone) {
+      await sendWhatsAppAlert({
+        to: order.customerPhone,
+        template: "payment_refunded",
+        variables: [
+          order.id,
+          reference,
+          refundAmount.toString(),
+        ],
+        severity: "medium",
+      });
+    }
+
+    // OPTIONAL ALERT: Notify internal ops
+    if (OPS_WHATSAPP) {
+      await sendWhatsAppAlert({
+        to: OPS_WHATSAPP,
+        template: "ops_refund_alert",
+        variables: [
+          order.id,
+          reference,
+          refundAmount.toString(),
+        ],
+        severity: "medium",
+      });
+    }
 
     return { ok: true as const, reason: "refunded" as const };
   });
 }
 
-// --- Automated CHARGEBACK handling ---
+// ============================================================
+// CHARGEBACK HANDLER
+// ============================================================
 export async function handleChargebackEvent(input: ChargebackEventInput) {
   const { provider, reference, amount, reason, raw } = input;
 
@@ -89,29 +119,24 @@ export async function handleChargebackEvent(input: ChargebackEventInput) {
       severity: "high",
       metadata: { provider, reference, amount, reason, raw },
     });
+
     return { ok: false, reason: "unknown_payment" as const };
   }
 
   const order = payment.order;
 
   return await prisma.$transaction(async (tx) => {
-    // Mark payment as chargeback
+    const chargebackAmount = amount ?? payment.amount ?? 0;
+
     await tx.payment.update({
       where: { id: payment.id },
-      data: {
-        status: "CHARGEBACK",
-      },
+      data: { status: "CHARGEBACK" },
     });
-
-    // Update refundedAmount (chargeback is effectively a refund)
-    const chargebackAmount = amount ?? payment.amount ?? 0;
 
     await tx.order.update({
       where: { id: order.id },
       data: {
         refundedAmount: (order.refundedAmount ?? 0) + chargebackAmount,
-        // Often you’ll also mark the order as cancelled or flagged:
-        // orderStatus: "CANCELLED",
       },
     });
 
@@ -119,15 +144,45 @@ export async function handleChargebackEvent(input: ChargebackEventInput) {
       type: "PAYMENT_CHARGEBACK",
       provider,
       reference,
-      metadata: { amount: chargebackAmount, reason, raw },
+      metadata: { chargebackAmount, reason, raw },
     });
 
     await logSecurityEvent({
       type: "PAYMENT_CHARGEBACK",
       message: `Chargeback on payment ${reference} via ${provider}`,
       severity: "high",
-      metadata: { provider, reference, amount: chargebackAmount, reason, raw },
+      metadata: { provider, reference, chargebackAmount, reason, raw },
     });
+
+    // OPTIONAL ALERT: Notify customer
+    if (order.customerPhone) {
+      await sendWhatsAppAlert({
+        to: order.customerPhone,
+        template: "payment_chargeback",
+        variables: [
+          order.id,
+          reference,
+          chargebackAmount.toString(),
+          reason ?? "Chargeback",
+        ],
+        severity: "high",
+      });
+    }
+
+    // OPTIONAL ALERT: Notify internal ops
+    if (OPS_WHATSAPP) {
+      await sendWhatsAppAlert({
+        to: OPS_WHATSAPP,
+        template: "ops_chargeback_alert",
+        variables: [
+          order.id,
+          reference,
+          chargebackAmount.toString(),
+          reason ?? "Chargeback",
+        ],
+        severity: "high",
+      });
+    }
 
     return { ok: true as const, reason: "chargeback" as const };
   });
