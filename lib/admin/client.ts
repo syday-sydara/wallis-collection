@@ -157,6 +157,37 @@ export class AdminClient {
 }
 
 const admin = {
+
+  orders: {
+    async updateStatus(orderId: string, status: string) {
+      const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error("Failed to update status");
+      return res.json();
+    },
+
+    async markPaid(orderId: string) {
+      const res = await fetch(`/api/admin/orders/${orderId}/mark-paid`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to mark paid");
+      return res.json();
+    },
+
+    async refund(orderId: string, amount: number) {
+      const res = await fetch(`/api/admin/orders/${orderId}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount }),
+      });
+      if (!res.ok) throw new Error("Failed to refund");
+      return res.json();
+    },
+  },
+
   products: {
     images: {
       async upload(productId: string, files: File[]) {
