@@ -1,8 +1,10 @@
 "use client";
 
 import { useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { adminUpdateProduct } from "@/lib/products/admin";
+import admin from "@/lib/admin/client"; // ← Admin SDK
+import { toast } from "@/components/admin/ui/toast/AdminToastProvider";
 import type { AdminProductSummary } from "@/lib/products/types";
 
 export default function ProductRow({ product }: { product: AdminProductSummary }) {
@@ -11,30 +13,47 @@ export default function ProductRow({ product }: { product: AdminProductSummary }
 
   function toggleArchive() {
     startTransition(async () => {
-      await adminUpdateProduct(product.id, {
-        isArchived: !product.isArchived,
-      });
-      router.refresh();
+      try {
+        await admin.products.update(product.id, {
+          isArchived: !product.isArchived,
+        });
+
+        toast.success(
+          product.isArchived
+            ? "Product restored"
+            : "Product archived"
+        );
+
+        router.refresh();
+      } catch {
+        toast.error("Failed to update product");
+      }
     });
   }
 
   return (
-    <tr className="border-t">
+    <tr className="border-t border-border-default">
       <td className="p-3">{product.name}</td>
-      <td className="p-3 text-text-muted">{product.slug}</td>
-      <td className="p-3">₦{(product.basePrice / 100).toFixed(2)}</td>
+
+      <td className="p-3 text-text-secondary">{product.slug}</td>
+
+      <td className="p-3">
+        ₦{(product.basePrice / 100).toFixed(2)}
+      </td>
+
       <td className="p-3">{product.stock}</td>
-      <td className="p-3 text-text-muted">
+
+      <td className="p-3 text-text-secondary">
         {new Date(product.updatedAt).toLocaleDateString()}
       </td>
 
       <td className="p-3 text-right space-x-2">
-        <a
+        <Link
           href={`/admin/products/${product.id}`}
           className="btn btn-sm btn-outline"
         >
           Edit
-        </a>
+        </Link>
 
         <button
           onClick={toggleArchive}

@@ -1,9 +1,12 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { toAdminProductSummary } from "@/lib/products/viewModels";
 import ProductTable from "./ProductTable";
 
+export const revalidate = 0; // Always fresh in admin
+
 export default async function AdminProductsPage() {
-  // Fetch products with minimal fields needed for the admin list
+  // Fetch minimal fields for admin list
   const products = await prisma.product.findMany({
     orderBy: { updatedAt: "desc" },
     include: {
@@ -11,7 +14,6 @@ export default async function AdminProductsPage() {
     },
   });
 
-  // Convert raw DB results → Admin-friendly view models
   const summaries = products.map(toAdminProductSummary);
 
   return (
@@ -20,12 +22,9 @@ export default async function AdminProductsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Products</h1>
 
-        <a
-          href="/admin/products/new"
-          className="btn btn-primary"
-        >
+        <Link href="/admin/products/new" className="btn btn-primary">
           New Product
-        </a>
+        </Link>
       </div>
 
       {/* Product Table */}
