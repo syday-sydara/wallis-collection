@@ -3,8 +3,8 @@
 import { useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import admin from "@/lib/admin/client"; // ← Admin SDK
-import { toast } from "@/components/admin/ui/toast/AdminToastProvider";
+import admin from "@/lib/admin/client";
+import { toast } from "../toast/AdminToastProvider";
 import type { AdminProductSummary } from "@/lib/products/types";
 
 export default function ProductRow({ product }: { product: AdminProductSummary }) {
