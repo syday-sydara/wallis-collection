@@ -27,56 +27,76 @@ const PAYMENT_EVENT_LABELS: Record<string, string> = {
   REFUNDED: "Payment refunded",
 };
 
-// Payment event colors
-const PAYMENT_EVENT_COLORS: Record<string, string> = {
-  PENDING: "text-warning",
-  SUCCESS: "text-success",
-  FAILED: "text-danger",
-  REFUNDED: "text-info",
-};
-
-// Icons for all event types
+// Unified ICON map
 const ICONS: Record<string, any> = {
+  // Order
   ORDER_CREATED: ClockIcon,
 
+  // Payment
   PAYMENT_INITIATED: CreditCardIcon,
   PAYMENT_PENDING: ClockIcon,
   PAYMENT_SUCCESS: CheckCircleIcon,
   PAYMENT_FAILED: XCircleIcon,
   PAYMENT_REFUNDED: ArrowPathIcon,
-
   PAYMENT: CreditCardIcon,
   PAYMENT_PAID: CheckCircleIcon,
 
+  // Refund
   REFUND: ArrowPathIcon,
+
+  // Status
   STATUS: TruckIcon,
+
+  // Notes
   NOTE: ChatBubbleLeftRightIcon,
+
+  // Fulfillment
+  FULFILLMENT_CREATED: TruckIcon,
+  FULFILLMENT_IN_TRANSIT: TruckIcon,
+  FULFILLMENT_OUT_FOR_DELIVERY: TruckIcon,
+  FULFILLMENT_DELIVERED: CheckCircleIcon,
+  FULFILLMENT_FAILED: XCircleIcon,
 };
 
-// Colors for all event types
+// Unified COLOR map
 const COLORS: Record<string, string> = {
+  // Order
   ORDER_CREATED: "text-text-secondary",
 
+  // Payment
   PAYMENT_INITIATED: "text-info",
   PAYMENT_PENDING: "text-warning",
   PAYMENT_SUCCESS: "text-success",
   PAYMENT_FAILED: "text-danger",
   PAYMENT_REFUNDED: "text-info",
-
   PAYMENT: "text-info",
   PAYMENT_PAID: "text-success",
 
+  // Refund
   REFUND: "text-warning",
+
+  // Status
   STATUS: "text-primary",
+
+  // Notes
   NOTE: "text-text-secondary",
+
+  // Fulfillment
+  FULFILLMENT_CREATED: "text-info",
+  FULFILLMENT_IN_TRANSIT: "text-primary",
+  FULFILLMENT_OUT_FOR_DELIVERY: "text-warning",
+  FULFILLMENT_DELIVERED: "text-success",
+  FULFILLMENT_FAILED: "text-danger",
 };
 
 export default function OrderTimeline({
   order,
   auditLogs,
+  fulfillments,
 }: {
   order: any;
   auditLogs: any[];
+  fulfillments: any[];
 }) {
   const events: TimelineEvent[] = [];
 
@@ -106,14 +126,12 @@ export default function OrderTimeline({
       },
     };
 
-    // Payment initiated
     events.push({
       ...base,
       type: "PAYMENT_INITIATED",
       label: `Payment initiated (${p.provider || "Unknown"})`,
     });
 
-    // Payment status event
     events.push({
       ...base,
       id: `payment-status-${p.id}`,
@@ -121,7 +139,6 @@ export default function OrderTimeline({
       label: PAYMENT_EVENT_LABELS[p.status],
     });
 
-    // Payment marked as paid
     if (p.paidAt) {
       events.push({
         ...base,
@@ -132,7 +149,6 @@ export default function OrderTimeline({
       });
     }
 
-    // Payment refunded
     if (p.status === "REFUNDED") {
       events.push({
         ...base,
@@ -184,6 +200,27 @@ export default function OrderTimeline({
         at: new Date(log.createdAt),
       });
     }
+  }
+
+  //
+  // FULFILLMENT EVENTS
+  //
+  for (const f of fulfillments || []) {
+    events.push({
+      id: `fulfillment-${f.id}`,
+      type: "FULFILLMENT_CREATED",
+      label: `Fulfillment created (${f.carrier || "Unknown"})`,
+      at: new Date(f.createdAt),
+      meta: { tracking: f.tracking },
+    });
+
+    events.push({
+      id: `fulfillment-status-${f.id}`,
+      type: `FULFILLMENT_${f.status}`,
+      label: `Fulfillment ${f.status.replace(/_/g, " ").toLowerCase()}`,
+      at: new Date(f.updatedAt),
+      meta: { tracking: f.tracking },
+    });
   }
 
   //
@@ -246,6 +283,13 @@ export default function OrderTimeline({
                       {e.type === "REFUND" && e.meta && (
                         <div className="text-xs text-text-secondary mt-1">
                           Refunded: {(e.meta.amount / 100).toFixed(2)}
+                        </div>
+                      )}
+
+                      {/* Fulfillment details */}
+                      {e.type.startsWith("FULFILLMENT") && e.meta?.tracking && (
+                        <div className="text-xs text-text-secondary mt-1">
+                          Tracking: {e.meta.tracking}
                         </div>
                       )}
                     </div>

@@ -25,7 +25,6 @@ export default async function OrderDetailPage({
     return <div className="p-6">Order not found.</div>;
   }
 
-  // Timeline events (status changes, refunds, notes, etc.)
   const auditLogs = await prisma.auditLog.findMany({
     where: {
       resource: "order",
@@ -34,7 +33,6 @@ export default async function OrderDetailPage({
     orderBy: { createdAt: "asc" },
   });
 
-  // Notes only
   const notes = await prisma.auditLog.findMany({
     where: {
       resource: "order",
@@ -44,11 +42,17 @@ export default async function OrderDetailPage({
     orderBy: { createdAt: "desc" },
   });
 
+  const fulfillments = await prisma.fulfillment.findMany({
+    where: { orderId: params.id },
+    orderBy: { createdAt: "asc" },
+  });
+
   return (
     <OrderDetail
       order={order}
       auditLogs={auditLogs}
       notes={notes}
+      fulfillments={fulfillments}
     />
   );
 }
