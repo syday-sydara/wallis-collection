@@ -11,6 +11,11 @@ import { maybeSendUnauthorizedAlert } from "@/lib/security/permission-alerts";
 /* Helpers */
 /* -------------------------------------------------- */
 
+function getInternalSecurityLogUrl() {
+  const baseUrl = process.env.INTERNAL_BASE_URL ?? "http://127.0.0.1:3000";
+  return new URL("/api/_internal/security-log", baseUrl).toString();
+}
+
 function redirectToLogin(req: NextRequest) {
   const loginUrl = new URL("/login", req.url);
   loginUrl.searchParams.set("next", req.nextUrl.pathname);
@@ -22,7 +27,7 @@ function redirectToHome(req: NextRequest) {
 }
 
 function blockRisk(req: NextRequest) {
-  void fetch(`${req.nextUrl.origin}/api/_internal/security-log`, {
+  void fetch(getInternalSecurityLogUrl(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -43,7 +48,7 @@ function blockRisk(req: NextRequest) {
 /* -------------------------------------------------- */
 
 export async function middleware(req: NextRequest) {
-  const { pathname, origin } = req.nextUrl;
+  const { pathname } = req.nextUrl;
 
   /* -------------------------------------------------- */
   /* 1. Parse session (Node-safe) */
@@ -119,7 +124,7 @@ export async function middleware(req: NextRequest) {
     }
 
     if (rate.allowed) {
-      void fetch(`${origin}/api/_internal/security-log`, {
+      void fetch(getInternalSecurityLogUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
