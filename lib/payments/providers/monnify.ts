@@ -5,6 +5,12 @@ const MONNIFY_WEBHOOK_SECRET = process.env.MONNIFY_WEBHOOK_SECRET!;
 const MONNIFY_API_KEY = process.env.MONNIFY_API_KEY!;
 const MONNIFY_SECRET_KEY = process.env.MONNIFY_SECRET_KEY!;
 const MONNIFY_BASE_URL = "https://api.monnify.com/api/v1";
+const MONNIFY_REFERENCE_PATTERN = /^[A-Za-z0-9._-]{1,128}$/;
+
+function sanitizeMonnifyReference(reference: string): string | null {
+  const trimmed = reference.trim();
+  return MONNIFY_REFERENCE_PATTERN.test(trimmed) ? trimmed : null;
+}
 
 // --- Webhook signature ---
 export function verifyMonnifyWebhookSignature(rawBody: string, signature: string | null) {
@@ -60,10 +66,20 @@ async function getMonnifyToken(): Promise<string> {
 
 // --- Verify reference ---
 export async function verifyMonnifyReference(reference: string): Promise<PaymentVerificationResult> {
+  const safeReference = sanitizeMonnifyReference(reference);
+  if (!safeReference) {
+    return {
+      status: "error",
+      provider: "monnify",
+      reference,
+      message: "Invalid reference format",
+    };
+  }
+
   try {
     const token = await getMonnifyToken();
 
-    const res = await fetch(`${MONNIFY_BASE_URL}/transactions/${reference}`, {
+    const res = await fetch(`${MONNIFY_BASE_URL}/transactions/${encodeURIComponent(safeReference)}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
