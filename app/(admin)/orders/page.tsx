@@ -1,3 +1,5 @@
+// app/(admin)/orders/page.tsx
+
 import { prisma } from "@/lib/prisma";
 import OrderTable from "@/components/admin/orders/OrderTable";
 import OrderFilters from "@/components/admin/orders/OrderFilters";
@@ -17,14 +19,28 @@ export default async function OrdersPage({
 
   const where: any = {};
 
+  // -----------------------------
+  // ORDER STATUS FILTER
+  // -----------------------------
   if (status && status !== "ALL") {
     where.orderStatus = status;
   }
 
+  // -----------------------------
+  // PAYMENT STATUS FILTER
+  // (works with payments[] relation)
+  // -----------------------------
   if (paymentStatus && paymentStatus !== "ALL") {
-    where.paymentStatus = paymentStatus;
+    where.payments = {
+      some: {
+        status: paymentStatus,
+      },
+    };
   }
 
+  // -----------------------------
+  // SEARCH FILTER
+  // -----------------------------
   if (q) {
     where.OR = [
       { email: { contains: q, mode: "insensitive" } },
@@ -34,13 +50,16 @@ export default async function OrdersPage({
     ];
   }
 
+  // -----------------------------
+  // QUERY ORDERS
+  // -----------------------------
   const orders = await prisma.order.findMany({
     where,
     orderBy: { createdAt: "desc" },
     include: {
       user: true,
       items: true,
-      payments: true,
+      payments: true, // updated relation
     },
     take: 50,
   });
@@ -51,7 +70,11 @@ export default async function OrdersPage({
         <h1 className="text-xl font-semibold tracking-tight">Orders</h1>
       </div>
 
-      <OrderFilters initialStatus={status} initialPaymentStatus={paymentStatus} initialQuery={q} />
+      <OrderFilters
+        initialStatus={status}
+        initialPaymentStatus={paymentStatus}
+        initialQuery={q}
+      />
 
       <OrderTable orders={orders} />
     </div>
