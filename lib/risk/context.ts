@@ -23,20 +23,22 @@ const NIGERIA_CARRIER_PREFIXES = ["070", "080", "081", "090", "091"];
 /* Helpers                                             */
 /* -------------------------------------------------- */
 
-function normalizeIp(ip: string): string {
+function normalizeIp(ip?: string | null): string {
   if (!ip) return "unknown";
 
-  // Handle IPv6-mapped IPv4: ::ffff:192.168.0.1
-  if (ip.startsWith("::ffff:")) {
-    return ip.replace("::ffff:", "");
+  let value = ip.trim();
+
+  // IPv6-mapped IPv4
+  if (value.startsWith("::ffff:")) {
+    value = value.replace("::ffff:", "");
   }
 
   // Remove port if present
-  if (ip.includes(":") && ip.includes(".")) {
-    return ip.split(":")[0];
+  if (value.includes(":") && value.includes(".")) {
+    value = value.split(":")[0];
   }
 
-  return ip.trim();
+  return value;
 }
 
 function isPrivateIp(ip: string): boolean {
@@ -47,11 +49,14 @@ function isPrivateIp(ip: string): boolean {
   );
 }
 
-function extractEmailDomain(email: string): string {
+function extractEmailDomain(email?: string | null): string {
+  if (!email) return "";
   return email.split("@")[1]?.toLowerCase().trim() ?? "";
 }
 
-function extractPhonePrefix(phone: string): string | null {
+function extractPhonePrefix(phone?: string | null): string | null {
+  if (!phone) return null;
+
   const cleaned = phone.replace(/[\s()-]/g, "");
 
   if (cleaned.startsWith("+234")) return "+234";
@@ -61,7 +66,7 @@ function extractPhonePrefix(phone: string): string | null {
   );
 }
 
-function normalizeUserAgent(ua: string): string {
+function normalizeUserAgent(ua?: string | null): string {
   return ua?.trim() || "unknown";
 }
 
@@ -70,10 +75,10 @@ function normalizeUserAgent(ua: string): string {
 /* -------------------------------------------------- */
 
 export function buildRiskContext(args: {
-  ip: string;
-  email: string;
-  phone: string;
-  userAgent: string;
+  ip?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  userAgent?: string | null;
 
   userId?: string | null;
 
@@ -90,9 +95,9 @@ export function buildRiskContext(args: {
   orderVelocity?: number;
 
   // Geo
-  country?: string;
-  region?: string;
-  city?: string;
+  country?: string | null;
+  region?: string | null;
+  city?: string | null;
   distanceFromLastIpKm?: number;
 
   // Device
@@ -111,10 +116,10 @@ export function buildRiskContext(args: {
   return {
     // Identity
     userId: args.userId ?? null,
-    email: args.email,
+    email: args.email ?? null,
     emailDomain,
     isFreeEmail: FREE_EMAIL_PROVIDERS.has(emailDomain),
-    phone: args.phone,
+    phone: args.phone ?? null,
     phonePrefix,
 
     // IP / Geo

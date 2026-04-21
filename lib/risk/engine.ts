@@ -8,8 +8,33 @@ import type {
   RiskEvaluationResult,
 } from "./types";
 import { evaluateRule } from "./evaluate";
-import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
+import { emitEvent } from "@/lib/events/emitter";
 import { logAuditEvent } from "@/lib/audit/log";
+
+/* -------------------------------------------------- */
+/* Event wrappers                                      */
+/* -------------------------------------------------- */
+
+function emitSecurityEvent(data: any) {
+  emitEvent({
+    kind: "security",
+    severity: data.severity ?? "medium",
+    category: "risk",
+    source: "risk-engine",
+    ...data,
+  });
+}
+
+function emitAlertEvent(data: any) {
+  emitEvent({
+    kind: "alert",
+    event: data.event,
+    severity: "high",
+    category: "risk",
+    source: "risk-engine",
+    metadata: data.metadata ?? {},
+  });
+}
 
 /* -------------------------------------------------- */
 /* Classification                                       */
@@ -81,13 +106,11 @@ export async function evaluatePolicy(
       passed = evaluateRule(rule.condition, context);
     } catch (err: any) {
       // Log anomaly
-      await emitSecurityEvent({
+      emitSecurityEvent({
         type: "SYSTEM_ANOMALY",
         message: `Risk rule evaluation error: ${rule.id}`,
         severity: "medium",
         metadata: { error: err?.message, ruleId: rule.id },
-        category: "risk",
-        source: "risk-engine",
       });
 
       await logAuditEvent({
@@ -98,7 +121,6 @@ export async function evaluatePolicy(
         metadata: { error: err?.message },
       });
 
-      // Mark as failed
       passed = false;
     }
 
@@ -156,7 +178,7 @@ export async function evaluatePolicy(
   /* -------------------------------------------------- */
 
   if (level === "HIGH") {
-    await emitAlertEvent({
+    emitAlertEvent({
       event: "ALERT_RISK_SCORE_HIGH",
       metadata: {
         score,

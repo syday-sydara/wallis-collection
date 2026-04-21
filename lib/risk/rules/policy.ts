@@ -21,7 +21,7 @@ const policies: Record<string, RiskPolicy> = {
 function clonePolicy(policy: RiskPolicy): RiskPolicy {
   return {
     ...policy,
-    rules: [...policy.rules],
+    rules: policy.rules.map((r) => ({ ...r })),
   };
 }
 
@@ -31,11 +31,9 @@ function clonePolicy(policy: RiskPolicy): RiskPolicy {
 
 export function getRiskPolicy(id: string = "default"): RiskPolicy {
   const policy = policies[id];
-
   if (!policy) {
     throw new Error(`RiskPolicy not found: ${id}`);
   }
-
   return clonePolicy(policy);
 }
 
@@ -72,10 +70,7 @@ export function registerRiskPolicy(policy: RiskPolicy): void {
     throw new Error(`RiskPolicy already exists: ${policy.id}`);
   }
 
-  policies[policy.id] = {
-    ...policy,
-    rules: [...policy.rules],
-  };
+  policies[policy.id] = clonePolicy(policy);
 }
 
 /* -------------------------------------------------- */
