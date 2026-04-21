@@ -68,6 +68,14 @@ enum PaymentProvider {
   BANK_TRANSFER
 }
 
+enum FulfillmentStatus {
+  PENDING
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+}
+
 //////////////////////
 // USER
 //////////////////////
@@ -84,8 +92,8 @@ model User {
   phone           String?
   emailVerifiedAt DateTime?
 
-  risk_score      Int    @default(0)
-  permissions     Json?
+  risk_score        Int    @default(0)
+  permissions       Json?
   deniedPermissions Json?
 
   createdAt DateTime @default(now())
@@ -242,8 +250,9 @@ model Order {
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
 
-  items    OrderItem[]
-  payments Payment[]
+  items         OrderItem[]
+  payments      Payment[]
+  fulfillments  Fulfillment[]   // FIXED RELATION
 
   @@index([createdAt])
   @@index([userId])
@@ -418,30 +427,49 @@ model AuditLog {
 //////////////////////
 
 model SecurityEvent {
-  id        String  @id @default(cuid())
-  version   Int
+  id        String   @id @default(cuid())
+  version   Int      @default(3)
+
   type      String
+  message   String
   severity  String
   category  String?
+  context   String?
   source    String?
   requestId String?
 
-  userId    String?
+  actorType String
+  actorId   String?
+
+  orderId       String?
+  fulfillmentId String?
+  riderId       String?
+
+  riskScore Int? @default(0)
+  tags      String[] @default([])
+
   ip        String?
   userAgent String?
 
-  message  String
-  metadata Json?
+  metadata  Json?
 
   timestamp DateTime @default(now())
   createdAt DateTime @default(now())
 
-  @@index([userId])
   @@index([type])
   @@index([severity])
   @@index([category])
+  @@index([actorType])
+  @@index([actorId])
+  @@index([orderId])
+  @@index([fulfillmentId])
+  @@index([riderId])
   @@index([timestamp])
 }
+
+//////////////////////
+// FRAUD / RISK
+//////////////////////
 
 model FraudEvent {
   id        String   @id @default(cuid())
@@ -484,6 +512,10 @@ model RiskEvent {
   @@index([riskScore])
 }
 
+//////////////////////
+// SESSION / DEVICE EVENTS
+//////////////////////
+
 model SessionEvent {
   id        String   @id @default(cuid())
   sessionId String?
@@ -510,6 +542,10 @@ model DeviceEvent {
   @@index([userId])
 }
 
+//////////////////////
+// FULFILLMENT
+//////////////////////
+
 model Fulfillment {
   id        String            @id @default(cuid())
   orderId   String
@@ -519,12 +555,4 @@ model Fulfillment {
   status    FulfillmentStatus @default(PENDING)
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
-}
-
-enum FulfillmentStatus {
-  PENDING
-  IN_TRANSIT
-  OUT_FOR_DELIVERY
-  DELIVERED
-  FAILED
 }

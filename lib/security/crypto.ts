@@ -1,21 +1,55 @@
 // lib/security/crypto.ts
 import crypto from "crypto";
 
-const rawKey = process.env.DATA_ENCRYPTION_KEY;
+/* -------------------------------------------------- */
+/* 1. Load and validate raw keys                       */
+/* -------------------------------------------------- */
 
-if (!rawKey || !/^[0-9a-fA-F]{64}$/.test(rawKey)) {
+const rawKeyV1 = process.env.DATA_ENCRYPTION_KEY;
+const rawKeyV2 = process.env.DATA_ENCRYPTION_KEY_V2; // optional new key
+
+if (!rawKeyV1 || !/^[0-9a-fA-F]{64}$/.test(rawKeyV1)) {
   throw new Error("DATA_ENCRYPTION_KEY must be 64 hex chars");
 }
 
-export const ACTIVE_VERSION = 1;
-export const SUPPORTED_VERSIONS = [1];
+if (rawKeyV2 && !/^[0-9a-fA-F]{64}$/.test(rawKeyV2)) {
+  throw new Error("DATA_ENCRYPTION_KEY_V2 must be 64 hex chars");
+}
+
+/* -------------------------------------------------- */
+/* 2. HKDF key derivation (stronger than raw keys)     */
+/* -------------------------------------------------- */
+
+function deriveKey(hexKey: string, version: number) {
+  return crypto.hkdfSync(
+    "sha256",
+    Buffer.from(hexKey, "hex"),
+    Buffer.from(`salt-v${version}`),
+    Buffer.from(`context-v${version}`),
+    32
+  );
+}
+
+/* -------------------------------------------------- */
+/* 3. Versioned key registry                           */
+/* -------------------------------------------------- */
+
+export const ACTIVE_VERSION = rawKeyV2 ? 2 : 1;
+
+export const SUPPORTED_VERSIONS = rawKeyV2 ? [1, 2] : [1];
 
 const KEYS: Record<number, Buffer> = {
-  1: Buffer.from(rawKey, "hex"),
+  1: deriveKey(rawKeyV1, 1),
+  ...(rawKeyV2 ? { 2: deriveKey(rawKeyV2, 2) } : {})
 };
 
+/* -------------------------------------------------- */
+/* 4. Encrypt                                          */
+/* -------------------------------------------------- */
+
 export function encrypt(plaintext: string, aad?: string) {
-  const key = KEYS[ACTIVE_VERSION];
+  const version = ACTIVE_VERSION;
+  const key = KEYS[version];
   const iv = crypto.randomBytes(12);
 
   const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
@@ -24,21 +58,25 @@ export function encrypt(plaintext: string, aad?: string) {
 
   const encrypted = Buffer.concat([
     cipher.update(plaintext, "utf8"),
-    cipher.final(),
+    cipher.final()
   ]);
 
   const tag = cipher.getAuthTag();
 
   // version (1 byte) | iv (12 bytes) | tag (16 bytes) | ciphertext
   const payload = Buffer.concat([
-    Buffer.from([ACTIVE_VERSION]),
+    Buffer.from([version]),
     iv,
     tag,
-    encrypted,
+    encrypted
   ]);
 
   return payload.toString("base64url");
 }
+
+/* -------------------------------------------------- */
+/* 5. Decrypt                                          */
+/* -------------------------------------------------- */
 
 export function decrypt(payload: string, aad?: string) {
   const buf = Buffer.from(payload, "base64url");
@@ -67,12 +105,49 @@ export function decrypt(payload: string, aad?: string) {
 
     const decrypted = Buffer.concat([
       decipher.update(encrypted),
-      decipher.final(),
+      decipher.final()
     ]);
 
     return decrypted.toString("utf8");
   } catch (err) {
     console.error("Decrypt error:", err);
     throw new Error("Decryption failed");
+  }
+}
+
+/* -------------------------------------------------- */
+/* 6. Safe wrapper: never throws                       */
+/* -------------------------------------------------- */
+
+export function tryDecrypt(payload: string | null, aad?: string) {
+  if (!payload) return null;
+
+  try {
+    return decrypt(payload, aad);
+  } catch {
+    return null;
+  }
+}
+
+/* -------------------------------------------------- */
+/* 7. Metadata helper for Security Center              */
+/* -------------------------------------------------- */
+
+export function decryptMetadata(record: any) {
+  if (!record?.metadata) return null;
+
+  const meta = record.metadata;
+
+  // Plain metadata
+  if (!meta._encrypted) {
+    return meta.data ?? meta;
+  }
+
+  // Encrypted metadata
+  try {
+    const decrypted = decrypt(meta.payload);
+    return JSON.parse(decrypted);
+  } catch {
+    return { _error: "Failed to decrypt metadata" };
   }
 }

@@ -1,3 +1,4 @@
+// lib/security/log.ts
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { encrypt } from "@/lib/security/crypto";
@@ -23,7 +24,6 @@ export async function logSecurityEvent(params: {
   type: string;
   message: string;
 
-  // NEW
   actorType?: "system" | "admin" | "rider" | "customer" | "unknown";
   actorId?: string | null;
   context?: "delivery" | "payment" | "whatsapp" | "admin" | "rider" | "system";
@@ -31,7 +31,6 @@ export async function logSecurityEvent(params: {
   tags?: string[];
   riskScore?: number | null;
 
-  // EXISTING
   userId?: string | null;
   severity?: (typeof VALID_SEVERITIES)[number];
   ip?: string | null;
@@ -43,7 +42,6 @@ export async function logSecurityEvent(params: {
   source?: string | null;
   requestId?: string | null;
 
-  // DELIVERY CONTEXT
   orderId?: string | null;
   fulfillmentId?: string | null;
   riderId?: string | null;
@@ -77,21 +75,12 @@ export async function logSecurityEvent(params: {
     riderId = null,
   } = params;
 
-  /* -------------------------------------------------- */
-  /* Normalize severity                                  */
-  /* -------------------------------------------------- */
   const sev = VALID_SEVERITIES.includes(severity)
     ? severity.toUpperCase()
     : "LOW";
 
-  /* -------------------------------------------------- */
-  /* Normalize category                                  */
-  /* -------------------------------------------------- */
   const normalizedCategory = category?.trim().toLowerCase() || null;
 
-  /* -------------------------------------------------- */
-  /* Metadata sanitization                               */
-  /* -------------------------------------------------- */
   let safeMetadata: Record<string, JsonValue>;
 
   try {
@@ -101,14 +90,10 @@ export async function logSecurityEvent(params: {
   }
 
   const json = JSON.stringify(safeMetadata);
-
   if (json.length > MAX_METADATA_SIZE) {
     safeMetadata = { _truncated: true };
   }
 
-  /* -------------------------------------------------- */
-  /* Encryption                                          */
-  /* -------------------------------------------------- */
   const storedMetadata = encryptMetadata
     ? {
         _encrypted: true,
@@ -121,9 +106,6 @@ export async function logSecurityEvent(params: {
         data: safeMetadata,
       };
 
-  /* -------------------------------------------------- */
-  /* IP + UA extraction                                  */
-  /* -------------------------------------------------- */
   let detectedIp = ip ?? null;
   let detectedUA = userAgent ?? null;
 
@@ -133,43 +115,37 @@ export async function logSecurityEvent(params: {
     detectedUA = detectedUA ?? h.get("user-agent");
   } catch {}
 
-  /* -------------------------------------------------- */
-  /* Event versioning                                    */
-  /* -------------------------------------------------- */
-  const eventVersion = 3;
+  const version = 3;
 
-  /* -------------------------------------------------- */
-  /* Write to DB                                         */
-  /* -------------------------------------------------- */
   try {
     await prisma.securityEvent.create({
       data: {
         id: eventId,
-        version: eventVersion,
-
+        version,
         type,
         message,
         severity: sev,
+        category: normalizedCategory,
+        context,
+        source,
+        requestId,
 
         actorType,
         actorId,
-        context,
-        operation,
+
+        orderId,
+        fulfillmentId,
+        riderId,
+
+        riskScore: riskScore ?? 0,
         tags,
-        riskScore,
 
         userId,
         ip: detectedIp,
         userAgent: detectedUA,
         metadata: storedMetadata,
-        category: normalizedCategory,
-        source,
-        requestId,
         timestamp: timestamp ?? new Date(),
-
-        orderId,
-        fulfillmentId,
-        riderId,
+        createdAt: new Date(),
       },
     });
   } catch (err) {
