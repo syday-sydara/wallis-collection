@@ -22,7 +22,7 @@ export async function processPaymentEvent(params: {
 }) {
   const { provider, reference, rawPayload, source } = params;
 
-  // --- 1. Fetch payment + order ---
+  // --- Fetch payment + order ---
   const payment = await prisma.payment.findUnique({
     where: { reference },
     include: { order: true },
@@ -48,21 +48,12 @@ export async function processPaymentEvent(params: {
 
   const order = payment.order;
 
-  // --- 2. Idempotency (pre‑verification) ---
+  // --- Idempotency ---
   if (payment.status === "SUCCESS" && order.isPaid) {
-    if (source === "webhook") {
-      await logSecurityEvent({
-        type: "WEBHOOK_DUPLICATE",
-        message: `Duplicate webhook for already paid order ${order.id}`,
-        severity: "low",
-        metadata: { provider, reference, source },
-      });
-    }
-
     return { ok: true, reason: "already_paid" as const };
   }
 
-  // --- 3. Verify payment with provider (include raw payload) ---
+  // --- Verify with provider ---
   const verification = await verifyPayment(provider, reference, {
     rawPayload,
     source,
@@ -70,72 +61,32 @@ export async function processPaymentEvent(params: {
 
   const signals: FraudSignal[] = [];
 
-  // Signature / integrity issues
+  // Signature invalid
   if ((verification as any).signatureValid === false) {
     signals.push("INVALID_SIGNATURE");
-
-    await logSecurityEvent({
-      type: "PAYMENT_INVALID_SIGNATURE",
-      message: `Invalid signature for ${provider} payment ${reference}`,
-      severity: "critical",
-      metadata: { provider, reference, source },
-    });
-
-    await logFraudSignal({
-      type: "INVALID_SIGNATURE",
-      provider,
-      reference,
-      metadata: { source },
-    });
-
     return { ok: false, reason: "invalid_signature" as const };
   }
 
-  // Pending – nothing to do yet
+  // Pending
   if (verification.status === "pending") {
-    await logSecurityEvent({
-      type: "PAYMENT_PENDING",
-      message: `Payment ${reference} still pending via ${provider}`,
-      severity: "low",
-      metadata: { provider, reference, source },
-    });
-
     return { ok: false, reason: "pending" as const };
   }
 
-  // Provider‑level errors
-  if (verification.status === "error") {
-    signals.push("PROVIDER_ERROR");
-
-    await logSecurityEvent({
-      type: "PAYMENT_PROVIDER_ERROR",
-      message: `Provider error for ${provider} payment ${reference}`,
-      severity: "medium",
-      metadata: { provider, reference, source },
-    });
-  }
-
-  // Provider explicitly reports failure
+  // Provider failure
   if (verification.status === "failed") {
     signals.push("PROVIDER_REPORTED_FAILURE");
   }
 
-  // --- 4. Domain checks (only meaningful if provider says success) ---
+  // Domain checks
   if (verification.status === "success") {
-    const providerAmount = (verification as any).amount;
-    const providerCurrency = (verification as any).currency;
+    const amount = (verification as any).amount;
+    const currency = (verification as any).currency;
 
-    if (
-      typeof providerAmount === "number" &&
-      providerAmount !== order.total
-    ) {
+    if (typeof amount === "number" && amount !== order.total) {
       signals.push("AMOUNT_MISMATCH");
     }
 
-    if (
-      providerCurrency &&
-      providerCurrency !== order.currency
-    ) {
+    if (currency && currency !== order.currency) {
       signals.push("CURRENCY_MISMATCH");
     }
 
@@ -144,7 +95,7 @@ export async function processPaymentEvent(params: {
     }
   }
 
-  // --- 5. Compute fraud score + severity ---
+  // Compute fraud score
   const score = await computeFraudScore(signals, {
     orderId: order.id,
     paymentId: payment.id,
@@ -155,72 +106,55 @@ export async function processPaymentEvent(params: {
 
   const severity = classifyFraudScore(score);
 
-  // --- 6. Transaction‑safe update ---
+  // --- Transaction ---
   return await prisma.$transaction(async (tx) => {
-    const freshPayment = await tx.payment.findUnique({
+    const fresh = await tx.payment.findUnique({
       where: { id: payment.id },
       include: { order: true },
     });
 
-    if (!freshPayment || !freshPayment.order) {
-      await logSecurityEvent({
-        type: "PAYMENT_ORDER_DISAPPEARED",
-        message: `Order disappeared during transaction for payment ${payment.id}`,
-        severity: "high",
-        metadata: { provider, reference, source },
-      });
-
+    if (!fresh || !fresh.order) {
       return { ok: false, reason: "order_disappeared" as const };
     }
 
-    const freshOrder = freshPayment.order;
+    const freshOrder = fresh.order;
 
     // Idempotency (post‑verification)
-    if (freshPayment.status === "SUCCESS" && freshOrder.isPaid) {
-      if (source === "webhook") {
-        await logSecurityEvent({
-          type: "WEBHOOK_DUPLICATE",
-          message: `Duplicate webhook (post‑tx) for order ${freshOrder.id}`,
-          severity: "low",
-          metadata: { provider, reference, source },
-        });
-      }
-
+    if (fresh.status === "SUCCESS" && freshOrder.isPaid) {
       return { ok: true, reason: "already_paid" as const };
     }
 
-    // --- 6a. Non‑success verification: mark FAILED, log, exit ---
-    if (verification.status !== "success") {
+    // --- Provider says FAILED ---
+    if (verification.status === "failed") {
       await tx.payment.update({
-        where: { id: freshPayment.id },
-        data: {
-          status: "FAILED",
-        },
-      });
-
-      if (signals.length > 0) {
-        await logFraudSignal({
-          type: "PAYMENT_FAILURE",
-          provider,
-          reference,
-          metadata: { signals, score },
-        });
-      }
-
-      await logSecurityEvent({
-        type: "PAYMENT_FAILED",
-        message: `Payment ${reference} failed via ${provider}`,
-        severity,
-        metadata: { provider, reference, score, signals, source },
+        where: { id: fresh.id },
+        data: { status: "FAILED" },
       });
 
       return { ok: false, reason: "failed" as const, score };
     }
 
-    // --- 6b. Success + low risk: mark paid + success ---
-    const isLowRisk = severity === "low" && signals.length === 0;
+    // --- Provider says SUCCESS but suspicious ---
+    const isSuspicious = severity !== "low" || signals.length > 0;
 
-    if (isLowRisk) {
+    if (verification.status === "success" && isSuspicious) {
+      await tx.payment.update({
+        where: { id: fresh.id },
+        data: { status: "REVIEW" },
+      });
+
+      await logSecurityEvent({
+        type: "PAYMENT_REVIEW",
+        message: `Payment ${reference} flagged for review`,
+        severity,
+        metadata: { provider, reference, score, signals },
+      });
+
+      return { ok: false, reason: "review" as const, score };
+    }
+
+    // --- SUCCESS + low risk ---
+    if (verification.status === "success") {
       await tx.order.update({
         where: { id: freshOrder.id },
         data: {
@@ -230,49 +164,17 @@ export async function processPaymentEvent(params: {
       });
 
       await tx.payment.update({
-        where: { id: freshPayment.id },
+        where: { id: fresh.id },
         data: {
           status: "SUCCESS",
           channel: (verification as any).channel,
           fee: (verification as any).fee,
-          // Optional: map providerTransactionId, paidAt if you store them
         },
-      });
-
-      await logSecurityEvent({
-        type: "PAYMENT_CONFIRMED",
-        message: `Order ${freshOrder.id} confirmed via ${source}`,
-        severity: "low",
-        metadata: { provider, reference, score, source },
       });
 
       return { ok: true, reason: "paid" as const };
     }
 
-    // --- 6c. Success but suspicious: DO NOT mark order paid ---
-    await tx.payment.update({
-      where: { id: freshPayment.id },
-      data: {
-        status: "FAILED", // or keep PENDING if you want manual review
-      },
-    });
-
-    if (signals.length > 0) {
-      await logFraudSignal({
-        type: "PAYMENT_SUSPICIOUS",
-        provider,
-        reference,
-        metadata: { signals, score },
-      });
-    }
-
-    await logSecurityEvent({
-      type: "PAYMENT_FLAGGED",
-      message: `Order ${freshOrder.id} flagged via ${source}`,
-      severity,
-      metadata: { provider, reference, score, signals, source },
-    });
-
-    return { ok: false, reason: "flagged" as const, score };
+    return { ok: false, reason: "unknown" as const };
   });
 }

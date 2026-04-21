@@ -8,26 +8,9 @@ const CONCURRENCY_LIMIT = 5;
 const MAX_BATCH = 200;
 const RETRY_COUNT = 2;
 
-interface ReconciliationResult {
-  paymentId: string;
-  orderId: string;
-  ok: boolean;
-  reason: string;
-  score?: number;
-}
-
-interface ReconciliationSummary {
-  processed: number;
-  fulfilled: number;``
-  rejected: number;
-  pending: number;
-  details: ReconciliationResult[];
-}
-
-export async function reconcilePendingPayments(limit = 100): Promise<ReconciliationSummary> {
+export async function reconcilePendingPayments(limit = 100) {
   const safeLimit = Math.min(limit, MAX_BATCH);
 
-  // --- 1. Fetch pending payments older than 5 minutes ---
   const pendingPayments = await prisma.payment.findMany({
     where: {
       status: "PENDING",
@@ -43,7 +26,7 @@ export async function reconcilePendingPayments(limit = 100): Promise<Reconciliat
 
   const limitConcurrency = pLimit(CONCURRENCY_LIMIT);
 
-  const results: ReconciliationResult[] = await Promise.all(
+  const results = await Promise.all(
     pendingPayments.map((payment) =>
       limitConcurrency(async () => {
         let attempt = 0;
@@ -52,11 +35,27 @@ export async function reconcilePendingPayments(limit = 100): Promise<Reconciliat
         while (attempt <= RETRY_COUNT) {
           try {
             const result = await processPaymentEvent({
-              provider: payment.provider as "paystack" | "monnify",
+              provider: payment.provider as any,
               reference: payment.reference,
               rawPayload: null,
               source: "reconciliation",
             });
+
+            // Handle EXPIRED
+            if (result.reason === "expired") {
+              await prisma.payment.update({
+                where: { id: payment.id },
+                data: { status: "EXPIRED" },
+              });
+            }
+
+            // Handle PARTIAL
+            if (result.reason === "partial") {
+              await prisma.payment.update({
+                where: { id: payment.id },
+                data: { status: "PARTIAL" },
+              });
+            }
 
             return {
               paymentId: payment.id,
@@ -71,9 +70,9 @@ export async function reconcilePendingPayments(limit = 100): Promise<Reconciliat
 
             await logSecurityEvent({
               type: "RECONCILIATION_RETRY",
-              message: `Reconciliation retry ${attempt} for payment ${payment.id}`,
+              message: `Retry ${attempt} for payment ${payment.id}`,
               severity: "medium",
-              metadata: { error: String(err), attempt },
+              metadata: { error: String(err) },
             });
           }
         }

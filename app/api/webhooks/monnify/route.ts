@@ -1,9 +1,16 @@
+import { NextRequest, NextResponse } from "next/server";
+
 import { processPaymentEvent } from "@/lib/payments/processor";
 import {
   verifyMonnifyWebhookSignature,
   extractMonnifyReference
 } from "@/lib/payments/providers/monnify";
-import { NextRequest, NextResponse } from "next/server";
+
+import {
+  handleRefundEvent,
+  handleChargebackEvent
+} from "@/lib/payments/events";
+
 import { logFraudSignal } from "@/lib/security/fraud";
 
 export async function POST(req: NextRequest) {
@@ -19,15 +26,21 @@ export async function POST(req: NextRequest) {
       metadata: { truncatedBody: rawBody.slice(0, 500) }
     });
 
-    // Signature mismatch = safe to return 400
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
-  // --- Parse after signature check ---
+  // --- Parse JSON ---
   let body: any;
   try {
     body = JSON.parse(rawBody);
   } catch {
+    return NextResponse.json({ ok: false }, { status: 200 });
+  }
+
+  const eventType = body?.eventType;
+  const eventData = body?.eventData;
+
+  if (!eventType || !eventData) {
     return NextResponse.json({ ok: false }, { status: 200 });
   }
 
@@ -40,17 +53,49 @@ export async function POST(req: NextRequest) {
       metadata: { body }
     });
 
-    // Unknown reference → still return 200 to avoid retries
     return NextResponse.json({ ok: false }, { status: 200 });
   }
 
-  // --- Optional: Validate event type ---
-  const eventType = body?.eventType;
-  if (!eventType) {
-    return NextResponse.json({ ok: false }, { status: 200 });
+  // ============================================================
+  // 1. AUTOMATED REFUND DETECTION
+  // ============================================================
+  if (eventType === "REFUND") {
+    const amount = Number(eventData?.amountRefunded ?? 0);
+
+    const result = await handleRefundEvent({
+      provider: "monnify",
+      reference,
+      amount,
+      raw: body
+    });
+
+    return NextResponse.json(result, { status: 200 });
   }
 
-  // --- Process event safely ---
+  // ============================================================
+  // 2. AUTOMATED CHARGEBACK / REVERSAL DETECTION
+  // ============================================================
+  if (
+    eventType === "REVERSAL" ||
+    eventType === "CHARGEBACK" ||
+    eventType === "TRANSACTION_REVERSED"
+  ) {
+    const amount = Number(eventData?.amountReversed ?? eventData?.amount ?? 0);
+
+    const result = await handleChargebackEvent({
+      provider: "monnify",
+      reference,
+      amount,
+      reason: eventData?.reason || eventType,
+      raw: body
+    });
+
+    return NextResponse.json(result, { status: 200 });
+  }
+
+  // ============================================================
+  // 3. NORMAL PAYMENT EVENTS (PAYMENT_COMPLETED, PAYMENT_FAILED, etc.)
+  // ============================================================
   try {
     const result = await processPaymentEvent({
       provider: "monnify",
@@ -61,7 +106,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result, { status: 200 });
   } catch (err: any) {
-    // Log internally but do NOT return 500 to Monnify
     await logFraudSignal({
       type: "WEBHOOK_PROCESSING_ERROR",
       provider: "monnify",

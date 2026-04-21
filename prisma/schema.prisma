@@ -27,7 +27,12 @@ enum PaymentStatus {
   SUCCESS
   FAILED
   REFUNDED
+  REVIEW
+  CHARGEBACK
+  EXPIRED
+  PARTIAL
 }
+
 
 enum OrderStatus {
   CREATED
