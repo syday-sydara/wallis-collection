@@ -21,11 +21,9 @@ interface ChargebackEventInput {
   raw?: unknown;
 }
 
-const OPS_WHATSAPP = process.env.OPS_WHATSAPP_NUMBER ?? ""; // internal alerts
+const OPS_WHATSAPP = process.env.OPS_WHATSAPP_NUMBER ?? "";
 
-// ============================================================
-// REFUND HANDLER
-// ============================================================
+// REFUND
 export async function handleRefundEvent(input: RefundEventInput) {
   const { provider, reference, amount, raw } = input;
 
@@ -69,30 +67,20 @@ export async function handleRefundEvent(input: RefundEventInput) {
       metadata: { provider, reference, refundAmount, raw },
     });
 
-    // OPTIONAL ALERT: Notify customer
     if (order.customerPhone) {
       await sendWhatsAppAlert({
         to: order.customerPhone,
         template: "payment_refunded",
-        variables: [
-          order.id,
-          reference,
-          refundAmount.toString(),
-        ],
+        variables: [order.id, reference, refundAmount.toString()],
         severity: "medium",
       });
     }
 
-    // OPTIONAL ALERT: Notify internal ops
     if (OPS_WHATSAPP) {
       await sendWhatsAppAlert({
         to: OPS_WHATSAPP,
         template: "ops_refund_alert",
-        variables: [
-          order.id,
-          reference,
-          refundAmount.toString(),
-        ],
+        variables: [order.id, reference, refundAmount.toString()],
         severity: "medium",
       });
     }
@@ -101,9 +89,7 @@ export async function handleRefundEvent(input: RefundEventInput) {
   });
 }
 
-// ============================================================
-// CHARGEBACK HANDLER
-// ============================================================
+// CHARGEBACK
 export async function handleChargebackEvent(input: ChargebackEventInput) {
   const { provider, reference, amount, reason, raw } = input;
 
@@ -137,6 +123,10 @@ export async function handleChargebackEvent(input: ChargebackEventInput) {
       where: { id: order.id },
       data: {
         refundedAmount: (order.refundedAmount ?? 0) + chargebackAmount,
+        orderStatus:
+          order.orderStatus === "DELIVERED"
+            ? "RETURN_REQUESTED"
+            : "CANCELLED",
       },
     });
 
@@ -154,7 +144,6 @@ export async function handleChargebackEvent(input: ChargebackEventInput) {
       metadata: { provider, reference, chargebackAmount, reason, raw },
     });
 
-    // OPTIONAL ALERT: Notify customer
     if (order.customerPhone) {
       await sendWhatsAppAlert({
         to: order.customerPhone,
@@ -169,7 +158,6 @@ export async function handleChargebackEvent(input: ChargebackEventInput) {
       });
     }
 
-    // OPTIONAL ALERT: Notify internal ops
     if (OPS_WHATSAPP) {
       await sendWhatsAppAlert({
         to: OPS_WHATSAPP,

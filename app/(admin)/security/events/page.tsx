@@ -3,11 +3,11 @@ export const dynamic = "force-dynamic";
 
 import { requirePermission } from "@/lib/auth/require-admin";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import SecuritySummaryCards from "@/app/admin/security/ui/SecuritySummaryCards";
-import RecentSecurityEvents from "@/app/admin/security/ui/RecentSecurityEvents";
-import RiskDistributionCard from "@/app/admin/security/ui/RiskDistributionCard";
-import ActiveSessionsCard from "@/app/admin/security/ui/ActiveSessionsCard";
-import DevicesSnapshotCard from "@/app/admin/security/ui/DevicesSnapshotCard";
+import SecuritySummaryCards from "@/app/(admin)/security/ui/SecuritySummaryCards";
+import RecentSecurityEvents from "@/app/(admin)/security/ui/RecentSecurityEvents";
+import RiskDistributionCard from "@/app/(admin)/security/ui/RiskDistributionCard";
+import ActiveSessionsCard from "@/app/(admin)/security/ui/ActiveSessionsCard";
+import DevicesSnapshotCard from "@/app/(admin)/security/ui/DevicesSnapshotCard";
 
 export default async function AdminSecurityDashboard() {
   await requirePermission(PERMISSIONS.VIEW_SECURITY_CENTER);

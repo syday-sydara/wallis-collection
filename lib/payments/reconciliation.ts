@@ -41,7 +41,7 @@ export async function reconcilePendingPayments(limit = 100) {
               source: "reconciliation",
             });
 
-            // Handle EXPIRED
+            // Map special reasons to status updates if needed
             if (result.reason === "expired") {
               await prisma.payment.update({
                 where: { id: payment.id },
@@ -49,7 +49,6 @@ export async function reconcilePendingPayments(limit = 100) {
               });
             }
 
-            // Handle PARTIAL
             if (result.reason === "partial") {
               await prisma.payment.update({
                 where: { id: payment.id },
@@ -62,7 +61,7 @@ export async function reconcilePendingPayments(limit = 100) {
               orderId: payment.orderId,
               ok: result.ok ?? false,
               reason: result.reason,
-              score: result.score,
+              score: (result as any).score,
             };
           } catch (err) {
             lastError = err;
