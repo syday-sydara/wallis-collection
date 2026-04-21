@@ -51,6 +51,13 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   /* -------------------------------------------------- */
+  /* 0. Exempt webhooks and internal endpoints */
+  /* -------------------------------------------------- */
+  if (pathname.startsWith("/api/webhooks") || pathname.startsWith("/api/_internal")) {
+    return NextResponse.next();
+  }
+
+  /* -------------------------------------------------- */
   /* 1. Parse session (Node-safe) */
   /* -------------------------------------------------- */
   const user = parseMiddlewareSession(req);
@@ -82,7 +89,7 @@ export async function middleware(req: NextRequest) {
         req.ip ||
         "unknown";
 
-      void fetch(`${origin}/api/_internal/security-log`, {
+      void fetch(`${getInternalSecurityLogUrl()}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

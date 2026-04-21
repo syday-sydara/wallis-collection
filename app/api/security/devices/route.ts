@@ -1,6 +1,6 @@
 // app/api/security/devices/route.ts
 
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { requireSessionUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/auth/permissions";
 import { forbidden, ok } from "@/lib/api/response";

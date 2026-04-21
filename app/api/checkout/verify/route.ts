@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
 export async function POST(req: NextRequest) {
@@ -43,16 +43,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true }, { status: 200 });
   }
 
-  // VERIFY WITH PAYSTACK
-  const res = await fetch(
-    `https://api.paystack.co/transaction/verify/${payment.reference}`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-      },
-      cache: "no-store",
-    }
-  );
+  // VERIFY WITH PAYSTACK (with 10s timeout)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  
+  let res;
+  try {
+    res = await fetch(
+      `https://api.paystack.co/transaction/verify/${payment.reference}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        },
+        cache: "no-store",
+        signal: controller.signal,
+      }
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!res.ok) {
     return NextResponse.json({ error: "Paystack error" }, { status: 502 });

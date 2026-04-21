@@ -1,5 +1,5 @@
 // scripts/fix-product-stock.ts
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 async function main() {
   console.log("Starting product stock migration...");

@@ -1,6 +1,6 @@
 // app/api/security/risk-distribution/route.ts
 
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { requireSessionUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/auth/permissions";
