@@ -295,3 +295,27 @@ body {
     transition: none !important;
   }
 }
+
+@media (max-width: 640px) {
+  table thead {
+    display: none;
+  }
+
+  table tr {
+    display: block;
+    border-bottom: 1px solid rgb(var(--border-default));
+    padding: 0.5rem 0;
+  }
+
+  table td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+  }
+
+  table td::before {
+    content: attr(data-label);
+    font-weight: 500;
+    color: rgb(var(--text-secondary));
+  }
+}
