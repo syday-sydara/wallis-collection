@@ -186,6 +186,16 @@ const admin = {
       if (!res.ok) throw new Error("Failed to refund");
       return res.json();
     },
+    async addNote(orderId: string, message: string) {
+    const res = await fetch(`/api/admin/orders/${orderId}/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
+
+    if (!res.ok) throw new Error("Failed to add note");
+    return res.json();
+  },
   },
 
   products: {
@@ -236,6 +246,28 @@ const admin = {
       },
     },
   },
+   fulfillment: {
+    async create(orderId: string, carrier: string, tracking: string) {
+      const res = await fetch(`/api/admin/orders/${orderId}/fulfillment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ carrier, tracking }),
+      });
+      if (!res.ok) throw new Error("Failed to create fulfillment");
+      return res.json();
+    },
+
+    async updateStatus(id: string, status: string) {
+      const res = await fetch(`/api/admin/fulfillment/${id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error("Failed to update fulfillment status");
+      return res.json();
+    },
+  },
+
 };
 
 export default admin;

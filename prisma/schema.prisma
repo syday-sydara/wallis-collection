@@ -509,3 +509,22 @@ model DeviceEvent {
   @@index([deviceId])
   @@index([userId])
 }
+
+model Fulfillment {
+  id        String            @id @default(cuid())
+  orderId   String
+  order     Order             @relation(fields: [orderId], references: [id])
+  carrier   String?
+  tracking  String?
+  status    FulfillmentStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+enum FulfillmentStatus {
+  PENDING
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+}
