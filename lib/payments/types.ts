@@ -7,37 +7,45 @@ export type PaymentVerificationStatus =
   | "failed"
   | "error";
 
+export interface BasePaymentVerification {
+  provider: PaymentProvider;
+  reference: string;
+  raw: unknown;
+  providerStatus?: string;
+  signatureValid?: boolean;
+  source?: "webhook" | "polling" | "manual";
+  attempt?: number;
+}
+
+export interface PaymentSuccess extends BasePaymentVerification {
+  status: "success";
+  amount: number;
+  currency: "NGN";
+  paidAt?: string;
+  providerTransactionId?: string;
+  channel?: string;
+  fee?: number;
+  netAmount?: number;
+  isFinal?: boolean;
+}
+
+export interface PaymentPending extends BasePaymentVerification {
+  status: "pending";
+  message?: string;
+}
+
+export interface PaymentFailed extends BasePaymentVerification {
+  status: "failed";
+  message?: string;
+}
+
+export interface PaymentError extends BasePaymentVerification {
+  status: "error";
+  message?: string;
+}
+
 export type PaymentVerificationResult =
-  | {
-      status: "success";
-      provider: PaymentProvider;
-      reference: string;
-      amount: number;
-      currency: "NGN";
-      paidAt?: string;
-      providerTransactionId?: string;
-      channel?: string;
-      isFinal?: boolean;
-      raw: unknown;
-    }
-  | {
-      status: "pending";
-      provider: PaymentProvider;
-      reference: string;
-      message?: string;
-      raw: unknown;
-    }
-  | {
-      status: "failed";
-      provider: PaymentProvider;
-      reference: string;
-      message?: string;
-      raw: unknown;
-    }
-  | {
-      status: "error";
-      provider: PaymentProvider;
-      reference: string;
-      message?: string;
-      raw: unknown;
-    };
+  | PaymentSuccess
+  | PaymentPending
+  | PaymentFailed
+  | PaymentError;

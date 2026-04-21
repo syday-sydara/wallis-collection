@@ -1,42 +1,42 @@
 // lib/payments/reconciliation.ts
 import pLimit from "p-limit";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { processPaymentEvent } from "@/lib/payments/processor";
-
-type ReconciliationResult =
-  | { orderId: string; status: "pending" }
-  | { orderId: string; ok: boolean; reason: string; score?: number };
-
-interface ReconciliationSummary {
-  processed: number;
-  fulfilled: number;
-  rejected: number;
-  pending: number;
-  details: ReconciliationResult[];
-}
+import { logSecurityEvent } from "@/lib/security/logSecurityEvent";
 
 const CONCURRENCY_LIMIT = 5;
 const MAX_BATCH = 200;
 const RETRY_COUNT = 2;
 
-/**
- * Reconcile pending payments with the payment providers.
- * Only considers orders older than 5 minutes to avoid race conditions.
- */
-export async function reconcilePendingPayments(
-  limit = 100
-): Promise<ReconciliationSummary> {
+interface ReconciliationResult {
+  paymentId: string;
+  orderId: string;
+  ok: boolean;
+  reason: string;
+  score?: number;
+}
+
+interface ReconciliationSummary {
+  processed: number;
+  fulfilled: number;``
+  rejected: number;
+  pending: number;
+  details: ReconciliationResult[];
+}
+
+export async function reconcilePendingPayments(limit = 100): Promise<ReconciliationSummary> {
   const safeLimit = Math.min(limit, MAX_BATCH);
 
-  const pending = await prisma.order.findMany({
+  // --- 1. Fetch pending payments older than 5 minutes ---
+  const pendingPayments = await prisma.payment.findMany({
     where: {
-      paymentStatus: "PENDING",
-      paymentReference: { not: null },
-      paymentProvider: { in: ["paystack", "monnify"] },
+      status: "PENDING",
+      provider: { in: ["paystack", "monnify"] },
       createdAt: {
         lte: new Date(Date.now() - 5 * 60 * 1000),
       },
     },
+    include: { order: true },
     orderBy: { createdAt: "asc" },
     take: safeLimit,
   });
@@ -44,7 +44,7 @@ export async function reconcilePendingPayments(
   const limitConcurrency = pLimit(CONCURRENCY_LIMIT);
 
   const results: ReconciliationResult[] = await Promise.all(
-    pending.map((order) =>
+    pendingPayments.map((payment) =>
       limitConcurrency(async () => {
         let attempt = 0;
         let lastError: unknown = null;
@@ -52,48 +52,54 @@ export async function reconcilePendingPayments(
         while (attempt <= RETRY_COUNT) {
           try {
             const result = await processPaymentEvent({
-              provider: order.paymentProvider as "paystack" | "monnify",
-              reference: order.paymentReference!,
+              provider: payment.provider as "paystack" | "monnify",
+              reference: payment.reference,
+              rawPayload: null,
               source: "reconciliation",
             });
 
-            // Treat "pending" payments separately
-            if (result.reason === "pending") {
-              return { orderId: order.id, status: "pending" } as const;
-            }
-
-            return { orderId: order.id, ...result } as ReconciliationResult;
+            return {
+              paymentId: payment.id,
+              orderId: payment.orderId,
+              ok: result.ok ?? false,
+              reason: result.reason,
+              score: result.score,
+            };
           } catch (err) {
             lastError = err;
             attempt++;
-            console.warn(
-              `Reconciliation attempt ${attempt} failed for order ${order.id}:`,
-              err
-            );
+
+            await logSecurityEvent({
+              type: "RECONCILIATION_RETRY",
+              message: `Reconciliation retry ${attempt} for payment ${payment.id}`,
+              severity: "medium",
+              metadata: { error: String(err), attempt },
+            });
           }
         }
 
-        console.error(
-          `Reconciliation failed after ${RETRY_COUNT + 1} attempts for order ${order.id}`,
-          lastError
-        );
+        await logSecurityEvent({
+          type: "RECONCILIATION_FAILED",
+          message: `Reconciliation failed for payment ${payment.id}`,
+          severity: "high",
+          metadata: { error: String(lastError) },
+        });
+
         return {
-          orderId: order.id,
+          paymentId: payment.id,
+          orderId: payment.orderId,
           ok: false,
           reason: "reconciliation_failed",
-        } as const;
+        };
       })
     )
   );
 
-  const summary: ReconciliationSummary = {
-    processed: pending.length,
-    fulfilled: results.filter((r) => r.ok !== false && r.status !== "pending")
-      .length,
-    rejected: results.filter((r) => r.ok === false).length,
-    pending: results.filter((r) => r.status === "pending").length,
+  return {
+    processed: pendingPayments.length,
+    fulfilled: results.filter((r) => r.ok && r.reason === "paid").length,
+    rejected: results.filter((r) => !r.ok && r.reason !== "pending").length,
+    pending: results.filter((r) => r.reason === "pending").length,
     details: results,
   };
-
-  return summary;
 }
