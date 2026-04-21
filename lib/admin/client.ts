@@ -186,6 +186,16 @@ const admin = {
       if (!res.ok) throw new Error("Failed to refund");
       return res.json();
     },
+    async addNote(orderId: string, message: string) {
+    const res = await fetch(`/api/admin/orders/${orderId}/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
+
+    if (!res.ok) throw new Error("Failed to add note");
+    return res.json();
+  },
   },
 
   products: {

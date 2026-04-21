@@ -19,6 +19,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm build"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@prisma/client": "5.20.0",
     "@radix-ui/react-slot": "^1.2.4",
     "@sentry/nextjs": "10.46.0",

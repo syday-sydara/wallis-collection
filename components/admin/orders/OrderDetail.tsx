@@ -7,6 +7,13 @@ import { toast } from "@/components/admin/ui/toast/AdminToastProvider";
 import { useRouter } from "next/navigation";
 import OrderTimeline from "./OrderTimeline";
 
+import {
+  ORDER_STATUS_LABELS,
+  getNextStatuses,
+  OrderStatus,
+} from "@/lib/orders/orderStatus";
+import OrderNotes from "./OrderNotes";
+
 function formatAmount(amount: number, currency: string) {
   return `${currency} ${(amount / 100).toFixed(2)}`;
 }
@@ -14,18 +21,22 @@ function formatAmount(amount: number, currency: string) {
 export default function OrderDetail({
   order,
   auditLogs,
+  notes,
 }: {
   order: any;
   auditLogs: any[];
+  notes: any[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  function updateOrderStatus(status: string) {
+  const nextStatuses = getNextStatuses(order.orderStatus as OrderStatus);
+
+  function updateOrderStatus(status: OrderStatus) {
     startTransition(async () => {
       try {
         await admin.orders.updateStatus(order.id, status);
-        toast.success("Order status updated");
+        toast.success(`Order marked as ${ORDER_STATUS_LABELS[status]}`);
         router.refresh();
       } catch {
         toast.error("Failed to update status");
@@ -46,8 +57,9 @@ export default function OrderDetail({
   }
 
   function refund() {
-    const amount = prompt("Refund amount (in major units, e.g. 1000.00):");
+    const amount = prompt("Refund amount (e.g. 1000.00):");
     if (!amount) return;
+
     const value = Math.round(parseFloat(amount) * 100);
     if (!value || value <= 0) return;
 
@@ -75,38 +87,28 @@ export default function OrderDetail({
           </p>
         </div>
 
+        {/* Dynamic Action Bar */}
         <div className="flex flex-wrap gap-2">
-          <button
-            className="btn btn-outline btn-sm"
-            onClick={markPaid}
-            disabled={isPending}
-          >
-            Mark as Paid
-          </button>
+          {!order.isPaid && (
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={markPaid}
+              disabled={isPending}
+            >
+              Mark as Paid
+            </button>
+          )}
 
-          <button
-            className="btn btn-outline btn-sm"
-            onClick={() => updateOrderStatus("SHIPPED")}
-            disabled={isPending}
-          >
-            Mark as Shipped
-          </button>
-
-          <button
-            className="btn btn-outline btn-sm"
-            onClick={() => updateOrderStatus("DELIVERED")}
-            disabled={isPending}
-          >
-            Mark as Delivered
-          </button>
-
-          <button
-            className="btn btn-danger btn-sm"
-            onClick={() => updateOrderStatus("CANCELLED")}
-            disabled={isPending}
-          >
-            Cancel Order
-          </button>
+          {nextStatuses.map((s) => (
+            <button
+              key={s}
+              className="btn btn-outline btn-sm"
+              onClick={() => updateOrderStatus(s)}
+              disabled={isPending}
+            >
+              Mark as {ORDER_STATUS_LABELS[s]}
+            </button>
+          ))}
 
           <button
             className="btn btn-outline btn-sm"
@@ -118,8 +120,8 @@ export default function OrderDetail({
         </div>
       </div>
 
-      {/* Summary cards (unchanged from before, trimmed for brevity) */}
-      {/* ... keep your existing summary, items, shipping sections ... */}
+      {/* Notes */}
+      <OrderNotes orderId={order.id} notes={notes} />
 
       {/* Timeline */}
       <OrderTimeline order={order} auditLogs={auditLogs} />
