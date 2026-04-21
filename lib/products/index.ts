@@ -1,11 +1,34 @@
-// Re-export all types and services
-export * from "./types";
-export * from "./viewModels";
+// ------------------------------
+// Types
+// ------------------------------
+export type {
+  AdminProductSummary,
+  AdminProductDetail,
+  ProductImage,
+  ProductVariant,
+  ProductWithRelations,
+  RecommendedProduct,
+  ProductClientVM,
+  ProductListParams,
+  ProductListResult,
+  ProductCardVM,
+  ProductDetailVM,
+} from "./types";
 
-// Admin services
-export * from "./adminCreateProduct";
-export * from "./adminUpdateProduct";
-export * from "./adminGetProduct";
+// ------------------------------
+// View Models
+// ------------------------------
+export {
+  toProductCardVM,
+  toAdminProductSummary,
+  toAdminProductDetail,
+} from "./viewModels";
 
-// Storefront services
-export * from "./service";
+
+// ------------------------------
+// Storefront Services
+// ------------------------------
+export {
+  getProducts,
+  getProductDetailWithRecommendations,
+} from "./service";

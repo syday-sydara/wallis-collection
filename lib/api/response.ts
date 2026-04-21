@@ -2,6 +2,12 @@
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 
+type ErrorDetails = {
+  code?: string;
+  issues?: unknown;
+  [key: string]: unknown;
+};
+
 type ResponseData<T> = {
   success: true;
   data: T;
@@ -15,11 +21,15 @@ type ResponseError = {
   issues?: unknown;
 };
 
+/* Base JSON helper */
 function json<T>(body: T, init?: ResponseInit) {
   return NextResponse.json(body, init);
 }
 
-/* Success */
+/* ---------------------------------------------
+ * SUCCESS RESPONSES
+ * --------------------------------------------- */
+
 export function ok<T>(data: T, meta?: unknown, init?: ResponseInit) {
   const body: ResponseData<T> = meta
     ? { success: true, data, meta }
@@ -39,34 +49,84 @@ export function noContent(init?: ResponseInit) {
   return res;
 }
 
-/* Client errors */
-export function badRequest(message: string, issues?: unknown, code?: string, init?: ResponseInit) {
-  return json<ResponseError>({ success: false, error: message, issues, code }, { status: 400, ...init });
-}
+/* ---------------------------------------------
+ * CLIENT ERRORS
+ * --------------------------------------------- */
 
-export function unprocessable(message = "Validation failed", issues?: unknown, code?: string, init?: ResponseInit) {
-  return json<ResponseError>({ success: false, error: message, issues, code }, { status: 422, ...init });
-}
-
-export function unauthorized(message = "Unauthorized", code?: string, init?: ResponseInit) {
-  return json<ResponseError>({ success: false, error: message, code }, { status: 401, ...init });
-}
-
-export function forbidden(message = "Forbidden", code?: string, init?: ResponseInit) {
-  return json<ResponseError>({ success: false, error: message, code }, { status: 403, ...init });
-}
-
-export function notFound(message = "Resource not found", code?: string, init?: ResponseInit) {
-  return json<ResponseError>({ success: false, error: message, code }, { status: 404, ...init });
-}
-
-export function conflict(message = "Conflict", code?: string, init?: ResponseInit) {
-  return json<ResponseError>({ success: false, error: message, code }, { status: 409, ...init });
-}
-
-export function tooManyRequests(message = "Too many requests", code?: string, retryAfter?: number, init?: ResponseInit) {
+export function badRequest(
+  message: string,
+  details?: ErrorDetails,
+  init?: ResponseInit
+) {
   return json<ResponseError>(
-    { success: false, error: message, code },
+    { success: false, error: message, ...details },
+    { status: 400, ...init }
+  );
+}
+
+export function unprocessable(
+  message = "Validation failed",
+  details?: ErrorDetails,
+  init?: ResponseInit
+) {
+  return json<ResponseError>(
+    { success: false, error: message, ...details },
+    { status: 422, ...init }
+  );
+}
+
+export function unauthorized(
+  message = "Unauthorized",
+  details?: ErrorDetails,
+  init?: ResponseInit
+) {
+  return json<ResponseError>(
+    { success: false, error: message, ...details },
+    { status: 401, ...init }
+  );
+}
+
+export function forbidden(
+  message = "Forbidden",
+  details?: ErrorDetails,
+  init?: ResponseInit
+) {
+  return json<ResponseError>(
+    { success: false, error: message, ...details },
+    { status: 403, ...init }
+  );
+}
+
+export function notFound(
+  message = "Resource not found",
+  details?: ErrorDetails,
+  init?: ResponseInit
+) {
+  return json<ResponseError>(
+    { success: false, error: message, ...details },
+    { status: 404, ...init }
+  );
+}
+
+export function conflict(
+  message = "Conflict",
+  details?: ErrorDetails,
+  init?: ResponseInit
+) {
+  return json<ResponseError>(
+    { success: false, error: message, ...details },
+    { status: 409, ...init }
+  );
+}
+
+export function tooManyRequests(
+  message = "Too many requests",
+  details?: ErrorDetails,
+  retryAfter?: number,
+  init?: ResponseInit
+) {
+  return json<ResponseError>(
+    { success: false, error: message, ...details },
     {
       status: 429,
       ...init,
@@ -78,12 +138,27 @@ export function tooManyRequests(message = "Too many requests", code?: string, re
   );
 }
 
-export function serviceUnavailable(message = "Service unavailable", code?: string, init?: ResponseInit) {
-  return json<ResponseError>({ success: false, error: message, code }, { status: 503, ...init });
+export function serviceUnavailable(
+  message = "Service unavailable",
+  details?: ErrorDetails,
+  init?: ResponseInit
+) {
+  return json<ResponseError>(
+    { success: false, error: message, ...details },
+    { status: 503, ...init }
+  );
 }
 
-/* Server error */
-export function serverError(message = "Something went wrong", err?: unknown, code?: string, init?: ResponseInit) {
+/* ---------------------------------------------
+ * SERVER ERROR
+ * --------------------------------------------- */
+
+export function serverError(
+  message = "Something went wrong",
+  err?: unknown,
+  details?: ErrorDetails,
+  init?: ResponseInit
+) {
   if (err) {
     Sentry.captureException(err, {
       tags: { api: true },
@@ -92,10 +167,16 @@ export function serverError(message = "Something went wrong", err?: unknown, cod
     console.error("Server error:", err);
   }
 
-  return json<ResponseError>({ success: false, error: message, code }, { status: 500, ...init });
+  return json<ResponseError>(
+    { success: false, error: message, ...details },
+    { status: 500, ...init }
+  );
 }
 
-/* Redirect */
+/* ---------------------------------------------
+ * REDIRECTS
+ * --------------------------------------------- */
+
 export function redirectResponse(url: string, status: 302) {
   return NextResponse.redirect(url, status);
 }

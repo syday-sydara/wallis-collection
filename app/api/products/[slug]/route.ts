@@ -60,11 +60,15 @@ export async function GET(
 
     if (!productVM) {
       logEvent("product_not_found", { slug, ip }, "warn");
-      return notFound("Product not found", { code: "NOT_FOUND" }, {
-        headers: {
-          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
-        },
-      });
+      return notFound(
+        "Product not found",
+        { code: "NOT_FOUND" },
+        {
+          headers: {
+            "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+          },
+        }
+      );
     }
 
     logEvent("product_view", {
@@ -80,9 +84,11 @@ export async function GET(
     });
   } catch (err) {
     logEvent("product_detail_error", { error: String(err) }, "error");
-    return serverError("Failed to fetch product", err, {
-      code: "SERVER_ERROR",
-    });
+    return serverError(
+      "Failed to fetch product",
+      err,
+      { code: "SERVER_ERROR" }
+    );
   } finally {
     stopTimer();
   }

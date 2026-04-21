@@ -1,21 +1,35 @@
 // app/api/admin/products/route.ts
+import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { adminListProductsPaginated } from "@/lib/products/admin";
-import { requirePermission } from "@/lib/auth/require-admin";
-import { PERMISSIONS } from "@/lib/auth/permissions";
 
 export async function GET(req: Request) {
-  try {
-    await requirePermission(PERMISSIONS.VIEW_ADMIN);
+  const { searchParams } = new URL(req.url);
+  const cursor = searchParams.get("cursor") || undefined;
 
-    const { searchParams } = new URL(req.url);
-    const cursor = searchParams.get("cursor");
+  const products = await prisma.product.findMany({
+    take: 20,
+    skip: cursor ? 1 : 0,
+    cursor: cursor ? { id: cursor } : undefined,
+    orderBy: { updatedAt: "desc" },
+  });
 
-    const data = await adminListProductsPaginated({ cursor });
+  const nextCursor = products.length === 20 ? products[19].id : null;
 
-    return NextResponse.json(data);
-  } catch (err) {
-    console.error("Admin products error:", err);
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  return NextResponse.json({ items: products, nextCursor });
+}
+
+export async function POST(req: Request) {
+  const body = await req.json();
+
+  const product = await prisma.product.create({
+    data: {
+      name: body.name,
+      slug: body.slug,
+      basePrice: body.basePrice,
+      stock: body.stock ?? 0,
+      description: body.description ?? "",
+    },
+  });
+
+  return NextResponse.json(product);
 }

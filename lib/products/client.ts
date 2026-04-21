@@ -5,14 +5,32 @@ import type { ProductListParams, ProductListResult } from "@/lib/products/types"
 export async function fetchProductsClient(
   params: ProductListParams = {}
 ): Promise<ProductListResult> {
-  const query = new URLSearchParams(
-    Object.entries(params)
-      .filter(([_, v]) => v !== undefined && v !== null)
-      .map(([k, v]) => [k, String(v)])
-  );
+  const query = new URLSearchParams();
 
-  const res = await fetch(`/api/products?${query.toString()}`, {
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null) continue;
+
+    // Normalize cursor: empty string → skip
+    if (key === "cursor" && value === "") continue;
+
+    if (Array.isArray(value)) {
+      for (const v of value) {
+        if (v !== undefined && v !== null) {
+          query.append(key, String(v));
+        }
+      }
+    } else {
+      query.set(key, String(value));
+    }
+  }
+
+  const qs = query.toString();
+  const url = qs ? `/api/products?${qs}` : `/api/products`;
+
+  const res = await fetch(url, {
     method: "GET",
+    cache: "no-store",
+    next: { revalidate: 0 },
   });
 
   if (!res.ok) {
