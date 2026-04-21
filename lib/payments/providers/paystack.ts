@@ -3,6 +3,13 @@ import type { PaymentVerificationResult } from "@/lib/payments/types";
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!;
 const PAYSTACK_WEBHOOK_SECRET = process.env.PAYSTACK_WEBHOOK_SECRET!;
+const PAYSTACK_BASE_URL = "https://api.paystack.co";
+const PAYSTACK_REFERENCE_PATTERN = /^[A-Za-z0-9._-]{1,128}$/;
+
+function sanitizePaystackReference(reference: string): string | null {
+  const trimmed = reference.trim();
+  return PAYSTACK_REFERENCE_PATTERN.test(trimmed) ? trimmed : null;
+}
 
 // --- Webhook signature ---
 export function verifyPaystackWebhookSignature(rawBody: string, signature: string | null) {
@@ -21,8 +28,19 @@ export function verifyPaystackWebhookSignature(rawBody: string, signature: strin
 
 // --- Verify reference ---
 export async function verifyPaystackReference(reference: string): Promise<PaymentVerificationResult> {
+  const safeReference = sanitizePaystackReference(reference);
+  if (!safeReference) {
+    return {
+      status: "error",
+      provider: "paystack",
+      reference,
+      message: "Invalid Paystack reference format",
+    };
+  }
+
   try {
-    const res = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+    const url = new URL(`/transaction/verify/${encodeURIComponent(safeReference)}`, PAYSTACK_BASE_URL);
+    const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` },
       cache: "no-store",
     });
@@ -31,7 +49,7 @@ export async function verifyPaystackReference(reference: string): Promise<Paymen
       return {
         status: "error",
         provider: "paystack",
-        reference,
+        reference: safeReference,
         message: `Paystack API error: ${res.status}`,
         raw: await res.text(),
       };
@@ -44,7 +62,7 @@ export async function verifyPaystackReference(reference: string): Promise<Paymen
       return {
         status: "error",
         provider: "paystack",
-        reference,
+        reference: safeReference,
         message: "No transaction data returned",
         raw: data,
       };
@@ -81,11 +99,11 @@ export async function verifyPaystackReference(reference: string): Promise<Paymen
       ? {
           status,
           provider: "paystack",
-          reference,
+          reference: safeReference,
           amount,
           currency: (tx.currency || "NGN").toUpperCase(),
           paidAt: paidAt!,
-          providerTransactionId: tx.id?.toString() ?? reference,
+          providerTransactionId: tx.id?.toString() ?? safeReference,
           isFinal,
           customer: {
             email: tx.customer?.email,
@@ -96,7 +114,7 @@ export async function verifyPaystackReference(reference: string): Promise<Paymen
       : {
           status,
           provider: "paystack",
-          reference,
+          reference: safeReference,
           message: tx.gateway_response,
           raw: data,
         };
@@ -104,7 +122,7 @@ export async function verifyPaystackReference(reference: string): Promise<Paymen
     return {
       status: "error",
       provider: "paystack",
-      reference,
+      reference: safeReference,
       message: (err as Error).message,
       raw: err,
     };
