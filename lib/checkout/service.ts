@@ -42,13 +42,13 @@ export async function processCheckout(payload: CheckoutPayload) {
 
       // Stock check
       if (item.quantity > variant.stock) {
-        throw new Error(`Insufficient stock for ${variant.name}`);
+        throw new Error(`Insufficient stock for ${variant.product.name}`);
       }
 
       // Price integrity check
       if (item.price !== variant.price) {
         throw new Error(
-          `Price changed for ${variant.name}. Refresh your cart.`
+          `Price changed for ${variant.product.name}. Refresh your cart.`
         );
       }
     }
@@ -84,18 +84,17 @@ export async function processCheckout(payload: CheckoutPayload) {
     /* Reserve stock atomically                            */
     /* -------------------------------------------------- */
     for (const item of payload.items) {
-      const updated = await tx.productVariant.update({
+      const updated = await tx.productVariant.updateMany({
         where: {
           id: item.variantId,
-          // Prevent race conditions: ensure stock is still enough
-          stock: { gte: item.quantity },
+          stock: { gte: item.quantity }, // atomic check
         },
         data: {
           stock: { decrement: item.quantity },
         },
       });
 
-      if (!updated) {
+      if (updated.count === 0) {
         throw new Error(
           `Stock changed for ${item.name}. Please refresh your cart.`
         );

@@ -1,4 +1,4 @@
-import { NIGERIAN_STATES } from "./constants";
+import { NIGERIAN_STATES } from "../constants/nigerian-states";
 
 export type ShippingType = "STANDARD" | "EXPRESS";
 
