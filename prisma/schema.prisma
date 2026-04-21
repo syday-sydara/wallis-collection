@@ -237,7 +237,15 @@ model Order {
 
   paymentStatus   PaymentStatus    @default(PENDING)
   paymentProvider PaymentProvider?
-  fraudScore      Int              @default(0)
+
+  // Existing fraud field (keep it)
+  fraudScore Int @default(0)
+
+  // ⭐ NEW — Risk Engine fields
+  riskScore           Int?            // final score from risk engine
+  riskTriggeredRules  String[] @default([]) // list of rule IDs
+  riskLevel           String?         // "LOW" | "MEDIUM" | "HIGH"
+  riskContextSnapshot Json?           // optional full context for audit/debug
 
   shippingType    ShippingType
   shippingAddress Json
@@ -262,12 +270,13 @@ model Order {
 
   items         OrderItem[]
   payments      Payment[]
-  fulfillments  Fulfillment[]   // FIXED RELATION
+  fulfillments  Fulfillment[]
 
   @@index([createdAt])
   @@index([userId])
   @@index([orderStatus, createdAt])
 }
+
 
 model OrderItem {
   id String @id @default(cuid())
