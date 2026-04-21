@@ -18,7 +18,7 @@ const EmailSchema = z.object({
 });
 
 function stripHtml(html: string) {
-  return html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  return html.replace(/[<>]/g, "").replace(/\s+/g, " ").trim();
 }
 
 function limitMetadataSize(obj: any, maxBytes = 5000) {
