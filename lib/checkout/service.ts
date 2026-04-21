@@ -1,9 +1,6 @@
-// lib/checkout/service.ts
-
 import { prisma } from "@/lib/prisma";
 import type { CheckoutPayload } from "./schema";
 import { logEvent } from "@/lib/auth/logger";
-
 import { evaluateRisk } from "@/lib/risk/rules/service";
 import { buildRiskContext } from "@/lib/risk/context";
 
@@ -13,9 +10,6 @@ export async function processCheckout(
 ) {
   const variantIds = payload.items.map((i) => i.variantId);
 
-  /* -------------------------------------------------- */
-  /* 1. Compute totals BEFORE risk evaluation            */
-  /* -------------------------------------------------- */
   const subtotal = payload.items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
@@ -26,34 +20,22 @@ export async function processCheckout(
 
   const total = subtotal + shippingCost;
 
-  /* -------------------------------------------------- */
-  /* 2. Build risk context                               */
-  /* -------------------------------------------------- */
   const riskContext = buildRiskContext({
     ip: meta.ip,
     email: payload.email,
     phone: payload.phone,
     userAgent: meta.userAgent,
     userId: meta.userId ?? null,
-
-    // Transaction
     amount: total,
-
-    // Geo
     country: "Nigeria",
     city: payload.city,
     region: null,
     distanceFromLastIpKm: null,
-
-    // Device (placeholder)
     deviceId: null,
     deviceReputation: 100,
     deviceConfidence: 100,
   });
 
-  /* -------------------------------------------------- */
-  /* 3. Evaluate risk policy                             */
-  /* -------------------------------------------------- */
   const risk = await evaluateRisk({
     policyId: "default",
     ...riskContext,
@@ -79,13 +61,7 @@ export async function processCheckout(
     });
   }
 
-  /* -------------------------------------------------- */
-  /* 4. Continue with normal checkout flow               */
-  /* -------------------------------------------------- */
   return prisma.$transaction(async (tx) => {
-    /* -------------------------------------------------- */
-    /* Fetch variants                                      */
-    /* -------------------------------------------------- */
     const variants = await tx.productVariant.findMany({
       where: { id: { in: variantIds } },
       include: { product: true },
@@ -97,9 +73,6 @@ export async function processCheckout(
 
     const variantMap = new Map(variants.map((v) => [v.id, v]));
 
-    /* -------------------------------------------------- */
-    /* Validate each item                                  */
-    /* -------------------------------------------------- */
     for (const item of payload.items) {
       const variant = variantMap.get(item.variantId);
       if (!variant) throw new Error("A product variant no longer exists");
@@ -115,9 +88,6 @@ export async function processCheckout(
       }
     }
 
-    /* -------------------------------------------------- */
-    /* Create shipping address                             */
-    /* -------------------------------------------------- */
     const address = await tx.address.create({
       data: {
         fullName: payload.fullName,
@@ -129,9 +99,6 @@ export async function processCheckout(
       },
     });
 
-    /* -------------------------------------------------- */
-    /* Reserve stock atomically                            */
-    /* -------------------------------------------------- */
     for (const item of payload.items) {
       const updated = await tx.productVariant.updateMany({
         where: {
@@ -150,9 +117,6 @@ export async function processCheckout(
       }
     }
 
-    /* -------------------------------------------------- */
-    /* Create order + items                                */
-    /* -------------------------------------------------- */
     const order = await tx.order.create({
       data: {
         email: payload.email,
@@ -178,15 +142,12 @@ export async function processCheckout(
           country: "Nigeria",
         },
 
-        // ⭐ Risk Engine fields
         riskScore: risk.score,
         riskTriggeredRules: risk.triggeredRules,
         riskLevel,
         riskContextSnapshot: riskContext,
 
         cartSnapshot: payload.items,
-
-        addressId: address.id,
 
         items: {
           create: payload.items.map((item) => ({
@@ -201,9 +162,6 @@ export async function processCheckout(
       },
     });
 
-    /* -------------------------------------------------- */
-    /* Audit logging                                        */
-    /* -------------------------------------------------- */
     logEvent("checkout_order_created", {
       orderId: order.id,
       email: payload.email,

@@ -1,23 +1,21 @@
 import { CheckoutPayloadSchema } from "@/lib/checkout/schema";
 import { processCheckout } from "@/lib/checkout/service";
 
-export async function submitCheckoutImpl(prevState: any, formData: FormData) {
+export async function submitCheckoutImpl(
+  prevState: any,
+  formData: FormData,
+  meta: { ip: string; userAgent: string; userId?: string | null }
+) {
   const raw: Record<string, any> = {};
 
-  /* -------------------------------------------------- */
-  /* Normalize form fields                               */
-  /* -------------------------------------------------- */
   formData.forEach((value, key) => {
     raw[key] = typeof value === "string" ? value.trim() : value;
   });
 
-  /* -------------------------------------------------- */
-  /* Parse cart items                                    */
-  /* -------------------------------------------------- */
-  let items: unknown;
+  let itemsJson: unknown;
 
   try {
-    items = JSON.parse(raw.items);
+    itemsJson = JSON.parse(raw.items);
   } catch {
     return {
       success: false,
@@ -26,7 +24,7 @@ export async function submitCheckoutImpl(prevState: any, formData: FormData) {
     };
   }
 
-  if (!Array.isArray(items)) {
+  if (!Array.isArray(itemsJson)) {
     return {
       success: false,
       message: "Invalid cart data",
@@ -34,9 +32,16 @@ export async function submitCheckoutImpl(prevState: any, formData: FormData) {
     };
   }
 
-  /* -------------------------------------------------- */
-  /* Build payload (server‑side authoritative fields)    */
-  /* -------------------------------------------------- */
+  // Map CartItem → CheckoutItem
+  const items = itemsJson.map((item: any) => ({
+    productId: item.productId,
+    variantId: item.id, // id === variantId
+    name: item.name,
+    image: item.image,
+    quantity: item.quantity,
+    price: item.unitPrice,
+  }));
+
   const payload = {
     email: raw.email,
     phone: raw.phone,
@@ -49,9 +54,6 @@ export async function submitCheckoutImpl(prevState: any, formData: FormData) {
     items,
   };
 
-  /* -------------------------------------------------- */
-  /* Validate with Zod                                   */
-  /* -------------------------------------------------- */
   const schema = CheckoutPayloadSchema.omit({
     total: true,
     shippingCost: true,
@@ -67,11 +69,8 @@ export async function submitCheckoutImpl(prevState: any, formData: FormData) {
     };
   }
 
-  /* -------------------------------------------------- */
-  /* Server‑side checkout processing                     */
-  /* -------------------------------------------------- */
   try {
-    const result = await processCheckout(parsed.data);
+    const result = await processCheckout(parsed.data, meta);
 
     return {
       success: true,
