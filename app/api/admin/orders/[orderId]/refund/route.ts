@@ -25,5 +25,17 @@ export async function POST(
     },
   });
 
+  await prisma.auditLog.create({
+    data: {
+      action: "ORDER_REFUND",
+      actorType: "ADMIN",
+      resource: "order",
+      resourceId: orderId,
+      metadata: {
+        amount,
+      },
+    },
+  });
+
   return NextResponse.json(updated);
 }

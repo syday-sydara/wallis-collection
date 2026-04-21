@@ -18,5 +18,17 @@ export async function POST(
     data: { orderStatus: status },
   });
 
+  await prisma.auditLog.create({
+    data: {
+      action: "ORDER_STATUS_CHANGED",
+      actorType: "ADMIN",
+      resource: "order",
+      resourceId: orderId,
+      metadata: {
+        to: status,
+      },
+    },
+  });
+
   return NextResponse.json(order);
 }

@@ -21,5 +21,13 @@ export default async function OrderDetailPage({ params }: { params: { id: string
     return <div className="p-6">Order not found.</div>;
   }
 
-  return <OrderDetail order={order} />;
+  const auditLogs = await prisma.auditLog.findMany({
+    where: {
+      resource: "order",
+      resourceId: order.id,
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return <OrderDetail order={order} auditLogs={auditLogs} />;
 }
