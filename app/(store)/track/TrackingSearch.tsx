@@ -31,7 +31,7 @@ export default function TrackingSearch() {
       </button>
 
       <a
-        href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP}?text=Hello, I want to track my order: ${value}`}
+        href={`https://wa.me/${encodeURIComponent(process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP ?? "")}?text=${encodeURIComponent(`Hello, I want to track my order: ${value}`)}`}
         className="btn w-full"
         style={{ background: "rgb(var(--color-whatsapp))", color: "#fff" }}
       >
