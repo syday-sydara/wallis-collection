@@ -1,4 +1,3 @@
-// components/admin/ui/toast/AdminToastContainer.tsx
 "use client";
 
 import {
@@ -43,6 +42,7 @@ export function AdminToastProvider({ children }: { children: ReactNode }) {
     }, 3500);
   }, []);
 
+  // Listen for global toast events
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<{ type: ToastType; message: string }>).detail;
@@ -58,19 +58,19 @@ export function AdminToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ push }}>
       {children}
 
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+      {/* Toast container */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map((t) => (
           <div
             key={t.id}
             className={clsx(
-              "px-3 py-2 rounded-md border shadow-sm text-sm transition-fast",
-              "bg-surface-card animate-slide-in-right",
-              {
-                success: "bg-success/15 text-success border-success/30",
-                error: "bg-danger/15 text-danger border-danger/30",
-                info: "bg-info/15 text-info border-info/30",
-                warning: "bg-warning/15 text-warning border-warning/30",
-              }[t.type]
+              "px-3 py-2 rounded-md border shadow-sm text-sm pointer-events-auto",
+              "animate-toast-slide-in bg-surface-card",
+
+              t.type === "success" && "bg-success/15 text-success border-success/30",
+              t.type === "error" && "bg-danger/15 text-danger border-danger/30",
+              t.type === "info" && "bg-info/15 text-info border-info/30",
+              t.type === "warning" && "bg-warning/15 text-warning border-warning/30"
             )}
           >
             {t.message}

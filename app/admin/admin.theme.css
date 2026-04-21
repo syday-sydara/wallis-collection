@@ -321,3 +321,45 @@ body {
   --shadow-md: 0 2px 4px rgba(0, 20, 60, 0.08);
   --shadow-lg: 0 4px 8px rgba(0, 20, 60, 0.1);
 }
+
+@keyframes fade-in {
+  from { opacity: 0 }
+  to { opacity: 1 }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95) }
+  to { opacity: 1; transform: scale(1) }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.18s ease-out;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px) }
+  to { opacity: 1; transform: translateY(0) }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.25s ease-out;
+}
+
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-toast-slide-in {
+  animation: toast-slide-in 0.25s ease-out;
+}

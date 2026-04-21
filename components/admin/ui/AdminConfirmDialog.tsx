@@ -2,7 +2,7 @@
 "use client";
 
 import clsx from "clsx";
-import { useModal } from "../modal/AdminModalController";
+import { useModal } from "./modal/AdminModalController";
 
 interface ConfirmOptions {
   title?: string;
