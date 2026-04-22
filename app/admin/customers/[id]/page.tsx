@@ -1,4 +1,4 @@
-// app/(admin)/customers/[id]/page.tsx
+// app/admin/customers/[id]/page.tsx
 
 import { prisma } from "@/lib/prisma";
 import CustomerProfile from "@/components/admin/customers/CustomerProfile";

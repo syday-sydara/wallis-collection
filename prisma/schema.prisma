@@ -113,6 +113,7 @@ model User {
   addresses Address[]
   sessions  Session[]
   devices   Device[]
+  cart      Cart?
 
   auditLogs AuditLog[] @relation("UserAuditLogs")
 
@@ -578,4 +579,50 @@ model Fulfillment {
   status    FulfillmentStatus @default(PENDING)
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
+}
+
+//////////////////////
+// CART (Server-side persistence)
+//////////////////////
+
+model Cart {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sessionId String? // For anonymous carts
+
+  items CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId])
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model CartItem {
+  id String @id @default(cuid())
+
+  cartId String
+  cart   Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  productId String
+  variantId String
+
+  name     String
+  image    String?
+  unitPrice Int
+
+  quantity Int
+
+  attributes Json? // Size, color, etc.
+
+  createdAt DateTime @default(now())
+
+  @@index([cartId])
+  @@index([productId])
+  @@index([variantId])
 }

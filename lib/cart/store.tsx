@@ -24,6 +24,8 @@ type CartContextType = {
   isOpen: boolean;
   subtotal: number;
   totalItems: number;
+  isLoading: boolean;
+  isSynced: boolean;
   open: () => void;
   close: () => void;
   toggle: () => void;
@@ -33,6 +35,8 @@ type CartContextType = {
   decreaseQty: (id: string) => void;
   removeItem: (id: string) => void;
   clear: () => void;
+  syncToServer: () => Promise<void>;
+  loadFromServer: () => Promise<void>;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -50,6 +54,8 @@ function hashAttributes(attrs?: Record<string, any>) {
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSynced, setIsSynced] = useState(false);
 
   /* ---------------- Load from localStorage ---------------- */
   useEffect(() => {
@@ -138,6 +144,59 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   /* ---------------- Clear Cart ---------------- */
   const clear = useCallback(() => setItems([]), []);
 
+  /* ---------------- Server Sync ---------------- */
+  const syncToServer = useCallback(async () => {
+    if (items.length === 0) return;
+
+    try {
+      setIsLoading(true);
+      const res = await fetch("/api/cart/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+
+      if (res.ok) {
+        setIsSynced(true);
+      } else {
+        console.warn("Failed to sync cart to server");
+      }
+    } catch (error) {
+      console.warn("Cart sync error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [items]);
+
+  const loadFromServer = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetch("/api/cart/sync");
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.items && Array.isArray(data.items)) {
+          // Convert server format to client format
+          const serverItems = data.items.map((item: any) => ({
+            id: item.id,
+            productId: item.productId,
+            name: item.name,
+            unitPrice: item.unitPrice,
+            image: item.image,
+            quantity: item.quantity,
+            attributes: item.attributes,
+          }));
+          setItems(serverItems);
+          setIsSynced(true);
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to load cart from server:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   /* ---------------- Derived Values ---------------- */
   const subtotal = useMemo(
     () => items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0),
@@ -156,6 +215,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       isOpen,
       subtotal,
       totalItems,
+      isLoading,
+      isSynced,
       open,
       close,
       toggle,
@@ -165,12 +226,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       decreaseQty,
       removeItem,
       clear,
+      syncToServer,
+      loadFromServer,
     }),
     [
       items,
       isOpen,
       subtotal,
       totalItems,
+      isLoading,
+      isSynced,
       open,
       close,
       toggle,
@@ -180,6 +245,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       decreaseQty,
       removeItem,
       clear,
+      syncToServer,
+      loadFromServer,
     ]
   );
 

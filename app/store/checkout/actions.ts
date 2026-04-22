@@ -9,7 +9,7 @@ import { startTimer } from "@/lib/auth/metrics";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 import { getIdempotentResponse, saveIdempotentResponse } from "@/lib/idempotency";
 import { buildRiskContext } from "@/lib/risk/context";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { normalizePhone, maskEmail } from "@/lib/security/normalize";
 
 import type { CheckoutActionState } from "./state";

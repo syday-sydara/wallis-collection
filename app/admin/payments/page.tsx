@@ -1,4 +1,4 @@
-// app/(admin)/payments/page.tsx
+// app/admin/payments/page.tsx
 
 import { prisma } from "@/lib/prisma";
 import PaymentFilters from "@/components/admin/payments/PaymentFilters";

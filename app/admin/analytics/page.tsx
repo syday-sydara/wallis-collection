@@ -1,4 +1,4 @@
-// app/(admin)/analytics/page.tsx
+// app/admin/analytics/page.tsx
 
 import { prisma } from "@/lib/prisma";
 import SalesAnalytics from "@/components/admin/analytics/SalesAnalytics";

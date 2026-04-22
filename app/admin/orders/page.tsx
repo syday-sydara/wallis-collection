@@ -1,4 +1,4 @@
-// app/(admin)/orders/page.tsx
+// app/admin/orders/page.tsx
 
 import { prisma } from "@/lib/prisma";
 import OrderTable from "@/components/admin/orders/OrderTable";
