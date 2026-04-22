@@ -7,6 +7,7 @@ export async function POST(req, { params }) {
   try {
     const form = await req.formData();
     const file = form.get("file");
+    const alt = form.get("alt")?.toString() ?? null;
 
     if (!file || !(file instanceof File)) {
       return NextResponse.json({ error: "A valid file is required" }, { status: 400 });
@@ -20,28 +21,24 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    const url = await uploadToCloud(file);
+    const uploaded = await uploadToCloud(file);
 
     const image = await prisma.productImage.create({
       data: {
         productId: params.productId,
-        url,
-      },
-    });
-
-    await prisma.auditLog.create({
-      data: {
-        action: "PRODUCT_IMAGE_ADDED",
-        actorType: "ADMIN",
-        resource: "product",
-        resourceId: params.productId,
-        message: "Product image uploaded",
-        metadata: { url },
+        url: uploaded.url,
+        publicId: uploaded.publicId,
+        width: uploaded.width,
+        height: uploaded.height,
+        format: uploaded.format,
+        bytes: uploaded.bytes,
+        alt,
       },
     });
 
     return NextResponse.json(image);
-  } catch {
+  } catch (err) {
+    console.error(err);
     return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });
   }
 }

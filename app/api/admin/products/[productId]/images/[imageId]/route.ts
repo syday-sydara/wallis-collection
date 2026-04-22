@@ -1,16 +1,14 @@
 // app/api/admin/products/[productId]/images/[imageId]/route.ts
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
+import { deleteImage } from "@/lib/cloudinary/delete";
 
-export async function DELETE(_: Request, { params }) {
+export async function DELETE(_, { params }) {
   try {
     const { productId, imageId } = params;
 
     const image = await prisma.productImage.findUnique({
       where: { id: imageId },
-      select: { url: true, productId: true },
     });
 
     if (!image) {
@@ -18,34 +16,20 @@ export async function DELETE(_: Request, { params }) {
     }
 
     if (image.productId !== productId) {
-      return NextResponse.json(
-        { error: "Image does not belong to this product" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Image does not belong to this product" }, { status: 400 });
     }
 
-    await prisma.productImage.delete({ where: { id: imageId } });
+    // Delete from Cloudinary
+    await deleteImage(image.publicId);
 
-    if (image.url.startsWith("/uploads/")) {
-      const filePath = path.join(process.cwd(), "public", image.url);
-      try {
-        await fs.unlink(filePath);
-      } catch {}
-    }
-
-    await prisma.auditLog.create({
-      data: {
-        action: "PRODUCT_IMAGE_DELETED",
-        actorType: "ADMIN",
-        resource: "product",
-        resourceId: productId,
-        message: "Product image deleted",
-        metadata: { imageId, url: image.url },
-      },
+    // Delete from DB
+    await prisma.productImage.delete({
+      where: { id: imageId },
     });
 
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (err) {
+    console.error(err);
     return NextResponse.json({ error: "Failed to delete image" }, { status: 500 });
   }
 }
