@@ -55,16 +55,12 @@ export async function GET(req: Request) {
   }
 
   /* -------------------------------------------------- */
-  /* Parse query params                                  */
+  /* Parse query params (cursor-based pagination)         */
   /* -------------------------------------------------- */
   const { searchParams } = new URL(req.url);
 
-  const page = Number(searchParams.get("page") ?? "1");
-  const pageSize = Number(searchParams.get("pageSize") ?? "50");
-
-  if (page <= 0 || pageSize <= 0 || pageSize > 500) {
-    return badRequest("Invalid pagination parameters");
-  }
+  const cursor = searchParams.get("cursor") || undefined;
+  const limit = Math.min(Number(searchParams.get("limit") ?? "20"), 100);
 
   const type = searchParams.get("type") || undefined;
   const severity = searchParams.get("severity") || undefined;
@@ -94,17 +90,21 @@ export async function GET(req: Request) {
   }
 
   /* -------------------------------------------------- */
-  /* Query events                                        */
+  /* Query events (cursor-based pagination)              */
   /* -------------------------------------------------- */
-  const [events, total] = await Promise.all([
-    prisma.securityEvent.findMany({
-      where,
-      orderBy: { timestamp: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+  const events = await prisma.securityEvent.findMany({
+    where,
+    orderBy: { timestamp: "desc" },
+    take: limit + 1, // Take one extra to check if there's a next page
+    ...(cursor && {
+      cursor: { id: cursor },
+      skip: 1, // Skip the cursor itself
     }),
-    prisma.securityEvent.count({ where }),
-  ]);
+  });
+
+  const hasNextPage = events.length > limit;
+  const eventsToReturn = hasNextPage ? events.slice(0, -1) : events;
+  const nextCursor = hasNextPage ? events[events.length - 1].id : null;
 
   /* -------------------------------------------------- */
   /* Log admin access                                    */
@@ -114,7 +114,7 @@ export async function GET(req: Request) {
     severity: "low",
     userId: user.id,
     category: "audit",
-    message: `Viewed security events page=${page}, pageSize=${pageSize}`,
+    message: `Viewed security events cursor=${cursor || 'first'}, limit=${limit}`,
     source: "api",
   });
 
@@ -122,10 +122,9 @@ export async function GET(req: Request) {
   /* Response                                            */
   /* -------------------------------------------------- */
   return ok({
-    events,
-    page,
-    pageSize,
-    total,
-    totalPages: Math.ceil(total / pageSize),
+    events: eventsToReturn,
+    nextCursor,
+    hasNextPage,
+    limit,
   });
 }

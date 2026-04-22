@@ -2,7 +2,7 @@ import { AdminCard } from "@/components/admin/ui/AdminCard";
 
 async function fetchRecentEvents() {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/security/events?page=1&pageSize=10`,
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/security/events?limit=10`,
     { cache: "no-store" }
   );
 

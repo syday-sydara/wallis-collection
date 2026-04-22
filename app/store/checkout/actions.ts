@@ -3,13 +3,13 @@
 import * as Sentry from "@sentry/nextjs";
 import { headers } from "next/headers";
 import { CheckoutPayloadSchema } from "@/lib/checkout/schema";
-import { processCheckout } from "@/lib/checkout/service";
+import { processCheckout, reserveInventory } from "@/lib/checkout/service";
 import { logEvent } from "@/lib/auth/logger";
 import { startTimer } from "@/lib/auth/metrics";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 import { getIdempotentResponse, saveIdempotentResponse } from "@/lib/idempotency";
 import { buildRiskContext } from "@/lib/risk/context";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { normalizePhone, maskEmail } from "@/lib/security/normalize";
 
 import type { CheckoutActionState } from "./state";
@@ -166,6 +166,15 @@ export async function submitCheckout(formData: FormData): Promise<CheckoutAction
 
         /* ---------------- Process Checkout ---------------- */
         const result = await processCheckout(parsed.data, riskContext);
+
+        /* ---------------- Reserve Inventory ---------------- */
+        try {
+          await reserveInventory(result.orderId, parsed.data.items);
+        } catch (inventoryError: any) {
+          // If inventory reservation fails, the order should be cancelled
+          // This is handled by the payment verification logic
+          console.error("Inventory reservation failed:", inventoryError);
+        }
 
         const response: CheckoutActionState = {
           success: true,

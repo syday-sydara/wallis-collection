@@ -18,6 +18,6 @@ export async function adminUpdateProduct(
     select: { id: true },
   });
 
-  revalidatePath(`/admin/products/${productId}`);
+  revalidatePath(`/admin/product/${productId}`);
   return updated;
 }

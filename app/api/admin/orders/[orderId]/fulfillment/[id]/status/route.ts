@@ -3,12 +3,13 @@ import { NextResponse } from "next/server";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ orderId: string; id: string }> }
 ) {
+  const { orderId, id } = await params;
   const { status } = await req.json();
 
   const fulfillment = await prisma.fulfillment.update({
-    where: { id: params.id },
+    where: { id },
     data: { status },
   });
 
@@ -17,7 +18,7 @@ export async function POST(
       action: "FULFILLMENT_STATUS",
       actorType: "ADMIN",
       resource: "fulfillment",
-      resourceId: params.id,
+      resourceId: id,
       metadata: { status },
     },
   });

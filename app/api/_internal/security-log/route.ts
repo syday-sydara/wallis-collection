@@ -1,5 +1,5 @@
 // app/api/_internal/security-log/route.ts
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {

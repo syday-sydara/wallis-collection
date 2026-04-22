@@ -56,3 +56,19 @@ export function emitEvent(event: AnyEventInput) {
 
   enqueueEvent(enriched);
 }
+
+/* -------------------------------------------------- */
+/* Specialized emitters                                */
+/* -------------------------------------------------- */
+
+export function emitSecurityEvent(event: Omit<AnyEventInput, "type"> & { type: string }) {
+  emitEvent({ ...event, category: "security" });
+}
+
+export function emitAlertEvent(event: Omit<AnyEventInput, "type"> & { type: string }) {
+  emitEvent({ ...event, category: "alert", severity: event.severity ?? "high" });
+}
+
+export function emitFraudEvent(event: Omit<AnyEventInput, "type"> & { type: string }) {
+  emitEvent({ ...event, category: "fraud", severity: event.severity ?? "high" });
+}

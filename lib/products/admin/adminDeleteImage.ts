@@ -25,6 +25,6 @@ export async function adminDeleteImage(productId: string, imageId: string) {
     )
   );
 
-  revalidatePath(`/admin/products/${productId}`);
+  revalidatePath(`/admin/product/${productId}`);
   return { ok: true };
 }

@@ -49,7 +49,7 @@ export default function ProductRow({ product }: { product: AdminProductSummary }
 
       <td className="p-3 text-right space-x-2">
         <Link
-          href={`/admin/products/${product.id}`}
+          href={`/admin/product/${product.id}`}
           className="btn btn-sm btn-outline"
         >
           Edit

@@ -2,11 +2,13 @@
 export * from "./Button";
 export * from "./Input";
 export * from "./Textarea";
+export * from "./Select";
 
 // Layout & Containers
 export * from "./Card";
 export * from "./Sheet";
 export * from "./Dialog";
+export * from "./table";
 
 // Status / Feedback
 export * from "./Badge";
