@@ -17,7 +17,7 @@ if (rawKeyV2 && !/^[0-9a-fA-F]{64}$/.test(rawKeyV2)) {
 }
 
 /* -------------------------------------------------- */
-/* 2. HKDF key derivation (stronger than raw keys)     */
+/* 2. HKDF key derivation                              */
 /* -------------------------------------------------- */
 
 function deriveKey(hexKey: string, version: number) {
@@ -35,16 +35,15 @@ function deriveKey(hexKey: string, version: number) {
 /* -------------------------------------------------- */
 
 export const ACTIVE_VERSION = rawKeyV2 ? 2 : 1;
-
 export const SUPPORTED_VERSIONS = rawKeyV2 ? [1, 2] : [1];
 
 const KEYS: Record<number, Buffer> = {
   1: deriveKey(rawKeyV1, 1),
-  ...(rawKeyV2 ? { 2: deriveKey(rawKeyV2, 2) } : {})
+  ...(rawKeyV2 ? { 2: deriveKey(rawKeyV2, 2) } : {}),
 };
 
 /* -------------------------------------------------- */
-/* 4. Encrypt                                          */
+/* 4. Core encrypt / decrypt                           */
 /* -------------------------------------------------- */
 
 export function encrypt(plaintext: string, aad?: string) {
@@ -58,7 +57,7 @@ export function encrypt(plaintext: string, aad?: string) {
 
   const encrypted = Buffer.concat([
     cipher.update(plaintext, "utf8"),
-    cipher.final()
+    cipher.final(),
   ]);
 
   const tag = cipher.getAuthTag();
@@ -68,15 +67,11 @@ export function encrypt(plaintext: string, aad?: string) {
     Buffer.from([version]),
     iv,
     tag,
-    encrypted
+    encrypted,
   ]);
 
   return payload.toString("base64url");
 }
-
-/* -------------------------------------------------- */
-/* 5. Decrypt                                          */
-/* -------------------------------------------------- */
 
 export function decrypt(payload: string, aad?: string) {
   const buf = Buffer.from(payload, "base64url");
@@ -105,7 +100,7 @@ export function decrypt(payload: string, aad?: string) {
 
     const decrypted = Buffer.concat([
       decipher.update(encrypted),
-      decipher.final()
+      decipher.final(),
     ]);
 
     return decrypted.toString("utf8");
@@ -113,6 +108,18 @@ export function decrypt(payload: string, aad?: string) {
     console.error("Decrypt error:", err);
     throw new Error("Decryption failed");
   }
+}
+
+/* -------------------------------------------------- */
+/* 5. JSON helpers                                     */
+/* -------------------------------------------------- */
+
+export function encryptJson(obj: any, aad?: string) {
+  return encrypt(JSON.stringify(obj), aad);
+}
+
+export function decryptJson(payload: string, aad?: string) {
+  return JSON.parse(decrypt(payload, aad));
 }
 
 /* -------------------------------------------------- */
@@ -130,7 +137,7 @@ export function tryDecrypt(payload: string | null, aad?: string) {
 }
 
 /* -------------------------------------------------- */
-/* 7. Metadata helper for Security Center              */
+/* 7. Metadata helpers                                 */
 /* -------------------------------------------------- */
 
 export function decryptMetadata(record: any) {
@@ -150,4 +157,71 @@ export function decryptMetadata(record: any) {
   } catch {
     return { _error: "Failed to decrypt metadata" };
   }
+}
+
+export function encryptMetadataForRecord(recordId: string, metadata: any) {
+  return encryptJson(metadata, `record:${recordId}`);
+}
+
+export function decryptMetadataForRecord(recordId: string, payload: string) {
+  return decryptJson(payload, `record:${recordId}`);
+}
+
+/* -------------------------------------------------- */
+/* 8. Version / rotation helpers                       */
+/* -------------------------------------------------- */
+
+export function getEncryptionVersion(payload: string): number | null {
+  try {
+    const buf = Buffer.from(payload, "base64url");
+    return buf[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function needsReencrypt(version: number) {
+  return version !== ACTIVE_VERSION;
+}
+
+/* -------------------------------------------------- */
+/* 9. Health / diagnostics                             */
+/* -------------------------------------------------- */
+
+export function cryptoHealthCheck() {
+  return {
+    activeVersion: ACTIVE_VERSION,
+    supportedVersions: SUPPORTED_VERSIONS,
+    keyCount: Object.keys(KEYS).length,
+  };
+}
+
+export function keyFingerprint(version: number) {
+  const key = KEYS[version];
+  return crypto
+    .createHash("sha256")
+    .update(key)
+    .digest("hex")
+    .slice(0, 16);
+}
+
+/* -------------------------------------------------- */
+/* 10. Utility helpers                                 */
+/* -------------------------------------------------- */
+
+export function secureId(bytes = 16) {
+  return crypto.randomBytes(bytes).toString("hex");
+}
+
+export function hash(value: string) {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+export function safeCompare(a: string, b: string) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+
+  if (bufA.length !== bufB.length) return false;
+
+  return crypto.timingSafeEqual(bufA, bufB);
 }

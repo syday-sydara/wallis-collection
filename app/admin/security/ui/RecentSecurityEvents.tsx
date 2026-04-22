@@ -1,4 +1,5 @@
 import { AdminCard } from "@/components/admin/ui/AdminCard";
+import Link from "next/link";
 
 async function fetchRecentEvents() {
   const res = await fetch(
@@ -17,26 +18,22 @@ export default async function RecentSecurityEvents() {
     <AdminCard header="Recent Security Events" elevated>
       <div className="divide-y divide-border">
         {events.map((e) => (
-          <div key={e.id} className="py-3 flex items-center justify-between">
-            <div>
-              <p className="font-medium">{e.type}</p>
-              <p className="text-xs text-text-muted">
-                {new Date(e.timestamp).toLocaleString()}
-              </p>
-            </div>
+          <Link
+            key={e.id}
+            href={`/security-center/logs/${e.id}`}
+            className="block py-3 px-1 hover:bg-muted/40 transition-colors"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">{e.type}</p>
+                <p className="text-xs text-text-muted">
+                  {new Date(e.timestamp).toLocaleString()}
+                </p>
+              </div>
 
-            <span
-              className={
-                e.severity === "high"
-                  ? "text-danger font-semibold"
-                  : e.severity === "medium"
-                  ? "text-warning font-semibold"
-                  : "text-success font-semibold"
-              }
-            >
-              {e.severity}
-            </span>
-          </div>
+              <SeverityBadge severity={e.severity} />
+            </div>
+          </Link>
         ))}
 
         {events.length === 0 && (
@@ -44,5 +41,23 @@ export default async function RecentSecurityEvents() {
         )}
       </div>
     </AdminCard>
+  );
+}
+
+function SeverityBadge({ severity }: { severity: string }) {
+  const styles: Record<string, string> = {
+    high: "text-danger bg-danger/10 border-danger/20",
+    medium: "text-warning bg-warning/10 border-warning/20",
+    low: "text-success bg-success/10 border-success/20",
+  };
+
+  return (
+    <span
+      className={`text-xs font-semibold px-2 py-0.5 rounded border capitalize ${
+        styles[severity] ?? "text-text-muted bg-muted border-border"
+      }`}
+    >
+      {severity}
+    </span>
   );
 }

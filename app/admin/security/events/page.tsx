@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AdminCard } from "@/components/admin/ui/AdminCard";
 import EventTable from "@/components/security/EventTable";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/Select";
 
 type SecurityEvent = {
   id: string;
@@ -39,41 +39,53 @@ export default function SecurityEventsPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
-  const fetchEvents = async (cursor?: string, append = false) => {
-    setLoading(!append);
-    setLoadingMore(append);
-
-    const params = new URLSearchParams();
-    if (cursor) params.set("cursor", cursor);
-    if (type) params.set("type", type);
-    if (severity) params.set("severity", severity);
-    if (userId) params.set("userId", userId);
-    if (from) params.set("from", from);
-    if (to) params.set("to", to);
-
-    const res = await fetch(`/api/security/events?${params}`);
-    const data: EventsResponse = await res.json();
-
-    if (append) {
-      setEvents(prev => [...prev, ...data.events]);
-    } else {
-      setEvents(data.events);
-    }
-
-    setNextCursor(data.nextCursor);
-    setHasNextPage(data.hasNextPage);
-    setLoading(false);
-    setLoadingMore(false);
-  };
+  // Debounce text filters (type, userId)
+  const [debouncedType, setDebouncedType] = useState(type);
+  const [debouncedUserId, setDebouncedUserId] = useState(userId);
 
   useEffect(() => {
+    const t = setTimeout(() => setDebouncedType(type), 300);
+    return () => clearTimeout(t);
+  }, [type]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedUserId(userId), 300);
+    return () => clearTimeout(t);
+  }, [userId]);
+
+  const fetchEvents = useCallback(
+    async (cursor?: string, append = false) => {
+      if (!append) setLoading(true);
+      if (append) setLoadingMore(true);
+
+      const params = new URLSearchParams();
+      if (cursor) params.set("cursor", cursor);
+      if (debouncedType) params.set("type", debouncedType);
+      if (severity) params.set("severity", severity);
+      if (debouncedUserId) params.set("userId", debouncedUserId);
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+
+      const res = await fetch(`/api/security/events?${params}`);
+      const data: EventsResponse = await res.json();
+
+      setEvents(prev => (append ? [...prev, ...data.events] : data.events));
+      setNextCursor(data.nextCursor);
+      setHasNextPage(data.hasNextPage);
+
+      setLoading(false);
+      setLoadingMore(false);
+    },
+    [debouncedType, severity, debouncedUserId, from, to]
+  );
+
+  // Fetch on filter change
+  useEffect(() => {
     fetchEvents();
-  }, [type, severity, userId, from, to]);
+  }, [fetchEvents]);
 
   const loadMore = () => {
-    if (nextCursor) {
-      fetchEvents(nextCursor, true);
-    }
+    if (nextCursor) fetchEvents(nextCursor, true);
   };
 
   const clearFilters = () => {
@@ -86,18 +98,18 @@ export default function SecurityEventsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Security Events</h1>
-          <p className="text-sm text-muted-foreground">
-            View and filter security events across the platform
-          </p>
-        </div>
+      {/* Header */}
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">Security Events</h1>
+        <p className="text-sm text-muted-foreground">
+          View and filter security events across the platform
+        </p>
       </div>
 
       {/* Filters */}
       <AdminCard header="Filters">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Type */}
           <div>
             <label className="block text-sm font-medium mb-1">Type</label>
             <Input
@@ -106,15 +118,24 @@ export default function SecurityEventsPage() {
               placeholder="e.g. LOGIN_FAILED"
             />
           </div>
+
+          {/* Severity */}
           <div>
             <label className="block text-sm font-medium mb-1">Severity</label>
             <Select value={severity} onValueChange={setSeverity}>
-              <option value="">All</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
+              <SelectTrigger>
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+              </SelectContent>
             </Select>
           </div>
+
+          {/* User ID */}
           <div>
             <label className="block text-sm font-medium mb-1">User ID</label>
             <Input
@@ -123,6 +144,8 @@ export default function SecurityEventsPage() {
               placeholder="User ID"
             />
           </div>
+
+          {/* From */}
           <div>
             <label className="block text-sm font-medium mb-1">From</label>
             <Input
@@ -131,6 +154,8 @@ export default function SecurityEventsPage() {
               onChange={(e) => setFrom(e.target.value)}
             />
           </div>
+
+          {/* To */}
           <div>
             <label className="block text-sm font-medium mb-1">To</label>
             <Input
@@ -140,6 +165,7 @@ export default function SecurityEventsPage() {
             />
           </div>
         </div>
+
         <div className="mt-4">
           <Button variant="outline" onClick={clearFilters}>
             Clear Filters
@@ -148,9 +174,11 @@ export default function SecurityEventsPage() {
       </AdminCard>
 
       {/* Events Table */}
-      <AdminCard header={`Events (${events.length}${hasNextPage ? '+' : ''})`}>
+      <AdminCard header={`Events (${events.length}${hasNextPage ? "+" : ""})`}>
         {loading ? (
-          <div className="text-center py-8">Loading events...</div>
+          <div className="text-center py-8 text-muted-foreground">
+            Loading events…
+          </div>
         ) : events.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             No events found
@@ -158,6 +186,7 @@ export default function SecurityEventsPage() {
         ) : (
           <>
             <EventTable events={events} />
+
             {hasNextPage && (
               <div className="mt-4 text-center">
                 <Button
@@ -165,7 +194,7 @@ export default function SecurityEventsPage() {
                   disabled={loadingMore}
                   variant="outline"
                 >
-                  {loadingMore ? "Loading..." : "Load More"}
+                  {loadingMore ? "Loading…" : "Load More"}
                 </Button>
               </div>
             )}

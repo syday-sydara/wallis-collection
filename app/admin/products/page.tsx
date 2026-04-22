@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { toAdminProductSummary } from "@/lib/products/viewModels";
-import ProductTable from "../../../components/admin/products/ProductTable";
+import ProductTable from "@/components/admin/products/ProductTable";
 
 export const revalidate = 0; // Always fresh in admin
 
@@ -16,6 +16,8 @@ export default async function AdminProductsPage() {
 
   const summaries = products.map(toAdminProductSummary);
 
+  const hasProducts = summaries.length > 0;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -27,8 +29,22 @@ export default async function AdminProductsPage() {
         </Link>
       </div>
 
+      {/* Empty State */}
+      {!hasProducts && (
+        <div className="rounded-lg border border-border bg-surface-card p-10 text-center space-y-3">
+          <p className="text-lg font-medium">No products found</p>
+          <p className="text-text-muted text-sm">
+            Get started by creating your first product.
+          </p>
+
+          <Link href="/admin/products/new" className="btn btn-primary mt-4">
+            Create Product
+          </Link>
+        </div>
+      )}
+
       {/* Product Table */}
-      <ProductTable products={summaries} />
+      {hasProducts && <ProductTable products={summaries} />}
     </div>
   );
 }

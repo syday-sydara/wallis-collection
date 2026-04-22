@@ -10,16 +10,33 @@ export async function assertRisk(params: {
 }) {
   const { userId, riskScore, context, ip, userAgent } = params;
 
-  // Log every enforcement decision
+  /* -------------------------------------------------- */
+  /* Determine severity                                  */
+  /* -------------------------------------------------- */
+  const severity =
+    riskScore >= 80 ? "high" :
+    riskScore >= 60 ? "medium" :
+    "low";
+
+  /* -------------------------------------------------- */
+  /* Log risk evaluation                                 */
+  /* -------------------------------------------------- */
   await emitSecurityEvent({
     type: "RISK_EVALUATION",
     message: `Risk score evaluated: ${riskScore} in context ${context}`,
-    severity: riskScore >= 80 ? "high" : riskScore >= 50 ? "medium" : "low",
-    userId,
+    severity,
+    actorType: "customer",
+    actorId: userId,
+    category: "risk",
+    context,
+    operation: "access",
+    tags: ["risk", `risk:${severity}`, `context:${context}`],
     ip,
     userAgent,
-    category: context,
-    metadata: { riskScore },
+    metadata: {
+      riskScore,
+      context,
+    },
   });
 
   /* -------------------------------------------------- */
@@ -29,6 +46,21 @@ export async function assertRisk(params: {
     await emitAlertEvent({
       event: "HIGH_RISK_BLOCK",
       userId,
+      ip,
+      userAgent,
+      metadata: { riskScore, context },
+    });
+
+    await emitSecurityEvent({
+      type: "RISK_BLOCK",
+      message: `User blocked due to high risk (${riskScore})`,
+      severity: "high",
+      actorType: "customer",
+      actorId: userId,
+      category: "risk",
+      context,
+      operation: "access",
+      tags: ["risk", "block", "high_risk"],
       ip,
       userAgent,
       metadata: { riskScore, context },
@@ -49,11 +81,41 @@ export async function assertRisk(params: {
       metadata: { riskScore, context },
     });
 
+    await emitSecurityEvent({
+      type: "RISK_CHALLENGE",
+      message: `User required to complete challenge due to risk score ${riskScore}`,
+      severity: "medium",
+      actorType: "customer",
+      actorId: userId,
+      category: "risk",
+      context,
+      operation: "access",
+      tags: ["risk", "challenge", "medium_risk"],
+      ip,
+      userAgent,
+      metadata: { riskScore, context },
+    });
+
     redirect("/risk-challenge");
   }
 
   /* -------------------------------------------------- */
   /* LOW RISK → ALLOW                                   */
   /* -------------------------------------------------- */
+  await emitSecurityEvent({
+    type: "RISK_ALLOW",
+    message: `Risk score ${riskScore} allowed`,
+    severity: "low",
+    actorType: "customer",
+    actorId: userId,
+    category: "risk",
+    context,
+    operation: "access",
+    tags: ["risk", "allow", "low_risk"],
+    ip,
+    userAgent,
+    metadata: { riskScore, context },
+  });
+
   return true;
 }

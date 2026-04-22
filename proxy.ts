@@ -1,4 +1,4 @@
-// middleware.ts
+// proxy.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -44,14 +44,14 @@ function blockRisk(req: NextRequest) {
 }
 
 /* -------------------------------------------------- */
-/* Main Middleware Pipeline */
+/* Main Proxy Pipeline */
 /* -------------------------------------------------- */
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   /* -------------------------------------------------- */
-  /* 0. Exempt webhooks and internal endpoints */
+  /* 0. Exempt webhooks + internal endpoints */
   /* -------------------------------------------------- */
   if (pathname.startsWith("/api/webhooks") || pathname.startsWith("/api/_internal")) {
     return NextResponse.next();
@@ -89,7 +89,7 @@ export async function proxy(req: NextRequest) {
         req.ip ||
         "unknown";
 
-      void fetch(`${getInternalSecurityLogUrl()}`, {
+      void fetch(getInternalSecurityLogUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -156,13 +156,11 @@ export async function proxy(req: NextRequest) {
 }
 
 /* -------------------------------------------------- */
-/* Node Runtime + Route Matching */
+/* Allowed Proxy Config (Next.js 16) */
 /* -------------------------------------------------- */
 
 export const config = {
-  runtime: "nodejs",
   matcher: [
-    "/security-center/:path*",
-    "/admin/:path*",
+    "/(admin|security-center)/:path*",
   ],
 };

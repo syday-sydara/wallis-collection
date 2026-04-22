@@ -3,12 +3,14 @@
 import { prisma } from "@/lib/prisma";
 import SalesAnalytics from "@/components/admin/analytics/SalesAnalytics";
 
+export const revalidate = 0; // Always fresh in admin
+
 export default async function AnalyticsPage() {
   const [
-    totalRevenue,
+    totalRevenueAgg,
     totalOrders,
-    refundedAmount,
-    chargebackAmount,
+    refundedAgg,
+    chargebackAgg,
     dailyRevenue,
     topProducts,
     topCustomers,
@@ -29,7 +31,9 @@ export default async function AnalyticsPage() {
       _sum: { amount: true },
     }),
 
-    prisma.$queryRaw`
+    prisma.$queryRaw<
+      { date: string; revenue: number }[]
+    >`
       SELECT DATE("createdAt") AS date, SUM("total") AS revenue
       FROM "Order"
       GROUP BY DATE("createdAt")
@@ -37,7 +41,9 @@ export default async function AnalyticsPage() {
       LIMIT 30
     `,
 
-    prisma.$queryRaw`
+    prisma.$queryRaw<
+      { name: string; qty: number }[]
+    >`
       SELECT p.name, SUM(oi.quantity) AS qty
       FROM "OrderItem" oi
       JOIN "ProductVariant" v ON oi."variantId" = v.id
@@ -47,7 +53,9 @@ export default async function AnalyticsPage() {
       LIMIT 5
     `,
 
-    prisma.$queryRaw`
+    prisma.$queryRaw<
+      { fullName: string | null; spent: number }[]
+    >`
       SELECT u."fullName", SUM(o.total) AS spent
       FROM "Order" o
       JOIN "User" u ON o."userId" = u.id
@@ -59,10 +67,10 @@ export default async function AnalyticsPage() {
 
   return (
     <SalesAnalytics
-      totalRevenue={totalRevenue._sum.total || 0}
+      totalRevenue={totalRevenueAgg._sum.total || 0}
       totalOrders={totalOrders}
-      refundedAmount={refundedAmount._sum.amount || 0}
-      chargebackAmount={chargebackAmount._sum.amount || 0}
+      refundedAmount={refundedAgg._sum.amount || 0}
+      chargebackAmount={chargebackAgg._sum.amount || 0}
       dailyRevenue={dailyRevenue}
       topProducts={topProducts}
       topCustomers={topCustomers}

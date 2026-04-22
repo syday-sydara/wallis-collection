@@ -1,6 +1,7 @@
 // lib/alerts/whatsapp.ts
-import { logEvent } from "../auth/logger";
+
 import { normalizePhoneForWhatsApp } from "../utils/formatters/phone";
+import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 
 export async function sendWhatsAppAlert(payload: {
   to: string;
@@ -13,21 +14,62 @@ export async function sendWhatsAppAlert(payload: {
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
+  /* -------------------------------------------------- */
+  /* Missing credentials                                 */
+  /* -------------------------------------------------- */
   if (!token || !phoneId) {
-    logEvent("whatsapp_missing_credentials", {}, "error");
+    await emitSecurityEvent({
+      type: "WHATSAPP_MISSING_CREDENTIALS",
+      message: "WhatsApp API credentials missing",
+      severity: "high",
+      context: "whatsapp",
+      operation: "access",
+      category: "whatsapp",
+      tags: ["whatsapp", "credentials_missing"],
+      metadata: {},
+      source: "whatsapp_api",
+    });
+
     throw new Error("WhatsApp API credentials missing");
   }
 
-  // Normalize + validate phone
+  /* -------------------------------------------------- */
+  /* Normalize phone number                              */
+  /* -------------------------------------------------- */
   const normalized = normalizePhoneForWhatsApp(to);
+
   if (!normalized) {
-    logEvent("whatsapp_invalid_number", { to, template, severity }, "warn");
+    await emitSecurityEvent({
+      type: "WHATSAPP_INVALID_NUMBER",
+      message: `Invalid WhatsApp number: ${to}`,
+      severity: "medium",
+      context: "whatsapp",
+      operation: "validate",
+      category: "whatsapp",
+      tags: ["whatsapp", "invalid_number"],
+      metadata: { raw: to, template, severity },
+      source: "whatsapp_api",
+    });
+
     return { ok: false, error: "invalid_number" };
   }
 
-  // Validate template name
+  /* -------------------------------------------------- */
+  /* Validate template name                              */
+  /* -------------------------------------------------- */
   if (!/^[a-z0-9_]+$/.test(template)) {
-    logEvent("whatsapp_invalid_template", { template }, "warn");
+    await emitSecurityEvent({
+      type: "WHATSAPP_INVALID_TEMPLATE",
+      message: `Invalid WhatsApp template name: ${template}`,
+      severity: "medium",
+      context: "whatsapp",
+      operation: "validate",
+      category: "whatsapp",
+      tags: ["whatsapp", "invalid_template"],
+      metadata: { template },
+      source: "whatsapp_api",
+    });
+
     return { ok: false, error: "invalid_template" };
   }
 
@@ -56,6 +98,9 @@ export async function sendWhatsAppAlert(payload: {
 
   const url = `https://graph.facebook.com/v18.0/${phoneId}/messages`;
 
+  /* -------------------------------------------------- */
+  /* Retry logic (2 attempts)                            */
+  /* -------------------------------------------------- */
   for (let attempt = 1; attempt <= 2; attempt++) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
@@ -73,6 +118,9 @@ export async function sendWhatsAppAlert(payload: {
 
       clearTimeout(timeout);
 
+      /* -------------------------------------------------- */
+      /* API returned an error                               */
+      /* -------------------------------------------------- */
       if (!res.ok) {
         let errorBody: any;
         try {
@@ -83,36 +131,105 @@ export async function sendWhatsAppAlert(payload: {
 
         const status = res.status;
 
-        logEvent(
-          "whatsapp_alert_failed",
-          { to: normalized, template, severity, status, error: errorBody, attempt },
-          "warn"
-        );
+        await emitSecurityEvent({
+          type: "WHATSAPP_ALERT_FAILED",
+          message: `WhatsApp alert failed to ${normalized}`,
+          severity: status >= 500 ? "high" : "medium",
+          context: "whatsapp",
+          operation: "send",
+          category: "whatsapp",
+          tags: ["whatsapp", "alert_failed"],
+          metadata: {
+            to: normalized,
+            template,
+            severity,
+            status,
+            error: errorBody,
+            attempt,
+          },
+          source: "whatsapp_api",
+        });
 
         if (status === 429) {
           return { ok: false, error: "rate_limited" };
         }
 
+        // Retry only on server errors
         if (status >= 500 && attempt === 1) {
           await new Promise((r) => setTimeout(r, 300 * attempt));
           continue;
         }
 
+        // Hard alert for persistent failure
+        if (attempt === 2) {
+          await emitAlertEvent({
+            type: "WHATSAPP_DELIVERY_FAILURE",
+            metadata: {
+              to: normalized,
+              template,
+              severity,
+              status,
+              error: errorBody,
+            },
+          });
+        }
+
         return { ok: false, error: "api_error", status };
       }
 
-      logEvent("whatsapp_alert_sent", { to: normalized, template, severity });
+      /* -------------------------------------------------- */
+      /* Success                                             */
+      /* -------------------------------------------------- */
+      await emitSecurityEvent({
+        type: "WHATSAPP_ALERT_SENT",
+        message: `WhatsApp alert sent to ${normalized}`,
+        severity,
+        context: "whatsapp",
+        operation: "send",
+        category: "whatsapp",
+        tags: ["whatsapp", "alert_sent"],
+        metadata: {
+          to: normalized,
+          template,
+          severity,
+          attempt,
+        },
+        source: "whatsapp_api",
+      });
+
       return { ok: true };
     } catch (err: any) {
       clearTimeout(timeout);
 
-      logEvent(
-        "whatsapp_alert_error",
-        { to: normalized, template, severity, message: err?.message, attempt },
-        "error"
-      );
+      await emitSecurityEvent({
+        type: "WHATSAPP_ALERT_ERROR",
+        message: `Network error sending WhatsApp alert to ${normalized}`,
+        severity: "high",
+        context: "whatsapp",
+        operation: "send",
+        category: "whatsapp",
+        tags: ["whatsapp", "alert_error"],
+        metadata: {
+          to: normalized,
+          template,
+          severity,
+          error: err?.message,
+          attempt,
+        },
+        source: "whatsapp_api",
+      });
 
       if (attempt === 2) {
+        await emitAlertEvent({
+          type: "WHATSAPP_DELIVERY_FAILURE",
+          metadata: {
+            to: normalized,
+            template,
+            severity,
+            error: err?.message,
+          },
+        });
+
         return { ok: false, error: "network_error" };
       }
 
