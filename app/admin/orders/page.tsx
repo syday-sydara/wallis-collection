@@ -28,7 +28,6 @@ export default async function OrdersPage({
 
   // -----------------------------
   // PAYMENT STATUS FILTER
-  // (works with payments[] relation)
   // -----------------------------
   if (paymentStatus && paymentStatus !== "ALL") {
     where.payments = {
@@ -59,24 +58,41 @@ export default async function OrdersPage({
     include: {
       user: true,
       items: true,
-      payments: true, // updated relation
+      payments: true,
     },
     take: 50,
   });
 
+  const hasResults = orders.length > 0;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="space-y-1">
         <h1 className="text-xl font-semibold tracking-tight">Orders</h1>
+        <p className="text-sm text-text-muted">
+          View and manage all customer orders across the platform.
+        </p>
       </div>
 
+      {/* Filters */}
       <OrderFilters
         initialStatus={status}
         initialPaymentStatus={paymentStatus}
         initialQuery={q}
       />
 
-      <OrderTable orders={orders} />
+      {/* Results */}
+      {hasResults ? (
+        <OrderTable orders={orders} />
+      ) : (
+        <div className="rounded-lg border border-border bg-surface-card p-10 text-center space-y-3">
+          <p className="text-lg font-medium">No orders found</p>
+          <p className="text-text-muted text-sm">
+            Try adjusting your filters or search query.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

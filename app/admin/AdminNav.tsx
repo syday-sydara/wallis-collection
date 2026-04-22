@@ -22,6 +22,11 @@ export function AdminNav() {
     { href: "/admin/webhooks", label: "Webhooks", icon: Webhook },
   ];
 
+  const isActive = (href: string) =>
+    pathname === href ||
+    pathname.startsWith(href + "/") ||
+    pathname.startsWith(href + "?");
+
   return (
     <nav
       role="navigation"
@@ -33,35 +38,24 @@ export function AdminNav() {
         py-2 px-1
       "
     >
-      {links.map((link) => {
-        const isActive =
-          pathname === link.href ||
-          pathname.startsWith(link.href + "/") ||
-          pathname.startsWith(link.href + "?");
+      {links.map(({ href, label, icon: Icon }) => (
+        <Link
+          key={href}
+          href={href}
+          aria-current={isActive(href) ? "page" : undefined}
+          className={clsx(
+            "flex items-center gap-2 px-3 py-2 rounded-md transition-fast active:scale-press",
+            "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
 
-        const Icon = link.icon;
-
-        return (
-          <Link
-            key={link.href}
-            href={link.href}
-            aria-current={isActive ? "page" : undefined}
-            className={clsx(
-              "flex items-center gap-2 px-3 py-2 rounded-md transition-fast active:scale-press",
-              "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
-
-              isActive
-                ? "bg-primary/15 text-text font-semibold shadow-sm"
-                : "text-text-muted hover:text-text hover:bg-surface-muted"
-            )}
-          >
-            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-
-            {/* Hide text on very small screens */}
-            <span className="hidden xs:inline">{link.label}</span>
-          </Link>
-        );
-      })}
+            isActive(href)
+              ? "bg-primary/15 text-text font-semibold shadow-sm"
+              : "text-text-muted hover:text-text hover:bg-surface-muted"
+          )}
+        >
+          <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="hidden xs:inline">{label}</span>
+        </Link>
+      ))}
     </nav>
   );
 }
