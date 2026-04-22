@@ -2,14 +2,11 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request, { params }: { params: { productId: string } }) {
+export async function POST(req, { params }) {
   try {
     const body = await req.json();
     const { name, sku, price, stock } = body;
 
-    // -----------------------------
-    // Validate required fields
-    // -----------------------------
     if (!name || !sku || price == null) {
       return NextResponse.json(
         { error: "name, sku, and price are required" },
@@ -17,46 +14,19 @@ export async function POST(req: Request, { params }: { params: { productId: stri
       );
     }
 
-    if (typeof price !== "number" || price < 0) {
-      return NextResponse.json(
-        { error: "price must be a positive number" },
-        { status: 400 }
-      );
-    }
-
-    // -----------------------------
-    // Ensure product exists
-    // -----------------------------
     const product = await prisma.product.findUnique({
       where: { id: params.productId },
-      select: { id: true },
     });
 
     if (!product) {
-      return NextResponse.json(
-        { error: "Product not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // -----------------------------
-    // Ensure SKU is unique
-    // -----------------------------
-    const existingSku = await prisma.productVariant.findUnique({
-      where: { sku },
-      select: { id: true },
-    });
-
+    const existingSku = await prisma.productVariant.findUnique({ where: { sku } });
     if (existingSku) {
-      return NextResponse.json(
-        { error: "SKU already exists" },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: "SKU already exists" }, { status: 409 });
     }
 
-    // -----------------------------
-    // Create variant
-    // -----------------------------
     const variant = await prisma.productVariant.create({
       data: {
         productId: params.productId,
@@ -68,11 +38,7 @@ export async function POST(req: Request, { params }: { params: { productId: stri
     });
 
     return NextResponse.json(variant);
-  } catch (err) {
-    console.error("Variant creation error:", err);
-    return NextResponse.json(
-      { error: "Failed to create variant" },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Failed to create variant" }, { status: 500 });
   }
 }

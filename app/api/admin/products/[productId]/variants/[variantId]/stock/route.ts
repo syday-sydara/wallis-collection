@@ -2,17 +2,11 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { productId: string; variantId: string } }
-) {
+export async function PATCH(req, { params }) {
   try {
     const body = await req.json();
     const { stock } = body;
 
-    // -----------------------------
-    // Validate stock
-    // -----------------------------
     if (typeof stock !== "number" || stock < 0) {
       return NextResponse.json(
         { error: "Stock must be a non-negative number" },
@@ -20,55 +14,37 @@ export async function PATCH(
       );
     }
 
-    // -----------------------------
-    // Ensure variant exists
-    // -----------------------------
     const variant = await prisma.productVariant.findUnique({
       where: { id: params.variantId },
-      select: { id: true, stock: true },
+      select: { stock: true },
     });
 
     if (!variant) {
-      return NextResponse.json(
-        { error: "Variant not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Variant not found" }, { status: 404 });
     }
 
-    const previousStock = variant.stock;
-
-    // -----------------------------
-    // Update stock
-    // -----------------------------
     const updated = await prisma.productVariant.update({
       where: { id: params.variantId },
       data: { stock },
     });
 
-    // -----------------------------
-    // Audit log (Shopify-style)
-    // -----------------------------
     await prisma.auditLog.create({
       data: {
         action: "INVENTORY_ADJUSTMENT",
         actorType: "ADMIN",
         resource: "variant",
         resourceId: params.variantId,
-        message: `Stock adjusted from ${previousStock} → ${stock}`,
+        message: `Stock adjusted from ${variant.stock} → ${stock}`,
         metadata: {
-          previousStock,
+          previousStock: variant.stock,
           newStock: stock,
-          difference: stock - previousStock,
+          difference: stock - variant.stock,
         },
       },
     });
 
     return NextResponse.json(updated);
-  } catch (err) {
-    console.error("Stock update error:", err);
-    return NextResponse.json(
-      { error: "Failed to update stock" },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Failed to update stock" }, { status: 500 });
   }
 }

@@ -4,31 +4,19 @@ import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 
-export async function DELETE(
-  _: Request,
-  { params }: { params: { productId: string; imageId: string } }
-) {
+export async function DELETE(_: Request, { params }) {
   try {
     const { productId, imageId } = params;
 
-    // -----------------------------
-    // Ensure image exists
-    // -----------------------------
     const image = await prisma.productImage.findUnique({
       where: { id: imageId },
-      select: { id: true, url: true, productId: true },
+      select: { url: true, productId: true },
     });
 
     if (!image) {
-      return NextResponse.json(
-        { error: "Image not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
-    // -----------------------------
-    // Ensure image belongs to product
-    // -----------------------------
     if (image.productId !== productId) {
       return NextResponse.json(
         { error: "Image does not belong to this product" },
@@ -36,29 +24,15 @@ export async function DELETE(
       );
     }
 
-    // -----------------------------
-    // Delete DB record
-    // -----------------------------
-    await prisma.productImage.delete({
-      where: { id: imageId },
-    });
+    await prisma.productImage.delete({ where: { id: imageId } });
 
-    // -----------------------------
-    // Delete local file if applicable
-    // (only if you're storing images locally)
-    // -----------------------------
     if (image.url.startsWith("/uploads/")) {
       const filePath = path.join(process.cwd(), "public", image.url);
       try {
         await fs.unlink(filePath);
-      } catch {
-        // Ignore if file doesn't exist — DB deletion still succeeded
-      }
+      } catch {}
     }
 
-    // -----------------------------
-    // Audit log (Shopify-style)
-    // -----------------------------
     await prisma.auditLog.create({
       data: {
         action: "PRODUCT_IMAGE_DELETED",
@@ -71,11 +45,7 @@ export async function DELETE(
     });
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("Image delete error:", err);
-    return NextResponse.json(
-      { error: "Failed to delete image" },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Failed to delete image" }, { status: 500 });
   }
 }
