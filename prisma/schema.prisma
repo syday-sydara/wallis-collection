@@ -86,6 +86,13 @@ enum FulfillmentStatus {
   FAILED
 }
 
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 //////////////////////
 // USER
 //////////////////////
@@ -312,7 +319,8 @@ model Payment {
   orderId String
   order   Order  @relation(fields: [orderId], references: [id])
 
-  provider  String
+  provider PaymentProvider
+
   reference String @unique
 
   amount Int
