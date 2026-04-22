@@ -1,27 +1,42 @@
-import { v2 as cloudinary } from "cloudinary";
+import { cloudinary } from "./config";
 
-export async function uploadImageFromFormData(file: File): Promise<string> {
+export async function uploadImageFromFormData(
+  file: File
+): Promise<{
+  url: string;
+  width: number;
+  height: number;
+  publicId: string;
+  format: string;
+  bytes: number;
+}> {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
-
-  const upload = await cloudinary.uploader.upload_stream({
-    folder: "products",
-    resource_type: "image",
-    transformation: [
-      { quality: "auto" },
-      { fetch_format: "auto" },
-    ],
-  });
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
-        folder: "products",
+        folder: "wallis",
         resource_type: "image",
+        transformation: [
+          { quality: "auto" },
+          { fetch_format: "auto" },
+        ],
       },
       (error, result) => {
-        if (error) reject(error);
-        else resolve(result!.secure_url);
+        if (error) {
+          console.error("Cloudinary upload error:", error);
+          reject(error);
+        } else {
+          resolve({
+            url: result!.secure_url,
+            width: result!.width!,
+            height: result!.height!,
+            publicId: result!.public_id!,
+            format: result!.format!,
+            bytes: result!.bytes!,
+          });
+        }
       }
     );
 

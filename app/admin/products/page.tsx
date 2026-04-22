@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { toAdminProductSummary } from "@/lib/products/viewModels";
-import ProductTable from "@/components/admin/products/ProductTable";
+import ProductTable from "@/components/admin/products/_components/ProductTable";
 
 export const revalidate = 0; // Always fresh in admin
 

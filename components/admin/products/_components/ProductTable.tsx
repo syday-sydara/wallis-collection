@@ -1,21 +1,21 @@
 "use client";
 
-import ProductRow from "./ProductRow";
+import ProductRow from "../ProductRow";
 import type { AdminProductSummary } from "@/lib/products/types";
 
 export default function ProductTable({ products }: { products: AdminProductSummary[] }) {
   if (!products.length) {
     return (
-      <p className="text-sm text-text-muted mt-4">
+      <p className="text-sm text-text-muted mt-6 text-center">
         No products found.
       </p>
     );
   }
 
   return (
-    <div className="border rounded-md overflow-hidden">
+    <div className="border rounded-md overflow-hidden bg-white shadow-sm">
       <table className="w-full text-sm">
-        <thead className="bg-muted/40 text-left">
+        <thead className="bg-muted/40 text-left border-b">
           <tr>
             <th className="p-3 font-medium">Name</th>
             <th className="p-3 font-medium">Slug</th>
