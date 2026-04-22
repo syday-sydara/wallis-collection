@@ -75,14 +75,15 @@ export async function logSecurityEvent(params: {
     riderId = null,
   } = params;
 
+  // Normalize severity to lowercase (pagination + filtering consistency)
   const sev = VALID_SEVERITIES.includes(severity)
-    ? severity.toUpperCase()
-    : "LOW";
+    ? severity.toLowerCase()
+    : "low";
 
   const normalizedCategory = category?.trim().toLowerCase() || null;
 
+  // Safe metadata handling
   let safeMetadata: Record<string, JsonValue>;
-
   try {
     safeMetadata = JSON.parse(JSON.stringify(metadata));
   } catch {
@@ -106,6 +107,7 @@ export async function logSecurityEvent(params: {
         data: safeMetadata,
       };
 
+  // IP + UA extraction
   let detectedIp = ip ?? null;
   let detectedUA = userAgent ?? null;
 

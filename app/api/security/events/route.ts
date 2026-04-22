@@ -3,9 +3,10 @@
 import { prisma } from "@/lib/prisma";
 import { requireSessionUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/auth/permissions";
-import { forbidden, badRequest, tooManyRequests, ok } from "@/lib/api/response";
+import { forbidden } from "@/lib/api/response";
 import { rateLimited } from "@/lib/api/rate-limited";
 import { emitSecurityEvent } from "@/lib/events/emitter";
+import { ok } from "@/lib/api/response";
 
 export async function GET(req: Request) {
   const user = await requireSessionUser();
@@ -27,19 +28,15 @@ export async function GET(req: Request) {
   }
 
   /* -------------------------------------------------- */
-  /* Rate limiting (per admin user)                     */
+  /* Rate limiting                                       */
   /* -------------------------------------------------- */
-  const rl = await rateLimited(
-    req as any,
-    `audit:${user.id}`,
-    {
-      max: 30,
-      windowMs: 60_000,
-      namespace: "admin-audit",
-      userId: user.id,
-      route: "/api/security/events",
-    }
-  );
+  const rl = await rateLimited(req as any, `audit:${user.id}`, {
+    max: 30,
+    windowMs: 60_000,
+    namespace: "admin-audit",
+    userId: user.id,
+    route: "/api/security/events",
+  });
 
   if (rl instanceof Response) {
     await emitSecurityEvent({
@@ -55,7 +52,7 @@ export async function GET(req: Request) {
   }
 
   /* -------------------------------------------------- */
-  /* Parse query params (cursor-based pagination)         */
+  /* Parse query params                                  */
   /* -------------------------------------------------- */
   const { searchParams } = new URL(req.url);
 
@@ -64,7 +61,8 @@ export async function GET(req: Request) {
 
   const type = searchParams.get("type") || undefined;
   const severity = searchParams.get("severity") || undefined;
-  const userId = searchParams.get("userId") || undefined;
+  const actorId = searchParams.get("actorId") || undefined;
+  const category = searchParams.get("category") || undefined;
 
   const from = searchParams.get("from")
     ? new Date(searchParams.get("from")!)
@@ -81,7 +79,8 @@ export async function GET(req: Request) {
 
   if (type) where.type = type;
   if (severity) where.severity = severity;
-  if (userId) where.userId = userId;
+  if (actorId) where.actorId = actorId;
+  if (category) where.category = category;
 
   if (from || to) {
     where.timestamp = {};
@@ -90,21 +89,42 @@ export async function GET(req: Request) {
   }
 
   /* -------------------------------------------------- */
-  /* Query events (cursor-based pagination)              */
+  /* Decode cursor (timestamp__id)                       */
+  /* -------------------------------------------------- */
+  let cursorObj:
+    | { timestamp: Date; id: string }
+    | undefined;
+
+  if (cursor) {
+    const [ts, id] = cursor.split("__");
+    cursorObj = {
+      timestamp: new Date(Number(ts)),
+      id,
+    };
+  }
+
+  /* -------------------------------------------------- */
+  /* Query events (composite cursor pagination)          */
   /* -------------------------------------------------- */
   const events = await prisma.securityEvent.findMany({
     where,
-    orderBy: { timestamp: "desc" },
-    take: limit + 1, // Take one extra to check if there's a next page
-    ...(cursor && {
-      cursor: { id: cursor },
-      skip: 1, // Skip the cursor itself
+    take: limit + 1,
+    orderBy: [
+      { timestamp: "desc" },
+      { id: "desc" },
+    ],
+    ...(cursorObj && {
+      cursor: cursorObj,
+      skip: 1,
     }),
   });
 
   const hasNextPage = events.length > limit;
   const eventsToReturn = hasNextPage ? events.slice(0, -1) : events;
-  const nextCursor = hasNextPage ? events[events.length - 1].id : null;
+
+  const nextCursor = hasNextPage
+    ? `${events[limit - 1].timestamp.getTime()}__${events[limit - 1].id}`
+    : null;
 
   /* -------------------------------------------------- */
   /* Log admin access                                    */
@@ -114,7 +134,7 @@ export async function GET(req: Request) {
     severity: "low",
     userId: user.id,
     category: "audit",
-    message: `Viewed security events cursor=${cursor || 'first'}, limit=${limit}`,
+    message: `Viewed security events cursor=${cursor || "first"}, limit=${limit}`,
     source: "api",
   });
 
