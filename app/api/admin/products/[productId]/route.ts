@@ -2,7 +2,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function GET(_: Request, { params }: { params: { productId: string } }) {
+export async function GET(_: Request, { params }) {
   try {
     const product = await prisma.product.findUnique({
       where: { id: params.productId },
@@ -14,49 +14,32 @@ export async function GET(_: Request, { params }: { params: { productId: string 
     }
 
     return NextResponse.json(product);
-  } catch (err) {
-    console.error("GET product error:", err);
+  } catch {
     return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 });
   }
 }
 
-export async function PATCH(req: Request, { params }: { params: { productId: string } }) {
+export async function PATCH(req, { params }) {
   try {
     const body = await req.json();
     const { name, slug, basePrice, description } = body;
 
-    // -----------------------------
-    // Ensure product exists
-    // -----------------------------
     const existing = await prisma.product.findUnique({
       where: { id: params.productId },
-      select: { id: true, slug: true },
+      select: { slug: true },
     });
 
     if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // -----------------------------
-    // Validate slug uniqueness
-    // -----------------------------
     if (slug && slug !== existing.slug) {
-      const slugExists = await prisma.product.findUnique({
-        where: { slug },
-        select: { id: true },
-      });
-
+      const slugExists = await prisma.product.findUnique({ where: { slug } });
       if (slugExists) {
-        return NextResponse.json(
-          { error: "Slug already exists" },
-          { status: 409 }
-        );
+        return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
       }
     }
 
-    // -----------------------------
-    // Update product
-    // -----------------------------
     const updated = await prisma.product.update({
       where: { id: params.productId },
       data: {
@@ -68,31 +51,25 @@ export async function PATCH(req: Request, { params }: { params: { productId: str
     });
 
     return NextResponse.json(updated);
-  } catch (err) {
-    console.error("PATCH product error:", err);
+  } catch {
     return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: { productId: string } }) {
+export async function DELETE(_: Request, { params }) {
   try {
-    // Ensure product exists
     const existing = await prisma.product.findUnique({
       where: { id: params.productId },
-      select: { id: true },
     });
 
     if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    await prisma.product.delete({
-      where: { id: params.productId },
-    });
+    await prisma.product.delete({ where: { id: params.productId } });
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("DELETE product error:", err);
+  } catch {
     return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
   }
 }

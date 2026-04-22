@@ -1,16 +1,10 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
 
-export async function POST(
-  req: Request,
-  { params }: { params: { productId: string } }
-) {
+export async function POST(req, { params }) {
   try {
     const { imageIds } = await req.json();
 
-    // -----------------------------
-    // Validate input
-    // -----------------------------
     if (!Array.isArray(imageIds) || imageIds.length === 0) {
       return NextResponse.json(
         { error: "imageIds must be a non-empty array" },
@@ -18,34 +12,21 @@ export async function POST(
       );
     }
 
-    // -----------------------------
-    // Ensure product exists
-    // -----------------------------
     const product = await prisma.product.findUnique({
       where: { id: params.productId },
-      select: { id: true },
     });
 
     if (!product) {
-      return NextResponse.json(
-        { error: "Product not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // -----------------------------
-    // Ensure all images belong to this product
-    // -----------------------------
     const images = await prisma.productImage.findMany({
       where: { id: { in: imageIds } },
       select: { id: true, productId: true },
     });
 
     if (images.length !== imageIds.length) {
-      return NextResponse.json(
-        { error: "Some images do not exist" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Some images do not exist" }, { status: 400 });
     }
 
     const invalid = images.find((img) => img.productId !== params.productId);
@@ -56,11 +37,8 @@ export async function POST(
       );
     }
 
-    // -----------------------------
-    // Update sort order
-    // -----------------------------
     await Promise.all(
-      imageIds.map((id: string, index: number) =>
+      imageIds.map((id, index) =>
         prisma.productImage.update({
           where: { id },
           data: { sortOrder: index },
@@ -68,9 +46,6 @@ export async function POST(
       )
     );
 
-    // -----------------------------
-    // Audit log (Shopify-style)
-    // -----------------------------
     await prisma.auditLog.create({
       data: {
         action: "PRODUCT_IMAGES_REORDERED",
@@ -83,11 +58,7 @@ export async function POST(
     });
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("Image reorder error:", err);
-    return NextResponse.json(
-      { error: "Failed to reorder images" },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Failed to reorder images" }, { status: 500 });
   }
 }
