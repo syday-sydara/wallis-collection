@@ -262,6 +262,10 @@ model Order {
 
   cartSnapshot Json?
 
+  // Inventory reservation tracking
+  inventoryReserved Boolean @default(false)
+  inventoryConfirmed Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

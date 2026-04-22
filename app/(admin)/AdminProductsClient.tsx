@@ -79,7 +79,7 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
         {items.map((p) => (
           <Link
             key={p.id}
-            href={`/admin/products/${p.id}`}
+            href={`/admin/product/${p.id}`}
             className="card p-4 flex flex-col gap-2 active:scale-95 transition-fast"
           >
             <div className="flex justify-between items-center">
@@ -138,7 +138,7 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
               >
                 <td className="py-3 px-4">
                   <Link
-                    href={`/admin/products/${p.id}`}
+                    href={`/admin/product/${p.id}`}
                     className="font-medium hover:underline"
                   >
                     {p.name}

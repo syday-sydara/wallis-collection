@@ -86,6 +86,13 @@ export async function POST(req: NextRequest) {
       data: { status: "FAILED" },
     });
 
+    // Release reserved inventory on payment failure
+    try {
+      await releaseInventory(orderId);
+    } catch (inventoryError: any) {
+      console.error("Inventory release failed:", inventoryError);
+    }
+
     return NextResponse.json({ success: false }, { status: 400 });
   }
 
@@ -106,22 +113,12 @@ export async function POST(req: NextRequest) {
 
     if (freshPayment?.status === "SUCCESS") return;
 
-    // reduce stock
-    for (const item of order.items) {
-      const variant = await tx.productVariant.findUnique({
-        where: { id: item.variantId },
-      });
-
-      if (!variant || variant.stock < item.quantity) {
-        throw new Error("Insufficient stock");
-      }
-
-      await tx.productVariant.update({
-        where: { id: item.variantId },
-        data: {
-          stock: { decrement: item.quantity },
-        },
-      });
+    // Confirm inventory reservation (move from reserved to actual stock reduction)
+    try {
+      await confirmInventory(orderId);
+    } catch (inventoryError: any) {
+      console.error("Inventory confirmation failed:", inventoryError);
+      throw new Error("Inventory confirmation failed");
     }
 
     // update payment

@@ -22,6 +22,6 @@ export async function adminAddImage(
     select: { id: true },
   });
 
-  revalidatePath(`/admin/products/${productId}`);
+  revalidatePath(`/admin/product/${productId}`);
   return image;
 }

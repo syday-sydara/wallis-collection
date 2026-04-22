@@ -4,6 +4,94 @@ import { logEvent } from "@/lib/auth/logger";
 import { evaluateRisk } from "@/lib/risk/rules/service";
 import { buildRiskContext } from "@/lib/risk/context";
 
+/* -------------------------------------------------- */
+/* Inventory Reservation                              */
+/* -------------------------------------------------- */
+
+export async function reserveInventory(orderId: string, items: CheckoutPayload["items"]) {
+  await prisma.$transaction(async (tx) => {
+    for (const item of items) {
+      // Reserve stock atomically
+      const updated = await tx.productVariant.updateMany({
+        where: {
+          id: item.variantId,
+          stock: { gte: item.quantity }, // Must have enough available stock
+        },
+        data: {
+          reservedStock: { increment: item.quantity },
+        },
+      });
+
+      if (updated.count === 0) {
+        throw new Error(`Insufficient stock for variant ${item.variantId}`);
+      }
+    }
+
+    // Mark order as reserving inventory
+    await tx.order.update({
+      where: { id: orderId },
+      data: { inventoryReserved: true },
+    });
+  });
+}
+
+export async function confirmInventory(orderId: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true },
+  });
+
+  if (!order) throw new Error("Order not found");
+  if (!order.inventoryReserved) throw new Error("Inventory not reserved");
+
+  await prisma.$transaction(async (tx) => {
+    for (const item of order.items) {
+      // Move from reserved to actual stock reduction
+      await tx.productVariant.update({
+        where: { id: item.variantId },
+        data: {
+          stock: { decrement: item.quantity },
+          reservedStock: { decrement: item.quantity },
+        },
+      });
+    }
+
+    // Mark as confirmed
+    await tx.order.update({
+      where: { id: orderId },
+      data: { inventoryConfirmed: true },
+    });
+  });
+}
+
+export async function releaseInventory(orderId: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true },
+  });
+
+  if (!order) return; // Order might be deleted
+  if (!order.inventoryReserved || order.inventoryConfirmed) return;
+
+  await prisma.$transaction(async (tx) => {
+    for (const item of order.items) {
+      // Release reserved stock
+      await tx.productVariant.update({
+        where: { id: item.variantId },
+        data: {
+          reservedStock: { decrement: item.quantity },
+        },
+      });
+    }
+
+    // Mark as released
+    await tx.order.update({
+      where: { id: orderId },
+      data: { inventoryReserved: false },
+    });
+  });
+}
+
 export async function processCheckout(
   payload: CheckoutPayload,
   meta: { ip: string; userAgent: string; userId?: string | null }
@@ -77,7 +165,9 @@ export async function processCheckout(
       const variant = variantMap.get(item.variantId);
       if (!variant) throw new Error("A product variant no longer exists");
 
-      if (item.quantity > variant.stock) {
+      // Check available stock (total - reserved)
+      const availableStock = variant.stock - variant.reservedStock;
+      if (item.quantity > availableStock) {
         throw new Error(`Insufficient stock for ${variant.product.name}`);
       }
 
@@ -98,24 +188,6 @@ export async function processCheckout(
         country: "Nigeria",
       },
     });
-
-    for (const item of payload.items) {
-      const updated = await tx.productVariant.updateMany({
-        where: {
-          id: item.variantId,
-          stock: { gte: item.quantity },
-        },
-        data: {
-          stock: { decrement: item.quantity },
-        },
-      });
-
-      if (updated.count === 0) {
-        throw new Error(
-          `Stock changed for ${item.name}. Please refresh your cart.`
-        );
-      }
-    }
 
     const order = await tx.order.create({
       data: {

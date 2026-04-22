@@ -13,6 +13,6 @@ export async function adminReorderImages(productId: string, ids: string[]) {
     )
   );
 
-  revalidatePath(`/admin/products/${productId}`);
+  revalidatePath(`/admin/product/${productId}`);
   return { ok: true };
 }
