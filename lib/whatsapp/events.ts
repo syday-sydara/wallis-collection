@@ -5,6 +5,8 @@ import { sendWhatsAppMessage } from "./send";
 import { sendWhatsAppButtons } from "./buttons";
 import { sendWhatsAppReceipt } from "./receipt";
 import { signRiderLink } from "../rider/sign";
+import { normalizePhoneForWhatsApp } from "../utils/formatters/phone";
+import { emitSecurityEvent } from "@/lib/events/emitter";
 
 /**
  * Send a generic tracking update using a WhatsApp template.
@@ -20,6 +22,21 @@ export async function sendTrackingUpdate(order: any) {
     DELIVERED: "delivered",
     FAILED: "failed",
   }[status];
+
+  await emitSecurityEvent({
+    type: "WHATSAPP_TRACKING_UPDATE_SENT",
+    message: `Tracking update sent for order ${order.id}`,
+    severity: "low",
+    context: "whatsapp",
+    operation: "send",
+    category: "whatsapp",
+    tags: ["whatsapp", "tracking_update", `status:${status}`],
+    metadata: {
+      orderId: order.id,
+      status,
+      friendly,
+    },
+  });
 
   return sendWhatsAppAlert({
     to: order.phone,
@@ -39,6 +56,17 @@ export async function sendTrackingUpdate(order: any) {
  * Also sends COD reminder if needed.
  */
 export async function sendOutForDelivery(order: any) {
+  await emitSecurityEvent({
+    type: "WHATSAPP_OUT_FOR_DELIVERY_SENT",
+    message: `Out-for-delivery notification sent for order ${order.id}`,
+    severity: "medium",
+    context: "whatsapp",
+    operation: "send",
+    category: "whatsapp",
+    tags: ["whatsapp", "ofd"],
+    metadata: { orderId: order.id },
+  });
+
   await sendWhatsAppAlert({
     to: order.phone,
     template: "order_out_for_delivery",
@@ -48,6 +76,17 @@ export async function sendOutForDelivery(order: any) {
 
   // COD reminder (Nigeria-specific)
   if (order.paymentMethod === "CASH") {
+    await emitSecurityEvent({
+      type: "WHATSAPP_COD_REMINDER_SENT",
+      message: `COD reminder sent for order ${order.id}`,
+      severity: "medium",
+      context: "whatsapp",
+      operation: "send",
+      category: "whatsapp",
+      tags: ["whatsapp", "cod_reminder"],
+      metadata: { orderId: order.id },
+    });
+
     await sendWhatsAppAlert({
       to: order.phone,
       template: "order_cod_reminder",
@@ -62,6 +101,17 @@ export async function sendOutForDelivery(order: any) {
  * Also sends a WhatsApp receipt.
  */
 export async function sendDelivered(order: any) {
+  await emitSecurityEvent({
+    type: "WHATSAPP_DELIVERED_SENT",
+    message: `Delivery confirmation sent for order ${order.id}`,
+    severity: "low",
+    context: "whatsapp",
+    operation: "send",
+    category: "whatsapp",
+    tags: ["whatsapp", "delivered"],
+    metadata: { orderId: order.id },
+  });
+
   await sendWhatsAppAlert({
     to: order.phone,
     template: "order_delivered",
@@ -69,7 +119,6 @@ export async function sendDelivered(order: any) {
     severity: "low",
   });
 
-  // Optional: send receipt
   await sendWhatsAppReceipt(order);
 }
 
@@ -77,6 +126,17 @@ export async function sendDelivered(order: any) {
  * Notify customer when delivery fails.
  */
 export async function sendFailed(order: any) {
+  await emitSecurityEvent({
+    type: "WHATSAPP_DELIVERY_FAILED_SENT",
+    message: `Delivery failure notification sent for order ${order.id}`,
+    severity: "high",
+    context: "whatsapp",
+    operation: "send",
+    category: "whatsapp",
+    tags: ["whatsapp", "delivery_failed"],
+    metadata: { orderId: order.id },
+  });
+
   return sendWhatsAppAlert({
     to: order.phone,
     template: "order_failed",
@@ -103,6 +163,20 @@ ${delivered}
 ${failed}
   `;
 
+  await emitSecurityEvent({
+    type: "WHATSAPP_RIDER_LINKS_SENT",
+    message: `Rider update links sent for fulfillment ${fulfillment.id}`,
+    severity: "medium",
+    context: "whatsapp",
+    operation: "send",
+    category: "whatsapp",
+    tags: ["whatsapp", "rider_links"],
+    metadata: {
+      fulfillmentId: fulfillment.id,
+      orderId: fulfillment.orderId,
+    },
+  });
+
   return sendWhatsAppMessage(fulfillment.order.phone, message);
 }
 
@@ -110,12 +184,29 @@ ${failed}
  * Send interactive buttons after a tracking response.
  */
 export async function sendTrackingButtons(to: string, order: any) {
-  return sendWhatsAppButtons(to, "What would you like to do next?", [
-    { id: "track_again", title: "Track Again" },
-    { id: "talk_support", title: "Talk to Support" },
-    {
-      id: "view_timeline",
-      title: "View Timeline",
+  const normalized = normalizePhoneForWhatsApp(to);
+
+  await emitSecurityEvent({
+    type: "WHATSAPP_TRACKING_BUTTONS_SENT",
+    message: `Tracking buttons sent to ${normalized}`,
+    severity: "low",
+    context: "whatsapp",
+    operation: "send",
+    category: "whatsapp",
+    tags: ["whatsapp", "tracking_buttons"],
+    metadata: {
+      to: normalized,
+      orderId: order.id,
     },
-  ]);
+  });
+
+  return sendWhatsAppButtons({
+    to: normalized,
+    message: "What would you like to do next?",
+    buttons: [
+      { id: "track_again", title: "Track Again" },
+      { id: "talk_support", title: "Talk to Support" },
+      { id: "view_timeline", title: "View Timeline" },
+    ],
+  });
 }
