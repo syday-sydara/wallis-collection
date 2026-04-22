@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import clsx from "clsx";
 
 interface Product {
   id: string;
@@ -50,6 +51,12 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
     }
   }
 
+  const formatPrice = (price?: number) =>
+    price != null ? `₦${(price / 100).toLocaleString("en-NG")}` : "—";
+
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString("en-US");
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -67,7 +74,7 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
           {error}
           <button
             onClick={loadMore}
-            className="underline text-danger-foreground hover:text-danger transition-fast"
+            className="underline hover:text-danger transition-fast"
           >
             Retry
           </button>
@@ -84,37 +91,23 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
           >
             <div className="flex justify-between items-center">
               <h3 className="font-medium">{p.name}</h3>
-              {p.isArchived ? (
-                <span className="rounded-md bg-danger px-2 py-0.5 text-xs text-danger-foreground">
-                  Archived
-                </span>
-              ) : (
-                <span className="rounded-md bg-success px-2 py-0.5 text-xs text-success-foreground">
-                  Active
-                </span>
-              )}
+              <StatusBadge archived={p.isArchived} />
             </div>
 
             <div className="text-xs text-text-muted">{p.slug}</div>
 
             <div className="flex justify-between text-sm mt-2">
-              <span>
-                {p.basePrice != null
-                  ? `₦${(p.basePrice / 100).toLocaleString("en-NG")}`
-                  : "—"}
-              </span>
+              <span>{formatPrice(p.basePrice)}</span>
               <span>{p.stock ?? "—"} in stock</span>
             </div>
 
             <div className="text-xs text-text-muted mt-1">
-              Updated {new Date(p.updatedAt).toLocaleDateString("en-US")}
+              Updated {formatDate(p.updatedAt)}
             </div>
           </Link>
         ))}
 
-        {loading && (
-          <div className="animate-shimmer bg-skeleton h-4 rounded-md w-1/3" />
-        )}
+        {loading && <SkeletonRow />}
       </div>
 
       {/* DESKTOP TABLE VIEW */}
@@ -135,39 +128,23 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
               <tr
                 key={p.id}
                 className="hover:bg-surface-muted/50 transition-colors cursor-pointer"
+                onClick={() => (window.location.href = `/admin/product/${p.id}`)}
               >
                 <td className="py-3 px-4">
-                  <Link
-                    href={`/admin/product/${p.id}`}
-                    className="font-medium hover:underline"
-                  >
-                    {p.name}
-                  </Link>
+                  <div className="font-medium">{p.name}</div>
                   <div className="text-xs text-text-muted">{p.slug}</div>
                 </td>
 
-                <td className="px-4">
-                  {p.basePrice != null
-                    ? `₦${(p.basePrice / 100).toLocaleString("en-NG")}`
-                    : "—"}
-                </td>
+                <td className="px-4">{formatPrice(p.basePrice)}</td>
 
                 <td className="px-4">{p.stock ?? "—"}</td>
 
                 <td className="px-4">
-                  {p.isArchived ? (
-                    <span className="rounded-md bg-danger px-2 py-0.5 text-xs text-danger-foreground">
-                      Archived
-                    </span>
-                  ) : (
-                    <span className="rounded-md bg-success px-2 py-0.5 text-xs text-success-foreground">
-                      Active
-                    </span>
-                  )}
+                  <StatusBadge archived={p.isArchived} />
                 </td>
 
                 <td className="px-4 text-xs text-text-muted">
-                  {new Date(p.updatedAt).toLocaleDateString("en-US")}
+                  {formatDate(p.updatedAt)}
                 </td>
               </tr>
             ))}
@@ -175,7 +152,7 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
             {loading && (
               <tr>
                 <td colSpan={5} className="py-3 px-4">
-                  <div className="animate-shimmer bg-skeleton h-4 rounded-md w-1/3" />
+                  <SkeletonRow />
                 </td>
               </tr>
             )}
@@ -196,5 +173,34 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
         </div>
       )}
     </div>
+  );
+}
+
+/* -------------------------------------------------- */
+/* Status Badge                                        */
+/* -------------------------------------------------- */
+
+function StatusBadge({ archived }: { archived: boolean }) {
+  return (
+    <span
+      className={clsx(
+        "rounded-md px-2 py-0.5 text-xs font-medium",
+        archived
+          ? "bg-danger text-danger-foreground"
+          : "bg-success text-success-foreground"
+      )}
+    >
+      {archived ? "Archived" : "Active"}
+    </span>
+  );
+}
+
+/* -------------------------------------------------- */
+/* Skeleton Loader                                     */
+/* -------------------------------------------------- */
+
+function SkeletonRow() {
+  return (
+    <div className="animate-shimmer bg-skeleton h-4 rounded-md w-1/3" />
   );
 }

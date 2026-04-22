@@ -3,11 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
 
-export default async function EventDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function EventDetailPage({ params }: { params: { id: string } }) {
   const event = await prisma.securityEvent.findUnique({
     where: { id: params.id },
   });
@@ -77,17 +73,46 @@ export default async function EventDetailPage({
           )}
         </Detail>
 
-        <Detail label="IP" value={event.ip ?? "—"} />
+        <Detail label="IP">
+          {event.ip ? (
+            <Link
+              href={`/security-center/logs?ip=${event.ip}`}
+              className="text-primary hover:underline"
+            >
+              {event.ip}
+            </Link>
+          ) : (
+            "—"
+          )}
+        </Detail>
+
         <Detail label="User Agent" value={event.userAgent ?? "—"} />
-        <Detail label="Request ID" value={event.requestId ?? "—"} />
+
+        <Detail label="Request ID">
+          {event.requestId ? (
+            <Link
+              href={`/security-center/logs?requestId=${event.requestId}`}
+              className="text-primary hover:underline"
+            >
+              {event.requestId}
+            </Link>
+          ) : (
+            "—"
+          )}
+        </Detail>
+
         <Detail label="Version" value={event.version?.toString() ?? "1"} />
       </Section>
 
       {/* Metadata */}
       <Section title="Metadata">
-        <pre className="bg-surface-muted p-4 rounded-md text-sm text-text overflow-x-auto border border-border">
-          {JSON.stringify(event.metadata ?? {}, null, 2)}
-        </pre>
+        {event.metadata ? (
+          <pre className="bg-surface-muted p-4 rounded-md text-sm text-text overflow-x-auto border border-border">
+            {JSON.stringify(event.metadata, null, 2)}
+          </pre>
+        ) : (
+          <p className="text-sm text-text-muted">No metadata available.</p>
+        )}
       </Section>
 
       {/* Related Events */}
@@ -125,13 +150,7 @@ function Detail({
 /* Section Wrapper                                     */
 /* -------------------------------------------------- */
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-medium text-text">{title}</h2>
@@ -152,7 +171,7 @@ function RelatedBlock({
   events,
 }: {
   title: string;
-  events: Array<{ id: string; type: string; timestamp: Date | string }>;
+  events: Array<{ id: string; type: string; timestamp: Date | string; severity?: string }>;
 }) {
   return (
     <div className="space-y-1">
@@ -165,10 +184,13 @@ function RelatedBlock({
           {events.map((e) => (
             <li key={e.id}>
               <Link
-                href={`/admin/security/events/${e.id}`}
-                className="text-primary hover:underline text-sm"
+                href={`/security-center/logs/${e.id}`}
+                className="flex items-center justify-between text-sm hover:bg-muted/40 p-2 rounded"
               >
-                {e.type} — {new Date(e.timestamp).toLocaleString()}
+                <span>
+                  {e.type} — {new Date(e.timestamp).toLocaleString()}
+                </span>
+                {e.severity && <SeverityBadge severity={e.severity} />}
               </Link>
             </li>
           ))}
@@ -192,7 +214,7 @@ function SeverityBadge({ severity }: { severity: string }) {
   return (
     <span
       className={clsx(
-        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium capitalize",
         styles[severity.toLowerCase()] ?? styles.low
       )}
     >
