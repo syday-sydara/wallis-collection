@@ -33,12 +33,15 @@ function normalizeSignal(s: string): string {
   return s.trim().toUpperCase();
 }
 
-export async function computeFraudScore(inputSignals: string[], context: {
-  orderId?: string | null;
-  userId?: string | null;
-  ip?: string | null;
-  userAgent?: string | null;
-}) {
+export async function computeFraudScore(
+  inputSignals: string[],
+  context: {
+    orderId?: string | null;
+    userId?: string | null;
+    ip?: string | null;
+    userAgent?: string | null;
+  }
+) {
   const unique = Array.from(new Set(inputSignals.map(normalizeSignal)));
 
   const validSignals = unique.filter((s): s is FraudSignal =>
@@ -77,6 +80,8 @@ export async function computeFraudScore(inputSignals: string[], context: {
     weight: FRAUD_WEIGHTS[s],
   }));
 
+  const actorType = context.userId ? "customer" : "system";
+
   /* -------------------------------------------------- */
   /* Emit FraudEvent (for forensics)                    */
   /* -------------------------------------------------- */
@@ -105,14 +110,25 @@ export async function computeFraudScore(inputSignals: string[], context: {
     type: "FRAUD_SCORE",
     message: `Fraud score computed: ${score}`,
     severity,
-    userId: context.userId,
+    actorType,
+    actorId: context.userId ?? null,
+    category: "fraud",
+    context: "fraud",
+    operation: "evaluate",
+    tags: [
+      "fraud",
+      `fraud:${severity}`,
+      ...validSignals.map((s) => `signal:${s}`),
+      `decision:${decision}`,
+    ],
     ip: context.ip,
     userAgent: context.userAgent,
-    category: "fraud",
     metadata: {
       score,
       decision,
+      confidence,
       signals: validSignals,
+      breakdown,
     },
     encryptMetadata: false,
   });

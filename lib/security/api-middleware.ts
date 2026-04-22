@@ -5,8 +5,11 @@ import { parseMiddlewareSession } from "@/lib/auth/middleware-session";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { rateLimited } from "@/lib/api/rate-limited";
 import { emitSecurityEvent } from "@/lib/events/emitter";
-import { unauthorized, forbidden, tooManyRequests } from "@/lib/api/response";
+import { unauthorized, forbidden } from "@/lib/api/response";
 
+/* -------------------------------------------------- */
+/* Types                                               */
+/* -------------------------------------------------- */
 export interface ApiMiddlewareOptions {
   permission?: string | null;
   rateLimit?: {
@@ -24,6 +27,8 @@ export interface ApiContext {
   ip: string | null;
   userAgent: string | null;
   requestId: string;
+  operation: string;
+  context: string;
 }
 
 /* -------------------------------------------------- */
@@ -38,6 +43,30 @@ function generateRequestId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+function inferOperation(method: string): string {
+  switch (method) {
+    case "GET":
+      return "access";
+    case "POST":
+      return "create";
+    case "PUT":
+    case "PATCH":
+      return "update";
+    case "DELETE":
+      return "delete";
+    default:
+      return "access";
+  }
+}
+
+function inferContext(path: string): string {
+  if (path.startsWith("/admin")) return "admin";
+  if (path.startsWith("/api/security")) return "security";
+  if (path.startsWith("/api/orders")) return "delivery";
+  if (path.startsWith("/api/payments")) return "payment";
+  return "api";
+}
+
 /* -------------------------------------------------- */
 /* v3 API Middleware Wrapper                           */
 /* -------------------------------------------------- */
@@ -46,6 +75,12 @@ export async function apiMiddleware(
   options: ApiMiddlewareOptions = {}
 ): Promise<ApiContext | Response> {
   const { permission, rateLimit, requireSession = true } = options;
+
+  const method = req.method;
+  const path = req.nextUrl.pathname;
+
+  const operation = inferOperation(method);
+  const context = inferContext(path);
 
   /* -------------------------------------------------- */
   /* Extract request context                             */
@@ -63,11 +98,32 @@ export async function apiMiddleware(
     const rl = await rateLimited(req, "api", {
       ...rateLimit,
       userId: null,
-      route: req.nextUrl.pathname,
+      route: path,
     });
 
     if (rl instanceof Response) {
-      return rl; // 429 response
+      await emitSecurityEvent({
+        type: "API_RATE_LIMIT",
+        message: "API request rate limited",
+        severity: "low",
+        actorType: "unknown",
+        actorId: null,
+        ip,
+        userAgent,
+        requestId,
+        category: "auth",
+        context,
+        operation,
+        tags: ["api", "rate_limit"],
+        metadata: {
+          method,
+          path,
+          query: Object.fromEntries(req.nextUrl.searchParams),
+        },
+        source: "api",
+      });
+
+      return rl;
     }
   }
 
@@ -76,15 +132,29 @@ export async function apiMiddleware(
   /* -------------------------------------------------- */
   const session = await parseMiddlewareSession(req);
 
+  const actorType = session ? "admin" : "unknown";
+  const actorId = session?.id ?? null;
+
   if (requireSession && !session) {
     await emitSecurityEvent({
       type: "API_UNAUTHORIZED",
       message: "API request missing valid session",
       severity: "medium",
+      actorType,
+      actorId,
       ip,
       userAgent,
       requestId,
       category: "auth",
+      context,
+      operation,
+      tags: ["api", "unauthorized"],
+      metadata: {
+        method,
+        path,
+        query: Object.fromEntries(req.nextUrl.searchParams),
+      },
+      source: "api",
     });
 
     return unauthorized("Unauthorized");
@@ -106,10 +176,21 @@ export async function apiMiddleware(
         type: "API_FORBIDDEN",
         message: `Missing permission: ${permission}`,
         severity: "medium",
+        actorType,
+        actorId,
         ip,
         userAgent,
         requestId,
         category: "auth",
+        context,
+        operation,
+        tags: ["api", "forbidden", `permission:${permission}`],
+        metadata: {
+          method,
+          path,
+          query: Object.fromEntries(req.nextUrl.searchParams),
+        },
+        source: "api",
       });
 
       return forbidden("Forbidden");
@@ -121,9 +202,11 @@ export async function apiMiddleware(
   /* -------------------------------------------------- */
   return {
     session,
-    userId: session?.id ?? null,
+    userId: actorId,
     ip,
     userAgent,
     requestId,
+    operation,
+    context,
   };
 }

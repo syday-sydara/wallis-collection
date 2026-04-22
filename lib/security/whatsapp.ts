@@ -1,5 +1,7 @@
 // lib/security/whatsapp.ts
-import { logSecurityEvent } from "@/lib/security/log";
+
+import { emitSecurityEvent } from "@/lib/events/emitter";
+import { normalizePhone } from "@/lib/security/normalize";
 
 export async function logWhatsAppAbuse(params: {
   from: string;
@@ -8,17 +10,34 @@ export async function logWhatsAppAbuse(params: {
 }) {
   const { from, reason, metadata = {} } = params;
 
-  await logSecurityEvent({
+  const normalizedFrom = normalizePhone(from);
+
+  await emitSecurityEvent({
     type: "WHATSAPP_ABUSE_DETECTED",
     message: `WhatsApp abuse detected: ${reason}`,
+
     severity: "medium",
+
     actorType: "customer",
-    actorId: from,
+    actorId: normalizedFrom,
+
     context: "whatsapp",
+    operation: "detect",
     category: "whatsapp",
-    riskScore: 60,
-    tags: ["whatsapp", "abuse", reason],
-    metadata,
+
+    tags: [
+      "whatsapp",
+      "abuse",
+      `reason:${reason.toLowerCase()}`,
+      `from:${normalizedFrom}`,
+    ],
+
+    metadata: {
+      from: normalizedFrom,
+      reason,
+      ...metadata,
+    },
+
     source: "whatsapp_webhook",
   });
 }

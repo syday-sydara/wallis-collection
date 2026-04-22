@@ -1,7 +1,10 @@
 // lib/security/log.ts
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
-import { encrypt } from "@/lib/security/crypto";
+import {
+  encryptMetadataForRecord,
+  ACTIVE_VERSION,
+} from "@/lib/security/crypto";
 import { randomUUID } from "crypto";
 
 type JsonValue =
@@ -26,8 +29,8 @@ export async function logSecurityEvent(params: {
 
   actorType?: "system" | "admin" | "rider" | "customer" | "unknown";
   actorId?: string | null;
-  context?: "delivery" | "payment" | "whatsapp" | "admin" | "rider" | "system";
-  operation?: "create" | "update" | "delete" | "access" | null;
+  context?: string;
+  operation?: string;
   tags?: string[];
   riskScore?: number | null;
 
@@ -55,7 +58,7 @@ export async function logSecurityEvent(params: {
     actorType = "unknown",
     actorId = null,
     context = "system",
-    operation = null,
+    operation = "access",
     tags = [],
     riskScore = null,
 
@@ -75,14 +78,26 @@ export async function logSecurityEvent(params: {
     riderId = null,
   } = params;
 
-  // Normalize severity to lowercase (pagination + filtering consistency)
+  /* -------------------------------------------------- */
+  /* Normalize severity                                  */
+  /* -------------------------------------------------- */
   const sev = VALID_SEVERITIES.includes(severity)
     ? severity.toLowerCase()
     : "low";
 
+  /* -------------------------------------------------- */
+  /* Normalize category                                  */
+  /* -------------------------------------------------- */
   const normalizedCategory = category?.trim().toLowerCase() || null;
 
-  // Safe metadata handling
+  /* -------------------------------------------------- */
+  /* Normalize tags                                      */
+  /* -------------------------------------------------- */
+  const normalizedTags = tags.map((t) => t.trim().toLowerCase());
+
+  /* -------------------------------------------------- */
+  /* Metadata sanitization                               */
+  /* -------------------------------------------------- */
   let safeMetadata: Record<string, JsonValue>;
   try {
     safeMetadata = JSON.parse(JSON.stringify(metadata));
@@ -95,19 +110,24 @@ export async function logSecurityEvent(params: {
     safeMetadata = { _truncated: true };
   }
 
+  /* -------------------------------------------------- */
+  /* Encrypt metadata (AAD-bound to eventId)             */
+  /* -------------------------------------------------- */
   const storedMetadata = encryptMetadata
     ? {
         _encrypted: true,
-        encVersion: 1,
-        payload: encrypt(JSON.stringify(safeMetadata)),
+        encVersion: ACTIVE_VERSION,
+        payload: encryptMetadataForRecord(eventId, safeMetadata),
       }
     : {
         _encrypted: false,
-        encVersion: 1,
+        encVersion: ACTIVE_VERSION,
         data: safeMetadata,
       };
 
-  // IP + UA extraction
+  /* -------------------------------------------------- */
+  /* IP + UA extraction                                  */
+  /* -------------------------------------------------- */
   let detectedIp = ip ?? null;
   let detectedUA = userAgent ?? null;
 
@@ -115,20 +135,25 @@ export async function logSecurityEvent(params: {
     const h = await headers();
     detectedIp = detectedIp ?? extractClientIp(h.get("x-forwarded-for"));
     detectedUA = detectedUA ?? h.get("user-agent");
-  } catch {}
+  } catch {
+    // headers() unavailable (e.g. background job)
+  }
 
-  const version = 3;
-
+  /* -------------------------------------------------- */
+  /* Write to DB                                         */
+  /* -------------------------------------------------- */
   try {
     await prisma.securityEvent.create({
       data: {
         id: eventId,
-        version,
+        version: 3,
+
         type,
         message,
         severity: sev,
         category: normalizedCategory,
         context,
+        operation,
         source,
         requestId,
 
@@ -140,7 +165,7 @@ export async function logSecurityEvent(params: {
         riderId,
 
         riskScore: riskScore ?? 0,
-        tags,
+        tags: normalizedTags,
 
         userId,
         ip: detectedIp,

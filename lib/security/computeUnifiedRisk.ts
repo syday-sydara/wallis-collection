@@ -1,3 +1,5 @@
+import { emitSecurityEvent } from "@/lib/events/emitter";
+
 type Signals = {
   failedLogins?: number;
   newDevice?: boolean;
@@ -31,9 +33,15 @@ const CONFIG: Record<
   rapidOtpRequests: { weight: 22 },
 };
 
-export function computeUnifiedRisk(
-  signals: Signals = {}
-): UnifiedRiskResult {
+export async function computeUnifiedRisk(
+  signals: Signals = {},
+  context: {
+    userId?: string | null;
+    ip?: string | null;
+    userAgent?: string | null;
+    source?: "login" | "session" | "checkout" | "admin";
+  } = {}
+): Promise<UnifiedRiskResult> {
   let total = 0;
   let signalsUsed = 0;
   let confidenceWeight = 0;
@@ -65,15 +73,13 @@ export function computeUnifiedRisk(
     breakdown[key] = contribution;
     total += contribution;
 
-    // Confidence weighted by signal importance
     confidenceWeight += weight;
   }
 
   // Normalize total to 0–100
-  const MAX_TOTAL = 150; // tune this based on real data
+  const MAX_TOTAL = 150;
   total = Math.min(100, (total / MAX_TOTAL) * 100);
 
-  // Confidence based on signal strength, not just count
   const confidence = Math.min(1, confidenceWeight / 100);
 
   const severity =
@@ -81,11 +87,44 @@ export function computeUnifiedRisk(
     total >= 45 ? "medium" :
     "low";
 
-  return {
+  const result: UnifiedRiskResult = {
     total: Math.round(total),
     confidence: Number(confidence.toFixed(2)),
     breakdown,
     severity,
     signalsUsed,
   };
+
+  /* -------------------------------------------------- */
+  /* Emit SecurityEvent (v3 schema)                     */
+  /* -------------------------------------------------- */
+  await emitSecurityEvent({
+    type: "UNIFIED_RISK_SCORE",
+    message: `Unified risk score computed: ${result.total}`,
+    severity: result.severity,
+    actorType: context.userId ? "customer" : "unknown",
+    actorId: context.userId ?? null,
+    category: "risk",
+    context: context.source ?? "session",
+    operation: "evaluate",
+    tags: [
+      "risk",
+      `risk:${result.severity}`,
+      ...Object.entries(signals)
+        .filter(([_, v]) => v)
+        .map(([k]) => `signal:${k}`),
+    ],
+    ip: context.ip ?? null,
+    userAgent: context.userAgent ?? null,
+    metadata: {
+      total: result.total,
+      confidence: result.confidence,
+      breakdown: result.breakdown,
+      signalsUsed: result.signalsUsed,
+      severity: result.severity,
+      rawSignals: signals,
+    },
+  });
+
+  return result;
 }

@@ -2,20 +2,20 @@
 
 import { redis } from "@/lib/redis";
 import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
+import { normalizeIp } from "@/lib/security/normalize";
 
 const WINDOW_SECONDS = 10 * 60; // 10 minutes
 const MAX = 20;
 
-function normalizeIp(ip: string) {
-  return ip.split(",")[0].trim();
-}
-
 export async function trackPermissionDenied(ip: string) {
-  const normalizedIp = normalizeIp(ip);
+  const normalizedIp = normalizeIp(ip) ?? "unknown";
   const key = `perm:denied:${normalizedIp}`;
 
   let count = 1;
 
+  /* -------------------------------------------------- */
+  /* Redis counter                                       */
+  /* -------------------------------------------------- */
   try {
     count = await redis.incr(key);
 
@@ -40,9 +40,27 @@ export async function trackPermissionDenied(ip: string) {
   await emitSecurityEvent({
     type: "PERMISSION_DENIED",
     message: `Permission denied from ${normalizedIp} (${count} attempts)`,
-    severity: count >= 20 ? "high" : count >= 10 ? "medium" : "low",
-    ip: normalizedIp,
+
+    severity:
+      count >= 20 ? "high" :
+      count >= 10 ? "medium" :
+      "low",
+
+    actorType: "unknown",
+    actorId: null,
+
+    context: "auth",
+    operation: "access",
     category: "auth",
+
+    tags: [
+      "auth",
+      "permission_denied",
+      `attempts:${count}`,
+      `ip:${normalizedIp}`,
+    ],
+
+    ip: normalizedIp,
     metadata: {
       attempts: count,
       windowSeconds: WINDOW_SECONDS,
@@ -55,7 +73,7 @@ export async function trackPermissionDenied(ip: string) {
   /* -------------------------------------------------- */
   if (count === 10) {
     await emitAlertEvent({
-      event: "PERMISSION_DENIED_THRESHOLD_MEDIUM",
+      type: "PERMISSION_DENIED_THRESHOLD_MEDIUM",
       ip: normalizedIp,
       metadata: {
         attempts: 10,
@@ -66,7 +84,7 @@ export async function trackPermissionDenied(ip: string) {
 
   if (count === 20) {
     await emitAlertEvent({
-      event: "PERMISSION_DENIED_THRESHOLD_HIGH",
+      type: "PERMISSION_DENIED_THRESHOLD_HIGH",
       ip: normalizedIp,
       metadata: {
         attempts: 20,
