@@ -4,7 +4,9 @@ import { useCheckout } from "./useCheckout";
 import { Loader2 } from "lucide-react";
 
 export default function CheckoutPage() {
-  const { state, isPending, handleSubmit } = useCheckout();
+  const { state, handleSubmit } = useCheckout();
+
+  const isPending = state.status === "submitting";
 
   return (
     <form
@@ -14,46 +16,47 @@ export default function CheckoutPage() {
     >
       {/* ---------------- Contact Info ---------------- */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-text">Contact Information</h2>
+        <h2 className="text-lg font-semibold text-text-primary">
+          Contact Information
+        </h2>
 
-        {/* Full Name */}
         <Field
           label="Full Name"
           name="fullName"
           type="text"
           autoComplete="name"
-          error={state.fieldErrors.fullName}
+          error={state.errors.fullName}
         />
 
-        {/* Email */}
         <Field
           label="Email Address"
           name="email"
           type="email"
           autoComplete="email"
-          error={state.fieldErrors.email}
+          error={state.errors.email}
         />
 
-        {/* Phone */}
         <Field
           label="Phone Number"
           name="phone"
           type="tel"
           autoComplete="tel"
-          error={state.fieldErrors.phone}
+          error={state.errors.phone}
         />
       </section>
 
       {/* ---------------- Shipping Info ---------------- */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-text">Shipping Details</h2>
+        <h2 className="text-lg font-semibold text-text-primary">
+          Shipping Details
+        </h2>
 
         <Field
           label="Address"
           name="address"
           type="text"
           autoComplete="street-address"
-          error={state.fieldErrors.address}
+          error={state.errors.address}
         />
 
         <Field
@@ -61,7 +64,7 @@ export default function CheckoutPage() {
           name="city"
           type="text"
           autoComplete="address-level2"
-          error={state.fieldErrors.city}
+          error={state.errors.city}
         />
 
         <Field
@@ -69,18 +72,20 @@ export default function CheckoutPage() {
           name="state"
           type="text"
           autoComplete="address-level1"
-          error={state.fieldErrors.state}
+          error={state.errors.state}
         />
       </section>
 
       {/* ---------------- Payment Method ---------------- */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-text">Payment Method</h2>
+        <h2 className="text-lg font-semibold text-text-primary">
+          Payment Method
+        </h2>
 
         <select
           name="paymentMethod"
-          className={`w-full rounded-md border px-3 py-2 text-sm bg-surface ${
-            state.fieldErrors.paymentMethod ? "border-danger" : "border-border"
+          className={`w-full rounded-md border px-3 py-2 text-sm bg-bg-default ${
+            state.errors.paymentMethod ? "border-danger" : "border-border"
           }`}
         >
           <option value="paystack">Paystack</option>
@@ -88,9 +93,9 @@ export default function CheckoutPage() {
           <option value="cod">Cash on Delivery</option>
         </select>
 
-        {state.fieldErrors.paymentMethod && (
+        {state.errors.paymentMethod && (
           <p className="text-danger text-xs">
-            {state.fieldErrors.paymentMethod.join(", ")}
+            {state.errors.paymentMethod.join(", ")}
           </p>
         )}
       </section>
@@ -110,8 +115,8 @@ export default function CheckoutPage() {
       </button>
 
       {/* ---------------- Global Error ---------------- */}
-      {state.message && (
-        <p className="text-danger text-sm text-center animate-fadeIn-fast">
+      {state.status === "error" && state.message && (
+        <p className="text-danger text-sm text-center animate-fadeIn">
           {state.message}
         </p>
       )}
@@ -123,7 +128,7 @@ export default function CheckoutPage() {
 function Field({ label, name, type, autoComplete, error }: any) {
   return (
     <div className="space-y-1">
-      <label htmlFor={name} className="text-sm font-medium text-text">
+      <label htmlFor={name} className="text-sm font-medium text-text-primary">
         {label}
       </label>
 
@@ -133,14 +138,12 @@ function Field({ label, name, type, autoComplete, error }: any) {
         type={type}
         autoComplete={autoComplete}
         required
-        className={`w-full rounded-md border px-3 py-2 text-sm bg-surface ${
+        className={`w-full rounded-md border px-3 py-2 text-sm bg-bg-default ${
           error ? "border-danger" : "border-border"
         }`}
       />
 
-      {error && (
-        <p className="text-danger text-xs">{error.join(", ")}</p>
-      )}
+      {error && <p className="text-danger text-xs">{error.join(", ")}</p>}
     </div>
   );
 }

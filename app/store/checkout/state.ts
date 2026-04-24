@@ -1,25 +1,31 @@
 export type CheckoutActionState = {
-  status: "idle" | "error" | "success";
-  success: boolean | null;
+  status: "idle" | "submitting" | "success" | "error";
+
+  /** Human‑readable message for UI */
   message: string | null;
+
+  /** Field‑level validation errors */
+  errors: Record<string, string[] | undefined>;
+
+  /** Optional machine‑readable error code */
   errorCode?: string | null;
-  fieldErrors: Record<string, string[] | undefined>;
-  validationErrors?: Record<string, string[] | undefined>;
+
+  /** For successful checkouts */
   orderId?: string;
   paymentUrl?: string | null;
   redirectUrl?: string | null;
-  timestamp?: number;
+
+  /** Updated on every state change */
+  timestamp: number;
 };
 
 export const checkoutInitialState: CheckoutActionState = {
   status: "idle",
-  success: null,
   message: null,
-  fieldErrors: {},
-  validationErrors: {},
+  errors: {},
   errorCode: null,
-  redirectUrl: null,
   paymentUrl: null,
+  redirectUrl: null,
   orderId: undefined,
   timestamp: Date.now(),
 };
