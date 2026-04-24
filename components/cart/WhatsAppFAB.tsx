@@ -9,17 +9,22 @@ export function WhatsAppFAB() {
 
   if (items.length === 0) return null;
 
+  const phone = "2348000000001"; // your business WhatsApp number
+
   const messageLines = [
     "Hello! I want to place an order:",
     "",
     ...items.map(
-      (i) => `${i.name} x${i.quantity} = ${formatCurrency(i.unitPrice * i.quantity)}`
+      (i) =>
+        `${i.name} x${i.quantity} = ${formatCurrency(
+          i.unitPrice * i.quantity
+        )}`
     ),
     "",
     `Total: ${formatCurrency(subtotal)}`,
   ];
 
-  const link = `https://wa.me/?text=${encodeURIComponent(
+  const link = `https://wa.me/${phone}?text=${encodeURIComponent(
     messageLines.join("\n")
   )}`;
 
@@ -33,12 +38,14 @@ export function WhatsAppFAB() {
       <span>💬</span>
       <span className="font-medium">Checkout via WhatsApp</span>
 
-      {/* Optional: Show small thumbnails for items */}
       <div className="flex -space-x-2">
         {items.slice(0, 3).map((item) => (
-          <div key={item.id} className="relative w-6 h-6 rounded-full overflow-hidden border-2 border-white">
+          <div
+            key={item.id}
+            className="relative w-6 h-6 rounded-full overflow-hidden border-2 border-white"
+          >
             <Image
-              src={item.image}
+              src={item.image ?? "/placeholder.png"}
               alt={item.name}
               fill
               className="object-cover"
@@ -46,6 +53,7 @@ export function WhatsAppFAB() {
             />
           </div>
         ))}
+
         {items.length > 3 && (
           <div className="w-6 h-6 flex items-center justify-center text-xs font-bold bg-white text-green-500 rounded-full border-2 border-white">
             +{items.length - 3}

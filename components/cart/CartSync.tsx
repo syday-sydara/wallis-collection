@@ -1,26 +1,33 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useCart } from "@/lib/cart/store";
 
 export function CartSync() {
   const { loadFromServer, syncToServer, items, isSynced } = useCart();
 
-  // Load cart from server on mount (when user is logged in)
-  useEffect(() => {
-    loadFromServer();
-  }, [loadFromServer]);
+  // Prevent syncing immediately after loading from server
+  const hasLoaded = useRef(false);
 
-  // Sync cart to server when items change and not already synced
+  // Load cart on mount
   useEffect(() => {
-    if (items.length > 0 && !isSynced) {
-      const timeoutId = setTimeout(() => {
-        syncToServer();
-      }, 2000); // Debounce sync
+    loadFromServer().finally(() => {
+      hasLoaded.current = true;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-      return () => clearTimeout(timeoutId);
-    }
+  // Sync cart when items change
+  useEffect(() => {
+    if (!hasLoaded.current) return; // Skip first load
+    if (isSynced) return; // Already synced
+
+    const timeoutId = setTimeout(() => {
+      syncToServer();
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
   }, [items, isSynced, syncToServer]);
 
-  return null; // This component doesn't render anything
+  return null;
 }

@@ -10,7 +10,15 @@ import Image from "next/image";
 import { formatCurrency } from "@/lib/utils/formatters/currency";
 
 export function CartDrawer() {
-  const { isOpen, close, items, subtotal, increaseQty, decreaseQty, removeItem } = useCart();
+  const {
+    isOpen,
+    close,
+    items,
+    subtotal,
+    increaseQty,
+    decreaseQty,
+    removeItem,
+  } = useCart();
 
   /* ---------------- Scroll Lock ---------------- */
   useEffect(() => {
@@ -60,7 +68,7 @@ export function CartDrawer() {
         </div>
 
         {/* Items */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4" role="list">
           {items.length === 0 ? (
             <div className="text-center mt-10 space-y-3 animate-fadeIn-fast">
               <p className="text-text-muted text-sm">Your cart is empty</p>
@@ -72,10 +80,14 @@ export function CartDrawer() {
             </div>
           ) : (
             items.map((item) => (
-              <div key={item.id} className="flex gap-3 animate-fadeIn-fast">
+              <div
+                key={item.id}
+                role="listitem"
+                className="flex gap-3 animate-fadeIn-fast"
+              >
                 <Image
-                  src={item.image}
-                  alt={item.name}
+                  src={item.image ?? "/placeholder.png"}
+                  alt={item.name ?? "Product image"}
                   width={64}
                   height={64}
                   className="rounded-md object-cover"
@@ -94,7 +106,8 @@ export function CartDrawer() {
                   <div className="flex items-center gap-2 mt-2">
                     <button
                       onClick={() => decreaseQty(item.id)}
-                      className="p-1 rounded-md bg-surface-muted hover:bg-surface active:scale-press"
+                      disabled={item.quantity <= 1}
+                      className="p-1 rounded-md bg-surface-muted hover:bg-surface active:scale-press disabled:opacity-50"
                       aria-label="Decrease quantity"
                     >
                       <Minus className="h-4 w-4 text-text-muted" />
@@ -112,7 +125,8 @@ export function CartDrawer() {
                   </div>
 
                   <p className="text-sm font-medium text-text mt-1">
-                    {formatCurrency(item.unitPrice)}
+                    {formatCurrency(item.unitPrice)} × {item.quantity} ={" "}
+                    {formatCurrency(item.unitPrice * item.quantity)}
                   </p>
                 </div>
 

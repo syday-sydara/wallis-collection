@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import { useCart } from "@/lib/cart/store";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,7 @@ export default function AddToCartButton({
   className,
 }: Props) {
   const [loading, setLoading] = useState(false);
+  const [added, setAdded] = useState(false);
   const [variantError, setVariantError] = useState(false);
   const { addItem } = useCart();
 
@@ -44,18 +45,22 @@ export default function AddToCartButton({
 
     setLoading(true);
 
-    // Haptic feedback (mobile)
+    // Haptic feedback
     if (navigator.vibrate) navigator.vibrate(10);
 
     addItem({
       name,
       productId,
-      unitPrice: variant?.price ?? 0,
-      image,
+      unitPrice: variant!.price, // safe because isBlocked prevents missing variant
+      image: image ?? "/placeholder.png",
       attributes: variant?.attributes,
     });
 
     setLoading(false);
+    setAdded(true);
+
+    // Flash "Added!" briefly
+    setTimeout(() => setAdded(false), 1200);
   }
 
   return (
@@ -65,6 +70,7 @@ export default function AddToCartButton({
         onClick={handleClick}
         disabled={isDisabled}
         aria-busy={loading}
+        aria-live="polite"
         aria-label={
           loading
             ? "Adding to cart"
@@ -85,6 +91,11 @@ export default function AddToCartButton({
             <Loader2 className="h-4 w-4 animate-spin" />
             Adding...
           </span>
+        ) : added ? (
+          <span className="flex items-center justify-center gap-2 text-green-200">
+            <Check className="h-4 w-4" />
+            Added!
+          </span>
         ) : isBlocked ? (
           "Select Variant"
         ) : (
@@ -92,7 +103,6 @@ export default function AddToCartButton({
         )}
       </button>
 
-      {/* Inline variant error */}
       {variantError && (
         <p className="text-xs text-danger animate-fadeIn-fast">
           Please select a variant first
