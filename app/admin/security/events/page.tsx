@@ -5,7 +5,8 @@ import { AdminCard } from "@/components/admin/ui/AdminCard";
 import EventTable from "@/components/security/EventTable";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/Select";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem }
+ from "@/components/ui/Select";
 
 type SecurityEvent = {
   id: string;

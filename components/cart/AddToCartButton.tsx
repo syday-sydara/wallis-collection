@@ -45,15 +45,27 @@ export default function AddToCartButton({
 
     setLoading(true);
 
-    // Haptic feedback
+    // Haptic feedback (mobile)
     if (navigator.vibrate) navigator.vibrate(10);
 
+    // Add to cart
     addItem({
       name,
       productId,
-      unitPrice: variant!.price, // safe because isBlocked prevents missing variant
+      unitPrice: variant?.price ?? 0,
       image: image ?? "/placeholder.png",
       attributes: variant?.attributes,
+      variantId: variant?.id,
+    });
+
+    // Track analytics
+    fetch("/api/insights", {
+      method: "POST",
+      body: JSON.stringify({
+        productId,
+        type: "add_to_cart",
+        variantId: variant?.id,
+      }),
     });
 
     setLoading(false);

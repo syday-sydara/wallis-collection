@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from "react";
-import { X, Minus, Plus, Trash } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Minus, Plus, Trash, MessageCircle } from "lucide-react";
 import { useCart } from "@/lib/cart/store";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,10 @@ export function CartDrawer() {
     increaseQty,
     decreaseQty,
     removeItem,
+    clearCart,
   } = useCart();
+
+  const [loadingWhatsApp, setLoadingWhatsApp] = useState(false);
 
   /* ---------------- Scroll Lock ---------------- */
   useEffect(() => {
@@ -33,6 +36,42 @@ export function CartDrawer() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [close]);
+
+  /* ---------------- WhatsApp Checkout ---------------- */
+  async function handleWhatsAppCheckout() {
+    if (loadingWhatsApp) return;
+
+    setLoadingWhatsApp(true);
+
+    try {
+      const res = await fetch("/api/checkout/whatsapp", {
+        method: "POST",
+        body: JSON.stringify({ items }),
+      });
+
+      const data = await res.json();
+
+      if (data.url) {
+        // Track analytics
+        for (const item of items) {
+          fetch("/api/insights", {
+            method: "POST",
+            body: JSON.stringify({
+              productId: item.productId,
+              type: "whatsapp_click",
+              variantId: item.variantId,
+            }),
+          });
+        }
+
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error("WhatsApp checkout failed:", err);
+    }
+
+    setLoadingWhatsApp(false);
+  }
 
   return (
     <>
@@ -151,9 +190,33 @@ export function CartDrawer() {
               <span className="font-semibold">{formatCurrency(subtotal)}</span>
             </div>
 
-            <Link href="/checkout" onClick={close}>
-              <Button fullWidth className="min-h-touch">
-                Checkout
+            {/* WhatsApp Checkout */}
+            <Button
+              fullWidth
+              className="bg-green-500 text-white min-h-touch flex items-center justify-center gap-2"
+              onClick={handleWhatsAppCheckout}
+              disabled={loadingWhatsApp}
+            >
+              <MessageCircle className="h-5 w-5" />
+              {loadingWhatsApp ? "Opening WhatsApp..." : "Checkout via WhatsApp"}
+            </Button>
+
+            {/* Website Checkout */}
+            <Link
+              href="/checkout"
+              onClick={() => {
+                close();
+                fetch("/api/insights", {
+                  method: "POST",
+                  body: JSON.stringify({
+                    productId: items[0]?.productId,
+                    type: "checkout_click",
+                  }),
+                });
+              }}
+            >
+              <Button fullWidth variant="outline" className="min-h-touch">
+                Checkout on Website
               </Button>
             </Link>
           </div>

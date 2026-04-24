@@ -222,6 +222,35 @@ model ProductVariant {
   @@index([productId])
 }
 
+model ProductInsights {
+  productId          String   @id
+  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // Raw counters
+  viewCount          Int      @default(0)
+  addToCartCount     Int      @default(0)
+  whatsappClickCount Int      @default(0)
+  checkoutClickCount Int      @default(0)
+  purchaseCount      Int      @default(0)
+
+  // Derived metrics
+  addToCartRate      Float    @default(0)
+  checkoutClickRate  Float    @default(0)
+  whatsappClickRate  Float    @default(0)
+  conversionRate     Float    @default(0)
+
+  // Variant-level intelligence
+  variantPopularity  Json?
+
+  // Risk / quality signals
+  abandonmentCount   Int      @default(0)
+  fraudFlagCount     Int      @default(0)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+
 //////////////////////
 // STOCK LOG
 //////////////////////

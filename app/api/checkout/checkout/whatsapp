@@ -1,0 +1,72 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { formatCurrency } from "@/lib/utils/formatters/currency";
+
+export async function POST(req: Request) {
+  try {
+    const { items, phone } = await req.json();
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json(
+        { ok: false, message: "Cart is empty" },
+        { status: 400 }
+      );
+    }
+
+    // Your business WhatsApp number (no +)
+    const businessPhone = phone || "2348000000001";
+
+    /* ---------------------------------------------
+     * Build WhatsApp message
+     * --------------------------------------------- */
+    const lines: string[] = [
+      "Hello! I want to place an order:",
+      "",
+    ];
+
+    let subtotal = 0;
+
+    for (const item of items) {
+      const lineTotal = item.unitPrice * item.quantity;
+      subtotal += lineTotal;
+
+      const variantLabel = item.attributes
+        ? Object.values(item.attributes).join(" / ")
+        : null;
+
+      lines.push(
+        variantLabel
+          ? `${item.name} (${variantLabel}) x${item.quantity} = ${formatCurrency(
+              lineTotal
+            )}`
+          : `${item.name} x${item.quantity} = ${formatCurrency(lineTotal)}`
+      );
+
+      // Track WhatsApp click per product
+      await prisma.productInsights.update({
+        where: { productId: item.productId },
+        data: {
+          whatsappClickCount: { increment: 1 },
+        },
+      });
+    }
+
+    lines.push("");
+    lines.push(`Subtotal: ${formatCurrency(subtotal)}`);
+    lines.push("");
+    lines.push("Delivery location:");
+    lines.push("Payment method:");
+
+    const message = encodeURIComponent(lines.join("\n"));
+
+    const whatsappUrl = `https://wa.me/${businessPhone}?text=${message}`;
+
+    return NextResponse.json({
+      ok: true,
+      url: whatsappUrl,
+    });
+  } catch (err) {
+    console.error("WhatsApp checkout error:", err);
+    return NextResponse.json({ ok: false }, { status: 500 });
+  }
+}
