@@ -29,8 +29,12 @@ build/
 # Environment Variables
 # -------------------------
 .env
+.env.key
 .env.*
 !.env.example
+
+!/.env.enc
+
 
 # -------------------------
 # Prisma

@@ -40,16 +40,62 @@ async function confirm(question: string) {
   return answer.toLowerCase().startsWith("y");
 }
 
-function ensureEnvFile() {
-  if (!fs.existsSync(".env")) {
-    log.warn("No .env file found. Creating one from .env.example...");
-    if (fs.existsSync(".env.example")) {
+/**
+ * SAFER ENV HANDLING:
+ * - Never overwrites .env
+ * - Never deletes .env
+ * - Creates .env from .env.example only if missing
+ * - Supports CI + force mode
+ */
+async function ensureEnvFile(opts: { force?: boolean; ci?: boolean }) {
+  const hasEnv = fs.existsSync(".env");
+  const hasEnc = fs.existsSync(".env.enc");
+  const hasExample = fs.existsSync(".env.example");
+
+  // 1. If .env exists, do nothing
+  if (hasEnv) {
+    log.info(".env already exists — leaving it untouched.");
+    return;
+  }
+
+  // 2. If .env.enc exists, decrypt it
+  if (hasEnc) {
+    const key = process.env.ENV_KEY;
+    if (!key) {
+      log.error("ENV_KEY missing — cannot decrypt .env.enc");
+      process.exit(1);
+    }
+
+    log.info("Decrypting .env.enc...");
+    const { decryptEnv } = await import("./env-encryption");
+    decryptEnv(key);
+    log.success("Decrypted .env.enc → .env");
+    return;
+  }
+
+  // 3. If no .env but .env.example exists, offer to create it
+  if (hasExample) {
+    log.warn("No .env file found.");
+
+    if (opts.force || opts.ci) {
+      fs.copyFileSync(".env.example", ".env");
+      log.success("Created .env from .env.example (forced/CI mode)");
+      return;
+    }
+
+    const shouldCreate = await confirm("Create .env from .env.example? (y/N) ");
+    if (shouldCreate) {
       fs.copyFileSync(".env.example", ".env");
       log.success("Created .env from .env.example");
     } else {
-      log.warn("No .env.example found. Skipping.");
+      log.warn("Skipping .env creation — some features may not work.");
     }
+
+    return;
   }
+
+  // 4. No .env, no .env.enc, no .env.example
+  log.warn("No .env, .env.enc, or .env.example found. Skipping env setup.");
 }
 
 function validateEnv() {
@@ -100,10 +146,10 @@ async function main() {
 
   console.log(chalk.magenta("\n🚀 Starting Wallis Collection setup...\n"));
 
-  // Ensure .env exists
-  ensureEnvFile();
+  // SAFER ENV + ENCRYPTION HANDLING
+  await ensureEnvFile(opts);
 
-  // Reload env after creating .env
+  // Reload env after creating/decrypting .env
   dotenv.config();
 
   // Validate environment
