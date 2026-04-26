@@ -2,8 +2,8 @@
 
 type AbuseRecord = {
   count: number;
-  lastSeen: number;
   notFoundCount: number;
+  lastSeen: number;
 };
 
 const WINDOW_MS = 60_000; // 1 minute
@@ -16,8 +16,13 @@ function getRecord(key: string): AbuseRecord {
   const now = Date.now();
   const rec = cache.get(key);
 
+  // Reset window if expired or missing
   if (!rec || now - rec.lastSeen > WINDOW_MS) {
-    const fresh: AbuseRecord = { count: 0, lastSeen: now, notFoundCount: 0 };
+    const fresh: AbuseRecord = {
+      count: 0,
+      notFoundCount: 0,
+      lastSeen: now,
+    };
     cache.set(key, fresh);
     return fresh;
   }
@@ -25,6 +30,9 @@ function getRecord(key: string): AbuseRecord {
   return rec;
 }
 
+/* -------------------------------------------------- */
+/* Track message frequency                             */
+/* -------------------------------------------------- */
 export function trackWhatsAppMessage(from: string) {
   const rec = getRecord(from);
   rec.count += 1;
@@ -36,6 +44,9 @@ export function trackWhatsAppMessage(from: string) {
   };
 }
 
+/* -------------------------------------------------- */
+/* Track "not found" events (invalid commands, etc.)   */
+/* -------------------------------------------------- */
 export function trackWhatsAppNotFound(from: string) {
   const rec = getRecord(from);
   rec.notFoundCount += 1;
@@ -45,4 +56,31 @@ export function trackWhatsAppNotFound(from: string) {
     isSuspicious: rec.notFoundCount > MAX_NOT_FOUND_PER_WINDOW,
     notFoundCount: rec.notFoundCount,
   };
+}
+
+/* -------------------------------------------------- */
+/* Unified abuse status helper                         */
+/* -------------------------------------------------- */
+export function getAbuseStatus(from: string) {
+  const rec = getRecord(from);
+
+  return {
+    highFrequency: rec.count > MAX_MESSAGES_PER_WINDOW,
+    suspicious: rec.notFoundCount > MAX_NOT_FOUND_PER_WINDOW,
+    count: rec.count,
+    notFoundCount: rec.notFoundCount,
+    lastSeen: rec.lastSeen,
+  };
+}
+
+/* -------------------------------------------------- */
+/* Optional: periodic cleanup to prevent memory leaks  */
+/* -------------------------------------------------- */
+export function cleanupAbuseCache() {
+  const now = Date.now();
+  for (const [key, rec] of cache.entries()) {
+    if (now - rec.lastSeen > WINDOW_MS * 2) {
+      cache.delete(key);
+    }
+  }
 }

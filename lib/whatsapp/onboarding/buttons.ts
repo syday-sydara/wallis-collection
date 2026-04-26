@@ -1,19 +1,16 @@
-// lib/whatsapp/media.ts
+// lib/whatsapp/buttons.ts
 
 import { normalizePhoneForWhatsApp } from "../utils/formatters/phone";
 import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 
-const BASE_URL = "https://graph.facebook.com/v18.0";
 const TIMEOUT_MS = 8000;
 
-async function sendMediaMessage(payload: {
+export async function sendWhatsAppButtons(payload: {
   to: string;
-  type: "image" | "document";
-  mediaUrl: string;
-  caption?: string;
-  filename?: string;
+  message: string;
+  buttons: { id: string; title: string }[];
 }) {
-  const { to, type, mediaUrl, caption, filename } = payload;
+  const { to, message, buttons } = payload;
 
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
@@ -61,19 +58,23 @@ async function sendMediaMessage(payload: {
   /* -------------------------------------------------- */
   /* Build WhatsApp API payload                          */
   /* -------------------------------------------------- */
-  const url = `${BASE_URL}/${phoneId}/messages`;
-
-  const body: any = {
+  const body = {
     messaging_product: "whatsapp",
     to: normalized,
-    type,
-    [type]: {
-      link: mediaUrl,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: message },
+      action: {
+        buttons: buttons.map((b) => ({
+          type: "reply",
+          reply: { id: b.id, title: b.title },
+        })),
+      },
     },
   };
 
-  if (caption) body[type].caption = caption;
-  if (filename && type === "document") body[type].filename = filename;
+  const url = `https://graph.facebook.com/v18.0/${phoneId}/messages`;
 
   /* -------------------------------------------------- */
   /* Retry logic (2 attempts, exponential backoff)       */
@@ -100,18 +101,16 @@ async function sendMediaMessage(payload: {
       /* -------------------------------------------------- */
       if (res.ok) {
         await emitSecurityEvent({
-          type: "WHATSAPP_MEDIA_SENT",
-          message: `WhatsApp ${type} sent to ${normalized}`,
+          type: "WHATSAPP_BUTTONS_SENT",
+          message: `WhatsApp buttons sent to ${normalized}`,
           severity: "low",
           context: "whatsapp",
           operation: "send",
           category: "whatsapp",
-          tags: ["whatsapp", "media_sent", `type:${type}`],
+          tags: ["whatsapp", "buttons_sent"],
           metadata: {
             to: normalized,
-            type,
-            caption,
-            filename,
+            buttonCount: buttons.length,
             attempt,
           },
           source: "whatsapp_api",
@@ -133,16 +132,15 @@ async function sendMediaMessage(payload: {
       const status = res.status;
 
       await emitSecurityEvent({
-        type: "WHATSAPP_MEDIA_SEND_FAILED",
-        message: `Failed to send WhatsApp ${type} to ${normalized}`,
+        type: "WHATSAPP_BUTTON_SEND_FAILED",
+        message: `Failed to send WhatsApp buttons to ${normalized}`,
         severity: status >= 500 ? "high" : "medium",
         context: "whatsapp",
         operation: "send",
         category: "whatsapp",
-        tags: ["whatsapp", "media_failed", `type:${type}`],
+        tags: ["whatsapp", "send_failed"],
         metadata: {
           to: normalized,
-          type,
           status,
           error: errorBody,
           attempt,
@@ -154,19 +152,20 @@ async function sendMediaMessage(payload: {
         return { ok: false, error: "rate_limited" };
       }
 
+      // Retry only on server errors
       if (status >= 500 && attempt === 1) {
         await new Promise((r) => setTimeout(r, 300 * attempt));
         continue;
       }
 
+      // Hard failure
       if (attempt === 2) {
         await emitAlertEvent({
           type: "WHATSAPP_DELIVERY_FAILURE",
           metadata: {
             to: normalized,
-            type,
-            status,
             error: errorBody,
+            status,
           },
         });
       }
@@ -176,16 +175,15 @@ async function sendMediaMessage(payload: {
       clearTimeout(timeout);
 
       await emitSecurityEvent({
-        type: "WHATSAPP_MEDIA_NETWORK_ERROR",
-        message: `Network error sending WhatsApp ${type} to ${normalized}`,
+        type: "WHATSAPP_BUTTON_NETWORK_ERROR",
+        message: `Network error sending WhatsApp buttons to ${normalized}`,
         severity: "high",
         context: "whatsapp",
         operation: "send",
         category: "whatsapp",
-        tags: ["whatsapp", "network_error", `type:${type}`],
+        tags: ["whatsapp", "network_error"],
         metadata: {
           to: normalized,
-          type,
           error: err?.message,
           attempt,
         },
@@ -197,7 +195,6 @@ async function sendMediaMessage(payload: {
           type: "WHATSAPP_DELIVERY_FAILURE",
           metadata: {
             to: normalized,
-            type,
             error: err?.message,
           },
         });
@@ -208,12 +205,4 @@ async function sendMediaMessage(payload: {
       await new Promise((r) => setTimeout(r, 300 * attempt));
     }
   }
-}
-
-export function sendWhatsAppImage(to: string, mediaUrl: string, caption?: string) {
-  return sendMediaMessage({ to, type: "image", mediaUrl, caption });
-}
-
-export function sendWhatsAppDocument(to: string, mediaUrl: string, filename: string, caption?: string) {
-  return sendMediaMessage({ to, type: "document", mediaUrl, filename, caption });
 }

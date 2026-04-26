@@ -3,6 +3,8 @@
 import { normalizePhoneForWhatsApp } from "../utils/formatters/phone";
 import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 
+const TIMEOUT_MS = 8000;
+
 export async function sendWhatsAppList(payload: {
   to: string;
   header?: string;
@@ -35,7 +37,7 @@ export async function sendWhatsAppList(payload: {
       source: "whatsapp_api",
     });
 
-    throw new Error("WhatsApp API credentials missing");
+    return { ok: false, error: "missing_credentials" };
   }
 
   /* -------------------------------------------------- */
@@ -94,67 +96,131 @@ export async function sendWhatsAppList(payload: {
   }
 
   /* -------------------------------------------------- */
-  /* Send request                                        */
+  /* Retry logic (2 attempts, exponential backoff)       */
   /* -------------------------------------------------- */
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(bodyPayload),
-  });
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-  /* -------------------------------------------------- */
-  /* Handle failure                                      */
-  /* -------------------------------------------------- */
-  if (!res.ok) {
-    const error = await res.text();
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(bodyPayload),
+        signal: controller.signal,
+      });
 
-    await emitSecurityEvent({
-      type: "WHATSAPP_LIST_SEND_FAILED",
-      message: `Failed to send WhatsApp list to ${normalized}`,
-      severity: "high",
-      context: "whatsapp",
-      operation: "send",
-      category: "whatsapp",
-      tags: ["whatsapp", "list_failed"],
-      metadata: {
-        to: normalized,
-        error,
-      },
-      source: "whatsapp_api",
-    });
+      clearTimeout(timeout);
 
-    await emitAlertEvent({
-      type: "WHATSAPP_DELIVERY_FAILURE",
-      metadata: {
-        to: normalized,
-        error,
-      },
-    });
+      /* -------------------------------------------------- */
+      /* Success                                             */
+      /* -------------------------------------------------- */
+      if (res.ok) {
+        await emitSecurityEvent({
+          type: "WHATSAPP_LIST_SENT",
+          message: `WhatsApp list sent to ${normalized}`,
+          severity: "low",
+          context: "whatsapp",
+          operation: "send",
+          category: "whatsapp",
+          tags: ["whatsapp", "list_sent"],
+          metadata: {
+            to: normalized,
+            sectionCount: sections.length,
+            rowCount: sections.reduce((acc, s) => acc + s.rows.length, 0),
+            attempt,
+          },
+          source: "whatsapp_api",
+        });
 
-    return { ok: false, error };
+        return { ok: true };
+      }
+
+      /* -------------------------------------------------- */
+      /* API returned an error                               */
+      /* -------------------------------------------------- */
+      let errorBody: any;
+      try {
+        errorBody = await res.json();
+      } catch {
+        errorBody = await res.text();
+      }
+
+      const status = res.status;
+
+      await emitSecurityEvent({
+        type: "WHATSAPP_LIST_SEND_FAILED",
+        message: `Failed to send WhatsApp list to ${normalized}`,
+        severity: status >= 500 ? "high" : "medium",
+        context: "whatsapp",
+        operation: "send",
+        category: "whatsapp",
+        tags: ["whatsapp", "list_failed"],
+        metadata: {
+          to: normalized,
+          status,
+          error: errorBody,
+          attempt,
+        },
+        source: "whatsapp_api",
+      });
+
+      if (status === 429) {
+        return { ok: false, error: "rate_limited" };
+      }
+
+      if (status >= 500 && attempt === 1) {
+        await new Promise((r) => setTimeout(r, 300 * attempt));
+        continue;
+      }
+
+      if (attempt === 2) {
+        await emitAlertEvent({
+          type: "WHATSAPP_DELIVERY_FAILURE",
+          metadata: {
+            to: normalized,
+            status,
+            error: errorBody,
+          },
+        });
+      }
+
+      return { ok: false, error: "api_error", status };
+    } catch (err: any) {
+      clearTimeout(timeout);
+
+      await emitSecurityEvent({
+        type: "WHATSAPP_LIST_NETWORK_ERROR",
+        message: `Network error sending WhatsApp list to ${normalized}`,
+        severity: "high",
+        context: "whatsapp",
+        operation: "send",
+        category: "whatsapp",
+        tags: ["whatsapp", "network_error"],
+        metadata: {
+          to: normalized,
+          error: err?.message,
+          attempt,
+        },
+        source: "whatsapp_api",
+      });
+
+      if (attempt === 2) {
+        await emitAlertEvent({
+          type: "WHATSAPP_DELIVERY_FAILURE",
+          metadata: {
+            to: normalized,
+            error: err?.message,
+          },
+        });
+
+        return { ok: false, error: "network_error" };
+      }
+
+      await new Promise((r) => setTimeout(r, 300 * attempt));
+    }
   }
-
-  /* -------------------------------------------------- */
-  /* Success event                                       */
-  /* -------------------------------------------------- */
-  await emitSecurityEvent({
-    type: "WHATSAPP_LIST_SENT",
-    message: `WhatsApp list sent to ${normalized}`,
-    severity: "low",
-    context: "whatsapp",
-    operation: "send",
-    category: "whatsapp",
-    tags: ["whatsapp", "list_sent"],
-    metadata: {
-      to: normalized,
-      sectionCount: sections.length,
-      rowCount: sections.reduce((acc, s) => acc + s.rows.length, 0),
-    },
-    source: "whatsapp_api",
-  });
-
-  return { ok: true };
 }

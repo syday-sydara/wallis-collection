@@ -14,7 +14,7 @@ export async function confirmInventory(orderId: string) {
     });
 
     if (reservations.length === 0) {
-      // Nothing to confirm (idempotent)
+      // Nothing to confirm (already confirmed or no reservation)
       return;
     }
 
@@ -28,7 +28,7 @@ export async function confirmInventory(orderId: string) {
       });
     }
 
-    // Mark reservations as confirmed
+    // Remove reservation records
     await tx.inventoryReservation.deleteMany({
       where: { orderId },
     });
