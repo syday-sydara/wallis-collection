@@ -1,35 +1,22 @@
 // lib/whatsapp/tracking-buttons.ts
 
-import { sendWhatsAppButtons } from "./buttons";
-import { normalizePhoneForWhatsApp } from "../utils/formatters/phone";
+import { WhatsAppService } from "@/lib/whatsapp/service";
 import { emitSecurityEvent } from "@/lib/events/emitter";
+import { EventSource } from "@/lib/events/types";
 
 export async function sendTrackingButtons(to: string, orderId: string) {
-  const normalized = normalizePhoneForWhatsApp(to) || to;
-
-  /* -------------------------------------------------- */
-  /* Log event for observability                         */
-  /* -------------------------------------------------- */
   await emitSecurityEvent({
+    kind: "security",
     type: "WHATSAPP_TRACKING_BUTTONS_SENT",
-    message: `Tracking buttons sent to ${normalized} for order ${orderId}`,
+    message: `Tracking buttons sent to ${to} for order ${orderId}`,
     severity: "low",
-    context: "whatsapp",
-    operation: "send",
-    category: "whatsapp",
     tags: ["whatsapp", "tracking_buttons"],
-    metadata: {
-      to: normalized,
-      orderId,
-    },
-    source: "whatsapp_api",
+    metadata: { to, orderId },
+    source: EventSource.WhatsAppAPI,
   });
 
-  /* -------------------------------------------------- */
-  /* Send interactive buttons                            */
-  /* -------------------------------------------------- */
-  return sendWhatsAppButtons({
-    to: normalized,
+  return WhatsAppService.sendButtons({
+    to,
     message: `What would you like to do next for order ${orderId}?`,
     buttons: [
       { id: "track_again", title: "Track Again" },
