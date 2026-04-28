@@ -2,15 +2,16 @@
 
 import { sendOnboardingMenu } from "@/lib/whatsapp/onboarding/buttons";
 import { sendPhoneSelection } from "@/lib/whatsapp/onboarding/phone";
-import { sendOrderSelection } from "./onboarding/orders";
-import { sendTrackingLink } from "./onboarding/track";
+import { sendOrderSelection } from "@/lib/whatsapp/onboarding/orders";
+import { sendTrackingLink } from "@/lib/whatsapp/onboarding/track";
+import { sendWhatsAppMessage } from "@/lib/whatsapp/send";
 
 export async function handleWhatsAppInteraction(event: any) {
   const from = event.from;
   const button = event.interactive?.button_reply?.id;
   const list = event.interactive?.list_reply?.id;
 
-  // 1. User says "Hi"
+  // 1. User says "Hi" or sends any non-interactive message
   if (!button && !list) {
     return sendOnboardingMenu(from);
   }
