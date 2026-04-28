@@ -17,8 +17,14 @@ const NULL_SENTINEL = Symbol("NULL_VALUE");
 const store = new Map<string, Entry>();
 const inFlight = new Map<string, InFlight>();
 
+let logger: ((event: string, key: string) => void) | null = null;
+
+export function setIdempotencyLogger(fn: (event: string, key: string) => void) {
+  logger = fn;
+}
+
 function normalizeKey(key: string) {
-  return key.trim().replace(/\s+/g, "_");
+  return key.trim().replace(/\s+/g, "_").toLowerCase();
 }
 
 function isExpired(entry: { createdAt: number }) {
@@ -32,16 +38,17 @@ export function getIdempotentResponse<T>(key: string): T | null {
 
   if (isExpired(entry)) {
     store.delete(normalized);
+    logger?.("expired", normalized);
     return null;
   }
 
+  logger?.("cache_hit", normalized);
   return entry.value === NULL_SENTINEL ? null : (entry.value as T);
 }
 
 export function saveIdempotentResponse<T>(key: string, value: T) {
   const normalized = normalizeKey(key);
 
-  // Evict oldest if needed (O(1))
   if (store.size >= MAX_ENTRIES) {
     const oldestKey = store.keys().next().value;
     if (oldestKey) store.delete(oldestKey);
@@ -51,6 +58,8 @@ export function saveIdempotentResponse<T>(key: string, value: T) {
     createdAt: Date.now(),
     value: value === null ? NULL_SENTINEL : value,
   });
+
+  logger?.("saved", normalized);
 }
 
 export async function runIdempotent<T>(
@@ -60,17 +69,17 @@ export async function runIdempotent<T>(
 ): Promise<T> {
   const normalized = normalizeKey(key);
 
-  // 1. Cached response
   const cached = getIdempotentResponse<T>(normalized);
   if (cached !== null) return cached;
 
-  // 2. In-flight response
   const existing = inFlight.get(normalized);
   if (existing && !isExpired(existing)) {
+    logger?.("in_flight", normalized);
     return existing.promise as Promise<T>;
   }
 
-  // 3. Start new computation with timeout
+  logger?.("compute_start", normalized);
+
   const promise = Promise.race([
     fn(),
     new Promise<never>((_, reject) =>
@@ -80,10 +89,12 @@ export async function runIdempotent<T>(
     .then((result) => {
       saveIdempotentResponse(normalized, result);
       inFlight.delete(normalized);
+      logger?.("compute_end", normalized);
       return result;
     })
     .catch((err) => {
       inFlight.delete(normalized);
+      logger?.("compute_error", normalized);
       throw err;
     });
 
@@ -98,12 +109,20 @@ export function cleanupIdempotencyStore() {
   for (const [key, entry] of store.entries()) {
     if (now - entry.createdAt > TTL_MS) {
       store.delete(key);
+      logger?.("expired", key);
     }
   }
 
   for (const [key, entry] of inFlight.entries()) {
     if (now - entry.createdAt > TTL_MS) {
       inFlight.delete(key);
+      logger?.("expired_in_flight", key);
     }
   }
+}
+
+export function clearIdempotencyStore() {
+  store.clear();
+  inFlight.clear();
+  logger?.("cleared", "all");
 }

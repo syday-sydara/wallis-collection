@@ -10,25 +10,21 @@ export class SleepAbortedError extends Error {
 export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   const duration = Math.max(0, Math.round(ms));
 
-  // Immediate abort
   if (signal?.aborted) {
     return Promise.reject(new SleepAbortedError());
   }
 
-  return new Promise((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      // Cleanup abort listener
-      if (signal) {
-        signal.removeEventListener("abort", onAbort);
-      }
-      resolve();
-    }, duration);
-
+  return new Promise<void>((resolve, reject) => {
     const onAbort = () => {
       clearTimeout(timeoutId);
       signal?.removeEventListener("abort", onAbort);
       reject(new SleepAbortedError());
     };
+
+    const timeoutId = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, duration);
 
     if (signal) {
       signal.addEventListener("abort", onAbort, { once: true });
