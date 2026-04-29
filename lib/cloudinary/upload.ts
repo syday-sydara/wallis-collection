@@ -1,6 +1,7 @@
 'use server';
 
-import { cloudinary } from "./config";
+import { cloudinary } from ".";
+import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
 import type { UploadApiResponse } from "cloudinary";
 
 export async function uploadImage(
@@ -10,19 +11,45 @@ export async function uploadImage(
     { quality: "auto" },
     { fetch_format: "auto" },
   ]
-): Promise<{
-  url: string;
-  width: number;
-  height: number;
-  publicId: string;
-  format: string;
-  bytes: number;
-}> {
+): Promise<
+  | {
+      ok: true;
+      url: string;
+      width: number;
+      height: number;
+      publicId: string;
+      format: string;
+      bytes: number;
+    }
+  | {
+      ok: false;
+      error: string;
+      details?: any;
+    }
+> {
+  /* -------------------------------------------------- */
+  /* Validate input                                      */
+  /* -------------------------------------------------- */
   if (!filePath || typeof filePath !== "string") {
-    throw new Error("Invalid file path");
+    await emitSecurityEvent({
+      type: "CLOUDINARY_UPLOAD_INVALID_PATH",
+      message: "Invalid file path for Cloudinary upload",
+      severity: "medium",
+      context: "cloudinary",
+      operation: "upload",
+      category: "media",
+      tags: ["cloudinary", "invalid_path"],
+      metadata: { filePath },
+      source: "cloudinary_api",
+    });
+
+    return { ok: false, error: "invalid_file_path" };
   }
 
   try {
+    /* -------------------------------------------------- */
+    /* Upload                                              */
+    /* -------------------------------------------------- */
     const result: UploadApiResponse = await cloudinary.uploader.upload(
       filePath,
       {
@@ -32,7 +59,29 @@ export async function uploadImage(
       }
     );
 
+    /* -------------------------------------------------- */
+    /* Success event                                       */
+    /* -------------------------------------------------- */
+    await emitSecurityEvent({
+      type: "CLOUDINARY_UPLOAD_SUCCESS",
+      message: `Image uploaded: ${result.public_id}`,
+      severity: "low",
+      context: "cloudinary",
+      operation: "upload",
+      category: "media",
+      tags: ["cloudinary", "upload_success"],
+      metadata: {
+        publicId: result.public_id,
+        bytes: result.bytes,
+        width: result.width,
+        height: result.height,
+        format: result.format,
+      },
+      source: "cloudinary_api",
+    });
+
     return {
+      ok: true,
       url: result.secure_url,
       width: result.width!,
       height: result.height!,
@@ -40,8 +89,27 @@ export async function uploadImage(
       format: result.format!,
       bytes: result.bytes!,
     };
-  } catch (err) {
-    console.error("Cloudinary upload failed:", err);
-    throw new Error("Image upload failed");
+  } catch (err: any) {
+    /* -------------------------------------------------- */
+    /* Error event                                         */
+    /* -------------------------------------------------- */
+    await emitSecurityEvent({
+      type: "CLOUDINARY_UPLOAD_ERROR",
+      message: "Cloudinary upload failed",
+      severity: "high",
+      context: "cloudinary",
+      operation: "upload",
+      category: "media",
+      tags: ["cloudinary", "upload_error"],
+      metadata: { error: err?.message, filePath },
+      source: "cloudinary_api",
+    });
+
+    await emitAlertEvent({
+      type: "CLOUDINARY_UPLOAD_FAILURE",
+      metadata: { error: err?.message, filePath },
+    });
+
+    return { ok: false, error: "upload_failed", details: err?.message };
   }
 }
