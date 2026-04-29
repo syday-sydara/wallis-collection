@@ -1,14 +1,24 @@
 // lib/whatsapp/transport.ts
 
-const BASE_URL = "https://graph.facebook.com/v18.0";
-const TIMEOUT_MS = 8000;
-const MAX_ATTEMPTS = 2;
+import {
+  WHATSAPP_BASE_URL,
+  WHATSAPP_TIMEOUT_MS,
+  WHATSAPP_MAX_ATTEMPTS,
+  WHATSAPP_CIRCUIT_FAILURE_THRESHOLD,
+  WHATSAPP_CIRCUIT_OPEN_MS,
+} from "./config";
 
 export type WhatsAppResult =
-  | { ok: true }
+  | { ok: true; attempt: number }
   | {
       ok: false;
-      error: string;
+      error:
+        | "missing_credentials"
+        | "rate_limited"
+        | "api_error"
+        | "network_error"
+        | "circuit_open"
+        | "unknown";
       status?: number;
       raw?: any;
       attempt?: number;
@@ -20,6 +30,33 @@ function getCredentials() {
   if (!token || !phoneId) return null;
   return { token, phoneId };
 }
+
+// ---------------------------------------------------------------------------
+// Circuit Breaker (in-memory, per process)
+// ---------------------------------------------------------------------------
+
+let failures = 0;
+let circuitOpenUntil = 0;
+
+function isCircuitOpen() {
+  return Date.now() < circuitOpenUntil;
+}
+
+function recordFailure() {
+  failures++;
+  if (failures >= WHATSAPP_CIRCUIT_FAILURE_THRESHOLD) {
+    circuitOpenUntil = Date.now() + WHATSAPP_CIRCUIT_OPEN_MS;
+  }
+}
+
+function recordSuccess() {
+  failures = 0;
+  circuitOpenUntil = 0;
+}
+
+// ---------------------------------------------------------------------------
+// Timeout wrapper
+// ---------------------------------------------------------------------------
 
 async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   const controller = new AbortController();
@@ -35,14 +72,22 @@ async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Transport Layer
+// ---------------------------------------------------------------------------
+
 export class WhatsAppTransport {
   static async call(to: string, body: any): Promise<WhatsAppResult> {
     const creds = getCredentials();
     if (!creds) return { ok: false, error: "missing_credentials" };
 
-    const url = `${BASE_URL}/${creds.phoneId}/messages`;
+    if (isCircuitOpen()) {
+      return { ok: false, error: "circuit_open" };
+    }
 
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const url = `${WHATSAPP_BASE_URL}/${creds.phoneId}/messages`;
+
+    for (let attempt = 1; attempt <= WHATSAPP_MAX_ATTEMPTS; attempt++) {
       try {
         const res = await withTimeout(
           fetch(url, {
@@ -53,26 +98,45 @@ export class WhatsAppTransport {
             },
             body: JSON.stringify({ ...body, to }),
           }),
-          TIMEOUT_MS
+          WHATSAPP_TIMEOUT_MS
         );
 
-        if (res.ok) return { ok: true };
+        // ---------------------------
+        // SUCCESS
+        // ---------------------------
+        if (res.ok) {
+          recordSuccess();
+          return { ok: true, attempt };
+        }
 
+        // ---------------------------
+        // FAILURE (non-2xx)
+        // ---------------------------
         const status = res.status;
         const raw = await res.json().catch(() => null);
 
+        // Rate limit
         if (status === 429) {
+          recordFailure();
           return { ok: false, error: "rate_limited", status, raw, attempt };
         }
 
-        if (status >= 500 && attempt < MAX_ATTEMPTS) {
+        // Retry 5xx
+        if (status >= 500 && attempt < WHATSAPP_MAX_ATTEMPTS) {
+          recordFailure();
           await new Promise((r) => setTimeout(r, 300 * attempt));
           continue;
         }
 
+        // Final 5xx or 4xx
+        if (status >= 500) recordFailure();
         return { ok: false, error: "api_error", status, raw, attempt };
       } catch {
-        if (attempt === MAX_ATTEMPTS) {
+        // ---------------------------
+        // NETWORK ERROR
+        // ---------------------------
+        if (attempt === WHATSAPP_MAX_ATTEMPTS) {
+          recordFailure();
           return { ok: false, error: "network_error", attempt };
         }
 
@@ -80,6 +144,8 @@ export class WhatsAppTransport {
       }
     }
 
+    // Should never reach here
+    recordFailure();
     return { ok: false, error: "unknown" };
   }
 }

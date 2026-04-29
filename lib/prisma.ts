@@ -18,6 +18,7 @@ function createPrismaClient() {
   });
 }
 
+// Prevent multiple instances in dev
 export const prisma = global.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
@@ -25,7 +26,7 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // Health check
-export async function prismaHealth() {
+export async function prismaHealth(): Promise<boolean> {
   try {
     await prisma.$queryRaw`SELECT 1`;
     return true;
@@ -34,12 +35,16 @@ export async function prismaHealth() {
   }
 }
 
-// Optional: graceful shutdown
+// Graceful shutdown
 export async function prismaShutdown() {
-  await prisma.$disconnect();
+  try {
+    await prisma.$disconnect();
+  } catch (err) {
+    console.error("Prisma shutdown failed:", err);
+  }
 }
 
-// Optional: warmup
+// Warmup
 export async function prismaWarmup() {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -48,7 +53,7 @@ export async function prismaWarmup() {
   }
 }
 
-// Optional: safe transaction wrapper
+// Safe transaction wrapper
 export async function safeTransaction<T>(
   fn: (tx: PrismaClient) => Promise<T>
 ): Promise<T> {

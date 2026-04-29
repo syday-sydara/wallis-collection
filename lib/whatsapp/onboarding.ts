@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { sendWhatsAppMessage } from "./send";
-import { sendWhatsAppList } from "./list";
+import { sendWhatsAppList } from "./messages/list";
 import { normalizePhoneForWhatsApp } from "../utils/formatters/phone";
 import { emitSecurityEvent } from "@/lib/events/emitter";
 import { EventSource } from "@/lib/events/types";

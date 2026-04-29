@@ -56,7 +56,7 @@ export function saveIdempotentResponse<T>(key: string, value: T) {
 
   store.set(normalized, {
     createdAt: Date.now(),
-    value: value === null ? NULL_SENTINEL : value,
+    value: value === null || value === undefined ? NULL_SENTINEL : value,
   });
 
   logger?.("saved", normalized);
@@ -80,12 +80,11 @@ export async function runIdempotent<T>(
 
   logger?.("compute_start", normalized);
 
-  const promise = Promise.race([
-    fn(),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Idempotent operation timed out")), timeoutMs)
-    ),
-  ])
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("Idempotent operation timed out")), timeoutMs)
+  );
+
+  const promise = Promise.race([fn(), timeoutPromise])
     .then((result) => {
       saveIdempotentResponse(normalized, result);
       inFlight.delete(normalized);
