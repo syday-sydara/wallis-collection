@@ -10,18 +10,28 @@ import { defaultRiskPolicy } from "@/lib/risk/rules/default";
 const policies: Record<string, RiskPolicy> = {
   [defaultRiskPolicy.id]: {
     ...defaultRiskPolicy,
-    rules: [...defaultRiskPolicy.rules],
+    rules: defaultRiskPolicy.rules.map((r) => ({
+      ...r,
+      condition: { ...r.condition },
+    })),
   },
 };
 
 /* -------------------------------------------------- */
-/* Safe cloning helper                                 */
+/* Safe cloning helpers                                */
 /* -------------------------------------------------- */
+
+function cloneRule(rule: RiskRule): RiskRule {
+  return {
+    ...rule,
+    condition: { ...rule.condition },
+  };
+}
 
 function clonePolicy(policy: RiskPolicy): RiskPolicy {
   return {
     ...policy,
-    rules: policy.rules.map((r) => ({ ...r })),
+    rules: policy.rules.map(cloneRule),
   };
 }
 
@@ -30,10 +40,13 @@ function clonePolicy(policy: RiskPolicy): RiskPolicy {
 /* -------------------------------------------------- */
 
 export function getRiskPolicy(id: string = "default"): RiskPolicy {
-  const policy = policies[id];
+  const key = id.toLowerCase();
+  const policy = policies[key];
+
   if (!policy) {
     throw new Error(`RiskPolicy not found: ${id}`);
   }
+
   return clonePolicy(policy);
 }
 
@@ -50,7 +63,7 @@ export function listRiskPolicies(): RiskPolicy[] {
 /* -------------------------------------------------- */
 
 export function hasRiskPolicy(id: string): boolean {
-  return Boolean(policies[id]);
+  return Boolean(policies[id.toLowerCase()]);
 }
 
 /* -------------------------------------------------- */
@@ -66,16 +79,28 @@ export function registerRiskPolicy(policy: RiskPolicy): void {
     throw new Error(`RiskPolicy ${policy.id} has invalid rules array`);
   }
 
-  if (policies[policy.id]) {
+  const id = policy.id.toLowerCase();
+
+  if (policies[id]) {
     throw new Error(`RiskPolicy already exists: ${policy.id}`);
   }
 
-  policies[policy.id] = clonePolicy(policy);
+  policies[id] = clonePolicy(policy);
 }
 
 /* -------------------------------------------------- */
 /* Admin-friendly descriptions                         */
 /* -------------------------------------------------- */
+
+export function describeRule(rule: RiskRule) {
+  return {
+    id: rule.id,
+    label: rule.label,
+    weight: rule.weight,
+    description: rule.description ?? "",
+    condition: rule.condition,
+  };
+}
 
 export function describePolicy(policy: RiskPolicy) {
   return {
@@ -88,16 +113,6 @@ export function describePolicy(policy: RiskPolicy) {
     blockThreshold: policy.blockThreshold ?? null,
     reviewThreshold: policy.reviewThreshold ?? null,
     rules: policy.rules.map(describeRule),
-  };
-}
-
-export function describeRule(rule: RiskRule) {
-  return {
-    id: rule.id,
-    label: rule.label,
-    weight: rule.weight,
-    description: rule.description ?? "",
-    condition: rule.condition,
   };
 }
 
