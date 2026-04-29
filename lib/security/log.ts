@@ -1,11 +1,30 @@
 // lib/security/log.ts
+
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
+import { randomUUID } from "crypto";
+
 import {
   encryptMetadataForRecord,
   ACTIVE_VERSION,
 } from "@/lib/security/crypto";
-import { randomUUID } from "crypto";
+
+import {
+  normalizeIp,
+  normalizeUserAgent,
+  safeString,
+} from "@/lib/security/normalize";
+
+import {
+  serviceContext,
+  startSpan,
+  metricsWithContext,
+  log,
+} from "@/lib/core";
+
+/* -------------------------------------------------- */
+/* Types                                               */
+/* -------------------------------------------------- */
 
 type JsonValue =
   | string
@@ -18,10 +37,32 @@ type JsonValue =
 const VALID_SEVERITIES = ["low", "medium", "high", "critical"] as const;
 const MAX_METADATA_SIZE = 5000;
 
-function extractClientIp(xff: string | null): string | null {
-  if (!xff) return null;
-  return xff.split(",")[0].trim();
+/* -------------------------------------------------- */
+/* Helpers                                             */
+/* -------------------------------------------------- */
+
+function normalizeSeverity(sev?: string) {
+  if (!sev) return "low";
+  const s = sev.toLowerCase();
+  return VALID_SEVERITIES.includes(s as any) ? s : "low";
 }
+
+function sanitizeMetadata(input: Record<string, JsonValue>) {
+  try {
+    const cloned = JSON.parse(JSON.stringify(input));
+    const json = JSON.stringify(cloned);
+    if (json.length > MAX_METADATA_SIZE) {
+      return { _truncated: true };
+    }
+    return cloned;
+  } catch {
+    return { _error: "Invalid metadata structure" };
+  }
+}
+
+/* -------------------------------------------------- */
+/* Main Function                                       */
+/* -------------------------------------------------- */
 
 export async function logSecurityEvent(params: {
   type: string;
@@ -35,7 +76,7 @@ export async function logSecurityEvent(params: {
   riskScore?: number | null;
 
   userId?: string | null;
-  severity?: (typeof VALID_SEVERITIES)[number];
+  severity?: string;
   ip?: string | null;
   userAgent?: string | null;
   metadata?: Record<string, JsonValue>;
@@ -63,7 +104,7 @@ export async function logSecurityEvent(params: {
     riskScore = null,
 
     userId = null,
-    severity = "low",
+    severity,
     ip,
     userAgent,
     metadata = {},
@@ -78,41 +119,39 @@ export async function logSecurityEvent(params: {
     riderId = null,
   } = params;
 
-  /* -------------------------------------------------- */
-  /* Normalize severity                                  */
-  /* -------------------------------------------------- */
-  const sev = VALID_SEVERITIES.includes(severity)
-    ? severity.toLowerCase()
-    : "low";
+  const sev = normalizeSeverity(severity);
+  const normalizedCategory = category ? safeString(category).toLowerCase() : null;
+  const normalizedTags = tags.map((t) => safeString(t).toLowerCase());
 
   /* -------------------------------------------------- */
-  /* Normalize category                                  */
+  /* Observability Context                               */
   /* -------------------------------------------------- */
-  const normalizedCategory = category?.trim().toLowerCase() || null;
 
-  /* -------------------------------------------------- */
-  /* Normalize tags                                      */
-  /* -------------------------------------------------- */
-  const normalizedTags = tags.map((t) => t.trim().toLowerCase());
+  const ctx = serviceContext.get();
+
+  const span = startSpan("security.log_event", {
+    eventId,
+    type,
+    severity: sev,
+    actorType,
+    actorId,
+    context,
+    operation,
+    category: normalizedCategory,
+    requestId: requestId ?? ctx.requestId,
+    traceId: ctx.traceId,
+  });
+
+  metricsWithContext.increment("security.events.total");
+  metricsWithContext.increment(`security.events.type.${type}`);
+  metricsWithContext.increment(`security.events.severity.${sev}`);
 
   /* -------------------------------------------------- */
   /* Metadata sanitization                               */
   /* -------------------------------------------------- */
-  let safeMetadata: Record<string, JsonValue>;
-  try {
-    safeMetadata = JSON.parse(JSON.stringify(metadata));
-  } catch {
-    safeMetadata = { _error: "Invalid metadata structure" };
-  }
 
-  const json = JSON.stringify(safeMetadata);
-  if (json.length > MAX_METADATA_SIZE) {
-    safeMetadata = { _truncated: true };
-  }
+  const safeMetadata = sanitizeMetadata(metadata);
 
-  /* -------------------------------------------------- */
-  /* Encrypt metadata (AAD-bound to eventId)             */
-  /* -------------------------------------------------- */
   const storedMetadata = encryptMetadata
     ? {
         _encrypted: true,
@@ -128,20 +167,22 @@ export async function logSecurityEvent(params: {
   /* -------------------------------------------------- */
   /* IP + UA extraction                                  */
   /* -------------------------------------------------- */
-  let detectedIp = ip ?? null;
-  let detectedUA = userAgent ?? null;
+
+  let detectedIp = normalizeIp(ip) ?? null;
+  let detectedUA = normalizeUserAgent(userAgent) ?? null;
 
   try {
     const h = await headers();
-    detectedIp = detectedIp ?? extractClientIp(h.get("x-forwarded-for"));
-    detectedUA = detectedUA ?? h.get("user-agent");
+    detectedIp = detectedIp ?? normalizeIp(h.get("x-forwarded-for"));
+    detectedUA = detectedUA ?? normalizeUserAgent(h.get("user-agent"));
   } catch {
-    // headers() unavailable (e.g. background job)
+    // headers() unavailable (background job, queue worker, etc.)
   }
 
   /* -------------------------------------------------- */
   /* Write to DB                                         */
   /* -------------------------------------------------- */
+
   try {
     await prisma.securityEvent.create({
       data: {
@@ -155,7 +196,7 @@ export async function logSecurityEvent(params: {
         context,
         operation,
         source,
-        requestId,
+        requestId: requestId ?? ctx.requestId,
 
         actorType,
         actorId,
@@ -175,7 +216,22 @@ export async function logSecurityEvent(params: {
         createdAt: new Date(),
       },
     });
-  } catch (err) {
-    console.error("[SecurityEvent] Failed to log event:", err);
+
+    span.end({ success: true });
+  } catch (err: any) {
+    metricsWithContext.increment("security.events.write_error");
+
+    log.error("Failed to write security event", {
+      eventId,
+      type,
+      severity: sev,
+      error: err?.message ?? String(err),
+      stack: err?.stack,
+    });
+
+    span.end({
+      success: false,
+      error: err?.message ?? "Unknown error",
+    });
   }
 }
