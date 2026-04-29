@@ -18,13 +18,23 @@ export type EventMetadata = Record<string, JsonValue>;
 
 export type EventSeverity = "low" | "medium" | "high";
 
-export type EventSource =
-  | "api"
-  | "auth"
-  | "system"
-  | "worker"
-  | "middleware"
-  | "cron";
+/**
+ * Strongly typed event source enum
+ * Provides autocomplete + prevents typos
+ */
+export enum EventSource {
+  Api = "api",
+  Auth = "auth",
+  System = "system",
+  Worker = "worker",
+  Middleware = "middleware",
+  Cron = "cron",
+
+  // WhatsApp subsystem
+  WhatsAppAPI = "whatsapp_api",
+  WhatsAppWebhook = "whatsapp_webhook",
+  WhatsAppWorker = "whatsapp_worker",
+}
 
 export type EventCategory =
   | "auth"
@@ -92,7 +102,9 @@ export const SECURITY_EVENT_TYPES = [
   "PERFORMANCE_METRIC",
 ] as const;
 
-export type SecurityEventType = (typeof SECURITY_EVENT_TYPES)[number];
+export type SecurityEventType =
+  | (typeof SECURITY_EVENT_TYPES)[number]
+  | `WHATSAPP_${string}`;   // ⭐ allow all WhatsApp security events
 
 export type SecurityEventInput = EventInput<
   "security",
@@ -202,7 +214,7 @@ export type AlertEventInput = EventInput<
 export type OperationalEventInput = EventInput<
   "operational",
   {
-    operation: string; // e.g. "reconciliation.run", "queue.process"
+    operation: string;
     durationMs?: number;
     success: boolean;
   }

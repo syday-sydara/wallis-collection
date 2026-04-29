@@ -21,14 +21,14 @@ function emitSecurityEvent(data: any) {
   });
 }
 
-function emitAlertEvent(data: any) {
+function emitAlertEvent(event: string, metadata: any) {
   emitEvent({
     kind: "alert",
-    event: data.event,
+    event,
     severity: "high",
     category: "risk",
     source: "risk-engine",
-    metadata: data.metadata ?? {},
+    metadata,
   });
 }
 
@@ -71,21 +71,14 @@ export async function evaluateRisk(args: {
   deviceReputation?: number;
   deviceConfidence?: number;
 }): Promise<RiskEvaluationResult> {
+  const policyId = args.policyId.toLowerCase();
+
   /* -------------------------------------------------- */
   /* Validate policy exists                              */
   /* -------------------------------------------------- */
 
-  const policy = getRiskPolicy(args.policyId);
-  if (!policy) {
-    emitSecurityEvent({
-      type: "SYSTEM_ANOMALY",
-      message: `Risk policy not found: ${args.policyId}`,
-      severity: "high",
-      metadata: { policyId: args.policyId },
-    });
-
-    throw new Error(`Risk policy not found: ${args.policyId}`);
-  }
+  // getRiskPolicy already throws if missing
+  getRiskPolicy(policyId);
 
   /* -------------------------------------------------- */
   /* Build context                                       */
@@ -123,7 +116,28 @@ export async function evaluateRisk(args: {
   /* Evaluate policy                                     */
   /* -------------------------------------------------- */
 
-  const result = await evaluatePolicy(context, args.policyId);
+  let result: RiskEvaluationResult;
+
+  try {
+    result = await evaluatePolicy(context, policyId);
+  } catch (err: any) {
+    emitSecurityEvent({
+      type: "SYSTEM_ANOMALY",
+      message: "Risk evaluation failed",
+      severity: "high",
+      metadata: { error: err?.message, policyId },
+    });
+
+    await logAuditEvent({
+      action: "RISK_EVALUATION_ERROR",
+      actorType: "SYSTEM",
+      resource: "riskPolicy",
+      resourceId: policyId,
+      metadata: { error: err?.message },
+    });
+
+    throw err;
+  }
 
   /* -------------------------------------------------- */
   /* Emit audit event                                    */
@@ -133,7 +147,7 @@ export async function evaluateRisk(args: {
     action: "RISK_EVALUATED",
     actorType: "SYSTEM",
     resource: "riskPolicy",
-    resourceId: args.policyId,
+    resourceId: policyId,
     metadata: {
       score: result.score,
       block: result.block,
@@ -149,30 +163,20 @@ export async function evaluateRisk(args: {
   /* Emit alerts                                         */
   /* -------------------------------------------------- */
 
+  const alertMetadata = {
+    score: result.score,
+    triggeredRules: result.triggeredRules,
+    userId: context.userId,
+    email: context.email,
+    ip: context.ip,
+  };
+
   if (result.block) {
-    emitAlertEvent({
-      event: "ALERT_RISK_SCORE_HIGH",
-      metadata: {
-        score: result.score,
-        triggeredRules: result.triggeredRules,
-        userId: context.userId,
-        email: context.email,
-        ip: context.ip,
-      },
-    });
+    emitAlertEvent("ALERT_RISK_SCORE_HIGH", alertMetadata);
   }
 
   if (result.review) {
-    emitAlertEvent({
-      event: "ALERT_RISK_SCORE_MEDIUM",
-      metadata: {
-        score: result.score,
-        triggeredRules: result.triggeredRules,
-        userId: context.userId,
-        email: context.email,
-        ip: context.ip,
-      },
-    });
+    emitAlertEvent("ALERT_RISK_SCORE_MEDIUM", alertMetadata);
   }
 
   /* -------------------------------------------------- */

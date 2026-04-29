@@ -17,6 +17,21 @@ function safeRegex(pattern: string): RegExp | null {
 }
 
 /* -------------------------------------------------- */
+/* Numeric extractor (tiny helper, no over-engineering)*/
+/* -------------------------------------------------- */
+function getNumber(context: RiskContext, key: keyof RiskContext): number | null {
+  const v = context[key];
+  return typeof v === "number" ? v : null;
+}
+
+/* -------------------------------------------------- */
+/* Normalize list to lowercase                         */
+/* -------------------------------------------------- */
+function normalizeList(list: string[]): string[] {
+  return list.map((x) => x.toLowerCase());
+}
+
+/* -------------------------------------------------- */
 /* Main evaluator                                      */
 /* -------------------------------------------------- */
 export function evaluateRule(
@@ -30,6 +45,7 @@ export function evaluateRule(
       message: "Risk rule recursion limit exceeded",
       severity: "medium",
       category: "risk",
+      actorType: "system",
       metadata: { condition },
     });
     return false;
@@ -52,31 +68,32 @@ export function evaluateRule(
   switch (c.type) {
     /* ---------------- IP / GEO ---------------- */
     case "ip_in_list":
-      return c.list.includes(context.ip ?? "");
+      return normalizeList(c.list).includes((context.ip ?? "").toLowerCase());
 
     case "country_in_list":
-      return c.list.includes((context.country ?? "").toLowerCase());
+      return normalizeList(c.list).includes((context.country ?? "").toLowerCase());
 
     case "region_in_list":
-      return c.list.includes((context.region ?? "").toLowerCase());
+      return normalizeList(c.list).includes((context.region ?? "").toLowerCase());
 
     /* ---------------- Identity mismatch ---------------- */
-    case "email_phone_mismatch":
-      return (context.emailDomain ?? "") !== (context.phonePrefix ?? "");
+    case "email_phone_mismatch": {
+      const emailDomain = context.emailDomain ?? "";
+      const phonePrefix = context.phonePrefix ?? "";
+      return Boolean(emailDomain && phonePrefix) && !emailDomain.startsWith(phonePrefix);
+    }
 
     /* ---------------- Numeric threshold ---------------- */
     case "numeric_threshold": {
-      const metric = c.metric;
-      if (!metric) return false;
-
-      const raw = context[metric];
-      if (typeof raw !== "number") {
+      const raw = getNumber(context, c.metric);
+      if (raw === null) {
         emitSecurityEvent({
           type: "SYSTEM_ANOMALY",
           message: "Invalid numeric metric in rule",
           severity: "medium",
           category: "risk",
-          metadata: { metric, value: raw },
+          actorType: "system",
+          metadata: { metric: c.metric, value: context[c.metric] },
         });
         return false;
       }
@@ -94,6 +111,7 @@ export function evaluateRule(
             message: "Invalid numeric operator",
             severity: "medium",
             category: "risk",
+            actorType: "system",
             metadata: { operator: c.operator },
           });
           return false;
@@ -125,11 +143,8 @@ export function evaluateRule(
 
     /* ---------------- Behavior rules ---------------- */
     case "velocity_above": {
-      const metric = c.metric;
-      if (!metric) return false;
-
-      const raw = context[metric];
-      return typeof raw === "number" && raw > c.value;
+      const raw = getNumber(context, c.metric);
+      return raw !== null && raw > c.value;
     }
 
     case "failed_logins_above":
@@ -148,32 +163,44 @@ export function evaluateRule(
 
     /* ---------------- String rules ---------------- */
     case "string_contains": {
-      const field = c.field;
-      if (!field) return false;
-
-      const raw = context[field] ?? "";
+      if (!c.field) return false;
+      const raw = context[c.field as keyof RiskContext] ?? "";
       return typeof raw === "string" && raw.includes(c.value);
     }
 
     case "string_matches": {
-      const field = c.field;
-      if (!field) return false;
-
-      const raw = context[field] ?? "";
+      if (!c.field) return false;
+      const raw = context[c.field as keyof RiskContext] ?? "";
       const regex = safeRegex(c.regex);
-      return regex ? regex.test(raw) : false;
+
+      if (!regex) {
+        emitSecurityEvent({
+          type: "SYSTEM_ANOMALY",
+          message: "Invalid regex in risk rule",
+          severity: "medium",
+          category: "risk",
+          actorType: "system",
+          metadata: { regex: c.regex },
+        });
+        return false;
+      }
+
+      return typeof raw === "string" && regex.test(raw);
     }
 
     /* ---------------- List membership ---------------- */
     case "state_in_list":
-      return c.list.includes((context.region ?? "").toLowerCase());
+      return normalizeList(c.list).includes((context.region ?? "").toLowerCase());
 
     case "email_domain_in_list":
-      return c.list.includes((context.emailDomain ?? "").toLowerCase());
+      return normalizeList(c.list).includes((context.emailDomain ?? "").toLowerCase());
 
     case "phone_prefix_in_list": {
       const len = c.length ?? 4;
-      const prefix = (context.phone ?? "").slice(0, len);
+      const prefix =
+        context.phonePrefix ??
+        (context.phone ?? "").slice(0, len);
+
       return c.list.includes(prefix);
     }
 
@@ -195,6 +222,7 @@ export function evaluateRule(
         message: "Unknown risk rule type",
         severity: "medium",
         category: "risk",
+        actorType: "system",
         metadata: { type: (c as any).type },
       });
       return false;

@@ -2,10 +2,6 @@
 
 import type { RiskPolicy, RiskRule } from "@/lib/risk/types";
 
-/* -------------------------------------------------- */
-/* Default Rule Set                                    */
-/* -------------------------------------------------- */
-
 const rules: RiskRule[] = [
   {
     id: "high_amount",
@@ -23,8 +19,8 @@ const rules: RiskRule[] = [
   {
     id: "free_email",
     label: "Free email provider",
-    description: "Email domain belongs to a free email provider",
     weight: 10,
+    description: "Email domain belongs to a free email provider",
     condition: {
       type: "email_domain_in_list",
       list: [
@@ -43,11 +39,11 @@ const rules: RiskRule[] = [
   {
     id: "nigeria_phone_prefix",
     label: "Nigerian phone prefix",
-    description: "Phone number uses a Nigerian carrier prefix",
     weight: 5,
+    description: "Phone number uses a Nigerian carrier prefix",
     condition: {
       type: "phone_prefix_in_list",
-      list: ["+234", "070", "080", "081", "090", "091"],
+      list: ["070", "080", "081", "090", "091"],
       length: 4,
     },
   },
@@ -55,8 +51,8 @@ const rules: RiskRule[] = [
   {
     id: "ip_velocity_high",
     label: "High IP velocity",
-    description: "Too many requests from the same IP address",
     weight: 20,
+    description: "Too many requests from the same IP address",
     condition: {
       type: "velocity_above",
       metric: "ipVelocity",
@@ -67,8 +63,8 @@ const rules: RiskRule[] = [
   {
     id: "failed_logins",
     label: "Multiple failed logins",
-    description: "User has exceeded safe login attempt thresholds",
     weight: 15,
+    description: "User has exceeded safe login attempt thresholds",
     condition: {
       type: "failed_logins_above",
       value: 5,
@@ -78,8 +74,8 @@ const rules: RiskRule[] = [
   {
     id: "device_reputation_low",
     label: "Low device reputation",
-    description: "Device reputation score is below safe threshold",
     weight: 20,
+    description: "Device reputation score is below safe threshold",
     condition: {
       type: "device_reputation_below",
       value: 40,
@@ -89,8 +85,8 @@ const rules: RiskRule[] = [
   {
     id: "distance_jump",
     label: "Large IP distance jump",
-    description: "User's IP location changed drastically in a short time",
     weight: 15,
+    description: "User's IP location changed drastically in a short time",
     condition: {
       type: "distance_from_last_ip_above",
       value: 1500,
@@ -100,8 +96,8 @@ const rules: RiskRule[] = [
   {
     id: "bot_ua",
     label: "Bot-like user agent",
-    description: "User agent string matches known bot signatures",
     weight: 15,
+    description: "User agent string matches known bot signatures",
     condition: {
       type: "is_bot",
     },
@@ -110,8 +106,8 @@ const rules: RiskRule[] = [
   {
     id: "private_ip",
     label: "Private IP address",
-    description: "User is connecting from a private or masked network",
     weight: 5,
+    description: "User is connecting from a private or masked network",
     condition: {
       type: "is_private_ip",
     },
@@ -120,18 +116,14 @@ const rules: RiskRule[] = [
   {
     id: "short_user_agent",
     label: "Suspiciously short user agent",
-    description: "User agent string is unusually short (< 20 chars)",
     weight: 10,
+    description: "User agent string is unusually short (< 20 chars)",
     condition: {
       type: "min_user_agent_length",
       value: 20,
     },
   },
 ];
-
-/* -------------------------------------------------- */
-/* Default Policy                                      */
-/* -------------------------------------------------- */
 
 export const defaultRiskPolicy: RiskPolicy = {
   id: "default",

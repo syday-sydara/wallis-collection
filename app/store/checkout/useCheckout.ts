@@ -9,47 +9,97 @@ export function useCheckout() {
   const [state, setState] = useState<CheckoutActionState>(checkoutInitialState);
   const [isPending, startTransition] = useTransition();
 
+  /* ---------------------------------------------
+   * Helpers for clean state transitions
+   * --------------------------------------------- */
+  function setSubmitting() {
+    setState((prev) => ({
+      ...prev,
+      status: "submitting",
+      message: null,
+      errors: {},
+      timestamp: Date.now(),
+    }));
+  }
+
+  function setError(message: string, errors: Record<string, string[] | undefined> = {}) {
+    setState({
+      status: "error",
+      message,
+      errors,
+      timestamp: Date.now(),
+    });
+  }
+
+  function setSuccess(next: CheckoutActionState) {
+    setState({
+      ...next,
+      status: "success",
+      timestamp: Date.now(),
+    });
+  }
+
+  /* ---------------------------------------------
+   * Main submit handler
+   * --------------------------------------------- */
   async function handleSubmit(formData: FormData) {
     // Ensure idempotency key exists
     if (!formData.get("idempotencyKey")) {
       formData.set("idempotencyKey", crypto.randomUUID());
     }
 
+    setSubmitting();
+
     startTransition(async () => {
       try {
         const next = await submitCheckout(formData);
 
-        setState(next);
+        // Normalize missing fields
+        const normalized: CheckoutActionState = {
+          ...checkoutInitialState,
+          ...next,
+          timestamp: Date.now(),
+        };
 
-        // Redirect to payment gateway
-        if (next.paymentUrl) {
-          window.location.href = next.paymentUrl;
+        // Handle redirects
+        if (normalized.paymentUrl) {
+          window.location.href = normalized.paymentUrl;
           return;
         }
 
-        // Redirect to success page
-        if (next.redirectUrl) {
-          window.location.href = next.redirectUrl;
+        if (normalized.redirectUrl) {
+          window.location.href = normalized.redirectUrl;
           return;
         }
 
-        // Auto-reset on success (no redirect)
-        if (next.status === "success") {
-          setTimeout(() => setState(checkoutInitialState), 200);
+        // Success without redirect
+        if (normalized.status === "success") {
+          setSuccess(normalized);
+
+          // Auto-reset after a short delay
+          setTimeout(() => setState(checkoutInitialState), 300);
+          return;
         }
+
+        // Error state
+        if (normalized.status === "error") {
+          setError(normalized.message ?? "Checkout failed.", normalized.errors);
+          return;
+        }
+
+        // Fallback
+        setState(normalized);
       } catch (err) {
         console.error("Checkout failed:", err);
 
-        setState({
-          ...checkoutInitialState,
-          status: "error",
-          message: "Something went wrong. Please try again.",
-        });
+        setError("Something went wrong. Please try again.");
       }
     });
   }
 
-  // Optional programmatic submit helper
+  /* ---------------------------------------------
+   * Programmatic submit helper
+   * --------------------------------------------- */
   function submit(data: Record<string, any>) {
     const formData = new FormData();
     Object.entries(data).forEach(([k, v]) => formData.set(k, String(v)));
@@ -58,7 +108,7 @@ export function useCheckout() {
 
   return {
     state,
-    isPending,
+    isPending: isPending || state.status === "submitting",
     handleSubmit,
     submit,
     reset: () => setState(checkoutInitialState),

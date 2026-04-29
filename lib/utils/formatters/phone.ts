@@ -1,39 +1,58 @@
 // lib/utils/formatters/phone.ts
 
 /**
- * Normalize a Nigerian phone number into WhatsApp-safe format:
- *   2348031234567
+ * Normalize a phone number into WhatsApp-ready format:
+ *   2348012345678
  *
- * Returns null if the number cannot be normalized.
+ * Accepts:
+ * - +234 801 234 5678
+ * - 2348012345678
+ * - 08012345678
+ * - 8012345678
+ *
+ * Returns null if the number cannot be normalized safely.
  */
-export function normalizePhoneForWhatsApp(input: string): string | null {
+export function normalizePhoneForWhatsApp(
+  input: string,
+  strict: boolean = false
+): string | null {
   if (!input) return null;
 
-  // Normalize Unicode and trim
-  const raw = input.normalize("NFC").trim();
+  // Normalize Unicode and strip all non-digits
+  const digits = input.normalize("NFC").replace(/\D/g, "");
 
-  // Strip all non-digits
-  let digits = raw.replace(/\D/g, "");
-
-  // Handle +2340..., 2340..., 0..., and bare 10-digit numbers
-  if (digits.startsWith("2340")) {
-    digits = digits.slice(4);
-  } else if (digits.startsWith("234")) {
-    digits = digits.slice(3);
-  } else if (digits.startsWith("0")) {
-    digits = digits.slice(1);
+  // Already in correct WhatsApp format
+  if (digits.startsWith("234") && digits.length === 13) {
+    return digits;
   }
 
-  // Nigerian mobile numbers must now be exactly 10 digits
-  if (digits.length !== 10) {
-    return null;
+  // +234 or 234 prefix but wrong length
+  if (digits.startsWith("234")) {
+    if (digits.length === 14) {
+      // e.g., "23408012345678" → remove extra 0
+      return digits.replace(/^2340/, "234");
+    }
+    return strict ? null : digits; // fallback
   }
 
-  // Validate mobile prefix (7, 8, 9)
-  if (!/^[789]/.test(digits)) {
-    return null;
+  // Local NG number starting with 0 (e.g., 08012345678)
+  if (digits.length === 11 && digits.startsWith("0")) {
+    return `234${digits.slice(1)}`;
   }
 
-  // WhatsApp requires digits only, no plus sign
-  return `234${digits}`;
+  // Local NG number without leading 0 (e.g., 8012345678)
+  if (digits.length === 10) {
+    return `234${digits}`;
+  }
+
+  // If strict mode is off, allow fallback for 13+ digit numbers
+  if (!strict && digits.length >= 10) {
+    return digits.startsWith("0")
+      ? `234${digits.slice(1)}`
+      : digits.startsWith("234")
+      ? digits
+      : `234${digits}`;
+  }
+
+  return null;
 }

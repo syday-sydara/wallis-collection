@@ -20,26 +20,11 @@ export { evaluatePolicy } from "./engine";
 export { evaluateRule } from "./evaluate";
 
 // Policy Registry
-export {
-  getRiskPolicy,
-  listRiskPolicies,
-  registerRiskPolicy,
-  hasRiskPolicy,
-  describePolicy,
-  describeRule,
-  summarizePolicy,
-  summarizePolicies,
-  summarizeRule,
-} from "./rules/policy";
-
-// Default Policies
+export * as RiskPolicies from "./rules/policy";
 export { defaultRiskPolicy } from "./rules/default";
 
 // Service Wrapper
-export { evaluateRisk } from "./rules/service";
+export { evaluateRisk, evaluateRisk as evaluate } from "./rules/service";
 
 // Admin Helpers
-export {
-  getPolicyForAdmin,
-  listPoliciesForAdmin,
-} from "./rules/admin";
+export * as RiskAdmin from "./rules/admin";

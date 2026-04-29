@@ -1,43 +1,54 @@
 // lib/utils/tailwind.ts
-import { twMerge } from "tailwind-merge";
 
 /**
- * Tailwind-aware className utility.
- * Supports strings, arrays, objects, nested structures, and falsy values.
+ * Merge class names in a safe, flexible way.
+ *
+ * Supports:
+ * - strings
+ * - false/null/undefined
+ * - arrays of class names
+ * - conditional objects: { "bg-red": hasError }
+ *
+ * @example
+ * cn("p-4", isActive && "bg-blue", ["text-sm", "font-bold"])
+ * cn("p-4", { "opacity-50": disabled })
  */
+export function cn(
+  ...inputs: Array<
+    | string
+    | false
+    | null
+    | undefined
+    | Record<string, boolean>
+    | Array<string | false | null | undefined>
+  >
+): string {
+  const classes: string[] = [];
 
-type ClassValue =
-  | string
-  | number
-  | null
-  | false
-  | undefined
-  | ClassValue[]
-  | Record<string, boolean>;
+  for (const input of inputs) {
+    if (!input) continue;
 
-function flatten(input: ClassValue[]): string[] {
-  const result: string[] = [];
-  const stack = [...input];
-
-  while (stack.length) {
-    const item = stack.pop();
-
-    if (!item && item !== 0) continue;
-
-    if (Array.isArray(item)) {
-      stack.push(...item);
-    } else if (typeof item === "object") {
-      for (const [key, value] of Object.entries(item)) {
-        if (value) result.push(key);
+    // Handle arrays
+    if (Array.isArray(input)) {
+      for (const item of input) {
+        if (item) classes.push(item);
       }
-    } else {
-      result.push(String(item));
+      continue;
+    }
+
+    // Handle conditional objects
+    if (typeof input === "object") {
+      for (const [key, value] of Object.entries(input)) {
+        if (value) classes.push(key);
+      }
+      continue;
+    }
+
+    // Handle plain strings
+    if (typeof input === "string") {
+      classes.push(input);
     }
   }
 
-  return result;
-}
-
-export function cn(...classes: ClassValue[]): string {
-  return twMerge(flatten(classes).join(" "));
+  return classes.join(" ");
 }

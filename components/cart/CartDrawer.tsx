@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from "react";
-import { X, Minus, Plus, Trash } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Minus, Plus, Trash, MessageCircle } from "lucide-react";
 import { useCart } from "@/lib/cart/store";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,18 @@ import Image from "next/image";
 import { formatCurrency } from "@/lib/utils/formatters/currency";
 
 export function CartDrawer() {
-  const { isOpen, close, items, subtotal, increaseQty, decreaseQty, removeItem } = useCart();
+  const {
+    isOpen,
+    close,
+    items,
+    subtotal,
+    increaseQty,
+    decreaseQty,
+    removeItem,
+    clearCart,
+  } = useCart();
+
+  const [loadingWhatsApp, setLoadingWhatsApp] = useState(false);
 
   /* ---------------- Scroll Lock ---------------- */
   useEffect(() => {
@@ -25,6 +36,42 @@ export function CartDrawer() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [close]);
+
+  /* ---------------- WhatsApp Checkout ---------------- */
+  async function handleWhatsAppCheckout() {
+    if (loadingWhatsApp) return;
+
+    setLoadingWhatsApp(true);
+
+    try {
+      const res = await fetch("/api/checkout/whatsapp", {
+        method: "POST",
+        body: JSON.stringify({ items }),
+      });
+
+      const data = await res.json();
+
+      if (data.url) {
+        // Track analytics
+        for (const item of items) {
+          fetch("/api/insights", {
+            method: "POST",
+            body: JSON.stringify({
+              productId: item.productId,
+              type: "whatsapp_click",
+              variantId: item.variantId,
+            }),
+          });
+        }
+
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error("WhatsApp checkout failed:", err);
+    }
+
+    setLoadingWhatsApp(false);
+  }
 
   return (
     <>
@@ -60,7 +107,7 @@ export function CartDrawer() {
         </div>
 
         {/* Items */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4" role="list">
           {items.length === 0 ? (
             <div className="text-center mt-10 space-y-3 animate-fadeIn-fast">
               <p className="text-text-muted text-sm">Your cart is empty</p>
@@ -72,10 +119,14 @@ export function CartDrawer() {
             </div>
           ) : (
             items.map((item) => (
-              <div key={item.id} className="flex gap-3 animate-fadeIn-fast">
+              <div
+                key={item.id}
+                role="listitem"
+                className="flex gap-3 animate-fadeIn-fast"
+              >
                 <Image
-                  src={item.image}
-                  alt={item.name}
+                  src={item.image ?? "/placeholder.png"}
+                  alt={item.name ?? "Product image"}
                   width={64}
                   height={64}
                   className="rounded-md object-cover"
@@ -94,7 +145,8 @@ export function CartDrawer() {
                   <div className="flex items-center gap-2 mt-2">
                     <button
                       onClick={() => decreaseQty(item.id)}
-                      className="p-1 rounded-md bg-surface-muted hover:bg-surface active:scale-press"
+                      disabled={item.quantity <= 1}
+                      className="p-1 rounded-md bg-surface-muted hover:bg-surface active:scale-press disabled:opacity-50"
                       aria-label="Decrease quantity"
                     >
                       <Minus className="h-4 w-4 text-text-muted" />
@@ -112,7 +164,8 @@ export function CartDrawer() {
                   </div>
 
                   <p className="text-sm font-medium text-text mt-1">
-                    {formatCurrency(item.unitPrice)}
+                    {formatCurrency(item.unitPrice)} × {item.quantity} ={" "}
+                    {formatCurrency(item.unitPrice * item.quantity)}
                   </p>
                 </div>
 
@@ -137,9 +190,33 @@ export function CartDrawer() {
               <span className="font-semibold">{formatCurrency(subtotal)}</span>
             </div>
 
-            <Link href="/checkout" onClick={close}>
-              <Button fullWidth className="min-h-touch">
-                Checkout
+            {/* WhatsApp Checkout */}
+            <Button
+              fullWidth
+              className="bg-green-500 text-white min-h-touch flex items-center justify-center gap-2"
+              onClick={handleWhatsAppCheckout}
+              disabled={loadingWhatsApp}
+            >
+              <MessageCircle className="h-5 w-5" />
+              {loadingWhatsApp ? "Opening WhatsApp..." : "Checkout via WhatsApp"}
+            </Button>
+
+            {/* Website Checkout */}
+            <Link
+              href="/checkout"
+              onClick={() => {
+                close();
+                fetch("/api/insights", {
+                  method: "POST",
+                  body: JSON.stringify({
+                    productId: items[0]?.productId,
+                    type: "checkout_click",
+                  }),
+                });
+              }}
+            >
+              <Button fullWidth variant="outline" className="min-h-touch">
+                Checkout on Website
               </Button>
             </Link>
           </div>

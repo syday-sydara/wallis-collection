@@ -24,6 +24,35 @@ export async function redisSafe<T>(fn: () => Promise<T>, fallback: T): Promise<T
   }
 }
 
+/**
+ * Typed safe GET with fallback.
+ * Ensures callers never deal with null/undefined surprises.
+ */
+export async function redisGet<T>(key: string, fallback: T): Promise<T> {
+  return redisSafe(async () => {
+    const value = await redis.get<T>(key);
+    return value ?? fallback;
+  }, fallback);
+}
+
+/**
+ * Typed SET with TTL (seconds).
+ * Ensures consistent TTL usage across the system.
+ */
+export async function redisSetTTL<T>(
+  key: string,
+  value: T,
+  ttlSeconds: number
+): Promise<boolean> {
+  return redisSafe(
+    async () => {
+      await redis.set(key, value, { ex: ttlSeconds });
+      return true;
+    },
+    false
+  );
+}
+
 export async function redisHealth() {
   try {
     await redis.ping();

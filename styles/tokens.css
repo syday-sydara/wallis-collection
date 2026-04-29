@@ -1,9 +1,9 @@
-/* ------------------------------------------------------ */
-/* ROOT: CORE TOKENS (RAW VALUES)                         */
-/* ------------------------------------------------------ */
+/* ====================================================== */
+/* ROOT TOKENS — RAW VALUES                               */
+/* ====================================================== */
 
 :root {
-  /* Surface */
+  /* Surfaces */
   --surface: 255 255 255;
   --surface-muted: 245 245 245;
   --surface-card: 250 250 250;
@@ -82,7 +82,7 @@
   --transition-medium: 200ms;
   --transition-slow: 300ms;
 
-  /* State opacity */
+  /* State Opacity */
   --state-hover-opacity: 0.08;
   --state-active-opacity: 0.12;
 
@@ -91,9 +91,9 @@
   --focus-ring-width: 2px;
 }
 
-/* ------------------------------------------------------ */
+/* ====================================================== */
 /* SEMANTIC TOKENS                                        */
-/* ------------------------------------------------------ */
+/* ====================================================== */
 
 :root {
   --bg-default: var(--surface);
@@ -116,9 +116,9 @@
   --skeleton: var(--gray-200);
 }
 
-/* ------------------------------------------------------ */
-/* DARK MODE                                              */
-/* ------------------------------------------------------ */
+/* ====================================================== */
+/* DARK THEME                                             */
+/* ====================================================== */
 
 [data-theme="dark"] {
   --surface: 20 20 20;
@@ -129,13 +129,6 @@
   --text-muted: 160 160 160;
 
   --border: 60 60 60;
-
-  --bg-default: var(--surface);
-  --bg-muted: var(--surface-muted);
-  --bg-card: var(--surface-card);
-
-  --text-primary: var(--text);
-  --text-secondary: var(--text-muted);
 
   --color-primary: 0 140 255;
   --color-success: 40 210 110;
@@ -152,9 +145,9 @@
   --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
-/* ------------------------------------------------------ */
+/* ====================================================== */
 /* ADMIN THEME                                            */
-/* ------------------------------------------------------ */
+/* ====================================================== */
 
 [data-theme="admin"] {
   --surface: 245 248 255;
@@ -176,21 +169,11 @@
   --shadow-sm: 0 1px 2px rgba(0, 20, 60, 0.05);
   --shadow-md: 0 2px 4px rgba(0, 20, 60, 0.08);
   --shadow-lg: 0 4px 8px rgba(0, 20, 60, 0.1);
-
-  /* Override semantic tokens */
-  --bg-default: var(--surface);
-  --bg-muted: var(--surface-muted);
-  --bg-card: var(--surface-card);
-
-  --text-primary: var(--text);
-  --text-secondary: var(--text-muted);
-
-  --border-default: var(--border);
 }
 
-/* ------------------------------------------------------ */
-/* BASE                                                   */
-/* ------------------------------------------------------ */
+/* ====================================================== */
+/* BASE STYLES                                            */
+/* ====================================================== */
 
 html,
 body {
@@ -205,10 +188,11 @@ body {
   outline-offset: 2px;
 }
 
-/* ------------------------------------------------------ */
+/* ====================================================== */
 /* COMPONENTS                                             */
-/* ------------------------------------------------------ */
+/* ====================================================== */
 
+/* Card */
 .card {
   background: rgb(var(--bg-card));
   border: 1px solid rgb(var(--border-default));
@@ -220,6 +204,66 @@ body {
 
 .card:hover {
   box-shadow: var(--shadow-md);
+}
+
+/* Input */
+.input {
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid rgb(var(--border-default));
+  background: rgb(var(--bg-default));
+  color: rgb(var(--text-primary));
+  padding: var(--space-2) var(--space-3);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.input::placeholder {
+  color: rgb(var(--text-secondary));
+  opacity: 0.7;
+}
+
+.input:hover {
+  border-color: rgb(var(--text-secondary));
+}
+
+.input:focus-visible {
+  border-color: rgb(var(--color-primary));
+  outline-color: rgb(var(--color-primary));
+}
+
+.input:disabled {
+  background: rgb(var(--color-disabled));
+  color: rgb(var(--color-disabled-foreground));
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Input States */
+.input-error {
+  border-color: rgb(var(--color-danger));
+}
+
+.input-error:focus-visible {
+  outline-color: rgb(var(--color-danger));
+}
+
+.input-success {
+  border-color: rgb(var(--color-success));
+}
+
+.input-success:focus-visible {
+  outline-color: rgb(var(--color-success));
+}
+
+/* Input Sizes */
+.input-sm {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.input-lg {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-lg);
 }
 
 /* Skeleton */
@@ -234,9 +278,9 @@ body {
   animation: shimmer 1.5s linear infinite;
 }
 
-/* ------------------------------------------------------ */
+/* ====================================================== */
 /* ANIMATIONS                                             */
-/* ------------------------------------------------------ */
+/* ====================================================== */
 
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
@@ -263,10 +307,7 @@ body {
   100% { background-position: 200% 0; }
 }
 
-/* ------------------------------------------------------ */
-/* ANIMATION UTILITIES                                    */
-/* ------------------------------------------------------ */
-
+/* Animation Utilities */
 .animate-fade-in {
   animation: fade-in var(--transition-medium) var(--ease-standard);
 }
@@ -283,9 +324,9 @@ body {
   animation: toast-slide-in 0.25s ease-out;
 }
 
-/* ------------------------------------------------------ */
+/* ====================================================== */
 /* ACCESSIBILITY                                          */
-/* ------------------------------------------------------ */
+/* ====================================================== */
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -296,6 +337,7 @@ body {
   }
 }
 
+/* Responsive Tables */
 @media (max-width: 640px) {
   table thead {
     display: none;

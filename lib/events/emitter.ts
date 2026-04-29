@@ -1,160 +1,85 @@
 // lib/events/emitter.ts
 
-import { enqueueEvent } from "@/lib/events/queue/dispatch";
-import type { AnyEventInput, EventMetadata } from "@/lib/events/types";
-import {
-  encryptMetadataForRecord,
-  ACTIVE_VERSION,
-} from "@/lib/security/crypto";
-import { randomUUID } from "crypto";
+import { PrismaClient } from "@prisma/client";
 
-/* -------------------------------------------------- */
-/* Metadata sanitizer                                  */
-/* -------------------------------------------------- */
+const prisma = new PrismaClient();
 
-function sanitizeMetadata(meta: EventMetadata = {}): EventMetadata {
-  try {
-    const cloned = JSON.parse(JSON.stringify(meta));
-    const size = JSON.stringify(cloned).length;
+type Severity = "low" | "medium" | "high";
 
-    if (size > 5000) {
-      return { _truncated: true };
-    }
-
-    return cloned;
-  } catch {
-    return { _error: "Invalid metadata" };
-  }
+interface BaseEvent {
+  ip?: string | null;
+  userAgent?: string | null;
+  metadata?: Record<string, any>;
 }
 
-/* -------------------------------------------------- */
-/* Helpers: inference + normalization                  */
-/* -------------------------------------------------- */
-
-const VALID_SEVERITIES = ["low", "medium", "high", "critical"] as const;
-
-function normalizeSeverity(sev?: string) {
-  if (!sev) return "low";
-  const s = sev.toLowerCase();
-  return VALID_SEVERITIES.includes(s as any) ? s : "low";
-}
-
-function inferActorType(actorId?: string | null) {
-  if (!actorId) return "system";
-  return "customer"; // override in callers if needed
-}
-
-function inferContext(type: string, category?: string | null) {
-  if (category) return category.toLowerCase();
-  if (type.startsWith("FRAUD")) return "fraud";
-  if (type.startsWith("RISK")) return "risk";
-  if (type.startsWith("API_")) return "auth";
-  return "system";
-}
-
-function inferOperation(type: string) {
-  if (type.includes("CREATE")) return "create";
-  if (type.includes("UPDATE")) return "update";
-  if (type.includes("DELETE")) return "delete";
-  if (type.includes("EVALUATION") || type.includes("SCORE")) return "evaluate";
-  if (type.includes("SIGNAL") || type.includes("DETECTED")) return "detect";
-  return "access";
-}
-
-function normalizeTags(tags?: string[]) {
-  return (tags ?? []).map((t) => t.trim().toLowerCase());
-}
-
-/* -------------------------------------------------- */
-/* Unified emitter                                     */
-/* -------------------------------------------------- */
-
-export function emitEvent(event: AnyEventInput) {
-  const enriched = {
-    ...event,
-
-    version: 1,
-    timestamp: new Date().toISOString(),
-
-    requestId:
-      event.requestId ??
-      (typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2)),
-
-    severity: event.severity ?? "low",
-    encryptedMetadata: event.encryptedMetadata ?? false,
-
-    metadata: sanitizeMetadata(event.metadata ?? {}),
-  };
-
-  enqueueEvent(enriched);
-}
-
-/* -------------------------------------------------- */
-/* Upgraded v3 Security Event Emitter                  */
-/* -------------------------------------------------- */
-
-export function emitSecurityEvent(event: Omit<AnyEventInput, "category"> & { type: string }) {
-  const eventId = randomUUID();
-
-  const severity = normalizeSeverity(event.severity);
-  const actorType = event.actorType ?? inferActorType(event.actorId ?? event.userId);
-  const context = event.context ?? inferContext(event.type, event.category);
-  const operation = event.operation ?? inferOperation(event.type);
-  const tags = normalizeTags(event.tags);
-
-  const sanitizedMeta = sanitizeMetadata(event.metadata);
-
-  const finalMetadata =
-    event.encryptedMetadata
-      ? {
-          _encrypted: true,
-          encVersion: ACTIVE_VERSION,
-          payload: encryptMetadataForRecord(eventId, sanitizedMeta),
-        }
-      : {
-          _encrypted: false,
-          encVersion: ACTIVE_VERSION,
-          data: sanitizedMeta,
-        };
-
-  emitEvent({
-    ...event,
-    type: event.type,
-    category: "security",
-
-    severity,
-    actorType,
-    context,
-    operation,
-    tags,
-
-    metadata: finalMetadata,
-    encryptedMetadata: event.encryptedMetadata ?? false,
-
-    requestId: event.requestId,
-  });
-
-  return eventId;
-}
-
-/* -------------------------------------------------- */
-/* Specialized emitters                                */
-/* -------------------------------------------------- */
-
-export function emitAlertEvent(event: Omit<AnyEventInput, "category"> & { type: string }) {
-  emitEvent({
-    ...event,
-    category: "alert",
-    severity: event.severity ?? "high",
+export async function emitSecurityEvent(event: {
+  type: string;
+  message: string;
+  severity: Severity;
+  category?: string;
+  context?: string;
+  source?: string;
+  requestId?: string | null;
+  actorType: string;
+  actorId?: string | null;
+  orderId?: string | null;
+  fulfillmentId?: string | null;
+  riderId?: string | null;
+  riskScore?: number;
+  tags?: string[];
+} & BaseEvent) {
+  await prisma.securityEvent.create({
+    data: {
+      version: 3,
+      type: event.type,
+      message: event.message,
+      severity: event.severity,
+      category: event.category ?? null,
+      context: event.context ?? null,
+      source: event.source ?? null,
+      requestId: event.requestId ?? null,
+      actorType: event.actorType,
+      actorId: event.actorId ?? null,
+      orderId: event.orderId ?? null,
+      fulfillmentId: event.fulfillmentId ?? null,
+      riderId: event.riderId ?? null,
+      riskScore: event.riskScore ?? 0,
+      tags: event.tags ?? [],
+      ip: event.ip ?? null,
+      userAgent: event.userAgent ?? null,
+      metadata: event.metadata ?? {},
+    },
   });
 }
 
-export function emitFraudEvent(event: Omit<AnyEventInput, "category"> & { type: string }) {
-  emitEvent({
-    ...event,
-    category: "fraud",
-    severity: event.severity ?? "high",
+export async function emitFraudEvent(event: {
+  signal: string;
+  orderId?: string | null;
+  userId?: string | null;
+} & BaseEvent) {
+  await prisma.fraudEvent.create({
+    data: {
+      signal: event.signal,
+      orderId: event.orderId ?? null,
+      userId: event.userId ?? null,
+      ip: event.ip ?? null,
+      userAgent: event.userAgent ?? null,
+      metadata: event.metadata ?? {},
+    },
+  });
+}
+
+export async function emitAlertEvent(event: {
+  event: string;
+  userId?: string | null;
+} & BaseEvent) {
+  await prisma.alertEvent.create({
+    data: {
+      event: event.event,
+      userId: event.userId ?? null,
+      ip: event.ip ?? null,
+      userAgent: event.userAgent ?? null,
+      metadata: event.metadata ?? {},
+    },
   });
 }

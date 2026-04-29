@@ -1,4 +1,4 @@
-import { cloudinary } from "./config";
+import { cloudinary } from ".";
 
 export async function uploadImageFromFormData(
   file: File

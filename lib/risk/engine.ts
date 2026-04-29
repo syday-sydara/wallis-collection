@@ -47,13 +47,15 @@ async function getCachedPolicy(policyId: string): Promise<RiskPolicy | null> {
   const cacheKey = redisKey("risk", "policy", policyId);
 
   // Try cache first
-  const cached = await redisSafe(
-    () => redis.get(cacheKey),
-    null
-  );
+  const cached = await redisSafe(() => redis.get(cacheKey), null);
 
   if (cached) {
-    return JSON.parse(cached);
+    try {
+      return JSON.parse(cached);
+    } catch {
+      // Corrupted cache — delete it
+      await redisSafe(() => redis.del(cacheKey), null);
+    }
   }
 
   // Load from database
@@ -62,11 +64,8 @@ async function getCachedPolicy(policyId: string): Promise<RiskPolicy | null> {
     include: { rules: true },
   });
 
-  if (!dbPolicy) {
-    return null;
-  }
+  if (!dbPolicy) return null;
 
-  // Convert Prisma → RiskPolicy
   const policy: RiskPolicy = {
     id: dbPolicy.id,
     label: dbPolicy.label,
@@ -125,10 +124,6 @@ export async function evaluatePolicy(
     throw new Error(`RiskPolicy not found: ${policyId}`);
   }
 
-  /* -------------------------------------------------- */
-  /* Validate policy                                     */
-  /* -------------------------------------------------- */
-
   if (!Array.isArray(policy.rules)) {
     throw new Error(`RiskPolicy ${policyId} has invalid rules array`);
   }
@@ -150,7 +145,6 @@ export async function evaluatePolicy(
     try {
       passed = evaluateRule(rule.condition, context);
     } catch (err: any) {
-      // Log anomaly
       emitSecurityEvent({
         type: "SYSTEM_ANOMALY",
         message: `Risk rule evaluation error: ${rule.id}`,

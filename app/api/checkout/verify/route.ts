@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
+import { releaseInventory, confirmInventory } from "@/lib/inventory";
 
 export async function POST(req: NextRequest) {
   const { orderId, token } = await req.json();
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
   // VERIFY WITH PAYSTACK (with 10s timeout)
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000);
-  
+
   let res;
   try {
     res = await fetch(
@@ -74,54 +75,57 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid response" }, { status: 500 });
   }
 
+  const status = paystackData.status?.toLowerCase();
+
   // STILL PROCESSING
-  if (paystackData.status === "ongoing" || paystackData.status === "queued") {
+  if (status === "processing" || status === "pending") {
     return NextResponse.json({ processing: true }, { status: 202 });
   }
 
   // FAILED
-  if (paystackData.status !== "success") {
+  if (status !== "success") {
     await prisma.payment.update({
       where: { id: payment.id },
       data: { status: "FAILED" },
     });
 
-    // Release reserved inventory on payment failure
     try {
       await releaseInventory(orderId);
-    } catch (inventoryError: any) {
-      console.error("Inventory release failed:", inventoryError);
+    } catch (err) {
+      console.error("Inventory release failed:", err);
     }
 
     return NextResponse.json({ success: false }, { status: 400 });
   }
 
   // VALIDATIONS
-  if (paystackData.amount !== order.total * 100) {
+  const amount = Number(paystackData.amount);
+  const expectedAmount = Math.round(order.total * 100);
+
+  if (amount !== expectedAmount) {
     return NextResponse.json({ error: "Amount mismatch" }, { status: 400 });
   }
 
-  if (paystackData.currency !== "NGN") {
+  if (paystackData.currency?.toUpperCase() !== "NGN") {
     return NextResponse.json({ error: "Currency mismatch" }, { status: 400 });
   }
 
   // TRANSACTION
   await prisma.$transaction(async (tx) => {
+    // Lock payment row
     const freshPayment = await tx.payment.findUnique({
       where: { id: payment.id },
     });
 
     if (freshPayment?.status === "SUCCESS") return;
 
-    // Confirm inventory reservation (move from reserved to actual stock reduction)
     try {
       await confirmInventory(orderId);
-    } catch (inventoryError: any) {
-      console.error("Inventory confirmation failed:", inventoryError);
+    } catch (err) {
+      console.error("Inventory confirmation failed:", err);
       throw new Error("Inventory confirmation failed");
     }
 
-    // update payment
     await tx.payment.update({
       where: { id: payment.id },
       data: {
@@ -130,7 +134,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // update order
     await tx.order.update({
       where: { id: orderId },
       data: {

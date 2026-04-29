@@ -1,53 +1,43 @@
 // lib/utils/whatsapp.ts
-import type { CartItem } from "../cart/types";
-import { formatCurrency } from "./formatters/currency";
-import { normalizePhoneForWhatsApp } from "./formatters/phone";
 
-function sanitizeText(text: string): string {
-  return text.normalize("NFC").trim();
+/**
+ * Encode a WhatsApp message safely for use in URLs.
+ *
+ * @param message - The message to encode
+ */
+export function generateWhatsAppMessage(message: string): string {
+  return encodeURIComponent(message);
 }
 
-function formatCartLine(item: CartItem): string {
-  const attrs = item.attributes
-    ? Object.entries(item.attributes)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([, v]) => sanitizeText(String(v)))
-        .join(", ")
-    : "";
-
-  const variant = attrs ? ` (${attrs})` : "";
-  const total = item.unitPrice * item.quantity;
-
-  return `${sanitizeText(item.name)}${variant} x${item.quantity} - ${formatCurrency(
-    total,
-    false
-  )}`;
+/**
+ * Normalize a phone number for WhatsApp deep links.
+ * Removes spaces, dashes, parentheses, and leading "+".
+ *
+ * @param phone - Raw phone number
+ */
+export function normalizeWhatsAppPhone(phone: string): string {
+  return phone.replace(/[^\d]/g, "");
 }
 
-export function generateWhatsAppMessage(
-  items: CartItem[],
-  total: number,
-  fullName?: string
-) {
-  const name = fullName?.trim()
-    ? `Hello! My name is ${sanitizeText(fullName)}.\n`
-    : "Hello!\n";
+/**
+ * Generate a WhatsApp deep link.
+ *
+ * @param phone - Phone number (any format)
+ * @param message - Optional message to prefill
+ *
+ * @example
+ * generateWhatsAppLink("+234 801 234 5678", "Hello!")
+ * // → "https://wa.me/2348012345678?text=Hello%21"
+ */
+export function generateWhatsAppLink(
+  phone: string,
+  message?: string
+): string {
+  const normalized = normalizeWhatsAppPhone(phone);
+  const base = `https://wa.me/${normalized}`;
 
-  const lines = items.map(formatCartLine).join("\n");
+  if (!message) return base;
 
-  return (
-    `${name}I would like to place an order:\n\n` +
-    lines +
-    `\n\nTotal: ${formatCurrency(total, false)}`
-  ).trim();
-}
-
-export function generateWhatsAppLink(message: string) {
-  const rawPhone =
-    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "234XXXXXXXXXX";
-
-  const phone = normalizePhoneForWhatsApp(rawPhone) ?? "234XXXXXXXXXX";
-  const encoded = encodeURIComponent(sanitizeText(message));
-
-  return `https://wa.me/${phone}?text=${encoded}`;
+  const encoded = generateWhatsAppMessage(message);
+  return `${base}?text=${encoded}`;
 }
