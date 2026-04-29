@@ -668,3 +668,30 @@ model CartItem {
   @@index([productId])
   @@index([variantId])
 }
+
+model WhatsAppMessageLog {
+  id        String   @id @default(cuid())
+
+  to        String              // normalized WhatsApp (+234…)
+  operation String              // "text" | "buttons" | "list" | ...
+  status    String              // "success" | "failure"
+  error     String?
+  raw       Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([to, createdAt])
+  @@index([operation, createdAt])
+  @@index([status, createdAt])
+}
+
+
+model WhatsAppSession {
+  whatsapp  String   @id          // normalized WhatsApp (+234…)
+  state     String                // "IDLE" | "PHONE_SELECTION" | ...
+  data      Json?
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([state])
+}
