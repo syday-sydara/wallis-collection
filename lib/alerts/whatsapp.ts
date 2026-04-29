@@ -30,7 +30,7 @@ export async function sendWhatsAppAlert(payload: {
       source: "whatsapp_api",
     });
 
-    throw new Error("WhatsApp API credentials missing");
+    return { ok: false, error: "missing_credentials" };
   }
 
   /* -------------------------------------------------- */
@@ -73,6 +73,9 @@ export async function sendWhatsAppAlert(payload: {
     return { ok: false, error: "invalid_template" };
   }
 
+  /* -------------------------------------------------- */
+  /* Build request body                                  */
+  /* -------------------------------------------------- */
   const safeVars = variables.filter((v) => typeof v === "string");
 
   const body = {
@@ -150,17 +153,18 @@ export async function sendWhatsAppAlert(payload: {
           source: "whatsapp_api",
         });
 
+        /* Rate limited */
         if (status === 429) {
           return { ok: false, error: "rate_limited" };
         }
 
-        // Retry only on server errors
+        /* Retry only on server errors */
         if (status >= 500 && attempt === 1) {
           await new Promise((r) => setTimeout(r, 300 * attempt));
           continue;
         }
 
-        // Hard alert for persistent failure
+        /* Hard alert for persistent failure */
         if (attempt === 2) {
           await emitAlertEvent({
             type: "WHATSAPP_DELIVERY_FAILURE",
