@@ -15,26 +15,25 @@ function getFormatter(
   fractionDigits: number,
   locale = "en-NG",
   currency = "NGN"
-) {
+): Intl.NumberFormat {
   const key = `${locale}-${currency}-${fractionDigits}`;
 
-  if (!formatterCache.has(key)) {
-    formatterCache.set(
-      key,
-      new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency,
-        minimumFractionDigits: fractionDigits,
-        maximumFractionDigits: fractionDigits,
-      })
-    );
+  let formatter = formatterCache.get(key);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    });
+    formatterCache.set(key, formatter);
   }
 
-  return formatterCache.get(key)!;
+  return formatter;
 }
 
 export function formatCurrency(
-  amount: number,
+  amount: number | string | null | undefined,
   fromKobo = true,
   fractionDigits = 0,
   locale = "en-NG"
@@ -48,4 +47,18 @@ export function formatCurrency(
 
   const formatter = getFormatter(fractionDigits, locale);
   return formatter.format(value);
+}
+
+/**
+ * Convenience helper for formatting NGN specifically.
+ *
+ * @example
+ * formatNGN(150000) // "₦1,500"
+ */
+export function formatNGN(
+  amount: number | string | null | undefined,
+  fromKobo = true,
+  fractionDigits = 0
+): string {
+  return formatCurrency(amount, fromKobo, fractionDigits, "en-NG");
 }
