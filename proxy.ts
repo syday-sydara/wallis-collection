@@ -4,8 +4,9 @@ import type { NextRequest } from "next/server";
 
 import { parseMiddlewareSession } from "@/lib/auth/middleware-session";
 import { hasPermission } from "@/lib/auth/permissions";
-import { trackPermissionDenied } from "@/lib/security/permission-rate-limit";
-import { maybeSendUnauthorizedAlert } from "@/lib/security/permission-alerts";
+
+import { trackPermissionDenied } from "@/lib/security/rate-limit/permissionRate";
+import { maybeSendUnauthorizedAlert } from "@/lib/security/rate-limit/permissionAlerts";
 
 import {
   serviceContext,
@@ -37,9 +38,9 @@ async function sendSecurityLog(body: Record<string, any>) {
 }
 
 function redirectToLogin(req: NextRequest) {
-  const loginUrl = new URL("/login", req.url);
-  loginUrl.searchParams.set("next", req.nextUrl.pathname);
-  return NextResponse.redirect(loginUrl);
+  const url = new URL("/login", req.url);
+  url.searchParams.set("next", req.nextUrl.pathname);
+  return NextResponse.redirect(url);
 }
 
 function redirectToHome(req: NextRequest) {
@@ -77,14 +78,14 @@ export async function proxy(req: NextRequest) {
   const requestId = crypto.randomUUID();
   const traceId = crypto.randomUUID();
 
-  const ipHeader = req.headers.get("x-forwarded-for");
+  const forwarded = req.headers.get("x-forwarded-for");
   const ip =
-    ipHeader?.split(",")[0]?.trim().replace(/:\d+$/, "") ||
+    forwarded?.split(",")[0]?.trim().replace(/:\d+$/, "") ||
     req.ip ||
     "unknown";
 
   const userAgent = req.headers.get("user-agent")?.slice(0, 300) ?? "unknown";
-  const locale = req.headers.get("accept-language")?.split(",")[0];
+  const locale = req.headers.get("accept-language")?.split(",")[0] ?? null;
 
   return serviceContext.run(
     { requestId, traceId, ip, userAgent, locale },
@@ -117,12 +118,12 @@ export async function proxy(req: NextRequest) {
         /* -------------------------------------------------- */
         /* 1. Parse session                                   */
         /* -------------------------------------------------- */
-        const user = parseMiddlewareSession(req);
+        const user = await parseMiddlewareSession(req);
 
         /* -------------------------------------------------- */
         /* 2. Risk Enforcement (Fail Closed)                  */
         /* -------------------------------------------------- */
-        const risk = (user as any)?.riskScore ?? (user as any)?.risk_score;
+        const risk = user?.riskScore ?? user?.risk_score;
 
         if (!user || risk == null || risk >= 70) {
           metricsWithContext.increment("middleware.proxy.risk_block");
@@ -190,13 +191,11 @@ export async function proxy(req: NextRequest) {
             "middleware.proxy.security_center.denied"
           );
 
-          const rate = trackPermissionDenied(ip);
+          const rate = await trackPermissionDenied(ip);
 
           if (rate.allowed) {
-            maybeSendUnauthorizedAlert(ip, rate.count);
-          }
+            await maybeSendUnauthorizedAlert(ip, rate.count);
 
-          if (rate.allowed) {
             void sendSecurityLog({
               userId: user?.id ?? null,
               type: "PERMISSION_DENIED",
@@ -215,7 +214,7 @@ export async function proxy(req: NextRequest) {
           });
 
           span.end({ reason: "security_center_denied" });
-          return NextResponse.redirect(new URL("/", req.url));
+          return redirectToHome(req);
         }
 
         /* -------------------------------------------------- */
@@ -226,6 +225,7 @@ export async function proxy(req: NextRequest) {
         return NextResponse.next();
       } catch (err: any) {
         const duration = performance.now() - start;
+
         metricsWithContext.timing("middleware.proxy.error_duration", duration);
         metricsWithContext.increment("middleware.proxy.errors");
 
@@ -240,8 +240,7 @@ export async function proxy(req: NextRequest) {
           duration,
         });
 
-        // Fail closed to home on unexpected middleware errors
-        return NextResponse.redirect(new URL("/", req.url));
+        return redirectToHome(req);
       }
     }
   );
