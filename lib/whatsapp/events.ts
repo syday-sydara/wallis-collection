@@ -1,154 +1,174 @@
 // lib/whatsapp/events.ts
 
+import { withSpan } from "@/lib/core/with-span";
+import { log } from "@/lib/core/log";
+import { metricsWithContext } from "@/lib/core/metrics-context";
+import { serviceContext } from "@/lib/core/service-context";
+import { emitSecurityEvent } from "@/lib/events/emitter";
+import { EventSource } from "@/lib/events/types";
+
 import { sendWhatsAppAlert } from "@/lib/alerts/whatsapp";
 import { sendWhatsAppMessage } from "./send";
 import { sendWhatsAppButtons } from "./onboarding/buttons";
 import { sendWhatsAppReceipt } from "./receipt";
 import { signRiderLink } from "../rider/sign";
 import { normalizePhoneForWhatsApp } from "../utils/formatters/phone";
-import { emitSecurityEvent } from "@/lib/events/emitter";
-import { EventSource } from "@/lib/events/types";
 
-/**
- * Send a generic tracking update using a WhatsApp template.
- * Used for normal status changes (PENDING, IN_TRANSIT, etc.)
- */
-export async function sendTrackingUpdate(order: any) {
-  const status = order.fulfillments?.[0]?.status || "PENDING";
+/* -------------------------------------------------- */
+/* Helpers                                             */
+/* -------------------------------------------------- */
 
-  const friendly = {
-    PENDING: "being prepared",
-    IN_TRANSIT: "on the way",
-    OUT_FOR_DELIVERY: "out for delivery",
-    DELIVERED: "delivered",
-    FAILED: "failed",
-  }[status];
+function shortId(id: string) {
+  return id.slice(0, 8);
+}
+
+function normalize(orderOrPhone: any) {
+  return typeof orderOrPhone === "string"
+    ? normalizePhoneForWhatsApp(orderOrPhone)
+    : normalizePhoneForWhatsApp(orderOrPhone.phone);
+}
+
+async function recordEvent(type: string, severity: "low" | "medium" | "high", metadata: any) {
+  const ctx = serviceContext.get();
+
+  metricsWithContext.increment(`whatsapp.${type.toLowerCase()}`);
 
   await emitSecurityEvent({
     kind: "security",
-    type: "WHATSAPP_TRACKING_UPDATE_SENT",
-    message: `Tracking update sent for order ${order.id}`,
-    severity: "low",
-    tags: ["whatsapp", "tracking_update", `status:${status}`],
-    metadata: {
+    type,
+    message: `${type} triggered`,
+    severity,
+    tags: ["whatsapp", type.toLowerCase()],
+    metadata: { ...metadata, ...ctx },
+    source: EventSource.WhatsAppAPI,
+  });
+
+  log.info(`WhatsApp event: ${type}`, metadata);
+}
+
+/* -------------------------------------------------- */
+/* Tracking Update                                     */
+/* -------------------------------------------------- */
+
+export async function sendTrackingUpdate(order: any) {
+  return withSpan("whatsapp.send_tracking_update", async () => {
+    const status = order.fulfillments?.[0]?.status || "PENDING";
+
+    const friendly = {
+      PENDING: "being prepared",
+      IN_TRANSIT: "on the way",
+      OUT_FOR_DELIVERY: "out for delivery",
+      DELIVERED: "delivered",
+      FAILED: "failed",
+    }[status];
+
+    await recordEvent("WHATSAPP_TRACKING_UPDATE_SENT", "low", {
       orderId: order.id,
       status,
       friendly,
-    },
-    source: EventSource.WhatsAppAPI,
-  });
+    });
 
-  return sendWhatsAppAlert({
-    to: order.phone,
-    template: "order_tracking_update",
-    variables: [
-      order.fullName || "Customer",
-      order.id.slice(0, 8),
-      friendly,
-      `${process.env.NEXT_PUBLIC_APP_URL}/track/${order.trackingToken}`,
-    ],
-    severity: "low",
+    return sendWhatsAppAlert({
+      to: normalize(order),
+      template: "order_tracking_update",
+      variables: [
+        order.fullName || "Customer",
+        shortId(order.id),
+        friendly,
+        `${process.env.NEXT_PUBLIC_APP_URL}/track/${order.trackingToken}`,
+      ],
+      severity: "low",
+    });
   });
 }
 
-/**
- * Notify customer when order is out for delivery.
- * Also sends COD reminder if needed.
- */
+/* -------------------------------------------------- */
+/* Out for Delivery                                    */
+/* -------------------------------------------------- */
+
 export async function sendOutForDelivery(order: any) {
-  await emitSecurityEvent({
-    kind: "security",
-    type: "WHATSAPP_OUT_FOR_DELIVERY_SENT",
-    message: `Out-for-delivery notification sent for order ${order.id}`,
-    severity: "medium",
-    tags: ["whatsapp", "ofd"],
-    metadata: { orderId: order.id },
-    source: EventSource.WhatsAppAPI,
-  });
-
-  await sendWhatsAppAlert({
-    to: order.phone,
-    template: "order_out_for_delivery",
-    variables: [order.id.slice(0, 8)],
-    severity: "medium",
-  });
-
-  if (order.paymentMethod === "CASH") {
-    await emitSecurityEvent({
-      kind: "security",
-      type: "WHATSAPP_COD_REMINDER_SENT",
-      message: `COD reminder sent for order ${order.id}`,
-      severity: "medium",
-      tags: ["whatsapp", "cod_reminder"],
-      metadata: { orderId: order.id },
-      source: EventSource.WhatsAppAPI,
+  return withSpan("whatsapp.send_out_for_delivery", async () => {
+    await recordEvent("WHATSAPP_OUT_FOR_DELIVERY_SENT", "medium", {
+      orderId: order.id,
     });
 
     await sendWhatsAppAlert({
-      to: order.phone,
-      template: "order_cod_reminder",
-      variables: [order.id.slice(0, 8)],
+      to: normalize(order),
+      template: "order_out_for_delivery",
+      variables: [shortId(order.id)],
       severity: "medium",
     });
-  }
+
+    if (order.paymentMethod === "CASH") {
+      await recordEvent("WHATSAPP_COD_REMINDER_SENT", "medium", {
+        orderId: order.id,
+      });
+
+      await sendWhatsAppAlert({
+        to: normalize(order),
+        template: "order_cod_reminder",
+        variables: [shortId(order.id)],
+        severity: "medium",
+      });
+    }
+  });
 }
 
-/**
- * Notify customer when order is delivered.
- * Also sends a WhatsApp receipt.
- */
+/* -------------------------------------------------- */
+/* Delivered                                           */
+/* -------------------------------------------------- */
+
 export async function sendDelivered(order: any) {
-  await emitSecurityEvent({
-    kind: "security",
-    type: "WHATSAPP_DELIVERED_SENT",
-    message: `Delivery confirmation sent for order ${order.id}`,
-    severity: "low",
-    tags: ["whatsapp", "delivered"],
-    metadata: { orderId: order.id },
-    source: EventSource.WhatsAppAPI,
-  });
+  return withSpan("whatsapp.send_delivered", async () => {
+    await recordEvent("WHATSAPP_DELIVERED_SENT", "low", {
+      orderId: order.id,
+    });
 
-  await sendWhatsAppAlert({
-    to: order.phone,
-    template: "order_delivered",
-    variables: [order.id.slice(0, 8)],
-    severity: "low",
-  });
+    await sendWhatsAppAlert({
+      to: normalize(order),
+      template: "order_delivered",
+      variables: [shortId(order.id)],
+      severity: "low",
+    });
 
-  await sendWhatsAppReceipt(order);
+    return sendWhatsAppReceipt(order);
+  });
 }
 
-/**
- * Notify customer when delivery fails.
- */
+/* -------------------------------------------------- */
+/* Failed Delivery                                     */
+/* -------------------------------------------------- */
+
 export async function sendFailed(order: any) {
-  await emitSecurityEvent({
-    kind: "security",
-    type: "WHATSAPP_DELIVERY_FAILED_SENT",
-    message: `Delivery failure notification sent for order ${order.id}`,
-    severity: "high",
-    tags: ["whatsapp", "delivery_failed"],
-    metadata: { orderId: order.id },
-    source: EventSource.WhatsAppAPI,
-  });
+  return withSpan("whatsapp.send_failed", async () => {
+    await recordEvent("WHATSAPP_DELIVERY_FAILED_SENT", "high", {
+      orderId: order.id,
+    });
 
-  return sendWhatsAppAlert({
-    to: order.phone,
-    template: "order_failed",
-    variables: [order.id.slice(0, 8)],
-    severity: "high",
+    return sendWhatsAppAlert({
+      to: normalize(order),
+      template: "order_failed",
+      variables: [shortId(order.id)],
+      severity: "high",
+    });
   });
 }
 
-/**
- * Send rider update links when order goes OUT_FOR_DELIVERY.
- * Rider taps → status updates automatically.
- */
-export async function sendRiderLinks(fulfillment: any) {
-  const delivered = signRiderLink(fulfillment.id, "DELIVERED");
-  const failed = signRiderLink(fulfillment.id, "FAILED");
+/* -------------------------------------------------- */
+/* Rider Links                                         */
+/* -------------------------------------------------- */
 
-  const message = `
+export async function sendRiderLinks(fulfillment: any) {
+  return withSpan("whatsapp.send_rider_links", async () => {
+    const delivered = signRiderLink(fulfillment.id, "DELIVERED");
+    const failed = signRiderLink(fulfillment.id, "FAILED");
+
+    await recordEvent("WHATSAPP_RIDER_LINKS_SENT", "medium", {
+      fulfillmentId: fulfillment.id,
+      orderId: fulfillment.orderId,
+    });
+
+    const message = `
 Rider Update Link for Order #${fulfillment.orderId}
 
 ✔️ Delivered:
@@ -156,50 +176,33 @@ ${delivered}
 
 ❌ Delivery Failed:
 ${failed}
-  `;
+    `;
 
-  await emitSecurityEvent({
-    kind: "security",
-    type: "WHATSAPP_RIDER_LINKS_SENT",
-    message: `Rider update links sent for fulfillment ${fulfillment.id}`,
-    severity: "medium",
-    tags: ["whatsapp", "rider_links"],
-    metadata: {
-      fulfillmentId: fulfillment.id,
-      orderId: fulfillment.orderId,
-    },
-    source: EventSource.WhatsAppAPI,
+    return sendWhatsAppMessage(normalize(fulfillment.order.phone), message);
   });
-
-  return sendWhatsAppMessage(fulfillment.order.phone, message);
 }
 
-/**
- * Send interactive buttons after a tracking response.
- */
-export async function sendTrackingButtons(to: string, order: any) {
-  const normalized = normalizePhoneForWhatsApp(to);
+/* -------------------------------------------------- */
+/* Tracking Buttons                                    */
+/* -------------------------------------------------- */
 
-  await emitSecurityEvent({
-    kind: "security",
-    type: "WHATSAPP_TRACKING_BUTTONS_SENT",
-    message: `Tracking buttons sent to ${normalized}`,
-    severity: "low",
-    tags: ["whatsapp", "tracking_buttons"],
-    metadata: {
+export async function sendTrackingButtons(to: string, order: any) {
+  return withSpan("whatsapp.send_tracking_buttons", async () => {
+    const normalized = normalize(to);
+
+    await recordEvent("WHATSAPP_TRACKING_BUTTONS_SENT", "low", {
       to: normalized,
       orderId: order.id,
-    },
-    source: EventSource.WhatsAppAPI,
-  });
+    });
 
-  return sendWhatsAppButtons({
-    to: normalized,
-    message: "What would you like to do next?",
-    buttons: [
-      { id: "track_again", title: "Track Again" },
-      { id: "talk_support", title: "Talk to Support" },
-      { id: "view_timeline", title: "View Timeline" },
-    ],
+    return sendWhatsAppButtons({
+      to: normalized,
+      message: "What would you like to do next?",
+      buttons: [
+        { id: "track_again", title: "Track Again" },
+        { id: "talk_support", title: "Talk to Support" },
+        { id: "view_timeline", title: "View Timeline" },
+      ],
+    });
   });
 }
