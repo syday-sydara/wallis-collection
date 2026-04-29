@@ -12,16 +12,29 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      // Normalize phone number
+      const phone = input.phone.replace(/\D/g, "");
+
+      // Risk challenge required
       if (ctx.riskChallengeRequired) {
-        // e.g. tell client to show extra verification
         return {
-          challenge: true,
+          status: "challenge",
           message: "Additional verification required",
           risk: ctx.risk,
         };
       }
 
-      // normal login logic here
-      return { success: true, risk: ctx.risk };
+      // TODO: verify OTP
+      // const isValidOtp = await verifyOtp(phone, input.otp);
+      // if (!isValidOtp) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid OTP" });
+
+      // TODO: create session / token
+      // const token = await createSession(ctx.userId);
+
+      return {
+        status: "ok",
+        risk: ctx.risk,
+        // token,
+      };
     }),
 });

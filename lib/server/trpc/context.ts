@@ -1,26 +1,45 @@
 // server/trpc/context.ts
 
 import { inferAsyncReturnType } from "@trpc/server";
+import type { Request, Response } from "express";
 
-export async function createContext(opts: { req: any; res: any }) {
-  const { req } = opts;
+interface AuthenticatedRequest extends Request {
+  user?: { id: string };
+  riskResult?: any;
+  riskChallengeRequired?: boolean;
+}
 
-  const ip =
-    req.ip ||
-    req.headers["x-forwarded-for"] ||
-    null;
+function extractIp(req: Request): string | null {
+  const xf = req.headers["x-forwarded-for"];
 
-  const userAgent = req.headers["user-agent"] ?? null;
+  if (typeof xf === "string") {
+    return xf.split(",")[0].trim();
+  }
 
-  // attach user if you have auth
-  const userId = req.user?.id ?? null;
+  if (Array.isArray(xf) && xf.length > 0) {
+    return xf[0];
+  }
+
+  return typeof req.ip === "string" ? req.ip : null;
+}
+
+export async function createContext(opts: { req: AuthenticatedRequest; res: Response }) {
+  const { req, res } = opts;
+
+  const ip = extractIp(req);
+  const userAgentHeader = req.headers["user-agent"];
+  const userAgent = typeof userAgentHeader === "string" ? userAgentHeader : null;
 
   return {
     req,
-    res: opts.res,
-    userId,
-    ip: typeof ip === "string" ? ip : null,
-    userAgent: typeof userAgent === "string" ? userAgent : null,
+    res,
+    userId: req.user?.id ?? null,
+    ip,
+    userAgent,
+
+    // Risk metadata from middleware
+    riskResult: req.riskResult ?? null,
+    riskChallengeRequired: req.riskChallengeRequired ?? false,
   };
 }
 

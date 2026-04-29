@@ -10,13 +10,24 @@ import securityRouter from "./security";
 const app = express();
 
 /* -------------------------------------------------- */
+/* Core Server Settings                                */
+/* -------------------------------------------------- */
+
+// Required for correct IP detection behind proxies
+app.set("trust proxy", true);
+
+/* -------------------------------------------------- */
 /* Middleware                                          */
 /* -------------------------------------------------- */
 
-app.use(helmet());          // Basic security headers
-app.use(cors());            // Allow frontend access
-app.use(express.json());    // JSON body parsing
-app.use(morgan("tiny"));    // Lightweight request logging
+app.use(helmet());
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "https://yourapp.com"],
+  })
+);
+app.use(express.json({ limit: "1mb" }));
+app.use(morgan("tiny"));
 
 /* -------------------------------------------------- */
 /* Health Check                                        */
@@ -49,6 +60,15 @@ app.use((err, _req, res, _next) => {
 /* Start Server                                        */
 /* -------------------------------------------------- */
 
-app.listen(3000, () => {
+const server = app.listen(3000, () => {
   console.log("Server listening on :3000");
+});
+
+/* -------------------------------------------------- */
+/* Graceful Shutdown                                   */
+/* -------------------------------------------------- */
+
+process.on("SIGTERM", () => {
+  console.log("Shutting down...");
+  server.close(() => process.exit(0));
 });

@@ -30,29 +30,41 @@ export async function sendWhatsAppOrder({
   /* -------------------------------------------------- */
   /* 2. Generate message                                 */
   /* -------------------------------------------------- */
-  const message = generateWhatsAppMessage(items, total, fullName);
+  const message = generateWhatsAppMessage(items, total, fullName).trim();
 
   /* -------------------------------------------------- */
-  /* 3. Try WhatsApp first (via template or text)        */
+  /* 3. Try WhatsApp first                               */
   /* -------------------------------------------------- */
   if (phone) {
-    const waResult = await sendWhatsAppAlert({
-      to: phone,
-      template: "order_confirmation_text", // You can change this
-      variables: [message],
-      severity: "low",
-    });
+    try {
+      const waResult = await sendWhatsAppAlert({
+        to: phone,
+        template: "order_confirmation_text",
+        variables: [message],
+        severity: "low",
+      });
 
-    if (waResult.ok) {
-      logEvent("order_delivery_whatsapp", { phone }, "info");
-      return { ok: true, channel: "whatsapp" };
+      if (waResult.ok) {
+        logEvent(
+          "order_delivery_whatsapp",
+          { phone, total, itemCount: items.length },
+          "info"
+        );
+        return { ok: true, channel: "whatsapp" };
+      }
+
+      logEvent(
+        "order_delivery_whatsapp_failed",
+        { phone, error: waResult.error },
+        "warn"
+      );
+    } catch (err: any) {
+      logEvent(
+        "order_delivery_whatsapp_exception",
+        { phone, error: err?.message },
+        "error"
+      );
     }
-
-    logEvent(
-      "order_delivery_whatsapp_failed",
-      { phone, error: waResult.error },
-      "warn"
-    );
   } else {
     logEvent(
       "order_delivery_whatsapp_skipped",
@@ -64,37 +76,44 @@ export async function sendWhatsAppOrder({
   /* -------------------------------------------------- */
   /* 4. Fallback to email                                */
   /* -------------------------------------------------- */
-  const emailResult = await sendOrderEmail({
-    to: customerEmail,
-    subject: "Your Order Confirmation",
-    html: `
-      <p>Hello ${fullName ?? ""},</p>
-      <p>Your order has been received.</p>
-      <pre>${message}</pre>
-    `,
-  });
+  try {
+    const emailResult = await sendOrderEmail({
+      to: customerEmail,
+      subject: "Your Order Confirmation",
+      html: `
+        <p>Hello ${fullName ?? ""},</p>
+        <p>Your order has been received.</p>
+        <pre>${message}</pre>
+      `,
+    });
 
-  if (emailResult.ok) {
-    logEvent("order_delivery_email_fallback", { customerEmail }, "info");
-    return { ok: true, channel: "email_fallback" };
+    if (emailResult.ok) {
+      logEvent(
+        "order_delivery_email_fallback",
+        { customerEmail, total, itemCount: items.length },
+        "info"
+      );
+      return { ok: true, channel: "email_fallback" };
+    }
+
+    logEvent(
+      "order_delivery_email_failed",
+      { customerEmail, errors: emailResult.errors },
+      "error"
+    );
+  } catch (err: any) {
+    logEvent(
+      "order_delivery_email_exception",
+      { customerEmail, error: err?.message },
+      "error"
+    );
   }
 
   /* -------------------------------------------------- */
   /* 5. Both failed                                      */
   /* -------------------------------------------------- */
-  logEvent(
-    "order_delivery_failed",
-    {
-      customerPhone,
-      customerEmail,
-      emailErrors: emailResult.errors,
-    },
-    "error"
-  );
-
   return {
     ok: false,
     error: "delivery_failed",
-    details: emailResult.errors,
   };
 }

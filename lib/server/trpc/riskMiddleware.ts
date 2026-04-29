@@ -8,36 +8,63 @@ import type { Context } from "./context";
 const t = initTRPC.context<Context>().create();
 
 export const riskMiddleware = t.middleware(async ({ ctx, next }) => {
-  const risk = await computeUnifiedSecurityRisk({
-    userId: ctx.userId,
-    ip: ctx.ip,
-    userAgent: ctx.userAgent,
-    source: "login", // or "session"/"checkout" per router
-    riskSignals: {},
-    unifiedSignals: {},
-    fraudSignals: [],
-  });
+  try {
+    /* -------------------------------------------------- */
+    /* Compute unified risk                               */
+    /* -------------------------------------------------- */
 
-  const action = applyRiskPolicy(risk);
+    const risk = await computeUnifiedSecurityRisk({
+      userId: ctx.userId,
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+      source: "login", // TODO: make dynamic per router
+      riskSignals: {},
+      unifiedSignals: {},
+      fraudSignals: [],
+    });
 
-  if (action === "block") {
+    /* -------------------------------------------------- */
+    /* Apply risk policy                                  */
+    /* -------------------------------------------------- */
+
+    const action = applyRiskPolicy(risk);
+
+    if (action === "block") {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Blocked due to risk",
+      });
+    }
+
+    const challengeRequired = action === "challenge";
+
+    /* -------------------------------------------------- */
+    /* Pass risk metadata into downstream context         */
+    /* -------------------------------------------------- */
+
+    return next({
+      ctx: {
+        ...ctx,
+        risk,
+        riskChallengeRequired: challengeRequired,
+      },
+    });
+  } catch (err: any) {
+    console.error("tRPC risk middleware error:", err);
+
     throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "Blocked due to risk",
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Risk evaluation failed",
     });
   }
-
-  const challengeRequired = action === "challenge";
-
-  return next({
-    ctx: {
-      ...ctx,
-      risk,
-      riskChallengeRequired: challengeRequired,
-    },
-  });
 });
+
+/* -------------------------------------------------- */
+/* Router + helpers                                    */
+/* -------------------------------------------------- */
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
+
+// Use this for protected endpoints
 export const protectedWithRisk = t.procedure.use(riskMiddleware);
