@@ -1,5 +1,11 @@
 // lib/security/policies/riskPolicy.ts
 
-export function applyRiskPolicy(result: any) {
-  return result.decision ?? "allow";
+import { UnifiedRiskOutput } from "@/lib/security/engines/unifiedRiskEngine";
+
+export type RiskAction = "allow" | "challenge" | "block";
+
+export function applyRiskPolicy(result: UnifiedRiskOutput): RiskAction {
+  if (result.decision === "block") return "block";
+  if (result.decision === "review") return "challenge";
+  return "allow";
 }
