@@ -1,5 +1,6 @@
 // lib/security/normalize/normalizeIp.ts
 
-export function normalizeIp(ip?: string | null) {
-  return ip ?? null;
+export function normalizeIp(ip?: string | null): string | null {
+  if (!ip) return null;
+  return ip.trim();
 }

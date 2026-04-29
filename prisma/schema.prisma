@@ -577,18 +577,6 @@ model AlertEvent {
   @@index([userId])
 }
 
-model RiskEvent {
-  id        String   @id @default(cuid())
-  orderId   String?
-  userId    String?
-  riskScore Int
-  metadata  Json?
-  createdAt DateTime @default(now())
-
-  @@index([orderId])
-  @@index([userId])
-  @@index([riskScore])
-}
 
 //////////////////////
 // SESSION / DEVICE EVENTS
