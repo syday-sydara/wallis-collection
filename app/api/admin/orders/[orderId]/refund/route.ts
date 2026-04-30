@@ -4,7 +4,7 @@ import { PaymentStatus } from "@prisma/client";
 
 export async function POST(
   req: Request,
-  { params }: { params: { orderId: string } }
+  { params }: { params: { orderId: string } },
 ) {
   try {
     const { amount } = await req.json();
@@ -16,7 +16,7 @@ export async function POST(
     if (typeof amount !== "number" || amount <= 0) {
       return NextResponse.json(
         { error: "Refund amount must be a positive number" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -29,10 +29,7 @@ export async function POST(
     });
 
     if (!order) {
-      return NextResponse.json(
-        { error: "Order not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
     const refundableRemaining = order.total - order.refundedAmount;
@@ -45,7 +42,7 @@ export async function POST(
         {
           error: `Refund exceeds remaining refundable amount (₦${refundableRemaining / 100})`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -109,7 +106,7 @@ export async function POST(
 
     return NextResponse.json(
       { error: "Failed to process refund" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

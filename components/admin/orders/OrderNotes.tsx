@@ -61,7 +61,10 @@ export default function OrderNotes({
         )}
 
         {notes.map((n) => (
-          <div key={n.id} className="border border-border-default rounded-md p-3">
+          <div
+            key={n.id}
+            className="border border-border-default rounded-md p-3"
+          >
             <div className="text-sm">{n.metadata?.message}</div>
             <div className="text-xs text-text-secondary mt-1">
               {format(new Date(n.createdAt), "yyyy-MM-dd HH:mm")}

@@ -7,6 +7,9 @@ export async function recordAudit(input: AuditLogInput) {
   return logAuditEvent(input);
 }
 
-export async function triggerAlert(action: string, metadata?: Record<string, any>) {
+export async function triggerAlert(
+  action: string,
+  metadata?: Record<string, any>,
+) {
   return processAlert({ action, metadata });
 }

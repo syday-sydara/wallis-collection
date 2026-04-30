@@ -21,7 +21,7 @@ export function Card({ padding = "md", className, ...props }: CardProps) {
       className={cn(
         "rounded-lg border border-border bg-surface shadow-sm",
         paddingClasses[padding],
-        className
+        className,
       )}
       {...props}
     />

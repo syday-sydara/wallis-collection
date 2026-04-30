@@ -38,14 +38,14 @@ export default function PaymentTable({ payments }: { payments: any[] }) {
                     p.status === "SUCCESS"
                       ? "bg-success/15 text-success"
                       : p.status === "FAILED"
-                      ? "bg-danger/15 text-danger"
-                      : p.status === "REVIEW"
-                      ? "bg-orange-500/15 text-orange-500"
-                      : p.status === "CHARGEBACK"
-                      ? "bg-danger/15 text-danger"
-                      : p.status === "REFUNDED"
-                      ? "bg-success/15 text-success"
-                      : "bg-surface-muted text-text-secondary"
+                        ? "bg-danger/15 text-danger"
+                        : p.status === "REVIEW"
+                          ? "bg-orange-500/15 text-orange-500"
+                          : p.status === "CHARGEBACK"
+                            ? "bg-danger/15 text-danger"
+                            : p.status === "REFUNDED"
+                              ? "bg-success/15 text-success"
+                              : "bg-surface-muted text-text-secondary"
                   }`}
                 >
                   {p.status}
@@ -63,8 +63,8 @@ export default function PaymentTable({ payments }: { payments: any[] }) {
                       p.fraudScore > 70
                         ? "text-danger font-semibold"
                         : p.fraudScore > 40
-                        ? "text-warning font-semibold"
-                        : "text-success font-semibold"
+                          ? "text-warning font-semibold"
+                          : "text-success font-semibold"
                     }
                   >
                     {p.fraudScore}

@@ -2,10 +2,7 @@
 import { verifyPaystackReference } from "./providers/paystack";
 import { verifyMonnifyReference } from "./providers/monnify";
 
-import type {
-  PaymentProvider,
-  PaymentVerificationResult,
-} from "./types";
+import type { PaymentProvider, PaymentVerificationResult } from "./types";
 
 import { logFraudSignal } from "@/lib/security/fraud";
 import { logSecurityEvent } from "@/lib/security/logSecurityEvent";
@@ -18,7 +15,7 @@ interface VerificationOptions {
 export async function verifyPayment(
   provider: PaymentProvider,
   reference: string,
-  options: VerificationOptions = {}
+  options: VerificationOptions = {},
 ): Promise<PaymentVerificationResult> {
   const normalized = provider.toLowerCase() as PaymentProvider;
   const { rawPayload, source } = options;

@@ -17,7 +17,10 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ items: products, nextCursor });
   } catch (err) {
-    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch products" },
+      { status: 500 },
+    );
   }
 }
 
@@ -29,13 +32,16 @@ export async function POST(req: Request) {
     if (!name || !slug || basePrice == null) {
       return NextResponse.json(
         { error: "name, slug, and basePrice are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const existing = await prisma.product.findUnique({ where: { slug } });
     if (existing) {
-      return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
+      return NextResponse.json(
+        { error: "Slug already exists" },
+        { status: 409 },
+      );
     }
 
     const product = await prisma.product.create({
@@ -50,6 +56,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json(product);
   } catch (err) {
-    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to create product" },
+      { status: 500 },
+    );
   }
 }

@@ -87,15 +87,15 @@ export default function AddToCartButton({
           loading
             ? "Adding to cart"
             : isBlocked
-            ? "Select a variant first"
-            : "Add to cart"
+              ? "Select a variant first"
+              : "Add to cart"
         }
         className={cn(
           "w-full rounded-md bg-primary py-3 font-medium text-primary-foreground",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           "hover:bg-primary-hover active:bg-primary-active active:scale-press",
           "transition-all animate-fadeIn-fast min-h-touch",
-          className
+          className,
         )}
       >
         {loading ? (

@@ -98,7 +98,7 @@ export class WhatsAppTransport {
             },
             body: JSON.stringify({ ...body, to }),
           }),
-          WHATSAPP_TIMEOUT_MS
+          WHATSAPP_TIMEOUT_MS,
         );
 
         // ---------------------------

@@ -21,7 +21,7 @@ export async function handleWhatsAppInteraction(event: any) {
   if (await isUserInCooldown(from)) {
     return WhatsAppService.sendText(
       from,
-      "You're sending too many messages. Please wait a moment before trying again."
+      "You're sending too many messages. Please wait a moment before trying again.",
     );
   }
 
@@ -33,7 +33,7 @@ export async function handleWhatsAppInteraction(event: any) {
   if (isHighFrequency) {
     return WhatsAppService.sendText(
       from,
-      "You're messaging too quickly. Please slow down."
+      "You're messaging too quickly. Please slow down.",
     );
   }
 
@@ -61,7 +61,7 @@ export async function handleWhatsAppInteraction(event: any) {
   if (button === "onboard_faq") {
     return WhatsAppService.sendText(
       from,
-      "Visit our FAQ page:\nhttps://example.com/faq"
+      "Visit our FAQ page:\nhttps://example.com/faq",
     );
   }
 
@@ -86,12 +86,12 @@ export async function handleWhatsAppInteraction(event: any) {
   if (isSuspicious) {
     return WhatsAppService.sendText(
       from,
-      "I'm having trouble understanding your messages. Please use the menu options."
+      "I'm having trouble understanding your messages. Please use the menu options.",
     );
   }
 
   return WhatsAppService.sendText(
     from,
-    "I didn't understand that. Please choose an option from the menu."
+    "I didn't understand that. Please choose an option from the menu.",
   );
 }

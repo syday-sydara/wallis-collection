@@ -3,12 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { processPaymentEvent } from "@/lib/payments/processor";
 import {
   verifyMonnifyWebhookSignature,
-  extractMonnifyReference
+  extractMonnifyReference,
 } from "@/lib/payments/providers/monnify";
 
 import {
   handleRefundEvent,
-  handleChargebackEvent
+  handleChargebackEvent,
 } from "@/lib/payments/events";
 
 import { logFraudSignal } from "@/lib/security/fraud";
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     await logFraudSignal({
       type: "WEBHOOK_SIGNATURE_MISMATCH",
       provider: "monnify",
-      metadata: { truncatedBody: rawBody.slice(0, 500) }
+      metadata: { truncatedBody: rawBody.slice(0, 500) },
     });
 
     return NextResponse.json({ ok: false }, { status: 400 });
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     await logFraudSignal({
       type: "WEBHOOK_UNKNOWN_ORDER",
       provider: "monnify",
-      metadata: { body }
+      metadata: { body },
     });
 
     return NextResponse.json({ ok: false }, { status: 200 });
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       provider: "monnify",
       reference,
       amount,
-      raw: body
+      raw: body,
     });
 
     return NextResponse.json(result, { status: 200 });
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       reference,
       amount,
       reason: eventData?.reason || eventType,
-      raw: body
+      raw: body,
     });
 
     return NextResponse.json(result, { status: 200 });
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       provider: "monnify",
       reference,
       rawPayload: body,
-      source: "webhook"
+      source: "webhook",
     });
 
     return NextResponse.json(result, { status: 200 });
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
     await logFraudSignal({
       type: "WEBHOOK_PROCESSING_ERROR",
       provider: "monnify",
-      metadata: { message: err?.message }
+      metadata: { message: err?.message },
     });
 
     return NextResponse.json({ ok: false }, { status: 200 });

@@ -29,7 +29,7 @@ export interface SessionUser {
 }
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  SUPER_ADMIN: [...Object.keys(PERMISSIONS) as Permission[]],
+  SUPER_ADMIN: [...(Object.keys(PERMISSIONS) as Permission[])],
   ADMIN: [
     "VIEW_ADMIN",
     "VIEW_SECURITY_CENTER",
@@ -61,14 +61,10 @@ export function isRole(value: string): value is Role {
 
 export function normalizeRoles(role: string | string[]): Role[] {
   const roles = Array.isArray(role) ? role : [role];
-  return roles
-    .map((r) => r.toUpperCase())
-    .filter(isRole);
+  return roles.map((r) => r.toUpperCase()).filter(isRole);
 }
 
-export function normalizePermissions(
-  perms?: string[]
-): Permission[] {
+export function normalizePermissions(perms?: string[]): Permission[] {
   if (!perms) return [];
   return perms.filter((p): p is Permission => p in PERMISSIONS);
 }
@@ -79,7 +75,7 @@ export function normalizePermissions(
 
 export function hasPermission(
   user: SessionUser | null,
-  perm: Permission
+  perm: Permission,
 ): boolean {
   if (!user) return false;
 
@@ -94,9 +90,7 @@ export function hasPermission(
   const direct = normalizePermissions(user.permissions);
   if (direct.includes(perm)) return true;
 
-  return roles.some((role) =>
-    ROLE_PERMISSIONS[role]?.includes(perm)
-  );
+  return roles.some((role) => ROLE_PERMISSIONS[role]?.includes(perm));
 }
 
 /* -------------------------------------------------- */
@@ -105,14 +99,14 @@ export function hasPermission(
 
 export function hasAllPermissions(
   user: SessionUser | null,
-  perms: Permission[]
+  perms: Permission[],
 ): boolean {
   return perms.every((p) => hasPermission(user, p));
 }
 
 export function hasAnyPermission(
   user: SessionUser | null,
-  perms: Permission[]
+  perms: Permission[],
 ): boolean {
   return perms.some((p) => hasPermission(user, p));
 }
@@ -127,7 +121,7 @@ export function getUserPermissions(user: SessionUser | null): Permission[] {
   const roles = normalizeRoles(user.role);
 
   if (roles.includes("SUPER_ADMIN")) {
-    return [...Object.keys(PERMISSIONS) as Permission[]];
+    return [...(Object.keys(PERMISSIONS) as Permission[])];
   }
 
   const rolePerms = roles.flatMap((r) => ROLE_PERMISSIONS[r] ?? []);

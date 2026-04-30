@@ -15,8 +15,16 @@ export async function POST(req: NextRequest) {
 
     // Validate items
     for (const item of items) {
-      if (!item.productId || !item.variantId || !item.name || typeof item.quantity !== 'number') {
-        return NextResponse.json({ error: "Invalid item format" }, { status: 400 });
+      if (
+        !item.productId ||
+        !item.variantId ||
+        !item.name ||
+        typeof item.quantity !== "number"
+      ) {
+        return NextResponse.json(
+          { error: "Invalid item format" },
+          { status: 400 },
+        );
       }
     }
 
@@ -26,7 +34,7 @@ export async function POST(req: NextRequest) {
       update: {
         items: {
           deleteMany: {}, // Clear existing items
-          create: items.map(item => ({
+          create: items.map((item) => ({
             productId: item.productId,
             variantId: item.variantId,
             name: item.name,
@@ -41,7 +49,7 @@ export async function POST(req: NextRequest) {
       create: {
         userId: user.id,
         items: {
-          create: items.map(item => ({
+          create: items.map((item) => ({
             productId: item.productId,
             variantId: item.variantId,
             name: item.name,
@@ -67,7 +75,6 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, cart });
-
   } catch (error) {
     console.error("Cart sync error:", error);
     return NextResponse.json({ error: "Failed to sync cart" }, { status: 500 });
@@ -82,7 +89,7 @@ export async function GET() {
       where: { userId: user.id },
       include: {
         items: {
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: "asc" },
         },
       },
     });
@@ -92,7 +99,7 @@ export async function GET() {
     }
 
     // Convert to client format
-    const items = cart.items.map(item => ({
+    const items = cart.items.map((item) => ({
       id: item.id,
       productId: item.productId,
       name: item.name,
@@ -103,9 +110,11 @@ export async function GET() {
     }));
 
     return NextResponse.json({ items });
-
   } catch (error) {
     console.error("Cart fetch error:", error);
-    return NextResponse.json({ error: "Failed to fetch cart" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch cart" },
+      { status: 500 },
+    );
   }
 }

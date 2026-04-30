@@ -4,7 +4,7 @@ import Link from "next/link";
 async function fetchRecentEvents() {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/api/security/events?limit=10`,
-    { cache: "no-store" }
+    { cache: "no-store" },
   );
 
   if (!res.ok) return { events: [] };

@@ -36,6 +36,6 @@ export async function sendTrackingLink(to: string, orderId: string) {
 
   return WhatsAppService.sendText(
     to,
-    `Here is your tracking link:\n${process.env.NEXT_PUBLIC_APP_URL}/track/${order.trackingToken}`
+    `Here is your tracking link:\n${process.env.NEXT_PUBLIC_APP_URL}/track/${order.trackingToken}`,
   );
 }

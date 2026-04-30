@@ -2,11 +2,8 @@
 
 import { v2 as cloudinary } from "cloudinary";
 
-const {
-  CLOUDINARY_CLOUD_NAME,
-  CLOUDINARY_API_KEY,
-  CLOUDINARY_API_SECRET,
-} = process.env;
+const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } =
+  process.env;
 
 /* -------------------------------------------------- */
 /* Safe initialization                                 */
@@ -19,7 +16,10 @@ const missing = [
 ].filter(([_, v]) => !v);
 
 if (missing.length > 0) {
-  console.error("❌ Cloudinary config missing:", missing.map(([k]) => k));
+  console.error(
+    "❌ Cloudinary config missing:",
+    missing.map(([k]) => k),
+  );
   throw new Error("Cloudinary environment variables missing");
 }
 
@@ -69,7 +69,7 @@ export function generateSignedUploadParams(folder = "uploads") {
 
   const signature = cloudinary.utils.api_sign_request(
     { timestamp, folder },
-    CLOUDINARY_API_SECRET!
+    CLOUDINARY_API_SECRET!,
   );
 
   return {

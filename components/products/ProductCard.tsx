@@ -22,7 +22,16 @@ type Props = {
 };
 
 export default function ProductCard({ product }: Props) {
-  const { id, slug, name, minPrice, maxPrice, inStock, discountPercent, images } = product;
+  const {
+    id,
+    slug,
+    name,
+    minPrice,
+    maxPrice,
+    inStock,
+    discountPercent,
+    images,
+  } = product;
   const image = images?.[0]?.url ?? "/placeholder.png";
   const isRange = minPrice !== maxPrice;
 

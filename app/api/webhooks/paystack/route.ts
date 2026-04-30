@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     await logFraudSignal({
       type: "WEBHOOK_SIGNATURE_MISMATCH",
       provider: "paystack",
-      metadata: { truncatedBody: rawBody.slice(0, 500) }
+      metadata: { truncatedBody: rawBody.slice(0, 500) },
     });
 
     return NextResponse.json({ ok: false }, { status: 400 });
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     await logFraudSignal({
       type: "WEBHOOK_UNKNOWN_ORDER",
       provider: "paystack",
-      metadata: { body }
+      metadata: { body },
     });
 
     return NextResponse.json({ ok: false }, { status: 200 });
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       provider: "paystack",
       reference,
       rawPayload: body,
-      source: "webhook"
+      source: "webhook",
     });
 
     return NextResponse.json(result, { status: 200 });
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     await logFraudSignal({
       type: "WEBHOOK_PROCESSING_ERROR",
       provider: "paystack",
-      metadata: { message: err?.message }
+      metadata: { message: err?.message },
     });
 
     return NextResponse.json({ ok: false }, { status: 200 });

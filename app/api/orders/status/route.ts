@@ -6,7 +6,7 @@ import { canTransition, type OrderStatus } from "@/lib/orders/orderStatus";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const id = params.id;
   const body = await req.json().catch(() => null);
@@ -28,7 +28,7 @@ export async function POST(
   if (!canTransition(order.orderStatus as OrderStatus, nextStatus)) {
     return NextResponse.json(
       { error: "Invalid status transition" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

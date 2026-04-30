@@ -11,7 +11,10 @@ export async function POST(req, { params }) {
     const file = formData.get("file");
 
     if (!file || !(file instanceof File)) {
-      return NextResponse.json({ error: "A valid file is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "A valid file is required" },
+        { status: 400 },
+      );
     }
 
     const existing = await prisma.productImage.findUnique({
@@ -23,7 +26,10 @@ export async function POST(req, { params }) {
     }
 
     if (existing.productId !== productId) {
-      return NextResponse.json({ error: "Image does not belong to this product" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Image does not belong to this product" },
+        { status: 400 },
+      );
     }
 
     // Upload new image
@@ -48,6 +54,9 @@ export async function POST(req, { params }) {
     return NextResponse.json(updated);
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Failed to replace image" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to replace image" },
+      { status: 500 },
+    );
   }
 }

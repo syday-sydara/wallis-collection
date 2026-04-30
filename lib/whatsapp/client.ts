@@ -12,7 +12,7 @@ import {
 export class WhatsAppClient {
   constructor(
     private readonly to: string,
-    private readonly baseTags: string[] = []
+    private readonly baseTags: string[] = [],
   ) {}
 
   text(message: string, previewUrl = false, tags: string[] = []) {
@@ -27,7 +27,7 @@ export class WhatsAppClient {
   buttons(
     message: string,
     buttons: { id: string; title: string }[],
-    tags: string[] = []
+    tags: string[] = [],
   ) {
     return sendWhatsApp({
       to: this.to,
@@ -44,7 +44,7 @@ export class WhatsAppClient {
       title: string;
       rows: { id: string; title: string; description?: string }[];
     }[],
-    tags: string[] = []
+    tags: string[] = [],
   ) {
     return sendWhatsApp({
       to: this.to,
@@ -67,7 +67,7 @@ export class WhatsAppClient {
     url: string,
     filename: string,
     caption?: string,
-    tags: string[] = []
+    tags: string[] = [],
   ) {
     return sendWhatsApp({
       to: this.to,

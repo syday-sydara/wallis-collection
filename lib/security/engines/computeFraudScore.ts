@@ -6,7 +6,7 @@ export async function computeFraudScore(
     userId?: string | null;
     ip?: string | null;
     userAgent?: string | null;
-  }
+  },
 ) {
   const unique = Array.from(new Set(signals));
   const score = Math.min(100, unique.length * 10);

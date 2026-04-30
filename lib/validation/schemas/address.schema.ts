@@ -4,7 +4,7 @@ import { z } from "zod";
 export const AddressSchema = z.object({
   id: z.string(),
   userId: z.string().optional(),
-  user: z.string().optional(),
+  user: UserSchema.optional(),
   fullName: z.string(),
   phone: z.string(),
   line1: z.string(),

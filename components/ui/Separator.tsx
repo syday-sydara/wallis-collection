@@ -16,7 +16,7 @@ export function Separator({
       className={cn(
         "bg-border-subtle",
         orientation === "horizontal" ? "h-px w-full" : "w-px h-full",
-        className
+        className,
       )}
       {...props}
     />

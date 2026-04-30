@@ -77,13 +77,13 @@ export function AdminModalController({ children }: { children: ReactNode }) {
                   "h-full max-w-none sm:max-w-2xl sm:h-auto rounded-none sm:rounded-md animate-slide-up":
                     size === "full",
                 },
-                "p-4 sm:p-5 space-y-3"
+                "p-4 sm:p-5 space-y-3",
               )}
             >
               {content}
             </div>
           </div>,
-          document.body
+          document.body,
         )}
     </ModalContext.Provider>
   );

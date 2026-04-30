@@ -148,8 +148,8 @@ export default function OrderDetail({
                       p.fraudScore > 70
                         ? "text-danger"
                         : p.fraudScore > 40
-                        ? "text-warning"
-                        : "text-success"
+                          ? "text-warning"
+                          : "text-success"
                     }
                   >
                     {p.fraudScore}

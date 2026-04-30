@@ -29,7 +29,7 @@ export default function AdminMobileSidebar({ open, onClose }) {
       <aside
         className={clsx(
           "fixed top-0 left-0 h-full w-64 bg-[rgb(var(--surface-card))] border-r border-border-default z-[var(--z-modal)] p-4 transition-transform lg:hidden",
-          open ? "translate-x-0" : "-translate-x-full"
+          open ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="text-xl font-semibold mb-6">Admin</div>
@@ -44,7 +44,7 @@ export default function AdminMobileSidebar({ open, onClose }) {
                 "px-3 py-2 rounded-md text-sm transition",
                 pathname.startsWith(link.href)
                   ? "bg-primary-soft text-[rgb(var(--color-primary))]"
-                  : "text-text-secondary hover:bg-[rgb(var(--surface-muted))]"
+                  : "text-text-secondary hover:bg-[rgb(var(--surface-muted))]",
               )}
             >
               {link.label}

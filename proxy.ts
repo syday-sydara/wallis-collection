@@ -8,12 +8,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { trackPermissionDenied } from "@/lib/security/rate-limit/permissionRate";
 import { maybeSendUnauthorizedAlert } from "@/lib/security/rate-limit/permissionAlerts";
 
-import {
-  serviceContext,
-  log,
-  metricsWithContext,
-  startSpan,
-} from "@/lib/core";
+import { serviceContext, log, metricsWithContext, startSpan } from "@/lib/core";
 
 /* -------------------------------------------------- */
 /* Helpers                                             */
@@ -181,14 +176,14 @@ export async function proxy(req: NextRequest) {
 
           if (allowed) {
             metricsWithContext.increment(
-              "middleware.proxy.security_center.allowed"
+              "middleware.proxy.security_center.allowed",
             );
             span.end({ reason: "security_center_allowed" });
             return NextResponse.next();
           }
 
           metricsWithContext.increment(
-            "middleware.proxy.security_center.denied"
+            "middleware.proxy.security_center.denied",
           );
 
           const rate = await trackPermissionDenied(ip);
@@ -242,7 +237,7 @@ export async function proxy(req: NextRequest) {
 
         return redirectToHome(req);
       }
-    }
+    },
   );
 }
 

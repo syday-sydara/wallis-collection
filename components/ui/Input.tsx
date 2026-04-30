@@ -21,15 +21,17 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         ref={ref}
         className={cn(
           "flex w-full rounded-md border bg-surface shadow-sm transition-all placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface",
-          error ? "border-danger focus:ring-danger" : "border-border-subtle focus:ring-primary",
+          error
+            ? "border-danger focus:ring-danger"
+            : "border-border-subtle focus:ring-primary",
           sizeClasses[size],
           "disabled:cursor-not-allowed disabled:opacity-50",
-          className
+          className,
         )}
         {...props}
       />
     );
-  }
+  },
 );
 
 Input.displayName = "Input";

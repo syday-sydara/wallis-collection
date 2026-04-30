@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(
   req: Request,
-  { params }: { params: { orderId: string } }
+  { params }: { params: { orderId: string } },
 ) {
   try {
     const { carrier, tracking } = await req.json();
@@ -15,14 +15,14 @@ export async function POST(
     if (!carrier?.trim()) {
       return NextResponse.json(
         { error: "Carrier is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!tracking?.trim()) {
       return NextResponse.json(
         { error: "Tracking number is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -35,10 +35,7 @@ export async function POST(
     });
 
     if (!order) {
-      return NextResponse.json(
-        { error: "Order not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
     // -----------------------------
@@ -81,7 +78,7 @@ export async function POST(
 
     return NextResponse.json(
       { error: "Failed to create fulfillment" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

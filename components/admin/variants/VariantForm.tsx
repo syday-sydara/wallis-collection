@@ -93,9 +93,7 @@ export default function VariantForm({
           type="number"
           className="input w-full"
           value={form.price}
-          onChange={(e) =>
-            setForm({ ...form, price: Number(e.target.value) })
-          }
+          onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
         />
       </div>
 
@@ -116,9 +114,7 @@ export default function VariantForm({
           type="number"
           className="input w-full"
           value={form.stock}
-          onChange={(e) =>
-            setForm({ ...form, stock: Number(e.target.value) })
-          }
+          onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
         />
       </div>
 
@@ -133,11 +129,7 @@ export default function VariantForm({
           </button>
         )}
 
-        <button
-          onClick={save}
-          disabled={isPending}
-          className="btn btn-primary"
-        >
+        <button onClick={save} disabled={isPending} className="btn btn-primary">
           {isPending ? "Saving…" : "Save"}
         </button>
       </AdminModalFooter>

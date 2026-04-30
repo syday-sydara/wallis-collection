@@ -67,8 +67,7 @@ export async function sendOrderEmail(input: z.infer<typeof EmailSchema>) {
   }
 
   const safeFrom =
-    from ??
-    `Wallis Collection <orders@${process.env.EMAIL_DOMAIN}>`;
+    from ?? `Wallis Collection <orders@${process.env.EMAIL_DOMAIN}>`;
 
   try {
     const result = await resend.emails.send({

@@ -9,8 +9,8 @@ import { metricsWithContext } from "@/lib/core/metrics-context";
 import { withSpan } from "@/lib/core/with-span";
 
 const WINDOW_MS = 60_000;
-const MAX_MESSAGES_PER_WINDOW = 20;       // Nigeria: allow retries due to network delays
-const MAX_NOT_FOUND_PER_WINDOW = 5;       // Nigeria: invalid commands often mean confusion, not abuse
+const MAX_MESSAGES_PER_WINDOW = 20; // Nigeria: allow retries due to network delays
+const MAX_NOT_FOUND_PER_WINDOW = 5; // Nigeria: invalid commands often mean confusion, not abuse
 const COOLDOWN_MS = 2 * 60_000;
 
 type AbuseRecord = {
@@ -68,7 +68,10 @@ export async function trackWhatsAppMessage(from: string) {
     if (isHighFrequency && !rec.cooldownUntil) {
       rec.cooldownUntil = Date.now() + COOLDOWN_MS;
 
-      log.warn("WhatsApp abuse detected: high frequency", { from, count: rec.count });
+      log.warn("WhatsApp abuse detected: high frequency", {
+        from,
+        count: rec.count,
+      });
 
       metricsWithContext.increment("whatsapp.abuse.high_frequency");
 

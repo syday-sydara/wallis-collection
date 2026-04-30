@@ -80,7 +80,8 @@ export function WhatsAppFAB() {
           {loading ? "Opening WhatsApp..." : "Checkout via WhatsApp"}
         </span>
         <span className="text-xs opacity-90">
-          {formatCurrency(subtotal)} • {items.length} item{items.length > 1 ? "s" : ""}
+          {formatCurrency(subtotal)} • {items.length} item
+          {items.length > 1 ? "s" : ""}
         </span>
       </div>
 

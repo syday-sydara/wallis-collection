@@ -82,11 +82,7 @@ export function OrderStatusCard({ orderId, currentStatus }: Props) {
         </div>
       )}
 
-      {error && (
-        <p className="text-xs text-danger mt-1">
-          {error}
-        </p>
-      )}
+      {error && <p className="text-xs text-danger mt-1">{error}</p>}
     </div>
   );
 }

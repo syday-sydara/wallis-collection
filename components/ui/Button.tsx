@@ -15,8 +15,10 @@ export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const variantClasses: Record<Variant, string> = {
-  primary: "bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-active",
-  outline: "border border-border-subtle bg-surface text-text hover:bg-surface-muted",
+  primary:
+    "bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-active",
+  outline:
+    "border border-border-subtle bg-surface text-text hover:bg-surface-muted",
   ghost: "bg-transparent text-text hover:bg-surface-muted",
 };
 
@@ -27,7 +29,19 @@ const sizeClasses: Record<Size, string> = {
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ asChild, variant = "primary", size = "md", fullWidth, className, type, disabled, ...props }, ref) => {
+  (
+    {
+      asChild,
+      variant = "primary",
+      size = "md",
+      fullWidth,
+      className,
+      type,
+      disabled,
+      ...props
+    },
+    ref,
+  ) => {
     const Comp = asChild ? Slot : "button";
 
     return (
@@ -40,13 +54,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           variantClasses[variant],
           sizeClasses[size],
           fullWidth && "w-full",
-          className
+          className,
         )}
         disabled={disabled}
         {...props}
       />
     );
-  }
+  },
 );
 
 Button.displayName = "Button";

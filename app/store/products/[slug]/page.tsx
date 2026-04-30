@@ -28,7 +28,7 @@ export default function ProductPage({ product }) {
     .join("\n");
 
   const whatsappLink = `https://wa.me/2348000000001?text=${encodeURIComponent(
-    whatsappMessage
+    whatsappMessage,
   )}`;
 
   return (
@@ -80,7 +80,7 @@ export default function ProductPage({ product }) {
                       "px-3 py-2 rounded-md border text-sm active:scale-95 transition",
                       isActive
                         ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-surface border-border text-text"
+                        : "bg-surface border-border text-text",
                     )}
                   >
                     {label}

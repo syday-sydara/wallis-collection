@@ -16,7 +16,7 @@ export async function sendOrderSelection(to: string, phone: string) {
   if (!orders.length) {
     return WhatsAppService.sendText(
       to,
-      "I couldn't find any orders for that phone number."
+      "I couldn't find any orders for that phone number.",
     );
   }
 
@@ -36,7 +36,7 @@ export async function sendOrderSelection(to: string, phone: string) {
 
     return WhatsAppService.sendText(
       to,
-      `I found your order #${order.id.slice(0, 8)}.\nTrack it here:\n${process.env.NEXT_PUBLIC_APP_URL}/track/${order.trackingToken}`
+      `I found your order #${order.id.slice(0, 8)}.\nTrack it here:\n${process.env.NEXT_PUBLIC_APP_URL}/track/${order.trackingToken}`,
     );
   }
 

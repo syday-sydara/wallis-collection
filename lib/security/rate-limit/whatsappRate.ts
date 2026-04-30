@@ -36,10 +36,7 @@ export async function logWhatsAppRateLimit(from: string) {
 
   const { count, isHighFrequency, windowMs } = result;
 
-  const severity =
-    count >= 40 ? "high" :
-    count >= 25 ? "medium" :
-    "low";
+  const severity = count >= 40 ? "high" : count >= 25 ? "medium" : "low";
 
   metricsWithContext.increment(`whatsapp.rate_limit.severity.${severity}`);
 

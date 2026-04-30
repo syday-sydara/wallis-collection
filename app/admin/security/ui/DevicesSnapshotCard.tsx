@@ -3,7 +3,7 @@ import { AdminCard } from "@/components/admin/ui/AdminCard";
 async function fetchDevices() {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/api/security/devices`,
-    { cache: "no-store" }
+    { cache: "no-store" },
   );
 
   if (!res.ok) {
@@ -33,9 +33,7 @@ export default async function DevicesSnapshotCard() {
         {typeof trend === "number" && (
           <p
             className={
-              trend >= 0
-                ? "text-xs text-success"
-                : "text-xs text-danger"
+              trend >= 0 ? "text-xs text-success" : "text-xs text-danger"
             }
           >
             {trend >= 0 ? "+" : ""}

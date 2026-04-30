@@ -15,11 +15,14 @@ type Props = {
   onChange: (variant: Variant) => void;
 };
 
-export default function VariantSelector({ variants, selected, onChange }: Props) {
+export default function VariantSelector({
+  variants,
+  selected,
+  onChange,
+}: Props) {
   if (!variants?.length) return null;
 
-  const formatCurrency = (value: number) =>
-    `₦${value.toLocaleString("en-NG")}`;
+  const formatCurrency = (value: number) => `₦${value.toLocaleString("en-NG")}`;
 
   function handleKeyDown(e: React.KeyboardEvent, index: number) {
     if (e.key === "ArrowRight" && index < variants.length - 1) {
@@ -55,7 +58,7 @@ export default function VariantSelector({ variants, selected, onChange }: Props)
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface active:scale-press",
                 isSelected
                   ? "border-primary bg-primary/10 text-text shadow-sm"
-                  : "border-border bg-surface hover:border-primary"
+                  : "border-border bg-surface hover:border-primary",
               )}
             >
               <span>{v.name}</span>

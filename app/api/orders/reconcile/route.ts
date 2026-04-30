@@ -5,7 +5,7 @@ import { reconcilePendingPayments } from "@/lib/payments/reconciliation";
 
 function timeout(ms: number) {
   return new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("Timeout")), ms)
+    setTimeout(() => reject(new Error("Timeout")), ms),
   );
 }
 
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     console.error("CRON_SECRET is not set");
     return NextResponse.json(
       { error: "Server misconfiguration" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       { error: "Reconciliation failed", reason: err.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

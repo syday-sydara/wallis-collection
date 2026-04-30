@@ -37,11 +37,13 @@ export default function ProductsPage() {
   }, []);
 
   // Fetch wrapper
-  async function fetchFromApi(p: ProductListParams): Promise<ProductListResult> {
+  async function fetchFromApi(
+    p: ProductListParams,
+  ): Promise<ProductListResult> {
     const query = new URLSearchParams(
       Object.entries(p)
         .filter(([_, v]) => v !== undefined && v !== null)
-        .map(([k, v]) => [k, String(v)])
+        .map(([k, v]) => [k, String(v)]),
     );
 
     const res = await fetch(`/api/products?${query.toString()}`);
@@ -98,7 +100,7 @@ export default function ProductsPage() {
         setLoadingMore(false);
       }
     }, 150),
-    [nextCursor, loadingMore, params]
+    [nextCursor, loadingMore, params],
   );
 
   // Infinite scroll observer
@@ -109,7 +111,7 @@ export default function ProductsPage() {
       (entries) => {
         if (entries[0].isIntersecting) loadMore();
       },
-      { rootMargin: "200px" }
+      { rootMargin: "200px" },
     );
 
     observer.observe(loadMoreRef.current);
@@ -144,7 +146,9 @@ export default function ProductsPage() {
           ref={loadMoreRef}
           className="text-center text-sm text-text-muted pb-safe"
         >
-          {loadingMore ? "Loading more products..." : "Scroll down to load more"}
+          {loadingMore
+            ? "Loading more products..."
+            : "Scroll down to load more"}
         </div>
       )}
 

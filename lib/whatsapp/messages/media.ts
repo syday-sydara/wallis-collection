@@ -39,7 +39,7 @@ export type WhatsAppMediaMessage =
 
 export function buildImageMessage(
   url: string,
-  caption?: string
+  caption?: string,
 ): WhatsAppImageMessage {
   return {
     messaging_product: "whatsapp",
@@ -53,7 +53,7 @@ export function buildImageMessage(
 
 export function buildVideoMessage(
   url: string,
-  caption?: string
+  caption?: string,
 ): WhatsAppVideoMessage {
   return {
     messaging_product: "whatsapp",
@@ -76,7 +76,7 @@ export function buildAudioMessage(url: string): WhatsAppAudioMessage {
 export function buildDocumentMessage(
   url: string,
   filename?: string,
-  caption?: string
+  caption?: string,
 ): WhatsAppDocumentMessage {
   return {
     messaging_product: "whatsapp",

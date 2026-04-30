@@ -4,9 +4,9 @@ import { z } from "zod";
 export const OrderItemSchema = z.object({
   id: z.string(),
   orderId: z.string(),
-  order: z.string(),
+  order: OrderSchema,
   variantId: z.string(),
-  variant: z.string(),
+  variant: ProductVariantSchema,
   name: z.string(),
   image: z.string().optional(),
   attributes: z.any().optional(),

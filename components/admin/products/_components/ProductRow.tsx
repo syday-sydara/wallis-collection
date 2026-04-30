@@ -7,7 +7,11 @@ import admin from "@/lib/admin/client";
 import { toast } from "../ui/toast/AdminToastProvider";
 import type { AdminProductSummary } from "@/lib/products/types";
 
-export default function ProductRow({ product }: { product: AdminProductSummary }) {
+export default function ProductRow({
+  product,
+}: {
+  product: AdminProductSummary;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -19,7 +23,7 @@ export default function ProductRow({ product }: { product: AdminProductSummary }
         });
 
         toast.success(
-          product.isArchived ? "Product restored" : "Product archived"
+          product.isArchived ? "Product restored" : "Product archived",
         );
 
         router.refresh();
@@ -38,9 +42,7 @@ export default function ProductRow({ product }: { product: AdminProductSummary }
       <td className="p-3 text-text-secondary">{product.slug}</td>
 
       {/* Price */}
-      <td className="p-3">
-        ₦{(product.basePrice / 100).toFixed(2)}
-      </td>
+      <td className="p-3">₦{(product.basePrice / 100).toFixed(2)}</td>
 
       {/* Stock */}
       <td className="p-3">{product.stock}</td>
@@ -66,11 +68,7 @@ export default function ProductRow({ product }: { product: AdminProductSummary }
             product.isArchived ? "btn-success" : "btn-danger"
           }`}
         >
-          {isPending
-            ? "Saving…"
-            : product.isArchived
-            ? "Unarchive"
-            : "Archive"}
+          {isPending ? "Saving…" : product.isArchived ? "Unarchive" : "Archive"}
         </button>
       </td>
     </tr>

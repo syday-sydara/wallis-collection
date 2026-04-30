@@ -4,7 +4,7 @@ import { z } from "zod";
 export const SessionSchema = z.object({
   id: z.string(),
   userId: z.string(),
-  user: z.string(),
+  user: UserSchema,
   ipAddress: z.string().optional(),
   userAgent: z.string().optional(),
   deviceId: z.string().optional(),

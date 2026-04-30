@@ -1,6 +1,10 @@
 "use client";
 
-import { ORDER_STATUS_COLORS, ORDER_STATUS_LABELS, OrderStatus } from "@/lib/orders/orderStatus";
+import {
+  ORDER_STATUS_COLORS,
+  ORDER_STATUS_LABELS,
+  OrderStatus,
+} from "@/lib/orders/orderStatus";
 
 export default function StatusBadge({ status }: { status: OrderStatus }) {
   return (

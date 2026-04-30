@@ -8,7 +8,7 @@ export function useToast() {
 
   function toast(
     message: string,
-    options?: { title?: string; variant?: ToastVariant }
+    options?: { title?: string; variant?: ToastVariant },
   ) {
     showToast({ message, ...options });
   }

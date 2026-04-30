@@ -7,11 +7,17 @@ type DialogProps = {
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
-  title?: string;        // optional title for aria-labelledby
-  description?: string;  // optional description for aria-describedby
+  title?: string; // optional title for aria-labelledby
+  description?: string; // optional description for aria-describedby
 };
 
-export function Dialog({ open, onClose, children, title, description }: DialogProps) {
+export function Dialog({
+  open,
+  onClose,
+  children,
+  title,
+  description,
+}: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape key
@@ -32,7 +38,7 @@ export function Dialog({ open, onClose, children, title, description }: DialogPr
     const focusableSelectors =
       "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])";
     const elements = Array.from(
-      dialogRef.current.querySelectorAll<HTMLElement>(focusableSelectors)
+      dialogRef.current.querySelectorAll<HTMLElement>(focusableSelectors),
     );
 
     if (!elements.length) return;
@@ -82,7 +88,7 @@ export function Dialog({ open, onClose, children, title, description }: DialogPr
       <div
         ref={dialogRef}
         className={cn(
-          "bg-surface rounded-lg shadow-lg max-w-md w-full mx-4 p-4 animate-fadeIn-fast relative"
+          "bg-surface rounded-lg shadow-lg max-w-md w-full mx-4 p-4 animate-fadeIn-fast relative",
         )}
         onClick={(e) => e.stopPropagation()} // prevent closing on inner clicks
       >

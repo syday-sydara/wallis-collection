@@ -15,8 +15,8 @@ export function Skeleton({
     shape === "circle"
       ? "rounded-full"
       : shape === "rounded"
-      ? "rounded-md"
-      : "rounded-none"; // rect
+        ? "rounded-md"
+        : "rounded-none"; // rect
 
   return (
     <Component

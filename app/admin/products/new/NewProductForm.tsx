@@ -77,10 +77,7 @@ export default function NewProductForm() {
   return (
     <form onSubmit={submit} className="space-y-6 max-w-xl">
       {/* Name */}
-      <Field
-        label="Name"
-        error={errors.name}
-      >
+      <Field label="Name" error={errors.name}>
         <input
           className={clsx("input w-full", errors.name && "input-error")}
           value={form.name}
@@ -91,10 +88,7 @@ export default function NewProductForm() {
       </Field>
 
       {/* Slug */}
-      <Field
-        label="Slug"
-        error={errors.slug}
-      >
+      <Field label="Slug" error={errors.slug}>
         <input
           className={clsx("input w-full", errors.slug && "input-error")}
           value={form.slug}
@@ -120,10 +114,7 @@ export default function NewProductForm() {
       </Field>
 
       {/* Base Price */}
-      <Field
-        label="Base Price (₦)"
-        error={errors.basePrice}
-      >
+      <Field label="Base Price (₦)" error={errors.basePrice}>
         <input
           type="number"
           className={clsx("input w-full", errors.basePrice && "input-error")}
@@ -151,11 +142,7 @@ export default function NewProductForm() {
           Cancel
         </button>
 
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={disabled}
-        >
+        <button type="submit" className="btn btn-primary" disabled={disabled}>
           {isPending ? "Creating…" : "Create Product"}
         </button>
       </div>

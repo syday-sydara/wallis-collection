@@ -11,7 +11,7 @@ export interface WhatsAppTextMessage {
 
 export function buildTextMessage(
   body: string,
-  previewUrl: boolean = false
+  previewUrl: boolean = false,
 ): WhatsAppTextMessage {
   return {
     messaging_product: "whatsapp",

@@ -68,7 +68,7 @@ async function getSessionToken(): Promise<string | null> {
 /* -------------------------------------------------- */
 
 export async function parseSessionToken(
-  token: string | null
+  token: string | null,
 ): Promise<SessionUser | null> {
   if (!token || token.length > 4096) return null;
 
@@ -112,9 +112,9 @@ export async function getSessionFast(): Promise<SessionUser | null> {
 /* Hybrid session with optional DB refresh             */
 /* -------------------------------------------------- */
 
-export async function getSessionUser(
-  options?: { fresh?: boolean }
-): Promise<SessionUser | null> {
+export async function getSessionUser(options?: {
+  fresh?: boolean;
+}): Promise<SessionUser | null> {
   const token = await getSessionToken();
   const session = await parseSessionToken(token);
   if (!session) return null;

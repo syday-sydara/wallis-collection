@@ -18,7 +18,10 @@ export type TemplateComponent =
 
 export type TemplateParameter =
   | { type: "text"; text: string }
-  | { type: "currency"; currency: { fallback_value: string; code: string; amount_1000: number } }
+  | {
+      type: "currency";
+      currency: { fallback_value: string; code: string; amount_1000: number };
+    }
   | { type: "date_time"; date_time: { fallback_value: string } }
   | { type: "image"; image: { link: string } }
   | { type: "document"; document: { link: string; filename: string } }
@@ -37,7 +40,7 @@ export interface WhatsAppTemplateMessage {
 export function buildTemplateMessage(
   name: string,
   language: string,
-  components?: TemplateComponent[]
+  components?: TemplateComponent[],
 ): WhatsAppTemplateMessage {
   return {
     messaging_product: "whatsapp",

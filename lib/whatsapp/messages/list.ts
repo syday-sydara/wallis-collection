@@ -29,7 +29,7 @@ export interface WhatsAppListMessage {
 export function buildListMessage(
   content: { header?: string; body: string; footer?: string },
   buttonText: string,
-  sections: WhatsAppListSection[]
+  sections: WhatsAppListSection[],
 ): WhatsAppListMessage {
   const interactive: WhatsAppListMessage["interactive"] = {
     type: "list",

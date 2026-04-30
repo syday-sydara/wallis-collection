@@ -1,5 +1,8 @@
 import { emitSecurityEvent } from "@/lib/events/emitter";
-import { SECURITY_EVENT_TYPES, type SecurityEventType } from "@/lib/events/types";
+import {
+  SECURITY_EVENT_TYPES,
+  type SecurityEventType,
+} from "@/lib/events/types";
 
 type LogLevel = "info" | "warn" | "error";
 
@@ -27,7 +30,10 @@ function mapLevelToSeverity(level: LogLevel): "low" | "medium" | "high" {
 
 function normalizeContext(ctx?: string) {
   if (!ctx) return undefined;
-  return ctx.toLowerCase().replace(/[^a-z0-9_\-]/g, "").slice(0, 40);
+  return ctx
+    .toLowerCase()
+    .replace(/[^a-z0-9_\-]/g, "")
+    .slice(0, 40);
 }
 
 function clampSampleRate(rate: number) {
@@ -72,7 +78,7 @@ export async function logEvent(
     source?: string | null;
     ip?: string | null;
     userAgent?: string | null;
-  }
+  },
 ) {
   const {
     context,
@@ -124,8 +130,8 @@ export async function logEvent(
       (level === "warn"
         ? console.warn
         : level === "error"
-        ? console.error
-        : console.log);
+          ? console.error
+          : console.log);
 
     output(serialized);
   }
@@ -135,7 +141,7 @@ export async function logEvent(
   /* -------------------------------------------------- */
 
   const securityType: SecurityEventType = SECURITY_EVENT_TYPES.includes(
-    event as SecurityEventType
+    event as SecurityEventType,
   )
     ? (event as SecurityEventType)
     : "SYSTEM_ANOMALY";

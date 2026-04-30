@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         },
         cache: "no-store",
         signal: controller.signal,
-      }
+      },
     );
   } finally {
     clearTimeout(timeoutId);

@@ -66,11 +66,7 @@ export default function GeneralTab({ product }) {
         />
       </div>
 
-      <button
-        onClick={save}
-        disabled={isPending}
-        className="btn btn-primary"
-      >
+      <button onClick={save} disabled={isPending} className="btn btn-primary">
         {isPending ? "Saving…" : "Save Changes"}
       </button>
     </div>

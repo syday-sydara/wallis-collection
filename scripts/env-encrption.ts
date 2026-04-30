@@ -9,7 +9,7 @@ export function encryptEnv(envPath = ".env") {
   }
 
   const key = crypto.randomBytes(32); // 256-bit key
-  const iv = crypto.randomBytes(12);  // recommended for GCM
+  const iv = crypto.randomBytes(12); // recommended for GCM
 
   const cipher = crypto.createCipheriv(ALGO, key, iv);
 

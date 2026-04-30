@@ -97,7 +97,7 @@ function emit(event: AnalyticsEvent, options: AnalyticsOptions) {
 export function track(
   name: string,
   data: Record<string, any> = {},
-  options: AnalyticsOptions = {}
+  options: AnalyticsOptions = {},
 ) {
   if (typeof window === "undefined") return;
 
@@ -123,7 +123,7 @@ export function track(
 export function identify(
   userId: string,
   traits: Record<string, any> = {},
-  options: AnalyticsOptions = {}
+  options: AnalyticsOptions = {},
 ) {
   if (typeof window === "undefined") return;
 
@@ -144,7 +144,7 @@ export function identify(
 export function page(
   name: string,
   data: Record<string, any> = {},
-  options: AnalyticsOptions = {}
+  options: AnalyticsOptions = {},
 ) {
   if (typeof window === "undefined") return;
 

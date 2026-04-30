@@ -15,10 +15,7 @@ export function useConfirmModal() {
         <p className="text-sm text-text-muted py-2">{message}</p>
 
         <AdminModalFooter>
-          <button
-            onClick={modal.close}
-            className="btn btn-outline"
-          >
+          <button onClick={modal.close} className="btn btn-outline">
             Cancel
           </button>
 
@@ -33,7 +30,7 @@ export function useConfirmModal() {
           </button>
         </AdminModalFooter>
       </div>,
-      { size: "sm" }
+      { size: "sm" },
     );
   }
 

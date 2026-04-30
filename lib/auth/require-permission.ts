@@ -63,7 +63,7 @@ export async function requirePermission(
     userAgent?: string | null;
     requestId?: string | null;
     source?: string | null;
-  }
+  },
 ) {
   const ip = normalizeIp(req?.ip ?? null);
   const userAgent = req?.userAgent ?? null;

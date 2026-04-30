@@ -29,10 +29,7 @@ export function normalizeWhatsAppPhone(phone: string): string {
  * generateWhatsAppLink("+234 801 234 5678", "Hello!")
  * // → "https://wa.me/2348012345678?text=Hello%21"
  */
-export function generateWhatsAppLink(
-  phone: string,
-  message?: string
-): string {
+export function generateWhatsAppLink(phone: string, message?: string): string {
   const normalized = normalizeWhatsAppPhone(phone);
   const base = `https://wa.me/${normalized}`;
 

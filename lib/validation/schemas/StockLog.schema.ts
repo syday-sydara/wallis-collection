@@ -4,7 +4,7 @@ import { z } from "zod";
 export const StockLogSchema = z.object({
   id: z.string(),
   variantId: z.string(),
-  variant: z.string(),
+  variant: ProductVariantSchema,
   change: z.number(),
   reason: z.string(),
   createdAt: z.date(),

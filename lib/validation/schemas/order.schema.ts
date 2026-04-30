@@ -56,9 +56,9 @@ export const OrderSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   userId: z.string().optional(),
-  user: z.string().optional(),
-  items: z.array(z.string()),
-  payments: z.array(z.string()),
-  fulfillments: z.array(z.string()),
+  user: UserSchema.optional(),
+  items: z.array(OrderItemSchema),
+  payments: z.array(PaymentSchema),
+  fulfillments: z.array(FulfillmentSchema),
 });
 // === AUTO-GENERATED END ===

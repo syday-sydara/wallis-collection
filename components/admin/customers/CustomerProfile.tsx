@@ -4,7 +4,12 @@
 
 import Link from "next/link";
 
-export default function CustomerProfile({ customer, orders, payments, auditLogs }) {
+export default function CustomerProfile({
+  customer,
+  orders,
+  payments,
+  auditLogs,
+}) {
   const totalSpent = orders.reduce((sum, o) => sum + o.total, 0);
   const chargebacks = payments.filter((p) => p.status === "CHARGEBACK").length;
   const refunds = payments.filter((p) => p.status === "REFUNDED").length;
@@ -38,7 +43,9 @@ export default function CustomerProfile({ customer, orders, payments, auditLogs 
 
         <div className="card">
           <h2 className="text-sm text-text-secondary">High-Risk Payments</h2>
-          <p className="text-2xl font-semibold text-orange-500">{highRiskPayments}</p>
+          <p className="text-2xl font-semibold text-orange-500">
+            {highRiskPayments}
+          </p>
         </div>
       </section>
 
@@ -46,7 +53,9 @@ export default function CustomerProfile({ customer, orders, payments, auditLogs 
       <section className="rounded-lg border p-4 space-y-3">
         <h2 className="font-medium">Order History</h2>
 
-        {orders.length === 0 && <p className="text-sm text-text-muted">No orders yet.</p>}
+        {orders.length === 0 && (
+          <p className="text-sm text-text-muted">No orders yet.</p>
+        )}
 
         <div className="space-y-2">
           {orders.map((o) => (
@@ -71,7 +80,9 @@ export default function CustomerProfile({ customer, orders, payments, auditLogs 
       <section className="rounded-lg border p-4 space-y-3">
         <h2 className="font-medium">Payment History</h2>
 
-        {payments.length === 0 && <p className="text-sm text-text-muted">No payments yet.</p>}
+        {payments.length === 0 && (
+          <p className="text-sm text-text-muted">No payments yet.</p>
+        )}
 
         <div className="space-y-2">
           {payments.map((p) => (
@@ -88,8 +99,8 @@ export default function CustomerProfile({ customer, orders, payments, auditLogs 
                       p.fraudScore > 70
                         ? "text-danger"
                         : p.fraudScore > 40
-                        ? "text-warning"
-                        : "text-success"
+                          ? "text-warning"
+                          : "text-success"
                     }
                   >
                     {p.fraudScore}
@@ -105,7 +116,9 @@ export default function CustomerProfile({ customer, orders, payments, auditLogs 
       <section className="rounded-lg border p-4 space-y-3">
         <h2 className="font-medium">Audit Log</h2>
 
-        {auditLogs.length === 0 && <p className="text-sm text-text-muted">No logs.</p>}
+        {auditLogs.length === 0 && (
+          <p className="text-sm text-text-muted">No logs.</p>
+        )}
 
         <div className="space-y-2">
           {auditLogs.map((log) => (

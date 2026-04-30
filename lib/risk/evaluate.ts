@@ -19,7 +19,10 @@ function safeRegex(pattern: string): RegExp | null {
 /* -------------------------------------------------- */
 /* Numeric extractor (tiny helper, no over-engineering)*/
 /* -------------------------------------------------- */
-function getNumber(context: RiskContext, key: keyof RiskContext): number | null {
+function getNumber(
+  context: RiskContext,
+  key: keyof RiskContext,
+): number | null {
   const v = context[key];
   return typeof v === "number" ? v : null;
 }
@@ -37,7 +40,7 @@ function normalizeList(list: string[]): string[] {
 export function evaluateRule(
   condition: RuleCondition,
   context: RiskContext,
-  depth = 0
+  depth = 0,
 ): boolean {
   if (depth > MAX_DEPTH) {
     emitSecurityEvent({
@@ -71,16 +74,23 @@ export function evaluateRule(
       return normalizeList(c.list).includes((context.ip ?? "").toLowerCase());
 
     case "country_in_list":
-      return normalizeList(c.list).includes((context.country ?? "").toLowerCase());
+      return normalizeList(c.list).includes(
+        (context.country ?? "").toLowerCase(),
+      );
 
     case "region_in_list":
-      return normalizeList(c.list).includes((context.region ?? "").toLowerCase());
+      return normalizeList(c.list).includes(
+        (context.region ?? "").toLowerCase(),
+      );
 
     /* ---------------- Identity mismatch ---------------- */
     case "email_phone_mismatch": {
       const emailDomain = context.emailDomain ?? "";
       const phonePrefix = context.phonePrefix ?? "";
-      return Boolean(emailDomain && phonePrefix) && !emailDomain.startsWith(phonePrefix);
+      return (
+        Boolean(emailDomain && phonePrefix) &&
+        !emailDomain.startsWith(phonePrefix)
+      );
     }
 
     /* ---------------- Numeric threshold ---------------- */
@@ -99,12 +109,18 @@ export function evaluateRule(
       }
 
       switch (c.operator) {
-        case ">": return raw > c.value;
-        case ">=": return raw >= c.value;
-        case "<": return raw < c.value;
-        case "<=": return raw <= c.value;
-        case "==": return raw === c.value;
-        case "!=": return raw !== c.value;
+        case ">":
+          return raw > c.value;
+        case ">=":
+          return raw >= c.value;
+        case "<":
+          return raw < c.value;
+        case "<=":
+          return raw <= c.value;
+        case "==":
+          return raw === c.value;
+        case "!=":
+          return raw !== c.value;
         default:
           emitSecurityEvent({
             type: "SYSTEM_ANOMALY",
@@ -190,16 +206,18 @@ export function evaluateRule(
 
     /* ---------------- List membership ---------------- */
     case "state_in_list":
-      return normalizeList(c.list).includes((context.region ?? "").toLowerCase());
+      return normalizeList(c.list).includes(
+        (context.region ?? "").toLowerCase(),
+      );
 
     case "email_domain_in_list":
-      return normalizeList(c.list).includes((context.emailDomain ?? "").toLowerCase());
+      return normalizeList(c.list).includes(
+        (context.emailDomain ?? "").toLowerCase(),
+      );
 
     case "phone_prefix_in_list": {
       const len = c.length ?? 4;
-      const prefix =
-        context.phonePrefix ??
-        (context.phone ?? "").slice(0, len);
+      const prefix = context.phonePrefix ?? (context.phone ?? "").slice(0, len);
 
       return c.list.includes(prefix);
     }
@@ -207,12 +225,12 @@ export function evaluateRule(
     /* ---------------- Compound rules ---------------- */
     case "and":
       return c.conditions.every((cond) =>
-        evaluateRule(cond, context, depth + 1)
+        evaluateRule(cond, context, depth + 1),
       );
 
     case "or":
       return c.conditions.some((cond) =>
-        evaluateRule(cond, context, depth + 1)
+        evaluateRule(cond, context, depth + 1),
       );
 
     /* ---------------- Unknown rule ---------------- */

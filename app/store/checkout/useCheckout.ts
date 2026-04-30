@@ -22,7 +22,10 @@ export function useCheckout() {
     }));
   }
 
-  function setError(message: string, errors: Record<string, string[] | undefined> = {}) {
+  function setError(
+    message: string,
+    errors: Record<string, string[] | undefined> = {},
+  ) {
     setState({
       status: "error",
       message,

@@ -7,13 +7,16 @@ export async function computeUnifiedRisk(
     ip?: string | null;
     userAgent?: string | null;
     source?: string | null;
-  }
+  },
 ) {
   // placeholder: sum some numeric signals if present
   const numericKeys = Object.keys(signals).filter(
-    (k) => typeof signals[k] === "number"
+    (k) => typeof signals[k] === "number",
   );
-  const totalRaw = numericKeys.reduce((acc, k) => acc + (signals[k] as number), 0);
+  const totalRaw = numericKeys.reduce(
+    (acc, k) => acc + (signals[k] as number),
+    0,
+  );
   const total = Math.min(100, Math.max(0, Math.round(totalRaw)));
 
   return {

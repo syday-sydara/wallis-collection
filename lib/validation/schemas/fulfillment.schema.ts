@@ -4,7 +4,7 @@ import { z } from "zod";
 export const FulfillmentSchema = z.object({
   id: z.string(),
   orderId: z.string(),
-  order: z.string(),
+  order: OrderSchema,
   carrier: z.string().optional(),
   tracking: z.string().optional(),
   status: z.enum([

@@ -46,7 +46,7 @@ export function SecurityCenterShell({
                       "text-sm font-medium transition-colors px-2 py-1 rounded-md",
                       active
                         ? "text-primary bg-primary/10"
-                        : "text-text-muted hover:text-primary"
+                        : "text-text-muted hover:text-primary",
                     )}
                   >
                     {item.label}

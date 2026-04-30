@@ -26,7 +26,4 @@ export { cn } from "./tailwind";
 /* ----------------------------------------
  * Messaging Helpers (server-only)
  * -------------------------------------- */
-export {
-  generateWhatsAppMessage,
-  generateWhatsAppLink,
-} from "./whatsapp";
+export { generateWhatsAppMessage, generateWhatsAppLink } from "./whatsapp";

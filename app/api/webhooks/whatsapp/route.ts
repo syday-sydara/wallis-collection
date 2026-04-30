@@ -13,8 +13,7 @@ import { FulfillmentStatus } from "@prisma/client";
 export async function POST(req: Request) {
   const body = await req.json();
 
-  const message =
-    body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+  const message = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
   if (!message) return NextResponse.json({ status: "ignored" });
 
@@ -42,21 +41,21 @@ export async function POST(req: Request) {
     if (id === "track_again") {
       await sendWhatsAppMessage(
         from,
-        "Please enter your tracking number or phone number."
+        "Please enter your tracking number or phone number.",
       );
     }
 
     if (id === "talk_support") {
       await sendWhatsAppMessage(
         from,
-        `You can chat with support here:\nhttps://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP}`
+        `You can chat with support here:\nhttps://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP}`,
       );
     }
 
     if (id === "view_timeline") {
       await sendWhatsAppMessage(
         from,
-        "Open your tracking timeline using your tracking link or tracking number."
+        "Open your tracking timeline using your tracking link or tracking number.",
       );
     }
 
@@ -71,7 +70,7 @@ export async function POST(req: Request) {
   if (!text || text.toLowerCase().includes("track")) {
     await sendWhatsAppMessage(
       from,
-      "Please enter your tracking number or phone number."
+      "Please enter your tracking number or phone number.",
     );
     return NextResponse.json({ status: "ok" });
   }
@@ -81,11 +80,7 @@ export async function POST(req: Request) {
   /* -------------------------------------------------- */
   const order = await prisma.order.findFirst({
     where: {
-      OR: [
-        { trackingNumber: text },
-        { phone: text },
-        { trackingToken: text },
-      ],
+      OR: [{ trackingNumber: text }, { phone: text }, { trackingToken: text }],
     },
     include: {
       fulfillments: true,
@@ -109,7 +104,7 @@ export async function POST(req: Request) {
 
     await sendWhatsAppMessage(
       from,
-      "I couldn't find an order with that information. Please check and try again."
+      "I couldn't find an order with that information. Please check and try again.",
     );
     return NextResponse.json({ status: "ok" });
   }
@@ -145,9 +140,7 @@ Status: ${friendlyStatus}
 ${order.deliveryNotes ? `Notes: ${order.deliveryNotes}\n` : ""}
 
 ${
-  order.paymentMethod === "CASH"
-    ? "Payment: Cash on Delivery"
-    : "Payment: Paid"
+  order.paymentMethod === "CASH" ? "Payment: Cash on Delivery" : "Payment: Paid"
 }
 
 Tracking Number: ${order.trackingNumber || "Not available"}
@@ -162,15 +155,11 @@ ${process.env.NEXT_PUBLIC_APP_URL}/track/${order.trackingToken}
   /* -------------------------------------------------- */
   /* 8. Follow-up buttons                               */
   /* -------------------------------------------------- */
-  await sendWhatsAppButtons(
-    from,
-    "What would you like to do next?",
-    [
-      { id: "track_again", title: "Track Again" },
-      { id: "talk_support", title: "Talk to Support" },
-      { id: "view_timeline", title: "View Timeline" },
-    ]
-  );
+  await sendWhatsAppButtons(from, "What would you like to do next?", [
+    { id: "track_again", title: "Track Again" },
+    { id: "talk_support", title: "Talk to Support" },
+    { id: "view_timeline", title: "View Timeline" },
+  ]);
 
   return NextResponse.json({ status: "ok" });
 }

@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const ProductInsightsSchema = z.object({
   productId: z.string(),
-  product: z.string(),
+  product: ProductSchema,
   viewCount: z.number(),
   addToCartCount: z.number(),
   whatsappClickCount: z.number(),

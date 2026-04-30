@@ -99,9 +99,7 @@ export default function Gallery({ images }: Props) {
               }}
               aria-selected={isActive}
               className={`rounded-md p-0.5 transition-colors ${
-                isActive
-                  ? "border-2 border-primary"
-                  : "border border-border"
+                isActive ? "border-2 border-primary" : "border border-border"
               }`}
             >
               <Image

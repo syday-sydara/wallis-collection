@@ -26,7 +26,7 @@ export function AdminCard({
         elevated && "shadow-md",
         subtle && "bg-surface-muted border-border-muted",
         danger && "border-danger/20 bg-danger/5",
-        className
+        className,
       )}
       {...props}
     >

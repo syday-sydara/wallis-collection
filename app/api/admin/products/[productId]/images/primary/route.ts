@@ -7,7 +7,10 @@ export async function POST(req, { params }) {
     const productId = params.productId;
 
     if (!imageId) {
-      return NextResponse.json({ error: "imageId is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "imageId is required" },
+        { status: 400 },
+      );
     }
 
     const image = await prisma.productImage.findUnique({
@@ -19,7 +22,10 @@ export async function POST(req, { params }) {
     }
 
     if (image.productId !== productId) {
-      return NextResponse.json({ error: "Image does not belong to this product" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Image does not belong to this product" },
+        { status: 400 },
+      );
     }
 
     await prisma.productImage.updateMany({
@@ -35,6 +41,9 @@ export async function POST(req, { params }) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Failed to set primary image" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to set primary image" },
+      { status: 500 },
+    );
   }
 }

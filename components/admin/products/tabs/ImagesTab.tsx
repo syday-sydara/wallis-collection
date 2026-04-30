@@ -68,7 +68,7 @@ export default function ImagesTab({ product }) {
       try {
         await admin.products.images.reorder(
           product.id,
-          reordered.map((i) => i.id)
+          reordered.map((i) => i.id),
         );
         toast.success("Images reordered");
       } catch {

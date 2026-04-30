@@ -4,7 +4,7 @@ import { z } from "zod";
 export const CartItemSchema = z.object({
   id: z.string(),
   cartId: z.string(),
-  cart: z.string(),
+  cart: CartSchema,
   productId: z.string(),
   variantId: z.string(),
   name: z.string(),

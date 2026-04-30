@@ -7,10 +7,34 @@ import {
 } from "libphonenumber-js";
 
 const CARRIER_PREFIXES: Record<string, string[]> = {
-  MTN: ["703","706","803","806","810","813","814","816","903","906","913","916"],
-  Airtel: ["701","708","802","808","812","902","907","901","904","912"],
-  Glo: ["705","805","807","811","815","905","915"],
-  "9mobile": ["809","817","818","908","909"],
+  MTN: [
+    "703",
+    "706",
+    "803",
+    "806",
+    "810",
+    "813",
+    "814",
+    "816",
+    "903",
+    "906",
+    "913",
+    "916",
+  ],
+  Airtel: [
+    "701",
+    "708",
+    "802",
+    "808",
+    "812",
+    "902",
+    "907",
+    "901",
+    "904",
+    "912",
+  ],
+  Glo: ["705", "805", "807", "811", "815", "905", "915"],
+  "9mobile": ["809", "817", "818", "908", "909"],
   Smile: ["702"],
   Ntel: ["804"],
 };
@@ -32,7 +56,8 @@ export class PhoneNumber {
 
   constructor(input: string, defaultCountry: CountryCode = "NG") {
     try {
-      this.parsed = parsePhoneNumberFromString(input, defaultCountry) ?? undefined;
+      this.parsed =
+        parsePhoneNumberFromString(input, defaultCountry) ?? undefined;
     } catch {
       this.parsed = undefined;
     }
@@ -50,7 +75,7 @@ export class PhoneNumber {
 
   /** Country code (e.g., "NG") */
   get country(): string | null {
-    return this.isValid() ? this.parsed!.country ?? null : null;
+    return this.isValid() ? (this.parsed!.country ?? null) : null;
   }
 
   /** National number (e.g., 8012345678) */

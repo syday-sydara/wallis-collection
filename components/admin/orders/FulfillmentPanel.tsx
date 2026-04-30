@@ -29,7 +29,11 @@ export default function FulfillmentPanel({
 
     startTransition(async () => {
       try {
-        await admin.fulfillment.create(order.id, carrier.trim(), tracking.trim());
+        await admin.fulfillment.create(
+          order.id,
+          carrier.trim(),
+          tracking.trim(),
+        );
         toast.success("Fulfillment created");
         setCarrier("");
         setTracking("");
@@ -80,11 +84,16 @@ export default function FulfillmentPanel({
 
       <div className="space-y-3">
         {fulfillments.length === 0 && (
-          <div className="text-xs text-text-secondary">No fulfillments yet.</div>
+          <div className="text-xs text-text-secondary">
+            No fulfillments yet.
+          </div>
         )}
 
         {fulfillments.map((f) => (
-          <div key={f.id} className="border border-border-default rounded-md p-3">
+          <div
+            key={f.id}
+            className="border border-border-default rounded-md p-3"
+          >
             <div className="font-medium">
               {f.carrier || "Unknown carrier"} — {f.tracking || "No tracking"}
             </div>
@@ -103,7 +112,7 @@ export default function FulfillmentPanel({
                   >
                     Mark {s.replace(/_/g, " ").toLowerCase()}
                   </button>
-                )
+                ),
               )}
             </div>
           </div>

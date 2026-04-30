@@ -83,14 +83,11 @@ function getCarrierLink(carrier: string, tracking: string) {
   if (c.includes("gig"))
     return `https://giglogistics.com/track?trackingId=${tracking}`;
 
-  if (c.includes("kwik"))
-    return `https://kwik.delivery/track/${tracking}`;
+  if (c.includes("kwik")) return `https://kwik.delivery/track/${tracking}`;
 
-  if (c.includes("sendbox"))
-    return `https://sendbox.co/tracking/${tracking}`;
+  if (c.includes("sendbox")) return `https://sendbox.co/tracking/${tracking}`;
 
-  if (c.includes("topship"))
-    return `https://topship.africa/track/${tracking}`;
+  if (c.includes("topship")) return `https://topship.africa/track/${tracking}`;
 
   if (c.includes("dhl"))
     return `https://www.dhl.com/ng-en/home/tracking.html?tracking-id=${tracking}`;

@@ -15,9 +15,7 @@ const DEFAULT_TIMEOUT = 5000; // 5 seconds
 // Optional hook for debugging or metrics
 let onEventDebug: ((event: string, payload: any) => void) | null = null;
 
-export function setEventDebugHook(
-  fn: (event: string, payload: any) => void
-) {
+export function setEventDebugHook(fn: (event: string, payload: any) => void) {
   onEventDebug = fn;
 }
 
@@ -65,8 +63,8 @@ export const events = {
       const timeout = new Promise((_, reject) =>
         setTimeout(
           () => reject(new Error(`Event handler timeout: ${event}`)),
-          DEFAULT_TIMEOUT
-        )
+          DEFAULT_TIMEOUT,
+        ),
       );
 
       try {

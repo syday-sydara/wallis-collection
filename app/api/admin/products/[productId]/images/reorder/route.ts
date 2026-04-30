@@ -6,7 +6,10 @@ export async function POST(req, { params }) {
     const { imageIds } = await req.json();
 
     if (!Array.isArray(imageIds) || imageIds.length === 0) {
-      return NextResponse.json({ error: "imageIds must be a non-empty array" }, { status: 400 });
+      return NextResponse.json(
+        { error: "imageIds must be a non-empty array" },
+        { status: 400 },
+      );
     }
 
     const images = await prisma.productImage.findMany({
@@ -14,7 +17,10 @@ export async function POST(req, { params }) {
     });
 
     if (images.length !== imageIds.length) {
-      return NextResponse.json({ error: "Some images do not exist" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Some images do not exist" },
+        { status: 400 },
+      );
     }
 
     await Promise.all(
@@ -22,13 +28,16 @@ export async function POST(req, { params }) {
         prisma.productImage.update({
           where: { id },
           data: { sortOrder: index },
-        })
-      )
+        }),
+      ),
     );
 
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Failed to reorder images" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to reorder images" },
+      { status: 500 },
+    );
   }
 }

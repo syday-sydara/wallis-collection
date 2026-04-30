@@ -5,7 +5,7 @@ import { serviceContext } from "./service-context";
 
 export function withSpan<TArgs extends any[], TReturn>(
   name: string,
-  fn: (...args: TArgs) => Promise<TReturn> | TReturn
+  fn: (...args: TArgs) => Promise<TReturn> | TReturn,
 ) {
   return async (...args: TArgs): Promise<TReturn> => {
     const ctx = serviceContext.get();

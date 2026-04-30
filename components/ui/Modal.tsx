@@ -44,7 +44,7 @@ export function Modal({
       <div
         className={cn(
           "relative rounded-lg border border-border bg-surface shadow-lg overflow-hidden animate-fadeIn-fast focus:outline-none",
-          sizeClasses[size]
+          sizeClasses[size],
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -52,12 +52,18 @@ export function Modal({
           <div className="flex items-center justify-between border-b border-border p-4">
             <div>
               {title && (
-                <h2 id="modal-title" className="text-lg font-semibold text-text leading-snug">
+                <h2
+                  id="modal-title"
+                  className="text-lg font-semibold text-text leading-snug"
+                >
                   {title}
                 </h2>
               )}
               {description && (
-                <p id="modal-description" className="text-sm text-text-muted mt-0.5">
+                <p
+                  id="modal-description"
+                  className="text-sm text-text-muted mt-0.5"
+                >
                   {description}
                 </p>
               )}

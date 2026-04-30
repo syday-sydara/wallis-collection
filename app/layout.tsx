@@ -1,10 +1,10 @@
 import { Inter } from "next/font/google";
 import { ClientProviders } from "@/components/ClientProviders";
 import { cn } from "@/lib/utils";
-import { initEventQueue } from "@/lib/events/queue/init";   // ← add this
+import { initEventQueue } from "@/lib/events/queue/init"; // ← add this
 import "../styles/globals.css";
 
-initEventQueue();   // ← start background worker once
+initEventQueue(); // ← start background worker once
 
 const inter = Inter({
   subsets: ["latin"],
@@ -18,18 +18,20 @@ export const metadata = {
   description: "Premium Nigerian fashion, crafted with intention.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
       <body
         className={cn(
           inter.variable,
-          "h-full antialiased bg-surface text-text pt-safe pb-safe"
+          "h-full antialiased bg-surface text-text pt-safe pb-safe",
         )}
       >
-        <ClientProviders>
-          {children}
-        </ClientProviders>
+        <ClientProviders>{children}</ClientProviders>
 
         <div id="portal-root" />
       </body>

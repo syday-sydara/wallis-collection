@@ -4,11 +4,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 type PaginationProps = {
-  cursor?: string | null;      // optional cursor for cursor-based pagination
-  page?: number;               // optional page number for page-based pagination
-  limit?: number;              // optional limit per page
-  hasNext?: boolean;           // indicates if there is more data
-  hasPrev?: boolean;           // indicates if there is a previous page (for page-based)
+  cursor?: string | null; // optional cursor for cursor-based pagination
+  page?: number; // optional page number for page-based pagination
+  limit?: number; // optional limit per page
+  hasNext?: boolean; // indicates if there is more data
+  hasPrev?: boolean; // indicates if there is a previous page (for page-based)
 };
 
 export default function Pagination({
@@ -56,7 +56,7 @@ export default function Pagination({
             "rounded-md border border-border px-4 py-2 text-sm font-medium text-text shadow-sm min-h-touch",
             "hover:bg-surface hover:text-text",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-            "transition-colors duration-150 animate-fadeIn"
+            "transition-colors duration-150 animate-fadeIn",
           )}
         >
           Previous
@@ -71,7 +71,7 @@ export default function Pagination({
             "rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm min-h-touch",
             "hover:bg-primary-hover active:bg-primary-active",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-            "transition-colors duration-150 animate-fadeIn"
+            "transition-colors duration-150 animate-fadeIn",
           )}
         >
           Next

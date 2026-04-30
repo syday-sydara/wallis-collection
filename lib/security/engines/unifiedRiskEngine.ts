@@ -5,17 +5,9 @@ import { computeUnifiedRisk } from "./computeUnifiedRisk";
 import { computeFraudScore } from "./computeFraudScore";
 import { computeWhatsAppAbuse } from "./computeWhatsAppAbuse";
 
-import {
-  normalizeIp,
-  normalizeUserAgent,
-} from "@/lib/security/normalize";
+import { normalizeIp, normalizeUserAgent } from "@/lib/security/normalize";
 
-import {
-  startSpan,
-  metricsWithContext,
-  log,
-  serviceContext,
-} from "@/lib/core";
+import { startSpan, metricsWithContext, log, serviceContext } from "@/lib/core";
 
 import { emitSecurityEvent } from "@/lib/events/emitter";
 
@@ -61,7 +53,7 @@ export interface UnifiedRiskOutput {
 const VERSION = 1;
 
 function classifyDecision(
-  severity: "low" | "medium" | "high"
+  severity: "low" | "medium" | "high",
 ): "allow" | "review" | "block" {
   if (severity === "high") return "block";
   if (severity === "medium") return "review";
@@ -82,7 +74,7 @@ function safeRunSync<T>(name: string, fn: () => T): T | null {
 
 async function safeRunAsync<T>(
   name: string,
-  fn: () => Promise<T>
+  fn: () => Promise<T>,
 ): Promise<T | null> {
   try {
     return await fn();
@@ -96,7 +88,7 @@ async function safeRunAsync<T>(
 }
 
 export async function computeUnifiedSecurityRisk(
-  input: UnifiedRiskInput
+  input: UnifiedRiskInput,
 ): Promise<UnifiedRiskOutput> {
   const span = startSpan("risk.unified_engine", {
     userId: input.userId,
@@ -121,7 +113,7 @@ export async function computeUnifiedSecurityRisk(
           ip,
           userAgent: ua,
           source: input.source,
-        })
+        }),
       )
     : null;
 
@@ -131,14 +123,12 @@ export async function computeUnifiedSecurityRisk(
           userId: input.userId,
           ip,
           userAgent: ua,
-        })
+        }),
       )
     : null;
 
   const whatsapp = input.whatsappAbuse
-    ? safeRunSync("whatsapp", () =>
-        computeWhatsAppAbuse(input.whatsappAbuse!)
-      )
+    ? safeRunSync("whatsapp", () => computeWhatsAppAbuse(input.whatsappAbuse!))
     : null;
 
   const activeEngines = [risk, unified, fraud, whatsapp].filter(Boolean);
@@ -187,27 +177,22 @@ export async function computeUnifiedSecurityRisk(
     engineConfidences.push(whatsapp.confidence);
     metricsWithContext.increment("risk.unified_engine.whatsapp.used");
     metricsWithContext.increment(
-      `risk.unified_engine.whatsapp.reasons.${whatsapp.reasons.length}`
+      `risk.unified_engine.whatsapp.reasons.${whatsapp.reasons.length}`,
     );
   }
 
   const finalScore = Math.min(
     100,
-    Math.round(
-      engineScores.reduce((a, b) => a + b, 0) / engineScores.length
-    )
+    Math.round(engineScores.reduce((a, b) => a + b, 0) / engineScores.length),
   );
 
   const severity =
-    finalScore >= 70 ? "high" :
-    finalScore >= 40 ? "medium" :
-    "low";
+    finalScore >= 70 ? "high" : finalScore >= 40 ? "medium" : "low";
 
   const confidence = Number(
     (
-      engineConfidences.reduce((a, b) => a + b, 0) /
-      engineConfidences.length
-    ).toFixed(2)
+      engineConfidences.reduce((a, b) => a + b, 0) / engineConfidences.length
+    ).toFixed(2),
   );
 
   const decision = classifyDecision(severity);
@@ -218,7 +203,7 @@ export async function computeUnifiedSecurityRisk(
       ...(unified?.tags ?? []),
       ...(fraud?.signals?.map((s) => `fraud:${s}`) ?? []),
       ...(whatsapp?.tags ?? []),
-    ])
+    ]),
   );
 
   const result: UnifiedRiskOutput = {
@@ -247,12 +232,7 @@ export async function computeUnifiedSecurityRisk(
     context: input.source ?? "session",
     operation: "evaluate",
     category: "risk",
-    tags: [
-      "risk",
-      `risk:${severity}`,
-      `decision:${decision}`,
-      ...tags,
-    ],
+    tags: ["risk", `risk:${severity}`, `decision:${decision}`, ...tags],
     ip,
     userAgent: ua,
     metadata: {

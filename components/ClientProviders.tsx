@@ -14,9 +14,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
       <ToastProvider>
         <Toaster />
         <CartDrawer />
-        <Suspense fallback={null}>
-          {children}
-        </Suspense>
+        <Suspense fallback={null}>{children}</Suspense>
       </ToastProvider>
     </CartProvider>
   );

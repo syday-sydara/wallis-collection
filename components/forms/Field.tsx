@@ -27,7 +27,7 @@ const Field = React.forwardRef<HTMLDivElement, Props>(function Field(
     type = "text",
     as = "input",
   },
-  ref
+  ref,
 ) {
   const Tag = as === "textarea" ? "textarea" : "input";
 
@@ -47,16 +47,14 @@ const Field = React.forwardRef<HTMLDivElement, Props>(function Field(
           disabled:opacity-50 disabled:cursor-not-allowed
         `}
         defaultValue={defaultValue}
-        onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-          onChange?.(e.target.value)
-        }
+        onChange={(
+          e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+        ) => onChange?.(e.target.value)}
         {...(as === "input" ? { type } : {})}
         required={required}
       />
 
-      {helper && !error && (
-        <p className="text-xs text-text-muted">{helper}</p>
-      )}
+      {helper && !error && <p className="text-xs text-text-muted">{helper}</p>}
       {error && <p className="text-xs text-danger">{error}</p>}
     </div>
   );

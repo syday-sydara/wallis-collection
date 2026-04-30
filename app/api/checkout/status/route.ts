@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     if (!orderId) {
       return NextResponse.json(
         { ok: false, message: "Missing orderId" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     if (!order) {
       return NextResponse.json(
         { ok: false, message: "Order not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 

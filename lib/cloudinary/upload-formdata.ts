@@ -1,8 +1,6 @@
 import { cloudinary } from ".";
 
-export async function uploadImageFromFormData(
-  file: File
-): Promise<{
+export async function uploadImageFromFormData(file: File): Promise<{
   url: string;
   width: number;
   height: number;
@@ -18,10 +16,7 @@ export async function uploadImageFromFormData(
       {
         folder: "wallis",
         resource_type: "image",
-        transformation: [
-          { quality: "auto" },
-          { fetch_format: "auto" },
-        ],
+        transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
       },
       (error, result) => {
         if (error) {
@@ -37,7 +32,7 @@ export async function uploadImageFromFormData(
             bytes: result!.bytes!,
           });
         }
-      }
+      },
     );
 
     stream.end(buffer);

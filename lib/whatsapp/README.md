@@ -3,9 +3,9 @@
 This folder contains the complete WhatsApp messaging subsystem for the Wallis Collection platform.  
 It is designed to be:
 
-- Clean and modular  
-- Easy to extend  
-- Production‑ready  
+- Clean and modular
+- Easy to extend
+- Production‑ready
 - Nigeria‑first (₦, +234 formatting, NGN defaults)
 
 The system handles:
@@ -24,15 +24,16 @@ The system handles:
 
 The WhatsApp module is organized into **7 layers**, each with a single responsibility.
 
-
 ---
 
 ## 1️⃣ Transport Layer
 
 ### `transport.ts`
+
 Low‑level HTTP wrapper around the WhatsApp Cloud API.
 
 Responsibilities:
+
 - Sending POST requests to Meta
 - Timeout handling
 - Retry logic
@@ -45,9 +46,11 @@ This is the only file that communicates directly with WhatsApp’s API.
 ## 2️⃣ Gateway Layer
 
 ### `gateway.ts`
+
 Middleware between the app and WhatsApp.
 
 Responsibilities:
+
 - Logging (success/failure)
 - Metrics
 - Security events
@@ -62,11 +65,12 @@ All message sends pass through this layer.
 ## 3️⃣ Client Layer
 
 ### `client.ts`
+
 High‑level API for sending WhatsApp messages.
 
 Example:
 
-```ts
+````ts
 new WhatsAppClient("+2348012345678").text("Hello!");
 
 ## 4️⃣ Message Builders
@@ -116,7 +120,7 @@ These implement the user onboarding and order‑tracking flows.
 
 ### ` abuse.ts
 Rate‑limit and suspicious‑behavior detection.
-```
+````
 
 ## 7️⃣ Infrastructure
 
@@ -125,14 +129,13 @@ Rate‑limit and suspicious‑behavior detection.
 - Simple in‑memory job queue for WhatsApp messages.
 
 - Responsibilities:
-
   - Queueing messages
 
   - Sequential processing
 
   - Delegating to WhatsAppClient
 
-```ts
+````ts
 
 ### ` Data Models (Prisma)
 
@@ -162,9 +165,9 @@ WhatsApp Webhook
  transport.ts → WhatsApp Cloud API
       ↓
  WhatsAppMessageLog (DB)
-```
+````
 
-###  🧪 Testing Strategy
+### 🧪 Testing Strategy
 
 `text
 
@@ -195,3 +198,4 @@ Add a state in state-types.ts
 Update router.ts to route to it
 
 Add a new business flow
+```

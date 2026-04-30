@@ -15,11 +15,11 @@ export const UserSchema = z.object({
   deniedPermissions: z.any().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  orders: z.array(z.string()),
-  addresses: z.array(z.string()),
-  sessions: z.array(z.string()),
-  devices: z.array(z.string()),
-  cart: z.string().optional(),
-  auditLogs: z.array(z.string()),
+  orders: z.array(OrderSchema),
+  addresses: z.array(AddressSchema),
+  sessions: z.array(SessionSchema),
+  devices: z.array(DeviceSchema),
+  cart: CartSchema.optional(),
+  auditLogs: z.array(AuditLogSchema),
 });
 // === AUTO-GENERATED END ===

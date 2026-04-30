@@ -4,7 +4,7 @@ import { PaymentStatus } from "@prisma/client";
 
 export async function POST(
   req: Request,
-  { params }: { params: { orderId: string } }
+  { params }: { params: { orderId: string } },
 ) {
   try {
     const orderId = params.orderId;
@@ -18,10 +18,7 @@ export async function POST(
     });
 
     if (!order) {
-      return NextResponse.json(
-        { error: "Order not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
     // -----------------------------
@@ -30,7 +27,7 @@ export async function POST(
     if (order.isPaid || order.paymentStatus === PaymentStatus.SUCCESS) {
       return NextResponse.json(
         { error: "Order is already marked as paid" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -76,7 +73,7 @@ export async function POST(
 
     return NextResponse.json(
       { error: "Failed to update payment status" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

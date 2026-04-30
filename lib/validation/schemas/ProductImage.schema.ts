@@ -13,7 +13,7 @@ export const ProductImageSchema = z.object({
   sortOrder: z.number(),
   isPrimary: z.boolean(),
   productId: z.string(),
-  product: z.string(),
+  product: ProductSchema,
   createdAt: z.date(),
   updatedAt: z.date(),
 });

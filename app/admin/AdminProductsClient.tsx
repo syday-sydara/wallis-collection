@@ -23,7 +23,9 @@ interface AdminProductsClientProps {
   initialData: PaginatedProducts;
 }
 
-export default function AdminProductsClient({ initialData }: AdminProductsClientProps) {
+export default function AdminProductsClient({
+  initialData,
+}: AdminProductsClientProps) {
   const [items, setItems] = useState(initialData.items);
   const [nextCursor, setNextCursor] = useState(initialData.nextCursor);
   const [loading, setLoading] = useState(false);
@@ -40,7 +42,8 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
       if (!res.ok) throw new Error("Request failed");
 
       const data: PaginatedProducts = await res.json();
-      if (!data || !Array.isArray(data.items)) throw new Error("Invalid response");
+      if (!data || !Array.isArray(data.items))
+        throw new Error("Invalid response");
 
       setItems((prev) => [...prev, ...data.items]);
       setNextCursor(data.nextCursor);
@@ -128,7 +131,9 @@ export default function AdminProductsClient({ initialData }: AdminProductsClient
               <tr
                 key={p.id}
                 className="hover:bg-surface-muted/50 transition-colors cursor-pointer"
-                onClick={() => (window.location.href = `/admin/product/${p.id}`)}
+                onClick={() =>
+                  (window.location.href = `/admin/product/${p.id}`)
+                }
               >
                 <td className="py-3 px-4">
                   <div className="font-medium">{p.name}</div>
@@ -187,7 +192,7 @@ function StatusBadge({ archived }: { archived: boolean }) {
         "rounded-md px-2 py-0.5 text-xs font-medium",
         archived
           ? "bg-danger text-danger-foreground"
-          : "bg-success text-success-foreground"
+          : "bg-success text-success-foreground",
       )}
     >
       {archived ? "Archived" : "Active"}
@@ -200,7 +205,5 @@ function StatusBadge({ archived }: { archived: boolean }) {
 /* -------------------------------------------------- */
 
 function SkeletonRow() {
-  return (
-    <div className="animate-shimmer bg-skeleton h-4 rounded-md w-1/3" />
-  );
+  return <div className="animate-shimmer bg-skeleton h-4 rounded-md w-1/3" />;
 }

@@ -12,7 +12,7 @@ interface RiskRequest extends Request {
 export async function riskMiddleware(
   req: RiskRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     /* -------------------------------------------------- */

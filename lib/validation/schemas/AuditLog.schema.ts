@@ -11,6 +11,6 @@ export const AuditLogSchema = z.object({
   metadata: z.any().optional(),
   createdAt: z.date(),
   userId: z.string().optional(),
-  user: z.string().optional(),
+  user: UserSchema.optional(),
 });
 // === AUTO-GENERATED END ===

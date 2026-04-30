@@ -14,7 +14,7 @@ const formatterCache = new Map<string, Intl.NumberFormat>();
 function getFormatter(
   fractionDigits: number,
   locale = "en-NG",
-  currency = "NGN"
+  currency = "NGN",
 ): Intl.NumberFormat {
   const key = `${locale}-${currency}-${fractionDigits}`;
 
@@ -36,7 +36,7 @@ export function formatCurrency(
   amount: number | string | null | undefined,
   fromKobo = true,
   fractionDigits = 0,
-  locale = "en-NG"
+  locale = "en-NG",
 ): string {
   if (amount == null) return "₦0";
 
@@ -58,7 +58,7 @@ export function formatCurrency(
 export function formatNGN(
   amount: number | string | null | undefined,
   fromKobo = true,
-  fractionDigits = 0
+  fractionDigits = 0,
 ): string {
   return formatCurrency(amount, fromKobo, fractionDigits, "en-NG");
 }

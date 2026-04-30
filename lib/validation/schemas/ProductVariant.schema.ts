@@ -4,7 +4,7 @@ import { z } from "zod";
 export const ProductVariantSchema = z.object({
   id: z.string(),
   productId: z.string(),
-  product: z.string(),
+  product: ProductSchema,
   name: z.string(),
   sku: z.string(),
   price: z.number(),
@@ -13,7 +13,7 @@ export const ProductVariantSchema = z.object({
   compareAtPrice: z.number().optional(),
   costPrice: z.number().optional(),
   attributes: z.any().optional(),
-  orderItems: z.array(z.string()),
-  stockLogs: z.array(z.string()),
+  orderItems: z.array(OrderItemSchema),
+  stockLogs: z.array(StockLogSchema),
 });
 // === AUTO-GENERATED END ===

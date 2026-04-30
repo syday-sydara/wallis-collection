@@ -31,7 +31,7 @@ export async function GET() {
     console.error("[SecurityMetrics] Failed:", err);
     return NextResponse.json(
       { totalEvents: 0, totalUsers: 0, alerts: 0 },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
