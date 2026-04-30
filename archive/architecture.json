@@ -1,0 +1,45 @@
+{
+  "allowedRootFolders": [
+    "app",
+    "server",
+    "lib",
+    "prisma",
+    "public",
+    "scripts",
+    "openapi"
+  ],
+
+  "allowedLibFolders": [
+    "validation",
+    "db",
+    "forms",
+    "utils",
+    "security",
+    "risk",
+    "messaging"
+  ],
+
+  "allowedExtensions": [
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".json",
+    ".md",
+    ".css",
+    ".scss"
+  ],
+
+  "protectedFiles": [
+    "next.config.js",
+    "package.json",
+    "tsconfig.json",
+    "prisma/schema.prisma"
+  ],
+
+  "autoFixRules": {
+    "moveUnknownLibFilesTo": "lib/utils",
+    "moveUnknownRootFilesTo": "archive",
+    "moveUnknownAssetsTo": "public/archive-assets"
+  }
+}
