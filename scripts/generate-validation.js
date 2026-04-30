@@ -380,6 +380,80 @@ function generateAll() {
 
   console.log("🎉 Generation complete!\n");
 }
+function generateAdminForm(model, enums, modelNames) {
+  const name = model.name;
+  const camel = toCamel(name);
+
+  const fields = model.fields
+    .map(({ field, type }) => {
+      const clean = type.replace("?", "").replace("[]", "");
+
+      // ENUM → dropdown
+      if (enums[clean]) {
+        return `
+      <div>
+        <label>${field}</label>
+        <select {...register("${field}")}>
+          ${enums[clean]
+            .map((v) => `<option value="${v}">${v}</option>`)
+            .join("\n")}
+        </select>
+      </div>`;
+      }
+
+      // RELATION → ID field
+      if (modelNames.includes(clean)) {
+        if (field.toLowerCase().endsWith("id")) {
+          return `
+      <div>
+        <label>${field}</label>
+        <input type="text" {...register("${field}")} />
+      </div>`;
+        }
+
+        // Nested relation → skip (admin forms usually don't embed)
+        return "";
+      }
+
+      // SCALARS
+      let inputType = "text";
+      if (clean === "Int" || clean === "Float") inputType = "number";
+      if (clean === "Boolean") inputType = "checkbox";
+      if (clean === "DateTime") inputType = "datetime-local";
+
+      return `
+      <div>
+        <label>${field}</label>
+        <input type="${inputType}" {...register("${field}")} />
+      </div>`;
+    })
+    .join("\n");
+
+  return `
+${GENERATED_START}
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ${name}Schema } from "@/lib/validation/schemas/${name}.schema";
+import type { ${name}Input } from "@/lib/validation/types/${name}.types";
+
+export function ${name}AdminForm({ defaultValues, onSubmit }) {
+  const { register, handleSubmit, formState: { errors } } = useForm<${name}Input>({
+    resolver: zodResolver(${name}Schema),
+    defaultValues: defaultValues as any,
+  });
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+${fields}
+
+      <button type="submit">Save ${name}</button>
+    </form>
+  );
+}
+${GENERATED_END}
+`;
+}
+
 
 function main() {
   generateAll();
