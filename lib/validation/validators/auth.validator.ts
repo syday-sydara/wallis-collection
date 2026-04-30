@@ -1,5 +1,5 @@
 import { loginSchema, registerSchema, refreshTokenSchema } from "../schemas/auth.schema";
-import { safeParseOrThrow } from "../zod-helpers";
+import { safeParseOrThrow } from "./zod-helpers";
 
 export function validateLogin(input: unknown) {
   return safeParseOrThrow(loginSchema, input);

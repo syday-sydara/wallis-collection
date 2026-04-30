@@ -1,6 +1,6 @@
 import { ZodError, ZodSchema } from "zod";
-import { ValidationError } from "./errors/ValidationError";
-import { formatZodError } from "./errors/formatZodError";
+import { ValidationError } from "../errors/ValidationError";
+import { formatZodError } from "../errors/formatZodError";
 
 export function safeParseOrThrow<T>(
   schema: ZodSchema<T>,
