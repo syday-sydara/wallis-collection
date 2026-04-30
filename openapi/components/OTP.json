@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "expiresAt": {
+      "type": "string"
+    },
+    "used": {
+      "type": "boolean"
+    },
+    "attempts": {
+      "type": "number"
+    },
+    "createdAt": {
+      "type": "string"
+    }
+  }
+}

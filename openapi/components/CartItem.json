@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "cartId": {
+      "type": "string"
+    },
+    "cart": {
+      "type": "string"
+    },
+    "productId": {
+      "type": "string"
+    },
+    "variantId": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "image": {
+      "type": "string"
+    },
+    "unitPrice": {
+      "type": "number"
+    },
+    "quantity": {
+      "type": "number"
+    },
+    "attributes": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    }
+  }
+}

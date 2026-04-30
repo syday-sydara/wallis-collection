@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "user": {
+      "type": "string"
+    },
+    "ipAddress": {
+      "type": "string"
+    },
+    "userAgent": {
+      "type": "string"
+    },
+    "deviceId": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "lastActive": {
+      "type": "string"
+    },
+    "revokedAt": {
+      "type": "string"
+    },
+    "riskScore": {
+      "type": "number"
+    }
+  }
+}

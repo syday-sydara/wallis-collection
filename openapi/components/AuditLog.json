@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "actorType": {
+      "type": "string"
+    },
+    "actorId": {
+      "type": "string"
+    },
+    "resource": {
+      "type": "string"
+    },
+    "resourceId": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "user": {
+      "type": "string"
+    }
+  }
+}

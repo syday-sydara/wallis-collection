@@ -1,0 +1,32 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "user": {
+      "type": "string"
+    },
+    "deviceFingerprint": {
+      "type": "string"
+    },
+    "userAgent": {
+      "type": "string"
+    },
+    "lastIpAddress": {
+      "type": "string"
+    },
+    "trusted": {
+      "type": "boolean"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "lastSeen": {
+      "type": "string"
+    }
+  }
+}

@@ -2,7 +2,7 @@
 import { PaymentSchema } from "../schemas/Payment.schema";
 import { safeParseOrThrow } from "../zod-helpers";
 
-export function validatePayment(input) {
+export function validatePayment(input: unknown) {
   return safeParseOrThrow(PaymentSchema, input);
 }
 // === AUTO-GENERATED END ===

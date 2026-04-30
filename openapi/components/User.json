@@ -1,0 +1,62 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "passwordHash": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "emailVerifiedAt": {
+      "type": "string"
+    },
+    "risk_score": {
+      "type": "number"
+    },
+    "permissions": {
+      "type": "string"
+    },
+    "deniedPermissions": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "orders": {
+      "type": "string"
+    },
+    "addresses": {
+      "type": "string"
+    },
+    "sessions": {
+      "type": "string"
+    },
+    "devices": {
+      "type": "string"
+    },
+    "cart": {
+      "type": "string"
+    },
+    "auditLogs": {
+      "type": "string"
+    }
+  }
+}
