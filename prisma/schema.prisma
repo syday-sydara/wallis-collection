@@ -381,3 +381,11 @@ enum ActorType {
   ADMIN
   SYSTEM
 }
+
+model OrderStatusHistory {
+  id        String   @id @default(cuid())
+  orderId   String
+  from      String
+  to        String
+  createdAt DateTime @default(now())
+}
