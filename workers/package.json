@@ -1,0 +1,31 @@
+{
+  "name": "wallis-workers",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "nodemon --watch src --exec tsx src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "5.20.0",
+    "bullmq": "^5.76.4",
+    "dotenv": "^17.4.2",
+    "ioredis": "^5.10.1",
+    "pino": "^10.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.7.4",
+    "nodemon": "^3.1.14",
+    "prisma": "5.20.0",
+    "ts-node": "^10.9.2",
+    "tsx": "4.7.0",
+    "typescript": "5.6.3"
+  }
+}
