@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { StockLogSchema } from "../schemas/StockLog.schema";
 import { safeParseOrThrow } from "../zod-helpers";

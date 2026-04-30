@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { OTPSchema } from "../schemas/OTP.schema";
 import { safeParseOrThrow } from "../zod-helpers";

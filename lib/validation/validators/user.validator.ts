@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { UserSchema } from "../schemas/User.schema";
 import { safeParseOrThrow } from "../zod-helpers";

@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { z } from "zod";
 
@@ -11,7 +10,16 @@ export const PaymentSchema = z.object({
   amount: z.number(),
   fee: z.number().optional(),
   currency: z.enum(["NGN", "USD", "GBP"]),
-  status: z.enum(["PENDING", "SUCCESS", "FAILED", "REFUNDED", "REVIEW", "CHARGEBACK", "EXPIRED", "PARTIAL"]),
+  status: z.enum([
+    "PENDING",
+    "SUCCESS",
+    "FAILED",
+    "REFUNDED",
+    "REVIEW",
+    "CHARGEBACK",
+    "EXPIRED",
+    "PARTIAL",
+  ]),
   channel: z.string().optional(),
   raw: z.any().optional(),
   paidAt: z.date().optional(),

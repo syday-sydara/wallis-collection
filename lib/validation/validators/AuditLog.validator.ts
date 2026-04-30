@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { AuditLogSchema } from "../schemas/AuditLog.schema";
 import { safeParseOrThrow } from "../zod-helpers";

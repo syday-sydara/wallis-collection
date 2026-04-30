@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { z } from "zod";
 import { DeviceEventSchema } from "../schemas/DeviceEvent.schema";

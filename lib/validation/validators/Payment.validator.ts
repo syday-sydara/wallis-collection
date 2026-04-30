@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { PaymentSchema } from "../schemas/Payment.schema";
 import { safeParseOrThrow } from "../zod-helpers";

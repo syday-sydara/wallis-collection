@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { SessionEventSchema } from "../schemas/SessionEvent.schema";
 import { safeParseOrThrow } from "../zod-helpers";

@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { z } from "zod";
 
@@ -14,8 +13,29 @@ export const OrderSchema = z.object({
   refundedAmount: z.number(),
   currency: z.enum(["NGN", "USD", "GBP"]),
   paymentMethod: z.enum(["CARD", "TRANSFER", "CASH"]),
-  orderStatus: z.enum(["CREATED", "PENDING_PAYMENT", "REVIEW", "CONFIRMED", "PACKING", "SHIPPED", "DELIVERED", "RETURN_REQUESTED", "RETURNED", "FAILED_DELIVERY", "CANCELLED"]),
-  paymentStatus: z.enum(["PENDING", "SUCCESS", "FAILED", "REFUNDED", "REVIEW", "CHARGEBACK", "EXPIRED", "PARTIAL"]),
+  orderStatus: z.enum([
+    "CREATED",
+    "PENDING_PAYMENT",
+    "REVIEW",
+    "CONFIRMED",
+    "PACKING",
+    "SHIPPED",
+    "DELIVERED",
+    "RETURN_REQUESTED",
+    "RETURNED",
+    "FAILED_DELIVERY",
+    "CANCELLED",
+  ]),
+  paymentStatus: z.enum([
+    "PENDING",
+    "SUCCESS",
+    "FAILED",
+    "REFUNDED",
+    "REVIEW",
+    "CHARGEBACK",
+    "EXPIRED",
+    "PARTIAL",
+  ]),
   paymentProvider: z.enum(["PAYSTACK", "MONNIFY", "BANK_TRANSFER"]).optional(),
   fraudScore: z.number(),
   riskScore: z.number().optional(),

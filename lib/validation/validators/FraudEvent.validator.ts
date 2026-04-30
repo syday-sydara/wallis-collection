@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { FraudEventSchema } from "../schemas/FraudEvent.schema";
 import { safeParseOrThrow } from "../zod-helpers";

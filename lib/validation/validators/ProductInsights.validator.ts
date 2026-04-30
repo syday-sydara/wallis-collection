@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { ProductInsightsSchema } from "../schemas/ProductInsights.schema";
 import { safeParseOrThrow } from "../zod-helpers";

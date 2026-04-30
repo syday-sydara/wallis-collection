@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { z } from "zod";
 import { OTPSchema } from "../schemas/OTP.schema";

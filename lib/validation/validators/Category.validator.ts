@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { CategorySchema } from "../schemas/Category.schema";
 import { safeParseOrThrow } from "../zod-helpers";

@@ -1,4 +1,3 @@
-
 // === AUTO-GENERATED START ===
 import { DeviceEventSchema } from "../schemas/DeviceEvent.schema";
 import { safeParseOrThrow } from "../zod-helpers";
