@@ -7,10 +7,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "../ui/ErrorState";
 import ResultHeader from "./ResultHeader";
 
-import type {
-  ProductListParams,
-  ProductCardVM,
-} from "@/lib/products/types";
+import type { ProductListParams, ProductCardVM } from "@/lib/products/types";
 
 import { fetchProductsClient } from "@/lib/products/client";
 import { toProductCardVM } from "@/lib/products/viewModels";
@@ -18,7 +15,10 @@ import { toProductCardVM } from "@/lib/products/viewModels";
 /* ---------------------------------------------
  * Debounced callback
  * --------------------------------------------- */
-function useDebouncedCallback<T extends (...args: any[]) => any>(fn: T, delay: number) {
+function useDebouncedCallback<T extends (...args: any[]) => any>(
+  fn: T,
+  delay: number,
+) {
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   return useCallback(
@@ -26,7 +26,7 @@ function useDebouncedCallback<T extends (...args: any[]) => any>(fn: T, delay: n
       clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => fn(...args), delay);
     },
-    [fn, delay]
+    [fn, delay],
   );
 }
 
@@ -108,10 +108,7 @@ export default function ProductList({ params }: { params: ProductListParams }) {
 
       if (currentCursor !== nextCursorRef.current) return;
 
-      setProducts((prev) => [
-        ...prev,
-        ...res.items.map(toProductCardVM),
-      ]);
+      setProducts((prev) => [...prev, ...res.items.map(toProductCardVM)]);
 
       setNextCursor(res.nextCursor);
     } catch (err) {
@@ -131,7 +128,7 @@ export default function ProductList({ params }: { params: ProductListParams }) {
       (entries) => {
         if (entries[0].isIntersecting) loadMore();
       },
-      { rootMargin: "200px" }
+      { rootMargin: "200px" },
     );
 
     const el = loadMoreRef.current;
@@ -155,7 +152,10 @@ export default function ProductList({ params }: { params: ProductListParams }) {
         title="Error loading products"
         description="Check your connection and try again."
         action={
-          <button onClick={() => location.reload()} className="btn btn-primary mt-2">
+          <button
+            onClick={() => location.reload()}
+            className="btn btn-primary mt-2"
+          >
             Retry
           </button>
         }
@@ -187,13 +187,18 @@ export default function ProductList({ params }: { params: ProductListParams }) {
           aria-busy={loadingMore}
           className="mt-4 text-center text-sm text-text-muted leading-none pb-safe"
         >
-          {loadingMore ? "Loading more products..." : "Scroll down to load more"}
+          {loadingMore
+            ? "Loading more products..."
+            : "Scroll down to load more"}
         </div>
       )}
 
       {/* Load More button fallback */}
       {nextCursor && !loadingMore && (
-        <button onClick={loadMore} className="btn btn-outline mt-4 mx-auto block">
+        <button
+          onClick={loadMore}
+          className="btn btn-outline mt-4 mx-auto block"
+        >
           Load More
         </button>
       )}

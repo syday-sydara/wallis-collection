@@ -108,7 +108,7 @@ export const metrics = {
             p99: percentile(99),
           },
         ];
-      })
+      }),
     );
 
     return {

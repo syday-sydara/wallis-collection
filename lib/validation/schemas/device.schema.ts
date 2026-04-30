@@ -4,7 +4,7 @@ import { z } from "zod";
 export const DeviceSchema = z.object({
   id: z.string(),
   userId: z.string(),
-  user: z.string(),
+  user: UserSchema,
   deviceFingerprint: z.string(),
   userAgent: z.string().optional(),
   lastIpAddress: z.string().optional(),

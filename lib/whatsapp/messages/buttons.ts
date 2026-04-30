@@ -22,7 +22,7 @@ export interface WhatsAppButtonMessage {
 
 export function buildButtonMessage(
   body: string,
-  buttons: WhatsAppButton[]
+  buttons: WhatsAppButton[],
 ): WhatsAppButtonMessage {
   return {
     messaging_product: "whatsapp",

@@ -99,7 +99,11 @@ export class Span {
 /**
  * Start a new span.
  */
-export function startSpan(name: string, meta: Record<string, any> = {}, parent?: Span) {
+export function startSpan(
+  name: string,
+  meta: Record<string, any> = {},
+  parent?: Span,
+) {
   return new Span(name, meta, parent);
 }
 

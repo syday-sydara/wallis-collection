@@ -36,7 +36,7 @@ function normalizeIp(ip: string | null): string | null {
 }
 
 export async function parseMiddlewareSession(
-  req: NextRequest
+  req: NextRequest,
 ): Promise<MiddlewareSession | null> {
   const raw = req.cookies.get(COOKIE_NAME)?.value;
   const ip = normalizeIp(req.headers.get("x-forwarded-for"));
@@ -99,7 +99,10 @@ export async function parseMiddlewareSession(
 
   // Validate role
   const allowedRoles = ["admin", "user", "security", "auditor"];
-  if (typeof payload.role !== "string" || !allowedRoles.includes(payload.role)) {
+  if (
+    typeof payload.role !== "string" ||
+    !allowedRoles.includes(payload.role)
+  ) {
     void emitSecurityEvent({
       type: "SESSION_ROLE_INVALID",
       message: "Invalid or unauthorized role",

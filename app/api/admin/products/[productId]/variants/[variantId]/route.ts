@@ -17,9 +17,14 @@ export async function PATCH(req, { params }) {
     }
 
     if (sku && sku !== existing.sku) {
-      const skuExists = await prisma.productVariant.findUnique({ where: { sku } });
+      const skuExists = await prisma.productVariant.findUnique({
+        where: { sku },
+      });
       if (skuExists) {
-        return NextResponse.json({ error: "SKU already exists" }, { status: 409 });
+        return NextResponse.json(
+          { error: "SKU already exists" },
+          { status: 409 },
+        );
       }
     }
 
@@ -35,7 +40,10 @@ export async function PATCH(req, { params }) {
 
     return NextResponse.json(updated);
   } catch {
-    return NextResponse.json({ error: "Failed to update variant" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update variant" },
+      { status: 500 },
+    );
   }
 }
 
@@ -53,6 +61,9 @@ export async function DELETE(_: Request, { params }) {
 
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "Failed to delete variant" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete variant" },
+      { status: 500 },
+    );
   }
 }

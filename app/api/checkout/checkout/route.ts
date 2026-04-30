@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
         { ok: false, message: "Cart is empty" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
 
       return NextResponse.json(
         { ok: false, message: "Unable to reserve inventory" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -95,8 +95,8 @@ export async function POST(req: Request) {
             productId: item.productId,
             whatsappClickCount: 1,
           },
-        })
-      )
+        }),
+      ),
     );
 
     /* ---------------------------------------------
@@ -109,13 +109,13 @@ export async function POST(req: Request) {
         ? Object.values(item.attributes).join(" / ")
         : null;
 
-      const label = variantLabel
-        ? `${item.name} (${variantLabel})`
-        : item.name;
+      const label = variantLabel ? `${item.name} (${variantLabel})` : item.name;
 
       const lineTotal = item.unitPrice * item.quantity;
 
-      lines.push(`${label} x${item.quantity} = ₦${lineTotal.toLocaleString("en-NG")}`);
+      lines.push(
+        `${label} x${item.quantity} = ₦${lineTotal.toLocaleString("en-NG")}`,
+      );
     }
 
     lines.push("");

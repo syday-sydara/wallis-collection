@@ -39,9 +39,8 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error("API /products failed:", err);
 
-    return new Response(
-      JSON.stringify({ error: "Failed to load products" }),
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: "Failed to load products" }), {
+      status: 500,
+    });
   }
 }

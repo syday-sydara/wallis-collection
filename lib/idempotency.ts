@@ -65,7 +65,7 @@ export function saveIdempotentResponse<T>(key: string, value: T) {
 export async function runIdempotent<T>(
   key: string,
   fn: () => Promise<T>,
-  timeoutMs = 30_000
+  timeoutMs = 30_000,
 ): Promise<T> {
   const normalized = normalizeKey(key);
 
@@ -81,7 +81,10 @@ export async function runIdempotent<T>(
   logger?.("compute_start", normalized);
 
   const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("Idempotent operation timed out")), timeoutMs)
+    setTimeout(
+      () => reject(new Error("Idempotent operation timed out")),
+      timeoutMs,
+    ),
   );
 
   const promise = Promise.race([fn(), timeoutPromise])

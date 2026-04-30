@@ -14,7 +14,7 @@ function sanitizePaystackReference(reference: string): string | null {
 // --- Webhook signature ---
 export function verifyPaystackWebhookSignature(
   rawBody: string,
-  signature: string | null
+  signature: string | null,
 ) {
   if (!signature) return false;
 
@@ -25,10 +25,7 @@ export function verifyPaystackWebhookSignature(
 
   if (computed.length !== signature.length) return false;
 
-  return crypto.timingSafeEqual(
-    Buffer.from(computed),
-    Buffer.from(signature)
-  );
+  return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(signature));
 }
 
 // --- Verify reference ---
@@ -39,7 +36,7 @@ interface PaystackVerificationOptions {
 
 export async function verifyPaystackReference(
   reference: string,
-  _options: PaystackVerificationOptions = {}
+  _options: PaystackVerificationOptions = {},
 ): Promise<PaymentVerificationResult> {
   const safeReference = sanitizePaystackReference(reference);
   if (!safeReference) {
@@ -55,7 +52,7 @@ export async function verifyPaystackReference(
   try {
     const url = new URL(
       `/transaction/verify/${encodeURIComponent(safeReference)}`,
-      PAYSTACK_BASE_URL
+      PAYSTACK_BASE_URL,
     );
 
     const res = await fetch(url.toString(), {

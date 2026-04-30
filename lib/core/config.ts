@@ -5,7 +5,9 @@ import { serviceContext } from "./service-context";
 import { AppError } from "./errors";
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
 
   // Database
   DATABASE_URL: z.string().url(),
@@ -16,8 +18,14 @@ const envSchema = z.object({
 
   // Optional configs
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
-  METRICS_ENABLED: z.string().optional().transform(v => v === "true"),
-  TRACE_SAMPLING_RATE: z.string().optional().transform(v => Number(v ?? 1)),
+  METRICS_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => v === "true"),
+  TRACE_SAMPLING_RATE: z
+    .string()
+    .optional()
+    .transform((v) => Number(v ?? 1)),
 });
 
 // Parse + validate
@@ -26,15 +34,19 @@ const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
   const ctx = serviceContext.get();
 
-  throw new AppError("CONFIG_VALIDATION_ERROR", "Invalid environment variables", {
-    status: 500,
-    meta: {
-      issues: parsed.error.format(),
-      requestId: ctx.requestId,
-      traceId: ctx.traceId,
+  throw new AppError(
+    "CONFIG_VALIDATION_ERROR",
+    "Invalid environment variables",
+    {
+      status: 500,
+      meta: {
+        issues: parsed.error.format(),
+        requestId: ctx.requestId,
+        traceId: ctx.traceId,
+      },
+      operational: false,
     },
-    operational: false,
-  });
+  );
 }
 
 const env = parsed.data;

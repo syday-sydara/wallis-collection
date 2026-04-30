@@ -84,13 +84,13 @@ export function AdminModalProvider({ children }: { children: ReactNode }) {
                   "h-full max-w-none sm:max-w-2xl sm:h-auto rounded-none sm:rounded-md animate-slide-up",
 
                 // Default animation
-                size !== "full" && "animate-scale-in"
+                size !== "full" && "animate-scale-in",
               )}
             >
               {content}
             </div>
           </div>,
-          document.body
+          document.body,
         )}
     </ModalContext.Provider>
   );

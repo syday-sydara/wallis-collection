@@ -10,7 +10,10 @@ export async function POST(req, { params }) {
     const alt = form.get("alt")?.toString() ?? null;
 
     if (!file || !(file instanceof File)) {
-      return NextResponse.json({ error: "A valid file is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "A valid file is required" },
+        { status: 400 },
+      );
     }
 
     const product = await prisma.product.findUnique({
@@ -39,6 +42,9 @@ export async function POST(req, { params }) {
     return NextResponse.json(image);
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to upload image" },
+      { status: 500 },
+    );
   }
 }

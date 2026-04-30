@@ -3,7 +3,7 @@ import { AdminCard } from "@/components/admin/ui/AdminCard";
 async function fetchSessions() {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/api/security/sessions`,
-    { cache: "no-store" }
+    { cache: "no-store" },
   );
 
   if (!res.ok) {
@@ -33,9 +33,7 @@ export default async function ActiveSessionsCard() {
         {typeof trend === "number" && (
           <p
             className={
-              trend >= 0
-                ? "text-xs text-success"
-                : "text-xs text-danger"
+              trend >= 0 ? "text-xs text-success" : "text-xs text-danger"
             }
           >
             {trend >= 0 ? "+" : ""}

@@ -31,9 +31,7 @@ export default async function AnalyticsPage() {
       _sum: { amount: true },
     }),
 
-    prisma.$queryRaw<
-      { date: string; revenue: number }[]
-    >`
+    prisma.$queryRaw<{ date: string; revenue: number }[]>`
       SELECT DATE("createdAt") AS date, SUM("total") AS revenue
       FROM "Order"
       GROUP BY DATE("createdAt")
@@ -41,9 +39,7 @@ export default async function AnalyticsPage() {
       LIMIT 30
     `,
 
-    prisma.$queryRaw<
-      { name: string; qty: number }[]
-    >`
+    prisma.$queryRaw<{ name: string; qty: number }[]>`
       SELECT p.name, SUM(oi.quantity) AS qty
       FROM "OrderItem" oi
       JOIN "ProductVariant" v ON oi."variantId" = v.id
@@ -53,9 +49,7 @@ export default async function AnalyticsPage() {
       LIMIT 5
     `,
 
-    prisma.$queryRaw<
-      { fullName: string | null; spent: number }[]
-    >`
+    prisma.$queryRaw<{ fullName: string | null; spent: number }[]>`
       SELECT u."fullName", SUM(o.total) AS spent
       FROM "Order" o
       JOIN "User" u ON o."userId" = u.id

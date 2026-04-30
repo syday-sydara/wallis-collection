@@ -37,10 +37,7 @@ export default async function ProductEditorPage({ params }) {
       <section className="p-6 bg-white rounded-lg shadow space-y-6">
         <h2 className="text-xl font-semibold">Product Images</h2>
 
-        <ImageManager
-          productId={product.id}
-          initialImages={product.images}
-        />
+        <ImageManager productId={product.id} initialImages={product.images} />
       </section>
 
       {/* Variants */}
@@ -59,7 +56,8 @@ export default async function ProductEditorPage({ params }) {
                 <div>
                   <p className="font-medium">{variant.name}</p>
                   <p className="text-sm text-gray-500">
-                    SKU: {variant.sku} • ${variant.price} • Stock: {variant.stock}
+                    SKU: {variant.sku} • ${variant.price} • Stock:{" "}
+                    {variant.stock}
                   </p>
                 </div>
 

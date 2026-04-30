@@ -55,7 +55,7 @@ export async function prismaWarmup() {
 
 // Safe transaction wrapper
 export async function safeTransaction<T>(
-  fn: (tx: PrismaClient) => Promise<T>
+  fn: (tx: PrismaClient) => Promise<T>,
 ): Promise<T> {
   try {
     return await prisma.$transaction(async (tx) => fn(tx));

@@ -7,21 +7,27 @@ import { processCheckout, reserveInventory } from "@/lib/checkout/service";
 import { logEvent } from "@/lib/auth/logger";
 import { startTimer } from "@/lib/auth/metrics";
 import { checkRateLimit } from "@/lib/api/rate-limit";
-import { getIdempotentResponse, saveIdempotentResponse } from "@/lib/idempotency";
+import {
+  getIdempotentResponse,
+  saveIdempotentResponse,
+} from "@/lib/idempotency";
 import { buildRiskContext } from "@/lib/risk/context";
 import { prisma } from "@/lib/prisma";
 import { normalizePhone, maskEmail } from "@/lib/security/normalize";
 
 import type { CheckoutActionState } from "./state";
 
-export async function submitCheckout(formData: FormData): Promise<CheckoutActionState> {
+export async function submitCheckout(
+  formData: FormData,
+): Promise<CheckoutActionState> {
   return Sentry.startSpan(
     { name: "checkout.submit", op: "server.action" },
     async () => {
       const endTimer = startTimer("checkout_server_action");
 
       const hdrs = await headers();
-      const ip = hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+      const ip =
+        hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
       const userAgent = hdrs.get("user-agent") ?? "unknown";
 
       /* ---------------- Rate Limit ---------------- */
@@ -31,7 +37,7 @@ export async function submitCheckout(formData: FormData): Promise<CheckoutAction
         return {
           success: false,
           message: "Too many attempts. Please wait a moment and try again.",
-          fieldErrors: {}
+          fieldErrors: {},
         };
       }
 
@@ -42,7 +48,7 @@ export async function submitCheckout(formData: FormData): Promise<CheckoutAction
         return {
           success: false,
           message: "Missing idempotency key",
-          fieldErrors: {}
+          fieldErrors: {},
         };
       }
 
@@ -68,7 +74,7 @@ export async function submitCheckout(formData: FormData): Promise<CheckoutAction
           return {
             success: false,
             message: "Invalid cart data",
-            fieldErrors: { items: ["Invalid items format"] }
+            fieldErrors: { items: ["Invalid items format"] },
           };
         }
 
@@ -77,7 +83,7 @@ export async function submitCheckout(formData: FormData): Promise<CheckoutAction
           return {
             success: false,
             message: "Your cart is empty",
-            fieldErrors: {}
+            fieldErrors: {},
           };
         }
 
@@ -94,7 +100,7 @@ export async function submitCheckout(formData: FormData): Promise<CheckoutAction
           address: raw.address,
           city: raw.city,
           state: raw.state,
-          items
+          items,
         };
 
         /* ---------------- Validate Payload ---------------- */
@@ -105,18 +111,18 @@ export async function submitCheckout(formData: FormData): Promise<CheckoutAction
           return {
             success: false,
             message: "Please correct the highlighted fields",
-            fieldErrors: flattened
+            fieldErrors: flattened,
           };
         }
 
         /* ---------------- Fetch Server Prices ---------------- */
-        const productIds = parsed.data.items.map(i => i.productId);
+        const productIds = parsed.data.items.map((i) => i.productId);
         const products = await prisma.product.findMany({
           where: { id: { in: productIds } },
-          select: { id: true, basePrice: true, name: true, inStock: true }
+          select: { id: true, basePrice: true, name: true, inStock: true },
         });
 
-        const priceMap = new Map(products.map(p => [p.id, p]));
+        const priceMap = new Map(products.map((p) => [p.id, p]));
 
         /* ---------------- Validate Cart Items ---------------- */
         for (const item of parsed.data.items) {
@@ -126,7 +132,7 @@ export async function submitCheckout(formData: FormData): Promise<CheckoutAction
             return {
               success: false,
               message: "One or more items are no longer available",
-              fieldErrors: {}
+              fieldErrors: {},
             };
           }
 
@@ -134,7 +140,7 @@ export async function submitCheckout(formData: FormData): Promise<CheckoutAction
             return {
               success: false,
               message: `${product.name} is out of stock`,
-              fieldErrors: {}
+              fieldErrors: {},
             };
           }
 
@@ -142,7 +148,7 @@ export async function submitCheckout(formData: FormData): Promise<CheckoutAction
             return {
               success: false,
               message: "Invalid quantity selected",
-              fieldErrors: {}
+              fieldErrors: {},
             };
           }
         }
@@ -161,7 +167,7 @@ export async function submitCheckout(formData: FormData): Promise<CheckoutAction
           userAgent,
           attempts: rate.remaining,
           cartValue,
-          shippingState: parsed.data.state
+          shippingState: parsed.data.state,
         });
 
         /* ---------------- Process Checkout ---------------- */
@@ -181,7 +187,7 @@ export async function submitCheckout(formData: FormData): Promise<CheckoutAction
           message: null,
           fieldErrors: {},
           orderId: result.orderId,
-          paymentUrl: result.paymentUrl ?? null
+          paymentUrl: result.paymentUrl ?? null,
         };
 
         saveIdempotentResponse(idempotencyKey, response);
@@ -193,9 +199,9 @@ export async function submitCheckout(formData: FormData): Promise<CheckoutAction
         return {
           success: false,
           message: "Unexpected error occurred. Please try again.",
-          fieldErrors: {}
+          fieldErrors: {},
         };
       }
-    }
+    },
   );
 }

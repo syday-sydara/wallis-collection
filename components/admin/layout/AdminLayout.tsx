@@ -16,15 +16,16 @@ export default function AdminLayout({ children }) {
       </div>
 
       {/* Mobile Sidebar */}
-      <AdminMobileSidebar open={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <AdminMobileSidebar
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         <AdminTopbar onMenuClick={() => setMobileOpen(true)} />
 
-        <main className="p-4 sm:p-6">
-          {children}
-        </main>
+        <main className="p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

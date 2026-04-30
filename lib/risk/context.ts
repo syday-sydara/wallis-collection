@@ -61,9 +61,7 @@ function extractPhonePrefix(phone?: string | null): string | null {
 
   if (cleaned.startsWith("+234")) return "+234";
 
-  return (
-    NIGERIA_CARRIER_PREFIXES.find((p) => cleaned.startsWith(p)) ?? null
-  );
+  return NIGERIA_CARRIER_PREFIXES.find((p) => cleaned.startsWith(p)) ?? null;
 }
 
 function normalizeUserAgent(ua?: string | null): string {

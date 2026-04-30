@@ -4,10 +4,7 @@ export default function AdminTopbar({ onMenuClick }) {
   return (
     <header className="h-14 border-b border-border-default bg-[rgb(var(--surface-card))] flex items-center px-4 justify-between">
       {/* Mobile menu button */}
-      <button
-        className="lg:hidden text-text-primary"
-        onClick={onMenuClick}
-      >
+      <button className="lg:hidden text-text-primary" onClick={onMenuClick}>
         ☰
       </button>
 

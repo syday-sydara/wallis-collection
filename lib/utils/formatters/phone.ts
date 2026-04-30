@@ -14,7 +14,7 @@
  */
 export function normalizePhoneForWhatsApp(
   input: string,
-  strict: boolean = false
+  strict: boolean = false,
 ): string | null {
   if (!input) return null;
 
@@ -50,8 +50,8 @@ export function normalizePhoneForWhatsApp(
     return digits.startsWith("0")
       ? `234${digits.slice(1)}`
       : digits.startsWith("234")
-      ? digits
-      : `234${digits}`;
+        ? digits
+        : `234${digits}`;
   }
 
   return null;

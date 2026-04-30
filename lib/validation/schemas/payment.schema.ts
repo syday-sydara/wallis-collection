@@ -4,7 +4,7 @@ import { z } from "zod";
 export const PaymentSchema = z.object({
   id: z.string(),
   orderId: z.string(),
-  order: z.string(),
+  order: OrderSchema,
   provider: z.enum(["PAYSTACK", "MONNIFY", "BANK_TRANSFER"]),
   reference: z.string(),
   amount: z.number(),

@@ -101,9 +101,7 @@ export default function RiderUpdatePage() {
         </div>
       ) : (
         <div className="p-4 text-center bg-green-50 rounded-md">
-          <div className="font-medium">
-            Status updated: {data.status}
-          </div>
+          <div className="font-medium">Status updated: {data.status}</div>
         </div>
       )}
     </div>

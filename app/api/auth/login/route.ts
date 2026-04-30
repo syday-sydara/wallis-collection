@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   if (action === "block") {
     return NextResponse.json(
       { error: "Login blocked due to risk" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     // e.g. require extra step, show captcha, etc.
     return NextResponse.json(
       { challenge: true, message: "Additional verification required" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 

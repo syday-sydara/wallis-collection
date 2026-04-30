@@ -6,7 +6,7 @@ export function DeleteConfirm({ productId, image, onClose, onDeleted }) {
   async function handleDelete() {
     const res = await fetch(
       `/api/admin/products/${productId}/images/${image.id}`,
-      { method: "DELETE" }
+      { method: "DELETE" },
     );
 
     if (res.ok) {
@@ -31,10 +31,7 @@ export function DeleteConfirm({ productId, image, onClose, onDeleted }) {
             Delete
           </button>
 
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-200 rounded"
-          >
+          <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded">
             Cancel
           </button>
         </div>

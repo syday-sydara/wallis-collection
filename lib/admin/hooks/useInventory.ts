@@ -21,7 +21,7 @@ export function useInventory(productId: string) {
       return await admin.inventory.updateVariantStock(
         productId,
         variantId,
-        stock
+        stock,
       );
     } catch (err: any) {
       setError(err.message);

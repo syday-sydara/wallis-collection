@@ -9,7 +9,9 @@ export default function VerifyPage({
   searchParams: { orderId?: string };
 }) {
   const router = useRouter();
-  const [status, setStatus] = useState<"loading" | "error" | "success">("loading");
+  const [status, setStatus] = useState<"loading" | "error" | "success">(
+    "loading",
+  );
   const [attempts, setAttempts] = useState(0);
 
   const orderId = searchParams.orderId;

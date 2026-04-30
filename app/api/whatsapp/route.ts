@@ -9,8 +9,7 @@ import { sendTrackingUpdate } from "@/lib/whatsapp/events";
 export async function POST(req: Request) {
   const body = await req.json();
 
-  const message =
-    body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+  const message = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
   if (!message) {
     return NextResponse.json({ status: "ignored" });
@@ -39,7 +38,7 @@ export async function POST(req: Request) {
 
       await sendWhatsAppMessage(
         from,
-        `You selected order #${order.id.slice(0, 8)}.\nTrack it here:\n${process.env.NEXT_PUBLIC_APP_URL}/track/${order.trackingToken}`
+        `You selected order #${order.id.slice(0, 8)}.\nTrack it here:\n${process.env.NEXT_PUBLIC_APP_URL}/track/${order.trackingToken}`,
       );
 
       return NextResponse.json({ status: "ok" });
@@ -55,14 +54,17 @@ export async function POST(req: Request) {
     const id = message.interactive.button_reply.id;
 
     if (id === "track_again") {
-      await sendWhatsAppMessage(from, "Please enter your tracking number or phone number.");
+      await sendWhatsAppMessage(
+        from,
+        "Please enter your tracking number or phone number.",
+      );
       return NextResponse.json({ status: "ok" });
     }
 
     if (id === "talk_support") {
       await sendWhatsAppMessage(
         from,
-        `Chat with support:\nhttps://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP}`
+        `Chat with support:\nhttps://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP}`,
       );
       return NextResponse.json({ status: "ok" });
     }
@@ -70,7 +72,7 @@ export async function POST(req: Request) {
     if (id === "view_timeline") {
       await sendWhatsAppMessage(
         from,
-        `Open your timeline:\n${process.env.NEXT_PUBLIC_APP_URL}/track/${order.trackingToken}`
+        `Open your timeline:\n${process.env.NEXT_PUBLIC_APP_URL}/track/${order.trackingToken}`,
       );
       return NextResponse.json({ status: "ok" });
     }
@@ -92,11 +94,7 @@ export async function POST(req: Request) {
   // Tracking flow
   const order = await prisma.order.findFirst({
     where: {
-      OR: [
-        { trackingNumber: text },
-        { phone: text },
-        { trackingToken: text },
-      ],
+      OR: [{ trackingNumber: text }, { phone: text }, { trackingToken: text }],
     },
     include: {
       fulfillments: true,
@@ -107,7 +105,7 @@ export async function POST(req: Request) {
   if (!order) {
     await sendWhatsAppMessage(
       from,
-      "I couldn't find an order with that information. Please check and try again."
+      "I couldn't find an order with that information. Please check and try again.",
     );
     return NextResponse.json({ status: "ok" });
   }

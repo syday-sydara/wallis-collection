@@ -23,11 +23,12 @@ const alertVariants = cva(
       variant: "info",
       size: "md",
     },
-  }
+  },
 );
 
 export interface AlertProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends
+    React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof alertVariants> {
   title?: string;
   description?: string;
@@ -48,23 +49,27 @@ export function Alert({
     variant === "success"
       ? CheckCircle2
       : variant === "warning"
-      ? AlertTriangle
-      : variant === "danger"
-      ? XCircle
-      : Info;
+        ? AlertTriangle
+        : variant === "danger"
+          ? XCircle
+          : Info;
 
   return (
     <div
       role="alert"
       aria-live="assertive"
-      className={cn(alertVariants({ variant, size }), "animate-fadeIn", className)}
+      className={cn(
+        alertVariants({ variant, size }),
+        "animate-fadeIn",
+        className,
+      )}
       {...props}
     >
       {/* Icon */}
       <Icon
         className={cn(
           "shrink-0 text-current/90",
-          size === "sm" ? "h-4 w-4 mt-0.5" : "h-5 w-5"
+          size === "sm" ? "h-4 w-4 mt-0.5" : "h-5 w-5",
         )}
         aria-hidden="true"
       />
@@ -72,9 +77,7 @@ export function Alert({
       {/* Content */}
       <div className="flex flex-col">
         {title && <h4 className="font-semibold leading-snug">{title}</h4>}
-        {description && (
-          <p className="text-text-muted mt-1">{description}</p>
-        )}
+        {description && <p className="text-text-muted mt-1">{description}</p>}
         {children}
       </div>
     </div>

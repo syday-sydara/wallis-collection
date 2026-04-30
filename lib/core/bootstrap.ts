@@ -13,28 +13,25 @@ export function bootstrap() {
   initialized = true;
 
   // Attach a temporary context for bootstrap logs
-  serviceContext.run(
-    { requestId: "bootstrap", traceId: "bootstrap" },
-    () => {
-      logger.info("Bootstrapping core services...", {
-        env: config.env,
-        metricsEnabled: config.metrics.enabled,
-        traceSampling: config.tracing.samplingRate,
+  serviceContext.run({ requestId: "bootstrap", traceId: "bootstrap" }, () => {
+    logger.info("Bootstrapping core services...", {
+      env: config.env,
+      metricsEnabled: config.metrics.enabled,
+      traceSampling: config.tracing.samplingRate,
+    });
+
+    // Optional: enable event debug logging in development
+    if (config.isDev) {
+      setEventDebugHook((event, payload) => {
+        logger.debug("Event fired", { event, payload });
       });
-
-      // Optional: enable event debug logging in development
-      if (config.isDev) {
-        setEventDebugHook((event, payload) => {
-          logger.debug("Event fired", { event, payload });
-        });
-      }
-
-      // Emit a startup metric
-      if (config.metrics.enabled) {
-        metrics.increment("system.startup");
-      }
-
-      logger.info("Core services initialized successfully");
     }
-  );
+
+    // Emit a startup metric
+    if (config.metrics.enabled) {
+      metrics.increment("system.startup");
+    }
+
+    logger.info("Core services initialized successfully");
+  });
 }

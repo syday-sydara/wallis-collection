@@ -3,7 +3,7 @@ import { Card } from "@/components/admin/ui/AdminCard";
 async function fetchRiskDistribution() {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/api/security/risk-distribution`,
-    { cache: "no-store" }
+    { cache: "no-store" },
   );
 
   if (!res.ok) {
@@ -49,9 +49,14 @@ export default async function SecurityRiskPage() {
           <Card>
             <ul className="divide-y divide-border">
               {data.topUsers.map((u: any) => (
-                <li key={u.userId} className="py-3 text-sm flex justify-between">
+                <li
+                  key={u.userId}
+                  className="py-3 text-sm flex justify-between"
+                >
                   <span className="font-medium">{u.userId}</span>
-                  <span className="text-danger font-semibold">{u.riskScore}</span>
+                  <span className="text-danger font-semibold">
+                    {u.riskScore}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -68,7 +73,9 @@ export default async function SecurityRiskPage() {
               {data.topIps.map((ip: any) => (
                 <li key={ip.ip} className="py-3 text-sm flex justify-between">
                   <span className="font-mono">{ip.ip}</span>
-                  <span className="text-danger font-semibold">{ip.riskScore}</span>
+                  <span className="text-danger font-semibold">
+                    {ip.riskScore}
+                  </span>
                 </li>
               ))}
             </ul>

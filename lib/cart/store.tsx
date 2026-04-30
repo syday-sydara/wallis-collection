@@ -101,12 +101,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const existing = prev.find(
         (i) =>
           i.productId === item.productId &&
-          hashAttributes(i.attributes) === key
+          hashAttributes(i.attributes) === key,
       );
 
       if (existing) {
         return prev.map((i) =>
-          i.id === existing.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.id === existing.id ? { ...i, quantity: i.quantity + 1 } : i,
         );
       }
 
@@ -120,20 +120,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   /* ---------------- Update Quantity ---------------- */
   const updateQuantity = useCallback((id: string, qty: number) => {
     setItems((prev) =>
-      prev.map((i) =>
-        i.id === id ? { ...i, quantity: Math.max(1, qty) } : i
-      )
+      prev.map((i) => (i.id === id ? { ...i, quantity: Math.max(1, qty) } : i)),
     );
   }, []);
 
   const increaseQty = useCallback(
-    (id: string) => updateQuantity(id, (items.find((i) => i.id === id)?.quantity ?? 1) + 1),
-    [items, updateQuantity]
+    (id: string) =>
+      updateQuantity(id, (items.find((i) => i.id === id)?.quantity ?? 1) + 1),
+    [items, updateQuantity],
   );
 
   const decreaseQty = useCallback(
-    (id: string) => updateQuantity(id, (items.find((i) => i.id === id)?.quantity ?? 1) - 1),
-    [items, updateQuantity]
+    (id: string) =>
+      updateQuantity(id, (items.find((i) => i.id === id)?.quantity ?? 1) - 1),
+    [items, updateQuantity],
   );
 
   /* ---------------- Remove Item ---------------- */
@@ -200,12 +200,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   /* ---------------- Derived Values ---------------- */
   const subtotal = useMemo(
     () => items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0),
-    [items]
+    [items],
   );
 
   const totalItems = useMemo(
     () => items.reduce((sum, i) => sum + i.quantity, 0),
-    [items]
+    [items],
   );
 
   /* ---------------- Provide Context ---------------- */
@@ -247,7 +247,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       clear,
       syncToServer,
       loadFromServer,
-    ]
+    ],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

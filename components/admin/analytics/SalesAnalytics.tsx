@@ -18,7 +18,13 @@ import {
   Tooltip,
 } from "chart.js";
 
-ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Tooltip);
+ChartJS.register(
+  LineElement,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  Tooltip,
+);
 
 export default function SalesAnalytics({
   totalRevenue,
@@ -188,7 +194,13 @@ function KPI({
 /* Card Component                                      */
 /* -------------------------------------------------- */
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-lg border border-border bg-surface-card p-6 shadow-sm">
       <h2 className="text-lg font-medium mb-4">{title}</h2>

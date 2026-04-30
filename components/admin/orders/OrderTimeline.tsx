@@ -273,8 +273,8 @@ export default function OrderTimeline({
                       {/* Payment details */}
                       {e.type.startsWith("PAYMENT") && e.meta && (
                         <div className="text-xs text-text-secondary mt-1">
-                          {e.meta.currency} {(e.meta.amount / 100).toFixed(2)} · Ref:{" "}
-                          {e.meta.reference}
+                          {e.meta.currency} {(e.meta.amount / 100).toFixed(2)} ·
+                          Ref: {e.meta.reference}
                           {e.meta.channel && ` · ${e.meta.channel}`}
                         </div>
                       )}

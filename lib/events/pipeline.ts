@@ -159,9 +159,7 @@ export async function logEvent(event: any) {
         processAlert({
           action: e.event,
           metadata: e.metadata ?? {},
-        }).catch((err) =>
-          console.error("Alert processing failed:", err)
-        );
+        }).catch((err) => console.error("Alert processing failed:", err));
         break;
       }
 

@@ -3,7 +3,11 @@
 import ProductRow from "../ProductRow";
 import type { AdminProductSummary } from "@/lib/products/types";
 
-export default function ProductTable({ products }: { products: AdminProductSummary[] }) {
+export default function ProductTable({
+  products,
+}: {
+  products: AdminProductSummary[];
+}) {
   if (!products.length) {
     return (
       <p className="text-sm text-text-muted mt-6 text-center">

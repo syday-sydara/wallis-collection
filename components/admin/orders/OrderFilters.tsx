@@ -33,7 +33,9 @@ export default function OrderFilters({
   const searchParams = useSearchParams();
 
   const [status, setStatus] = useState(initialStatus || "ALL");
-  const [paymentStatus, setPaymentStatus] = useState(initialPaymentStatus || "ALL");
+  const [paymentStatus, setPaymentStatus] = useState(
+    initialPaymentStatus || "ALL",
+  );
   const [q, setQ] = useState(initialQuery || "");
 
   function applyFilters() {
@@ -78,7 +80,9 @@ export default function OrderFilters({
         </div>
 
         <div>
-          <label className="block text-xs font-medium mb-1">Payment Status</label>
+          <label className="block text-xs font-medium mb-1">
+            Payment Status
+          </label>
           <select
             className="input !px-2 !py-1 text-sm"
             value={paymentStatus}

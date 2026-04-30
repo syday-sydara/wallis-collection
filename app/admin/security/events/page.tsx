@@ -5,8 +5,13 @@ import { AdminCard } from "@/components/admin/ui/AdminCard";
 import EventTable from "@/components/security/EventTable";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem }
- from "@/components/ui/Select";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/Select";
 
 type SecurityEvent = {
   id: string;
@@ -70,14 +75,14 @@ export default function SecurityEventsPage() {
       const res = await fetch(`/api/security/events?${params}`);
       const data: EventsResponse = await res.json();
 
-      setEvents(prev => (append ? [...prev, ...data.events] : data.events));
+      setEvents((prev) => (append ? [...prev, ...data.events] : data.events));
       setNextCursor(data.nextCursor);
       setHasNextPage(data.hasNextPage);
 
       setLoading(false);
       setLoadingMore(false);
     },
-    [debouncedType, severity, debouncedUserId, from, to]
+    [debouncedType, severity, debouncedUserId, from, to],
   );
 
   // Fetch on filter change
@@ -101,7 +106,9 @@ export default function SecurityEventsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Security Events</h1>
+        <h1 className="text-xl font-semibold tracking-tight">
+          Security Events
+        </h1>
         <p className="text-sm text-muted-foreground">
           View and filter security events across the platform
         </p>

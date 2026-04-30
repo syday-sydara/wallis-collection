@@ -49,7 +49,7 @@ export function AdminNav() {
 
             isActive(href)
               ? "bg-primary/15 text-text font-semibold shadow-sm"
-              : "text-text-muted hover:text-text hover:bg-surface-muted"
+              : "text-text-muted hover:text-text hover:bg-surface-muted",
           )}
         >
           <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />

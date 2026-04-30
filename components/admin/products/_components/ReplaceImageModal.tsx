@@ -21,7 +21,7 @@ export function ReplaceImageModal({ productId, image, onClose, onReplaced }) {
       {
         method: "POST",
         body: form,
-      }
+      },
     );
 
     const data = await res.json();
@@ -43,10 +43,7 @@ export function ReplaceImageModal({ productId, image, onClose, onReplaced }) {
           <input type="file" className="hidden" onChange={handleReplace} />
         </label>
 
-        <button
-          onClick={onClose}
-          className="px-4 py-2 bg-gray-200 rounded"
-        >
+        <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded">
           Cancel
         </button>
       </div>

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import { X, Minus, Plus, Trash, MessageCircle } from "lucide-react";
@@ -79,7 +79,7 @@ export function CartDrawer() {
       <div
         className={cn(
           "fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity z-40",
-          isOpen ? "opacity-100" : "pointer-events-none opacity-0"
+          isOpen ? "opacity-100" : "pointer-events-none opacity-0",
         )}
         onClick={close}
       />
@@ -91,7 +91,7 @@ export function CartDrawer() {
         aria-label="Shopping cart"
         className={cn(
           "fixed right-0 top-0 h-full w-[90%] max-w-sm bg-surface shadow-xl z-50 flex flex-col transition-transform pb-safe animate-fadeIn-fast",
-          isOpen ? "translate-x-0" : "translate-x-full"
+          isOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
         {/* Header */}
@@ -198,7 +198,9 @@ export function CartDrawer() {
               disabled={loadingWhatsApp}
             >
               <MessageCircle className="h-5 w-5" />
-              {loadingWhatsApp ? "Opening WhatsApp..." : "Checkout via WhatsApp"}
+              {loadingWhatsApp
+                ? "Opening WhatsApp..."
+                : "Checkout via WhatsApp"}
             </Button>
 
             {/* Website Checkout */}

@@ -33,13 +33,17 @@ export default async function AdminHomePage() {
     <div className="space-y-10 animate-fadeIn">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">Admin Dashboard</h1>
+        <h1 className="text-xl font-semibold tracking-tight">
+          Admin Dashboard
+        </h1>
       </div>
 
       {/* Quick Stats */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <AdminCard as={Link} href="/admin/orders" header="Orders" hover>
-          <p className="text-text-secondary text-sm">Total orders in the system</p>
+          <p className="text-text-secondary text-sm">
+            Total orders in the system
+          </p>
           <p className="mt-4 text-2xl font-semibold">{orderCount}</p>
         </AdminCard>
 

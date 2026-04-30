@@ -31,7 +31,7 @@ export function ImageManager({ productId, initialImages }) {
       prev.map((img) => ({
         ...img,
         isPrimary: img.id === imageId,
-      }))
+      })),
     );
   }
 
@@ -65,7 +65,8 @@ export function ImageManager({ productId, initialImages }) {
             <div className="flex-1">
               <p className="text-sm font-medium">{img.publicId}</p>
               <p className="text-xs text-gray-500">
-                {img.width}×{img.height} • {img.format} • {(img.bytes / 1024).toFixed(1)} KB
+                {img.width}×{img.height} • {img.format} •{" "}
+                {(img.bytes / 1024).toFixed(1)} KB
               </p>
 
               {img.isPrimary && (
@@ -109,7 +110,7 @@ export function ImageManager({ productId, initialImages }) {
         onClose={() => setReplaceImage(null)}
         onReplaced={(updated) =>
           setImages((prev) =>
-            prev.map((img) => (img.id === updated.id ? updated : img))
+            prev.map((img) => (img.id === updated.id ? updated : img)),
           )
         }
       />

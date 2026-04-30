@@ -47,7 +47,7 @@ function formatDev(payload: LogPayload) {
   return `${timeTag} ${levelTag} ${message} ${colors.dim}${JSON.stringify(
     meta,
     null,
-    2
+    2,
   )}${colors.reset}`;
 }
 

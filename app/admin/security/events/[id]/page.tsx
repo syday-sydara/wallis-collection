@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
 
-export default async function EventDetailPage({ params }: { params: { id: string } }) {
+export default async function EventDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const event = await prisma.securityEvent.findUnique({
     where: { id: params.id },
   });
@@ -150,7 +154,13 @@ function Detail({
 /* Section Wrapper                                     */
 /* -------------------------------------------------- */
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-medium text-text">{title}</h2>
@@ -171,7 +181,12 @@ function RelatedBlock({
   events,
 }: {
   title: string;
-  events: Array<{ id: string; type: string; timestamp: Date | string; severity?: string }>;
+  events: Array<{
+    id: string;
+    type: string;
+    timestamp: Date | string;
+    severity?: string;
+  }>;
 }) {
   return (
     <div className="space-y-1">
@@ -215,7 +230,7 @@ function SeverityBadge({ severity }: { severity: string }) {
     <span
       className={clsx(
         "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium capitalize",
-        styles[severity.toLowerCase()] ?? styles.low
+        styles[severity.toLowerCase()] ?? styles.low,
       )}
     >
       {severity}

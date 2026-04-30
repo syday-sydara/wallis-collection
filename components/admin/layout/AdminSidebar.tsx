@@ -28,7 +28,7 @@ export default function AdminSidebar() {
               "px-3 py-2 rounded-md text-sm transition",
               pathname.startsWith(link.href)
                 ? "bg-primary-soft text-[rgb(var(--color-primary))]"
-                : "text-text-secondary hover:bg-[rgb(var(--surface-muted))]"
+                : "text-text-secondary hover:bg-[rgb(var(--surface-muted))]",
             )}
           >
             {link.label}

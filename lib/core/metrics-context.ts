@@ -26,10 +26,14 @@ export const metricsWithContext = {
     safe(() => metrics.increment(base, value));
 
     // Contextual tagging
-    if (ctx.locale) safe(() => metrics.increment(`${base}.locale.${ctx.locale}`, value));
-    if (ctx.userId) safe(() => metrics.increment(`${base}.user.${ctx.userId}`, value));
-    if (ctx.sessionId) safe(() => metrics.increment(`${base}.session.${ctx.sessionId}`, value));
-    if (ctx.deviceId) safe(() => metrics.increment(`${base}.device.${ctx.deviceId}`, value));
+    if (ctx.locale)
+      safe(() => metrics.increment(`${base}.locale.${ctx.locale}`, value));
+    if (ctx.userId)
+      safe(() => metrics.increment(`${base}.user.${ctx.userId}`, value));
+    if (ctx.sessionId)
+      safe(() => metrics.increment(`${base}.session.${ctx.sessionId}`, value));
+    if (ctx.deviceId)
+      safe(() => metrics.increment(`${base}.device.${ctx.deviceId}`, value));
   },
 
   /**
@@ -41,10 +45,14 @@ export const metricsWithContext = {
 
     safe(() => metrics.timing(base, ms));
 
-    if (ctx.locale) safe(() => metrics.timing(`${base}.locale.${ctx.locale}`, ms));
-    if (ctx.userId) safe(() => metrics.timing(`${base}.user.${ctx.userId}`, ms));
-    if (ctx.sessionId) safe(() => metrics.timing(`${base}.session.${ctx.sessionId}`, ms));
-    if (ctx.deviceId) safe(() => metrics.timing(`${base}.device.${ctx.deviceId}`, ms));
+    if (ctx.locale)
+      safe(() => metrics.timing(`${base}.locale.${ctx.locale}`, ms));
+    if (ctx.userId)
+      safe(() => metrics.timing(`${base}.user.${ctx.userId}`, ms));
+    if (ctx.sessionId)
+      safe(() => metrics.timing(`${base}.session.${ctx.sessionId}`, ms));
+    if (ctx.deviceId)
+      safe(() => metrics.timing(`${base}.device.${ctx.deviceId}`, ms));
   },
 
   /**
@@ -75,7 +83,8 @@ export const metricsWithContext = {
 
       sample: (rate: number) => metricsWithContext.sample(rate),
 
-      child: (sub: string) => metricsWithContext.child(`${base}.${normalizeKey(sub)}`),
+      child: (sub: string) =>
+        metricsWithContext.child(`${base}.${normalizeKey(sub)}`),
     };
   },
 

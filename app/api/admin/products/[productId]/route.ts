@@ -15,7 +15,10 @@ export async function GET(_: Request, { params }) {
 
     return NextResponse.json(product);
   } catch {
-    return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch product" },
+      { status: 500 },
+    );
   }
 }
 
@@ -36,7 +39,10 @@ export async function PATCH(req, { params }) {
     if (slug && slug !== existing.slug) {
       const slugExists = await prisma.product.findUnique({ where: { slug } });
       if (slugExists) {
-        return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
+        return NextResponse.json(
+          { error: "Slug already exists" },
+          { status: 409 },
+        );
       }
     }
 
@@ -52,7 +58,10 @@ export async function PATCH(req, { params }) {
 
     return NextResponse.json(updated);
   } catch {
-    return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update product" },
+      { status: 500 },
+    );
   }
 }
 
@@ -70,6 +79,9 @@ export async function DELETE(_: Request, { params }) {
 
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete product" },
+      { status: 500 },
+    );
   }
 }

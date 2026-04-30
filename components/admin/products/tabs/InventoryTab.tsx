@@ -21,10 +21,15 @@ export default function InventoryTab({ product }) {
   return (
     <div className="space-y-4 max-w-lg">
       {product.variants.map((v) => (
-        <div key={v.id} className="flex items-center justify-between border-b py-3">
+        <div
+          key={v.id}
+          className="flex items-center justify-between border-b py-3"
+        >
           <div>
             <div className="font-medium">{v.name}</div>
-            <div className="text-text-secondary text-sm">Variant ID: {v.id}</div>
+            <div className="text-text-secondary text-sm">
+              Variant ID: {v.id}
+            </div>
           </div>
 
           <input

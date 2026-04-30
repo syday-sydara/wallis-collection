@@ -10,7 +10,7 @@ export async function POST(req, { params }) {
     if (!name || !sku || price == null) {
       return NextResponse.json(
         { error: "name, sku, and price are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -22,9 +22,14 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    const existingSku = await prisma.productVariant.findUnique({ where: { sku } });
+    const existingSku = await prisma.productVariant.findUnique({
+      where: { sku },
+    });
     if (existingSku) {
-      return NextResponse.json({ error: "SKU already exists" }, { status: 409 });
+      return NextResponse.json(
+        { error: "SKU already exists" },
+        { status: 409 },
+      );
     }
 
     const variant = await prisma.productVariant.create({
@@ -39,6 +44,9 @@ export async function POST(req, { params }) {
 
     return NextResponse.json(variant);
   } catch {
-    return NextResponse.json({ error: "Failed to create variant" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to create variant" },
+      { status: 500 },
+    );
   }
 }

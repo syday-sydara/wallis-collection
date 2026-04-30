@@ -45,7 +45,7 @@ export function Drawer({
       <div
         className={cn(
           "w-full bg-surface rounded-t-lg border-t border-border shadow-lg animate-fadeIn-fast animate-slideUp overflow-hidden",
-          heightClasses[height]
+          heightClasses[height],
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -53,12 +53,18 @@ export function Drawer({
           <div className="flex items-center justify-between p-4 border-b border-border">
             <div>
               {title && (
-                <h2 id="drawer-title" className="text-lg font-semibold text-text">
+                <h2
+                  id="drawer-title"
+                  className="text-lg font-semibold text-text"
+                >
                   {title}
                 </h2>
               )}
               {description && (
-                <p id="drawer-description" className="text-sm text-text-muted mt-0.5">
+                <p
+                  id="drawer-description"
+                  className="text-sm text-text-muted mt-0.5"
+                >
                   {description}
                 </p>
               )}

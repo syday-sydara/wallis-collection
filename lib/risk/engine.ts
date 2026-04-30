@@ -81,7 +81,7 @@ async function getCachedPolicy(policyId: string): Promise<RiskPolicy | null> {
   // Cache for 1 hour
   await redisSafe(
     () => redis.set(cacheKey, JSON.stringify(policy), { ex: POLICY_CACHE_TTL }),
-    null
+    null,
   );
 
   return policy;
@@ -102,7 +102,8 @@ export async function invalidatePolicyCache(policyId: string): Promise<void> {
 
 function classify(score: number, policy: RiskPolicy) {
   if (policy.blockThreshold && score >= policy.blockThreshold) return "HIGH";
-  if (policy.reviewThreshold && score >= policy.reviewThreshold) return "MEDIUM";
+  if (policy.reviewThreshold && score >= policy.reviewThreshold)
+    return "MEDIUM";
   return "LOW";
 }
 
@@ -112,7 +113,7 @@ function classify(score: number, policy: RiskPolicy) {
 
 export async function evaluatePolicy(
   context: RiskContext,
-  policyId: string
+  policyId: string,
 ): Promise<RiskEvaluationResult> {
   /* -------------------------------------------------- */
   /* Load policy + rules (with caching)                  */

@@ -1,11 +1,13 @@
 // lib/security/engines/computeRisk.ts
 
-export function computeRisk(signals: {
-  failedLogins?: number;
-  newDevice?: boolean;
-  ipMismatch?: boolean;
-  highVelocity?: boolean;
-} = {}) {
+export function computeRisk(
+  signals: {
+    failedLogins?: number;
+    newDevice?: boolean;
+    ipMismatch?: boolean;
+    highVelocity?: boolean;
+  } = {},
+) {
   const WEIGHTS = {
     failedLogins: 10,
     newDevice: 25,
@@ -58,9 +60,7 @@ export function computeRisk(signals: {
   const finalScore = Math.min(score, 100);
 
   const severity =
-    finalScore >= 70 ? "high" :
-    finalScore >= 40 ? "medium" :
-    "low";
+    finalScore >= 70 ? "high" : finalScore >= 40 ? "medium" : "low";
 
   const confidence = Math.min(1, confidenceWeight / 100);
 

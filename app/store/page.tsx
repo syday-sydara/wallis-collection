@@ -52,7 +52,7 @@ export default function StorePage() {
                   "whitespace-nowrap min-h-touch transition-all",
                   active
                     ? "bg-primary text-primary-foreground"
-                    : "bg-surface text-text hover:bg-surface-muted"
+                    : "bg-surface text-text hover:bg-surface-muted",
                 )}
               >
                 {c.label}

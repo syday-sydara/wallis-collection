@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(
   req: Request,
-  { params }: { params: { orderId: string } }
+  { params }: { params: { orderId: string } },
 ) {
   try {
     const { message } = await req.json();
@@ -13,10 +13,7 @@ export async function POST(
     // Validation
     // -----------------------------
     if (!message || message.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Message required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Message required" }, { status: 400 });
     }
 
     // -----------------------------
@@ -28,10 +25,7 @@ export async function POST(
     });
 
     if (!order) {
-      return NextResponse.json(
-        { error: "Order not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
     // -----------------------------
@@ -54,7 +48,7 @@ export async function POST(
 
     return NextResponse.json(
       { error: "Failed to create note" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -4,7 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { updateProductSchema } from "@/lib/products/validation";
 import { revalidatePath } from "next/cache";
 
-export async function updateProductAction(productId: string, formData: FormData) {
+export async function updateProductAction(
+  productId: string,
+  formData: FormData,
+) {
   try {
     const parsed = updateProductSchema.safeParse({
       name: formData.get("name"),

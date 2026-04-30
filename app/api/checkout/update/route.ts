@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     if (!orderId) {
       return NextResponse.json(
         { ok: false, message: "Missing orderId" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     if (!order) {
       return NextResponse.json(
         { ok: false, message: "Order not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     if (status && !validStatuses.includes(status)) {
       return NextResponse.json(
         { ok: false, message: "Invalid status" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
         console.error("Inventory confirmation failed:", err);
         return NextResponse.json(
           { ok: false, message: "Unable to confirm inventory" },
-          { status: 409 }
+          { status: 409 },
         );
       }
     }
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         console.error("Inventory release failed:", err);
         return NextResponse.json(
           { ok: false, message: "Unable to release inventory" },
-          { status: 409 }
+          { status: 409 },
         );
       }
     }

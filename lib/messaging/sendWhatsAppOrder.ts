@@ -48,7 +48,7 @@ export async function sendWhatsAppOrder({
         logEvent(
           "order_delivery_whatsapp",
           { phone, total, itemCount: items.length },
-          "info"
+          "info",
         );
         return { ok: true, channel: "whatsapp" };
       }
@@ -56,20 +56,20 @@ export async function sendWhatsAppOrder({
       logEvent(
         "order_delivery_whatsapp_failed",
         { phone, error: waResult.error },
-        "warn"
+        "warn",
       );
     } catch (err: any) {
       logEvent(
         "order_delivery_whatsapp_exception",
         { phone, error: err?.message },
-        "error"
+        "error",
       );
     }
   } else {
     logEvent(
       "order_delivery_whatsapp_skipped",
       { reason: "invalid_phone", customerPhone },
-      "warn"
+      "warn",
     );
   }
 
@@ -91,7 +91,7 @@ export async function sendWhatsAppOrder({
       logEvent(
         "order_delivery_email_fallback",
         { customerEmail, total, itemCount: items.length },
-        "info"
+        "info",
       );
       return { ok: true, channel: "email_fallback" };
     }
@@ -99,13 +99,13 @@ export async function sendWhatsAppOrder({
     logEvent(
       "order_delivery_email_failed",
       { customerEmail, errors: emailResult.errors },
-      "error"
+      "error",
     );
   } catch (err: any) {
     logEvent(
       "order_delivery_email_exception",
       { customerEmail, error: err?.message },
-      "error"
+      "error",
     );
   }
 

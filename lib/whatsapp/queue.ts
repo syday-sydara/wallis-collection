@@ -4,7 +4,7 @@ import { WhatsAppClient } from "./client";
 
 /**
  * A minimal in-memory queue for WhatsApp jobs.
- * 
+ *
  * This is intentionally simple:
  * - It never blocks message sending
  * - It can be replaced with BullMQ/SQS/Redis later
@@ -64,7 +64,7 @@ export function enqueueWhatsAppJob(job: WhatsAppJob) {
 
 /**
  * Process all queued jobs sequentially.
- * 
+ *
  * In production, this would run in a worker process.
  */
 export async function processWhatsAppQueue() {

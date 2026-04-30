@@ -12,22 +12,24 @@ interface BaseEvent {
   metadata?: Record<string, any>;
 }
 
-export async function emitSecurityEvent(event: {
-  type: string;
-  message: string;
-  severity: Severity;
-  category?: string;
-  context?: string;
-  source?: string;
-  requestId?: string | null;
-  actorType: string;
-  actorId?: string | null;
-  orderId?: string | null;
-  fulfillmentId?: string | null;
-  riderId?: string | null;
-  riskScore?: number;
-  tags?: string[];
-} & BaseEvent) {
+export async function emitSecurityEvent(
+  event: {
+    type: string;
+    message: string;
+    severity: Severity;
+    category?: string;
+    context?: string;
+    source?: string;
+    requestId?: string | null;
+    actorType: string;
+    actorId?: string | null;
+    orderId?: string | null;
+    fulfillmentId?: string | null;
+    riderId?: string | null;
+    riskScore?: number;
+    tags?: string[];
+  } & BaseEvent,
+) {
   await prisma.securityEvent.create({
     data: {
       version: 3,
@@ -52,11 +54,13 @@ export async function emitSecurityEvent(event: {
   });
 }
 
-export async function emitFraudEvent(event: {
-  signal: string;
-  orderId?: string | null;
-  userId?: string | null;
-} & BaseEvent) {
+export async function emitFraudEvent(
+  event: {
+    signal: string;
+    orderId?: string | null;
+    userId?: string | null;
+  } & BaseEvent,
+) {
   await prisma.fraudEvent.create({
     data: {
       signal: event.signal,
@@ -69,10 +73,12 @@ export async function emitFraudEvent(event: {
   });
 }
 
-export async function emitAlertEvent(event: {
-  event: string;
-  userId?: string | null;
-} & BaseEvent) {
+export async function emitAlertEvent(
+  event: {
+    event: string;
+    userId?: string | null;
+  } & BaseEvent,
+) {
   await prisma.alertEvent.create({
     data: {
       event: event.event,

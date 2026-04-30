@@ -9,7 +9,7 @@ const formatterCache = new Map<string, Intl.DateTimeFormat>();
 
 function getFormatter(
   options: Intl.DateTimeFormatOptions,
-  locale = "en-NG"
+  locale = "en-NG",
 ): Intl.DateTimeFormat {
   const key = `${locale}:${JSON.stringify(options)}`;
 
@@ -30,9 +30,7 @@ function getFormatter(
  * - timestamp (number)
  * - ISO string (YYYY-MM-DD or full ISO)
  */
-export function parseDate(
-  input: Date | string | number
-): Date | null {
+export function parseDate(input: Date | string | number): Date | null {
   if (input instanceof Date) {
     return isNaN(input.getTime()) ? null : input;
   }
@@ -60,7 +58,7 @@ export function parseDate(
  */
 export function formatDate(
   date: Date | string | number,
-  options?: Intl.DateTimeFormatOptions & { locale?: string }
+  options?: Intl.DateTimeFormatOptions & { locale?: string },
 ): string {
   const d = parseDate(date);
   if (!d) return "";
@@ -90,7 +88,7 @@ export function formatDate(
  */
 export function formatDateOnly(
   date: Date | string | number,
-  locale = "en-NG"
+  locale = "en-NG",
 ): string {
   const d = parseDate(date);
   if (!d) return "";
@@ -102,7 +100,7 @@ export function formatDateOnly(
       month: "short",
       day: "2-digit",
     },
-    locale
+    locale,
   ).format(d);
 }
 
@@ -111,7 +109,7 @@ export function formatDateOnly(
  */
 export function formatDateShort(
   date: Date | string | number,
-  locale = "en-NG"
+  locale = "en-NG",
 ): string {
   const d = parseDate(date);
   if (!d) return "";
@@ -122,7 +120,7 @@ export function formatDateShort(
       month: "short",
       day: "2-digit",
     },
-    locale
+    locale,
   ).format(d);
 }
 
@@ -135,7 +133,7 @@ export function formatDateShort(
  */
 export function formatTime(
   date: Date | string | number,
-  locale = "en-NG"
+  locale = "en-NG",
 ): string {
   const d = parseDate(date);
   if (!d) return "";
@@ -146,6 +144,6 @@ export function formatTime(
       minute: "2-digit",
       hour12: false,
     },
-    locale
+    locale,
   ).format(d);
 }

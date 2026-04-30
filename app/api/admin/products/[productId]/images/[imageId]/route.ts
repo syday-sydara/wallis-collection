@@ -16,7 +16,10 @@ export async function DELETE(_, { params }) {
     }
 
     if (image.productId !== productId) {
-      return NextResponse.json({ error: "Image does not belong to this product" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Image does not belong to this product" },
+        { status: 400 },
+      );
     }
 
     // Delete from Cloudinary
@@ -30,6 +33,9 @@ export async function DELETE(_, { params }) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Failed to delete image" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete image" },
+      { status: 500 },
+    );
   }
 }

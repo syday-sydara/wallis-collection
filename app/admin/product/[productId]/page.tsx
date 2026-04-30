@@ -2,7 +2,11 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import ProductTabs from "@/components/admin/products/ProductTabs";
 
-export default async function ProductDetailPage({ params }: { params: { id: string } }) {
+export default async function ProductDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const product = await prisma.product.findUnique({
     where: { id: params.id },
     include: {
@@ -15,7 +19,9 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
     return (
       <div className="p-6 text-center space-y-3">
         <h2 className="text-lg font-medium">Product not found</h2>
-        <p className="text-text-muted text-sm">This product may have been deleted.</p>
+        <p className="text-text-muted text-sm">
+          This product may have been deleted.
+        </p>
         <Link href="/admin/products" className="btn btn-primary mt-2">
           Back to Products
         </Link>

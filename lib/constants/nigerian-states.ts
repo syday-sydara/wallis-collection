@@ -61,7 +61,7 @@ export function normalizeNigerianState(value: string): string {
 /* -------------------------------------------------- */
 
 export function parseNigerianState(
-  value: string | null | undefined
+  value: string | null | undefined,
 ): NigerianState | null {
   if (!value) return null;
 

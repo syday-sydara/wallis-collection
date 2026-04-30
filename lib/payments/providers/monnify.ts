@@ -15,7 +15,7 @@ function sanitizeMonnifyReference(reference: string): string | null {
 // --- Webhook signature ---
 export function verifyMonnifyWebhookSignature(
   rawBody: string,
-  signature: string | null
+  signature: string | null,
 ) {
   if (!signature) return false;
 
@@ -26,10 +26,7 @@ export function verifyMonnifyWebhookSignature(
 
   if (computed.length !== signature.length) return false;
 
-  return crypto.timingSafeEqual(
-    Buffer.from(computed),
-    Buffer.from(signature)
-  );
+  return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(signature));
 }
 
 // --- Extract reference ---
@@ -48,9 +45,9 @@ let tokenExpiry = 0;
 async function getMonnifyToken(): Promise<string> {
   if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
 
-  const auth = Buffer.from(
-    `${MONNIFY_API_KEY}:${MONNIFY_SECRET_KEY}`
-  ).toString("base64");
+  const auth = Buffer.from(`${MONNIFY_API_KEY}:${MONNIFY_SECRET_KEY}`).toString(
+    "base64",
+  );
 
   const res = await fetch(`${MONNIFY_BASE_URL}/auth/login`, {
     method: "POST",
@@ -79,7 +76,7 @@ interface MonnifyVerificationOptions {
 
 export async function verifyMonnifyReference(
   reference: string,
-  _options: MonnifyVerificationOptions = {}
+  _options: MonnifyVerificationOptions = {},
 ): Promise<PaymentVerificationResult> {
   const safeReference = sanitizeMonnifyReference(reference);
   if (!safeReference) {
@@ -96,12 +93,10 @@ export async function verifyMonnifyReference(
     const token = await getMonnifyToken();
 
     const res = await fetch(
-      `${MONNIFY_BASE_URL}/transactions/${encodeURIComponent(
-        safeReference
-      )}`,
+      `${MONNIFY_BASE_URL}/transactions/${encodeURIComponent(safeReference)}`,
       {
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
 
     if (!res.ok) {
@@ -151,7 +146,9 @@ export async function verifyMonnifyReference(
     }
 
     const paidAt =
-      tx.paymentDate != null ? new Date(tx.paymentDate).toISOString() : undefined;
+      tx.paymentDate != null
+        ? new Date(tx.paymentDate).toISOString()
+        : undefined;
     const amount = Number(tx.amountPaid ?? tx.amount);
     const currency = (tx.currency || "NGN").toUpperCase();
     const channel = tx.paymentMethod ?? tx.paymentMethodCode ?? undefined;
@@ -159,8 +156,8 @@ export async function verifyMonnifyReference(
       tx.fee != null
         ? Number(tx.fee)
         : tx.settlementAmount != null && tx.amountPaid != null
-        ? Number(tx.amountPaid) - Number(tx.settlementAmount)
-        : undefined;
+          ? Number(tx.amountPaid) - Number(tx.settlementAmount)
+          : undefined;
 
     if (status === "success") {
       return {

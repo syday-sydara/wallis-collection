@@ -22,9 +22,7 @@ export function useVariants(productId: string, initial = []) {
   async function update(variantId: string, data) {
     try {
       const updated = await admin.variants.update(productId, variantId, data);
-      setItems((prev) =>
-        prev.map((v) => (v.id === variantId ? updated : v))
-      );
+      setItems((prev) => prev.map((v) => (v.id === variantId ? updated : v)));
       return updated;
     } catch (err: any) {
       setError(err.message);

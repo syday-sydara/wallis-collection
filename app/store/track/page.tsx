@@ -33,13 +33,12 @@ export default async function TrackingPage({ params }) {
       )}
 
       <a
-  href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP}?text=I want to track my order: ${order.trackingToken}`}
-  className="btn w-full"
-  style={{ background: "rgb(var(--color-whatsapp))", color: "#fff" }}
->
-  Track via WhatsApp
-</a>
-
+        href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP}?text=I want to track my order: ${order.trackingToken}`}
+        className="btn w-full"
+        style={{ background: "rgb(var(--color-whatsapp))", color: "#fff" }}
+      >
+        Track via WhatsApp
+      </a>
     </div>
   );
 }

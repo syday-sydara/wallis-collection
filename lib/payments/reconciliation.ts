@@ -89,8 +89,8 @@ export async function reconcilePendingPayments(limit = 100) {
           ok: false,
           reason: "reconciliation_failed",
         };
-      })
-    )
+      }),
+    ),
   );
 
   return {

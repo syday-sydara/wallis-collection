@@ -4,7 +4,7 @@ import { OrderStatus } from "@prisma/client";
 
 export async function POST(
   req: Request,
-  { params }: { params: { orderId: string } }
+  { params }: { params: { orderId: string } },
 ) {
   try {
     const { status } = await req.json();
@@ -14,10 +14,7 @@ export async function POST(
     // Validate status
     // -----------------------------
     if (!Object.values(OrderStatus).includes(status)) {
-      return NextResponse.json(
-        { error: "Invalid status" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
     // -----------------------------
@@ -29,10 +26,7 @@ export async function POST(
     });
 
     if (!order) {
-      return NextResponse.json(
-        { error: "Order not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
     // -----------------------------
@@ -41,7 +35,7 @@ export async function POST(
     if (order.orderStatus === status) {
       return NextResponse.json(
         { error: "Order is already in this status" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -76,7 +70,7 @@ export async function POST(
 
     return NextResponse.json(
       { error: "Failed to update order status" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

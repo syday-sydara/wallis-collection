@@ -22,8 +22,14 @@ async function extractRequestContext() {
 }
 
 export async function logAuditEvent(input: AuditLogInput) {
-  const { action, actorType, userId = null, resource = null, resourceId = null, metadata = {} } =
-    input;
+  const {
+    action,
+    actorType,
+    userId = null,
+    resource = null,
+    resourceId = null,
+    metadata = {},
+  } = input;
 
   const ctx = await extractRequestContext();
 

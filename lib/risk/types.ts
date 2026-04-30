@@ -4,13 +4,7 @@
 /* Numeric Operators                                   */
 /* -------------------------------------------------- */
 
-export type NumericOperator =
-  | ">"
-  | ">="
-  | "<"
-  | "<="
-  | "=="
-  | "!=";
+export type NumericOperator = ">" | ">=" | "<" | "<=" | "==" | "!=";
 
 /* -------------------------------------------------- */
 /* Risk Context (all signals available to the engine)  */
@@ -103,7 +97,12 @@ export type RuleCondition =
   | { type: "device_confidence_below"; value: number; not?: boolean }
 
   // Behavior rules
-  | { type: "velocity_above"; metric: keyof RiskContext; value: number; not?: boolean }
+  | {
+      type: "velocity_above";
+      metric: keyof RiskContext;
+      value: number;
+      not?: boolean;
+    }
   | { type: "failed_logins_above"; value: number; not?: boolean }
   | { type: "permission_denials_above"; value: number; not?: boolean }
 
@@ -130,11 +129,24 @@ export type RuleCondition =
   // List membership rules
   | { type: "state_in_list"; list: string[]; not?: boolean }
   | { type: "email_domain_in_list"; list: string[]; not?: boolean }
-  | { type: "phone_prefix_in_list"; list: string[]; length?: number; not?: boolean }
+  | {
+      type: "phone_prefix_in_list";
+      list: string[];
+      length?: number;
+      not?: boolean;
+    }
 
   // Compound rules
-  | { type: "and"; conditions: [RuleCondition, ...RuleCondition[]]; not?: boolean }
-  | { type: "or"; conditions: [RuleCondition, ...RuleCondition[]]; not?: boolean };
+  | {
+      type: "and";
+      conditions: [RuleCondition, ...RuleCondition[]];
+      not?: boolean;
+    }
+  | {
+      type: "or";
+      conditions: [RuleCondition, ...RuleCondition[]];
+      not?: boolean;
+    };
 
 /* -------------------------------------------------- */
 /* Risk Rule                                           */

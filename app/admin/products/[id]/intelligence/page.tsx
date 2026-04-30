@@ -45,7 +45,10 @@ export default async function ProductIntelligencePage({ params }: Props) {
           Products
         </Link>
         <span className="mx-1">/</span>
-        <Link href={`/admin/products/${product.id}`} className="hover:underline">
+        <Link
+          href={`/admin/products/${product.id}`}
+          className="hover:underline"
+        >
           {product.name}
         </Link>
         <span className="mx-1">/</span>

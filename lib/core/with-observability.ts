@@ -8,7 +8,7 @@ import { startSpan } from "./tracing";
 import { metricsWithContext } from "./metrics-context";
 
 export function withObservability(
-  handler: (req: NextRequest) => Promise<NextResponse> | NextResponse
+  handler: (req: NextRequest) => Promise<NextResponse> | NextResponse,
 ) {
   return async (req: NextRequest): Promise<NextResponse> => {
     const requestId = crypto.randomUUID();
@@ -69,7 +69,7 @@ export function withObservability(
 
             return NextResponse.json(
               { error: err.code, message: err.message },
-              { status: err.status }
+              { status: err.status },
             );
           }
 
@@ -92,10 +92,10 @@ export function withObservability(
 
           return NextResponse.json(
             { error: "INTERNAL_ERROR", message: "Something went wrong" },
-            { status: 500 }
+            { status: 500 },
           );
         }
-      }
+      },
     );
   };
 }

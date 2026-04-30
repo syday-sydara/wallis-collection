@@ -36,7 +36,7 @@ export function Dropdown({ trigger, children }: DropdownProps) {
   useEffect(() => {
     if (open && ref.current) {
       const firstFocusable = ref.current.querySelector<HTMLElement>(
-        "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"
+        "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])",
       );
       firstFocusable?.focus();
     }
@@ -58,7 +58,7 @@ export function Dropdown({ trigger, children }: DropdownProps) {
         <div
           role="menu"
           className={cn(
-            "absolute right-0 mt-2 w-40 rounded-md border border-border-subtle bg-surface shadow-md py-1 text-sm z-50 animate-fadeIn-fast"
+            "absolute right-0 mt-2 w-40 rounded-md border border-border-subtle bg-surface shadow-md py-1 text-sm z-50 animate-fadeIn-fast",
           )}
         >
           {children}

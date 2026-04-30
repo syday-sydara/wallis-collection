@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(
   req: Request,
-  { params }: { params: { orderId: string; id: string } }
+  { params }: { params: { orderId: string; id: string } },
 ) {
   try {
     const { orderId, id } = params;
@@ -15,7 +15,7 @@ export async function POST(
     if (!status) {
       return NextResponse.json(
         { error: "Status is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -28,7 +28,7 @@ export async function POST(
     if (!existing) {
       return NextResponse.json(
         { error: "Fulfillment not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -78,7 +78,7 @@ export async function POST(
 
     return NextResponse.json(
       { error: "Failed to update fulfillment status" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

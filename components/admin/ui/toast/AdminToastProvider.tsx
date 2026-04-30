@@ -26,7 +26,8 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function useToast() {
   const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast must be used inside <AdminToastProvider>");
+  if (!ctx)
+    throw new Error("useToast must be used inside <AdminToastProvider>");
   return ctx;
 }
 
@@ -45,13 +46,15 @@ export function AdminToastProvider({ children }: { children: ReactNode }) {
   // Listen for global toast events
   useEffect(() => {
     const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ type: ToastType; message: string }>).detail;
+      const detail = (e as CustomEvent<{ type: ToastType; message: string }>)
+        .detail;
       if (!detail) return;
       push({ type: detail.type, message: detail.message });
     };
 
     window.addEventListener("admin-toast", handler as EventListener);
-    return () => window.removeEventListener("admin-toast", handler as EventListener);
+    return () =>
+      window.removeEventListener("admin-toast", handler as EventListener);
   }, [push]);
 
   return (
@@ -67,10 +70,12 @@ export function AdminToastProvider({ children }: { children: ReactNode }) {
               "px-3 py-2 rounded-md border shadow-sm text-sm pointer-events-auto",
               "animate-toast-slide-in bg-surface-card",
 
-              t.type === "success" && "bg-success/15 text-success border-success/30",
+              t.type === "success" &&
+                "bg-success/15 text-success border-success/30",
               t.type === "error" && "bg-danger/15 text-danger border-danger/30",
               t.type === "info" && "bg-info/15 text-info border-info/30",
-              t.type === "warning" && "bg-warning/15 text-warning border-warning/30"
+              t.type === "warning" &&
+                "bg-warning/15 text-warning border-warning/30",
             )}
           >
             {t.message}
@@ -85,7 +90,9 @@ type ToastPayload = { type: ToastType; message: string };
 
 function dispatchToast(detail: ToastPayload) {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent<ToastPayload>("admin-toast", { detail }));
+  window.dispatchEvent(
+    new CustomEvent<ToastPayload>("admin-toast", { detail }),
+  );
 }
 
 export const toast = {

@@ -31,7 +31,9 @@ export default async function SuccessPage({
 
         {order ? (
           <div className="space-y-2 text-text">
-            <p>Thank you, <strong>{order.fullName}</strong>.</p>
+            <p>
+              Thank you, <strong>{order.fullName}</strong>.
+            </p>
 
             <p>
               Your order <strong>{order.id}</strong> has been received.

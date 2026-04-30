@@ -84,7 +84,7 @@ export function startTimer(
     source?: string | null;
     ip?: string | null;
     userAgent?: string | null;
-  }
+  },
 ) {
   const start =
     typeof performance !== "undefined" ? performance.now() : Date.now();

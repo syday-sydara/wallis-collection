@@ -10,7 +10,15 @@ import Image from "next/image";
 
 export default function CartPage() {
   const router = useRouter();
-  const { items, subtotal, removeItem, updateQuantity, increaseQty, decreaseQty, clear } = useCart();
+  const {
+    items,
+    subtotal,
+    removeItem,
+    updateQuantity,
+    increaseQty,
+    decreaseQty,
+    clear,
+  } = useCart();
 
   if (items.length === 0) {
     return (

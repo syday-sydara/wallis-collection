@@ -8,14 +8,17 @@ export const redis = Object.freeze(
   new Redis({
     url: env.UPSTASH_REDIS_REST_URL!,
     token: env.UPSTASH_REDIS_REST_TOKEN!,
-  })
+  }),
 );
 
 export function redisKey(...parts: string[]) {
   return [PREFIX, ...parts].join(":");
 }
 
-export async function redisSafe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+export async function redisSafe<T>(
+  fn: () => Promise<T>,
+  fallback: T,
+): Promise<T> {
   try {
     return await fn();
   } catch (err) {
@@ -42,15 +45,12 @@ export async function redisGet<T>(key: string, fallback: T): Promise<T> {
 export async function redisSetTTL<T>(
   key: string,
   value: T,
-  ttlSeconds: number
+  ttlSeconds: number,
 ): Promise<boolean> {
-  return redisSafe(
-    async () => {
-      await redis.set(key, value, { ex: ttlSeconds });
-      return true;
-    },
-    false
-  );
+  return redisSafe(async () => {
+    await redis.set(key, value, { ex: ttlSeconds });
+    return true;
+  }, false);
 }
 
 export async function redisHealth() {

@@ -12,8 +12,8 @@ export const ProductSchema = z.object({
   publishedAt: z.date().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  images: z.array(z.string()),
-  variants: z.array(z.string()),
-  categories: z.array(z.string()),
+  images: z.array(ProductImageSchema),
+  variants: z.array(ProductVariantSchema),
+  categories: z.array(CategorySchema),
 });
 // === AUTO-GENERATED END ===

@@ -11,7 +11,7 @@ const envSchema = z
       .refine(
         (url) =>
           process.env.NODE_ENV !== "production" || url.startsWith("https://"),
-        "NEXT_PUBLIC_SITE_URL must use https in production"
+        "NEXT_PUBLIC_SITE_URL must use https in production",
       ),
 
     // Redis
@@ -36,7 +36,9 @@ const envSchema = z
 
     PORT: z.string().optional(),
 
-    NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+    NODE_ENV: z
+      .enum(["development", "production", "test"])
+      .default("development"),
 
     APP_ENV: z.enum(["local", "dev", "staging", "production"]).default("local"),
   })

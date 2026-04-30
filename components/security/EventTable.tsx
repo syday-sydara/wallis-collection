@@ -8,7 +8,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table";
 import Link from "next/link";
 
@@ -49,7 +49,7 @@ export default function EventTable({ events }: { events: SecurityEvent[] }) {
               onMouseLeave={() => setHovered(null)}
               className={cn(
                 "cursor-pointer transition-colors",
-                hovered === e.id && "bg-muted/40"
+                hovered === e.id && "bg-muted/40",
               )}
             >
               <TableCell className="whitespace-nowrap text-sm">
@@ -105,14 +105,14 @@ function SeverityBadge({ severity }: { severity: "low" | "medium" | "high" }) {
   const colors = {
     low: "bg-green-600/20 text-green-700 border-green-600/30",
     medium: "bg-yellow-600/20 text-yellow-700 border-yellow-600/30",
-    high: "bg-red-600/20 text-red-700 border-red-600/30"
+    high: "bg-red-600/20 text-red-700 border-red-600/30",
   };
 
   return (
     <span
       className={cn(
         "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-        colors[severity]
+        colors[severity],
       )}
     >
       {severity}

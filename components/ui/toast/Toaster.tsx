@@ -20,7 +20,7 @@ export function Toaster() {
 
 function ToastItem({
   toast,
-  onClose
+  onClose,
 }: {
   toast: Toast;
   onClose: (id: string) => void;
@@ -30,14 +30,14 @@ function ToastItem({
   const colors = {
     success: "bg-emerald-600 text-white",
     error: "bg-red-600 text-white",
-    info: "bg-slate-800 text-white"
+    info: "bg-slate-800 text-white",
   };
 
   return (
     <div
       className={clsx(
         "w-full max-w-sm rounded-md px-4 py-3 shadow-lg flex items-start gap-3",
-        colors[variant]
+        colors[variant],
       )}
     >
       <div className="flex-1">

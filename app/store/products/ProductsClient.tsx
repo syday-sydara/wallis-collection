@@ -12,15 +12,19 @@ type Props = {
   product: ProductDetailVM;
 };
 
-function getDisplayPrice(product: ProductDetailVM, selected?: ProductDetailVM["variants"][0]) {
+function getDisplayPrice(
+  product: ProductDetailVM,
+  selected?: ProductDetailVM["variants"][0],
+) {
   if (selected) return formatCurrency(selected.price);
-  if (product.minPrice === product.maxPrice) return formatCurrency(product.minPrice);
+  if (product.minPrice === product.maxPrice)
+    return formatCurrency(product.minPrice);
   return `${formatCurrency(product.minPrice)} – ${formatCurrency(product.maxPrice)}`;
 }
 
 export default function ProductClient({ product }: Props) {
   const [selectedVariant, setSelectedVariant] = useState(
-    product.variants.length === 1 ? product.variants[0] : undefined
+    product.variants.length === 1 ? product.variants[0] : undefined,
   );
 
   const requiresVariant = product.variants.length > 0;
@@ -77,7 +81,7 @@ export default function ProductClient({ product }: Props) {
     .join("\n");
 
   const whatsappUrl = `https://wa.me/2348000000001?text=${encodeURIComponent(
-    whatsappMessage
+    whatsappMessage,
   )}`;
 
   function trackWhatsAppClick() {
@@ -105,7 +109,6 @@ export default function ProductClient({ product }: Props) {
     <>
       {/* Main Product Section */}
       <main className="mx-auto max-w-6xl px-4 py-6 grid gap-6 md:grid-cols-2 animate-fadeIn">
-        
         {/* Gallery */}
         <Gallery images={product.images} />
 
@@ -116,7 +119,10 @@ export default function ProductClient({ product }: Props) {
               {product.name}
             </h1>
 
-            <p aria-live="polite" className="mt-1 text-text-muted text-lg sm:text-xl font-medium">
+            <p
+              aria-live="polite"
+              className="mt-1 text-text-muted text-lg sm:text-xl font-medium"
+            >
               {displayPrice}
             </p>
 
@@ -126,11 +132,13 @@ export default function ProductClient({ product }: Props) {
               </p>
             )}
 
-            {product.inStock && product.stock !== undefined && product.stock < 5 && (
-              <p className="mt-1 text-warning text-sm font-medium">
-                Only {product.stock} left
-              </p>
-            )}
+            {product.inStock &&
+              product.stock !== undefined &&
+              product.stock < 5 && (
+                <p className="mt-1 text-warning text-sm font-medium">
+                  Only {product.stock} left
+                </p>
+              )}
           </header>
 
           {/* Description */}

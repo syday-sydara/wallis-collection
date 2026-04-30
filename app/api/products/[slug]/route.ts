@@ -14,7 +14,7 @@ import { startTimer } from "@/lib/auth/metrics";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { slug: string } }
+  context: { params: { slug: string } },
 ) {
   const stopTimer = startTimer("api_products_slug_ms");
 
@@ -34,7 +34,12 @@ export async function GET(
 
     const slugRegex = /^[a-z0-9-]+$/;
 
-    if (!slug || slug.length < 2 || slug.length > 120 || !slugRegex.test(slug)) {
+    if (
+      !slug ||
+      slug.length < 2 ||
+      slug.length > 120 ||
+      !slugRegex.test(slug)
+    ) {
       return badRequest("Invalid slug", { code: "INVALID_SLUG" });
     }
 
@@ -51,7 +56,7 @@ export async function GET(
       logEvent("rate_limited", { ip, slug }, "warn");
       return tooManyRequests(
         `Rate limit exceeded. Try again in ${rate.retryAfter}s`,
-        { code: "RATE_LIMITED" }
+        { code: "RATE_LIMITED" },
       );
     }
 
@@ -67,7 +72,7 @@ export async function GET(
           headers: {
             "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
           },
-        }
+        },
       );
     }
 
@@ -84,11 +89,9 @@ export async function GET(
     });
   } catch (err) {
     logEvent("product_detail_error", { error: String(err) }, "error");
-    return serverError(
-      "Failed to fetch product",
-      err,
-      { code: "SERVER_ERROR" }
-    );
+    return serverError("Failed to fetch product", err, {
+      code: "SERVER_ERROR",
+    });
   } finally {
     stopTimer();
   }

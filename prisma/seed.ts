@@ -31,7 +31,11 @@ async function main() {
   // Users
   await prisma.user.createMany({
     data: [
-      { email: "alice@example.com", name: "Alice Johnson", role: UserRole.USER },
+      {
+        email: "alice@example.com",
+        name: "Alice Johnson",
+        role: UserRole.USER,
+      },
       { email: "bob@example.com", name: "Bob Smith", role: UserRole.USER },
     ],
   });
@@ -46,8 +50,12 @@ async function main() {
     ],
   });
 
-  const fabricsCategory = await prisma.category.findUnique({ where: { slug: "fabrics" } });
-  const abayasCategory = await prisma.category.findUnique({ where: { slug: "abayas" } });
+  const fabricsCategory = await prisma.category.findUnique({
+    where: { slug: "fabrics" },
+  });
+  const abayasCategory = await prisma.category.findUnique({
+    where: { slug: "abayas" },
+  });
 
   console.log("✅ Categories seeded");
 
@@ -75,7 +83,11 @@ async function main() {
       description: "Premium super wax for exceptional prints.",
       categoryId: fabricsCategory!.id,
       images: [
-        fakeCloudinaryImage("/images/products/superwax1.jpg", "Super Wax Front", 0),
+        fakeCloudinaryImage(
+          "/images/products/superwax1.jpg",
+          "Super Wax Front",
+          0,
+        ),
       ],
       variants: [
         { name: "Single Pack", sku: "SUPERWAX-1", price: 12000, stock: 30 },
@@ -89,7 +101,11 @@ async function main() {
       description: "Authentic Hollands fabric.",
       categoryId: fabricsCategory!.id,
       images: [
-        fakeCloudinaryImage("/images/products/hollands1.jpg", "Hollands Front", 0),
+        fakeCloudinaryImage(
+          "/images/products/hollands1.jpg",
+          "Hollands Front",
+          0,
+        ),
       ],
       variants: [
         { name: "6 Yards", sku: "HOLLANDS-6", price: 15000, stock: 40 },
@@ -103,8 +119,16 @@ async function main() {
       description: "Elegant abayas for every occasion.",
       categoryId: abayasCategory!.id,
       images: [
-        fakeCloudinaryImage("/images/products/abayas1.jpg", "Abaya Black Front", 0),
-        fakeCloudinaryImage("/images/products/abayas2.jpg", "Abaya Black Back", 1),
+        fakeCloudinaryImage(
+          "/images/products/abayas1.jpg",
+          "Abaya Black Front",
+          0,
+        ),
+        fakeCloudinaryImage(
+          "/images/products/abayas2.jpg",
+          "Abaya Black Back",
+          1,
+        ),
       ],
       variants: [
         { name: "Medium Black", sku: "ABAYA-M-BLACK", price: 20000, stock: 30 },
@@ -135,7 +159,9 @@ async function main() {
       include: { variants: true },
     });
 
-    created.variants.forEach((v) => allVariants.push({ id: v.id, stock: v.stock }));
+    created.variants.forEach((v) =>
+      allVariants.push({ id: v.id, stock: v.stock }),
+    );
   }
 
   console.log("✅ Products seeded");

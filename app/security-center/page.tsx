@@ -3,7 +3,7 @@ import { Card } from "@/components/admin/ui/AdminCard";
 async function fetchSecurityMetrics() {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/api/security/metrics`,
-    { cache: "no-store" }
+    { cache: "no-store" },
   );
 
   if (!res.ok) {

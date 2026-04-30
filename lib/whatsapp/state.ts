@@ -14,7 +14,7 @@ export async function getUserState(whatsapp: string): Promise<WhatsAppState> {
 export async function setUserState(
   whatsapp: string,
   state: WhatsAppState,
-  data?: any
+  data?: any,
 ) {
   await prisma.whatsAppSession.upsert({
     where: { whatsapp },

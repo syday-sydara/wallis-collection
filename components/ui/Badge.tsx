@@ -15,14 +15,18 @@ const variantClasses: Record<Variant, string> = {
   danger: "bg-danger text-white",
 };
 
-export function Badge({ variant = "default", className, ...props }: BadgeProps) {
+export function Badge({
+  variant = "default",
+  className,
+  ...props
+}: BadgeProps) {
   return (
     <span
       role="status" // improves accessibility for badges conveying information
       className={cn(
         "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium leading-none select-none",
         variantClasses[variant],
-        className
+        className,
       )}
       {...props}
     />

@@ -17,7 +17,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   Tooltip,
-  Legend
+  Legend,
 );
 
 export default function ProductTrendGraph({ trend }) {

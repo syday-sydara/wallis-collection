@@ -28,7 +28,7 @@ export function Sheet({ open, onClose, children, side = "right" }: SheetProps) {
     if (!open || !sheetRef.current) return;
 
     const focusableElements = sheetRef.current.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+      'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
     );
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
@@ -65,7 +65,7 @@ export function Sheet({ open, onClose, children, side = "right" }: SheetProps) {
       <div
         className={cn(
           "fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity z-40 animate-fadeIn",
-          open ? "opacity-100" : "opacity-0 pointer-events-none"
+          open ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
         onClick={onClose}
       />
@@ -82,8 +82,8 @@ export function Sheet({ open, onClose, children, side = "right" }: SheetProps) {
           open
             ? "translate-x-0"
             : side === "right"
-            ? "translate-x-full"
-            : "-translate-x-full"
+              ? "translate-x-full"
+              : "-translate-x-full",
         )}
         onClick={(e) => e.stopPropagation()}
       >

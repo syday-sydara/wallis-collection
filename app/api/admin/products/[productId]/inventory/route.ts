@@ -10,7 +10,7 @@ export async function PATCH(req, { params }) {
     if (typeof stock !== "number" || stock < 0) {
       return NextResponse.json(
         { error: "Stock must be a non-negative number" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -45,6 +45,9 @@ export async function PATCH(req, { params }) {
 
     return NextResponse.json(updated);
   } catch {
-    return NextResponse.json({ error: "Failed to update product stock" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update product stock" },
+      { status: 500 },
+    );
   }
 }

@@ -91,9 +91,7 @@ export async function GET(req: Request) {
   /* -------------------------------------------------- */
   /* Decode cursor (timestamp__id)                       */
   /* -------------------------------------------------- */
-  let cursorObj:
-    | { timestamp: Date; id: string }
-    | undefined;
+  let cursorObj: { timestamp: Date; id: string } | undefined;
 
   if (cursor) {
     const [ts, id] = cursor.split("__");
@@ -109,10 +107,7 @@ export async function GET(req: Request) {
   const events = await prisma.securityEvent.findMany({
     where,
     take: limit + 1,
-    orderBy: [
-      { timestamp: "desc" },
-      { id: "desc" },
-    ],
+    orderBy: [{ timestamp: "desc" }, { id: "desc" }],
     ...(cursorObj && {
       cursor: cursorObj,
       skip: 1,

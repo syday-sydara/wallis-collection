@@ -4,7 +4,7 @@ export class AdminClient {
 
   private async request<T>(
     path: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<T> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       ...options,
@@ -33,11 +33,10 @@ export class AdminClient {
   products = {
     list: (cursor?: string) =>
       this.request<{ items: any[]; nextCursor?: string }>(
-        `/products${cursor ? `?cursor=${cursor}` : ""}`
+        `/products${cursor ? `?cursor=${cursor}` : ""}`,
       ),
 
-    get: (productId: string) =>
-      this.request<any>(`/products/${productId}`),
+    get: (productId: string) => this.request<any>(`/products/${productId}`),
 
     create: (data: {
       name: string;
@@ -51,12 +50,15 @@ export class AdminClient {
         body: JSON.stringify(data),
       }),
 
-    update: (productId: string, data: Partial<{
-      name: string;
-      slug: string;
-      basePrice: number | null;
-      description: string | null;
-    }>) =>
+    update: (
+      productId: string,
+      data: Partial<{
+        name: string;
+        slug: string;
+        basePrice: number | null;
+        description: string | null;
+      }>,
+    ) =>
       this.request<any>(`/products/${productId}`, {
         method: "PATCH",
         body: JSON.stringify(data),
@@ -76,25 +78,18 @@ export class AdminClient {
         body: JSON.stringify({ stock }),
       }),
 
-    updateVariantStock: (
-      productId: string,
-      variantId: string,
-      stock: number
-    ) =>
-      this.request<any>(
-        `/products/${productId}/variants/${variantId}/stock`,
-        {
-          method: "PATCH",
-          body: JSON.stringify({ stock }),
-        }
-      ),
+    updateVariantStock: (productId: string, variantId: string, stock: number) =>
+      this.request<any>(`/products/${productId}/variants/${variantId}/stock`, {
+        method: "PATCH",
+        body: JSON.stringify({ stock }),
+      }),
   };
 
   // VARIANTS
   variants = {
     create: (
       productId: string,
-      data: { name: string; sku: string; price: number | null; stock: number }
+      data: { name: string; sku: string; price: number | null; stock: number },
     ) =>
       this.request<any>(`/products/${productId}/variants`, {
         method: "POST",
@@ -109,22 +104,19 @@ export class AdminClient {
         sku: string;
         price: number | null;
         stock: number;
-      }>
+      }>,
     ) =>
-      this.request<any>(
-        `/products/${productId}/variants/${variantId}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify(data),
-        }
-      ),
+      this.request<any>(`/products/${productId}/variants/${variantId}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
 
     delete: (productId: string, variantId: string) =>
       this.request<{ ok: true }>(
         `/products/${productId}/variants/${variantId}`,
         {
           method: "DELETE",
-        }
+        },
       ),
   };
 
@@ -134,30 +126,23 @@ export class AdminClient {
       const form = new FormData();
       form.append("file", file);
 
-      const res = await fetch(
-        `${this.baseUrl}/products/${productId}/images`,
-        {
-          method: "POST",
-          body: form,
-        }
-      );
+      const res = await fetch(`${this.baseUrl}/products/${productId}/images`, {
+        method: "POST",
+        body: form,
+      });
 
       if (!res.ok) throw new Error("Upload failed");
       return res.json();
     },
 
     delete: (productId: string, imageId: string) =>
-      this.request<{ ok: true }>(
-        `/products/${productId}/images/${imageId}`,
-        {
-          method: "DELETE",
-        }
-      ),
+      this.request<{ ok: true }>(`/products/${productId}/images/${imageId}`, {
+        method: "DELETE",
+      }),
   };
 }
 
 const admin = {
-
   orders: {
     async updateStatus(orderId: string, status: string) {
       const res = await fetch(`/api/admin/orders/${orderId}/status`, {
@@ -187,15 +172,15 @@ const admin = {
       return res.json();
     },
     async addNote(orderId: string, message: string) {
-    const res = await fetch(`/api/admin/orders/${orderId}/notes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
-    });
+      const res = await fetch(`/api/admin/orders/${orderId}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
 
-    if (!res.ok) throw new Error("Failed to add note");
-    return res.json();
-  },
+      if (!res.ok) throw new Error("Failed to add note");
+      return res.json();
+    },
   },
 
   products: {
@@ -204,10 +189,13 @@ const admin = {
         const form = new FormData();
         files.forEach((f) => form.append("file", f));
 
-        const res = await fetch(`/api/admin/products/${productId}/images/upload`, {
-          method: "POST",
-          body: form,
-        });
+        const res = await fetch(
+          `/api/admin/products/${productId}/images/upload`,
+          {
+            method: "POST",
+            body: form,
+          },
+        );
 
         if (!res.ok) throw new Error("Upload failed");
         return res.json();
@@ -241,12 +229,12 @@ const admin = {
 
         await fetch(
           `/api/admin/products/${productId}/images/${imageId}/replace`,
-          { method: "POST", body: form }
+          { method: "POST", body: form },
         );
       },
     },
   },
-   fulfillment: {
+  fulfillment: {
     async create(orderId: string, carrier: string, tracking: string) {
       const res = await fetch(`/api/admin/orders/${orderId}/fulfillment`, {
         method: "POST",
@@ -267,7 +255,6 @@ const admin = {
       return res.json();
     },
   },
-
 };
 
 export default admin;

@@ -1,4 +1,4 @@
-'use server';
+"use server";
 
 import { cloudinary } from ".";
 import { emitSecurityEvent, emitAlertEvent } from "@/lib/events/emitter";
@@ -10,7 +10,7 @@ export async function uploadImage(
   transformations: Record<string, any>[] = [
     { quality: "auto" },
     { fetch_format: "auto" },
-  ]
+  ],
 ): Promise<
   | {
       ok: true;
@@ -56,7 +56,7 @@ export async function uploadImage(
         folder,
         resource_type: "image",
         transformation: transformations,
-      }
+      },
     );
 
     /* -------------------------------------------------- */

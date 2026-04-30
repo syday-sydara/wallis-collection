@@ -30,10 +30,9 @@ export default function VariantsTab({ product }) {
             <button
               className="btn btn-sm btn-outline"
               onClick={() =>
-                modal.open(
-                  <VariantForm productId={product.id} variant={v} />,
-                  { size: "md" }
-                )
+                modal.open(<VariantForm productId={product.id} variant={v} />, {
+                  size: "md",
+                })
               }
             >
               Edit

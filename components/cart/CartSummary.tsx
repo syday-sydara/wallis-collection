@@ -17,10 +17,7 @@ export default function CartSummary({
   onQuantityChange,
   onRemove,
 }: Props) {
-  const subtotal = items.reduce(
-    (sum, i) => sum + i.unitPrice * i.quantity,
-    0
-  );
+  const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
   const total = subtotal + shippingCost;
 
   return (
@@ -80,16 +77,12 @@ export default function CartSummary({
                   −
                 </button>
 
-                <span className="w-6 text-center text-sm">
-                  {item.quantity}
-                </span>
+                <span className="w-6 text-center text-sm">{item.quantity}</span>
 
                 <button
                   type="button"
                   aria-label={`Increase quantity of ${item.name}`}
-                  onClick={() =>
-                    onQuantityChange(item.id, item.quantity + 1)
-                  }
+                  onClick={() => onQuantityChange(item.id, item.quantity + 1)}
                   className="px-2 py-1 border border-border rounded-md text-sm bg-bg-default active:scale-95 transition"
                 >
                   +

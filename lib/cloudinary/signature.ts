@@ -4,7 +4,7 @@ import { cloudinary } from ".";
 import { emitSecurityEvent } from "@/lib/events/emitter";
 
 export function generateUploadSignature(
-  params: Record<string, string | number>
+  params: Record<string, string | number>,
 ) {
   const secret = process.env.CLOUDINARY_API_SECRET;
 

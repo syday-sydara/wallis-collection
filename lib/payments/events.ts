@@ -124,9 +124,7 @@ export async function handleChargebackEvent(input: ChargebackEventInput) {
       data: {
         refundedAmount: (order.refundedAmount ?? 0) + chargebackAmount,
         orderStatus:
-          order.orderStatus === "DELIVERED"
-            ? "RETURN_REQUESTED"
-            : "CANCELLED",
+          order.orderStatus === "DELIVERED" ? "RETURN_REQUESTED" : "CANCELLED",
       },
     });
 

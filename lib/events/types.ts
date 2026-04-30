@@ -104,7 +104,7 @@ export const SECURITY_EVENT_TYPES = [
 
 export type SecurityEventType =
   | (typeof SECURITY_EVENT_TYPES)[number]
-  | `WHATSAPP_${string}`;   // ⭐ allow all WhatsApp security events
+  | `WHATSAPP_${string}`; // ⭐ allow all WhatsApp security events
 
 export type SecurityEventInput = EventInput<
   "security",

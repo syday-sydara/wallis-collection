@@ -27,7 +27,7 @@ export async function saveLocalImage(productId: string, file: File) {
     "public",
     "uploads",
     "products",
-    productId
+    productId,
   );
 
   await fs.mkdir(uploadDir, { recursive: true });

@@ -178,7 +178,9 @@ async function main() {
   }
 
   console.log(chalk.green("\n✨ Setup complete! Your environment is ready."));
-  console.log(chalk.blue("➡️  Run `pnpm dev` to start the development server.\n"));
+  console.log(
+    chalk.blue("➡️  Run `pnpm dev` to start the development server.\n"),
+  );
 }
 
 main();
