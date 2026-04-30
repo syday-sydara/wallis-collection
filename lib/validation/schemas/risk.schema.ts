@@ -4,10 +4,10 @@ export const riskContextSchema = z.object({
   userId: z.string().nullable().optional(),
   ip: z.string().nullable().optional(),
   userAgent: z.string().nullable().optional(),
-  action: z.string().min(1),
-  amount: z.number().nonnegative().optional(),
-  country: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
+  action: z.string(),
+  amount: z.number().nullable().optional(),
+  country: z.string().nullable().optional(),
+  metadata: z.any().optional(),
 });
 
 export const riskResultSchema = z.object({

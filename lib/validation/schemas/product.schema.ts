@@ -1,12 +1,19 @@
 import { z } from "zod";
 
-export const productSchema = z.object({
+export const productImageSchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(2),
-  description: z.string().max(2000).optional(),
-  price: z.number().positive(),
-  currency: z.string().length(3).default("NGN"),
-  active: z.boolean().default(true),
-  imageUrl: z.string().url().optional(),
-  stock: z.number().int().nonnegative().default(0),
+
+  url: z.string().url(),
+  publicId: z.string(),
+  width: z.number().nullable().optional(),
+  height: z.number().nullable().optional(),
+  format: z.string().nullable().optional(),
+  bytes: z.number().nullable().optional(),
+
+  alt: z.string().nullable().optional(),
+
+  sortOrder: z.number().default(0),
+  isPrimary: z.boolean().default(false),
+
+  productId: z.string(),
 });
