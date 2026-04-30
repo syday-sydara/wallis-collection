@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "orderId": {
+      "type": "string"
+    },
+    "order": {
+      "type": "string"
+    },
+    "carrier": {
+      "type": "string"
+    },
+    "tracking": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  }
+}

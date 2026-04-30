@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "variantId": {
+      "type": "string"
+    },
+    "variant": {
+      "type": "string"
+    },
+    "change": {
+      "type": "number"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    }
+  }
+}

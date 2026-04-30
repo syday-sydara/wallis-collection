@@ -1,0 +1,44 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "productId": {
+      "type": "string"
+    },
+    "product": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "sku": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number"
+    },
+    "stock": {
+      "type": "number"
+    },
+    "reservedStock": {
+      "type": "number"
+    },
+    "compareAtPrice": {
+      "type": "number"
+    },
+    "costPrice": {
+      "type": "number"
+    },
+    "attributes": {
+      "type": "string"
+    },
+    "orderItems": {
+      "type": "string"
+    },
+    "stockLogs": {
+      "type": "string"
+    }
+  }
+}

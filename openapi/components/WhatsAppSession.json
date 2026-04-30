@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "whatsapp": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    }
+  }
+}

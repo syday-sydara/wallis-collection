@@ -1,0 +1,53 @@
+{
+  "type": "object",
+  "properties": {
+    "productId": {
+      "type": "string"
+    },
+    "product": {
+      "type": "string"
+    },
+    "viewCount": {
+      "type": "number"
+    },
+    "addToCartCount": {
+      "type": "number"
+    },
+    "whatsappClickCount": {
+      "type": "number"
+    },
+    "checkoutClickCount": {
+      "type": "number"
+    },
+    "purchaseCount": {
+      "type": "number"
+    },
+    "addToCartRate": {
+      "type": "number"
+    },
+    "checkoutClickRate": {
+      "type": "number"
+    },
+    "whatsappClickRate": {
+      "type": "number"
+    },
+    "conversionRate": {
+      "type": "number"
+    },
+    "variantPopularity": {
+      "type": "string"
+    },
+    "abandonmentCount": {
+      "type": "number"
+    },
+    "fraudFlagCount": {
+      "type": "number"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "fullName": {
+      "type": "string"
+    },
+    "subtotal": {
+      "type": "number"
+    },
+    "shippingCost": {
+      "type": "number"
+    },
+    "discountAmount": {
+      "type": "number"
+    },
+    "total": {
+      "type": "number"
+    },
+    "refundedAmount": {
+      "type": "number"
+    },
+    "currency": {
+      "type": "string"
+    },
+    "paymentMethod": {
+      "type": "string"
+    },
+    "orderStatus": {
+      "type": "string"
+    },
+    "paymentStatus": {
+      "type": "string"
+    },
+    "paymentProvider": {
+      "type": "string"
+    },
+    "fraudScore": {
+      "type": "number"
+    },
+    "riskScore": {
+      "type": "number"
+    },
+    "riskTriggeredRules": {
+      "type": "string"
+    },
+    "riskLevel": {
+      "type": "string"
+    },
+    "riskContextSnapshot": {
+      "type": "string"
+    },
+    "shippingType": {
+      "type": "string"
+    },
+    "shippingAddress": {
+      "type": "string"
+    },
+    "deliveryNotes": {
+      "type": "string"
+    },
+    "deliveredAt": {
+      "type": "string"
+    },
+    "isPaid": {
+      "type": "boolean"
+    },
+    "trackingNumber": {
+      "type": "string"
+    },
+    "carrier": {
+      "type": "string"
+    },
+    "idempotencyKey": {
+      "type": "string"
+    },
+    "cartSnapshot": {
+      "type": "string"
+    },
+    "inventoryReserved": {
+      "type": "boolean"
+    },
+    "inventoryConfirmed": {
+      "type": "boolean"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "user": {
+      "type": "string"
+    },
+    "items": {
+      "type": "string"
+    },
+    "payments": {
+      "type": "string"
+    },
+    "fulfillments": {
+      "type": "string"
+    }
+  }
+}
