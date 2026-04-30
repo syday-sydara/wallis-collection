@@ -1,5 +1,7 @@
-import { z } from "zod";
-import { orderSchema, orderItemSchema } from "../schemas/order.schema";
 
-export type OrderItemInput = z.infer<typeof orderItemSchema>;
-export type OrderInput = z.infer<typeof orderSchema>;
+// === AUTO-GENERATED START ===
+import { z } from "zod";
+import { OrderSchema } from "../schemas/Order.schema";
+
+export type OrderInput = z.infer<typeof OrderSchema>;
+// === AUTO-GENERATED END ===

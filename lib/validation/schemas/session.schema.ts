@@ -1,13 +1,17 @@
+
+// === AUTO-GENERATED START ===
 import { z } from "zod";
 
-export const sessionSchema = z.object({
-  id: z.string().optional(),
-
+export const SessionSchema = z.object({
+  id: z.string(),
   userId: z.string(),
-
-  ipAddress: z.string().nullable().optional(),
-  userAgent: z.string().nullable().optional(),
-  deviceId: z.string().nullable().optional(),
-
-  riskScore: z.number().default(0),
+  user: z.string(),
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
+  deviceId: z.string().optional(),
+  createdAt: z.date(),
+  lastActive: z.date(),
+  revokedAt: z.date().optional(),
+  riskScore: z.number(),
 });
+// === AUTO-GENERATED END ===

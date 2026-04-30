@@ -1,21 +1,26 @@
+
+// === AUTO-GENERATED START ===
 import { z } from "zod";
 
-export const userSchema = z.object({
-  id: z.string().optional(),
-  email: z.string().email(),
-  name: z.string().nullable().optional(),
-
-  role: z.enum(["USER", "ADMIN"]).default("USER"),
-  status: z.enum(["ACTIVE", "DISABLED", "BANNED"]).default("ACTIVE"),
-
-  passwordHash: z.string().nullable().optional(),
-  phone: z.string().nullable().optional(),
-  emailVerifiedAt: z.date().nullable().optional(),
-
-  risk_score: z.number().default(0),
+export const UserSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string().optional(),
+  role: z.enum(["USER", "ADMIN"]),
+  status: z.enum(["ACTIVE", "DISABLED", "BANNED"]),
+  passwordHash: z.string().optional(),
+  phone: z.string().optional(),
+  emailVerifiedAt: z.date().optional(),
+  risk_score: z.number(),
   permissions: z.any().optional(),
   deniedPermissions: z.any().optional(),
-
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  orders: z.array(z.string()),
+  addresses: z.array(z.string()),
+  sessions: z.array(z.string()),
+  devices: z.array(z.string()),
+  cart: z.string().optional(),
+  auditLogs: z.array(z.string()),
 });
+// === AUTO-GENERATED END ===

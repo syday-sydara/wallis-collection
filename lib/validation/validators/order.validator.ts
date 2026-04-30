@@ -1,6 +1,9 @@
-import { orderSchema } from "../schemas/order.schema";
-import { safeParseOrThrow } from "./zod-helpers";
 
-export function validateOrder(input: unknown) {
-  return safeParseOrThrow(orderSchema, input);
+// === AUTO-GENERATED START ===
+import { OrderSchema } from "../schemas/Order.schema";
+import { safeParseOrThrow } from "../zod-helpers";
+
+export function validateOrder(input) {
+  return safeParseOrThrow(OrderSchema, input);
 }
+// === AUTO-GENERATED END ===

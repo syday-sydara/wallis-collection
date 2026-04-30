@@ -1,6 +1,9 @@
-import { userSchema } from "../schemas/user.schema";
-import { safeParseOrThrow } from "./zod-helpers";
 
-export function validateUser(input: unknown) {
-  return safeParseOrThrow(userSchema, input);
+// === AUTO-GENERATED START ===
+import { UserSchema } from "../schemas/User.schema";
+import { safeParseOrThrow } from "../zod-helpers";
+
+export function validateUser(input) {
+  return safeParseOrThrow(UserSchema, input);
 }
+// === AUTO-GENERATED END ===

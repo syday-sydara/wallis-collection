@@ -1,71 +1,44 @@
+
+// === AUTO-GENERATED START ===
 import { z } from "zod";
 
-export const orderSchema = z.object({
-  id: z.string().optional(),
-
-  email: z.string().email(),
+export const OrderSchema = z.object({
+  id: z.string(),
+  email: z.string(),
   phone: z.string(),
   fullName: z.string(),
-
   subtotal: z.number(),
   shippingCost: z.number(),
-  discountAmount: z.number().default(0),
+  discountAmount: z.number(),
   total: z.number(),
-  refundedAmount: z.number().default(0),
-
-  currency: z.enum(["NGN", "USD", "GBP"]).default("NGN"),
+  refundedAmount: z.number(),
+  currency: z.enum(["NGN", "USD", "GBP"]),
   paymentMethod: z.enum(["CARD", "TRANSFER", "CASH"]),
-  orderStatus: z.enum([
-    "CREATED",
-    "PENDING_PAYMENT",
-    "REVIEW",
-    "CONFIRMED",
-    "PACKING",
-    "SHIPPED",
-    "DELIVERED",
-    "RETURN_REQUESTED",
-    "RETURNED",
-    "FAILED_DELIVERY",
-    "CANCELLED",
-  ]).default("CREATED"),
-
-  paymentStatus: z.enum([
-    "PENDING",
-    "SUCCESS",
-    "FAILED",
-    "REFUNDED",
-    "REVIEW",
-    "CHARGEBACK",
-    "EXPIRED",
-    "PARTIAL",
-  ]).default("PENDING"),
-
-  paymentProvider: z.enum(["PAYSTACK", "MONNIFY", "BANK_TRANSFER"]).nullable().optional(),
-
-  fraudScore: z.number().default(0),
-
-  riskScore: z.number().nullable().optional(),
-  riskTriggeredRules: z.array(z.string()).default([]),
-  riskLevel: z.string().nullable().optional(),
+  orderStatus: z.enum(["CREATED", "PENDING_PAYMENT", "REVIEW", "CONFIRMED", "PACKING", "SHIPPED", "DELIVERED", "RETURN_REQUESTED", "RETURNED", "FAILED_DELIVERY", "CANCELLED"]),
+  paymentStatus: z.enum(["PENDING", "SUCCESS", "FAILED", "REFUNDED", "REVIEW", "CHARGEBACK", "EXPIRED", "PARTIAL"]),
+  paymentProvider: z.enum(["PAYSTACK", "MONNIFY", "BANK_TRANSFER"]).optional(),
+  fraudScore: z.number(),
+  riskScore: z.number().optional(),
+  riskTriggeredRules: z.array(z.string()),
+  riskLevel: z.string().optional(),
   riskContextSnapshot: z.any().optional(),
-
   shippingType: z.enum(["STANDARD", "EXPRESS", "PICKUP"]),
   shippingAddress: z.any(),
-
-  deliveryNotes: z.string().nullable().optional(),
-  deliveredAt: z.date().nullable().optional(),
-
-  isPaid: z.boolean().default(false),
-
-  trackingNumber: z.string().nullable().optional(),
-  carrier: z.string().nullable().optional(),
-
-  idempotencyKey: z.string().nullable().optional(),
-
+  deliveryNotes: z.string().optional(),
+  deliveredAt: z.date().optional(),
+  isPaid: z.boolean(),
+  trackingNumber: z.string().optional(),
+  carrier: z.string().optional(),
+  idempotencyKey: z.string().optional(),
   cartSnapshot: z.any().optional(),
-
-  inventoryReserved: z.boolean().default(false),
-  inventoryConfirmed: z.boolean().default(false),
-
-  userId: z.string().nullable().optional(),
+  inventoryReserved: z.boolean(),
+  inventoryConfirmed: z.boolean(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  userId: z.string().optional(),
+  user: z.string().optional(),
+  items: z.array(z.string()),
+  payments: z.array(z.string()),
+  fulfillments: z.array(z.string()),
 });
+// === AUTO-GENERATED END ===

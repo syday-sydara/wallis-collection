@@ -1,17 +1,15 @@
+
+// === AUTO-GENERATED START ===
 import { z } from "zod";
 
-export const fulfillmentSchema = z.object({
-  id: z.string().optional(),
+export const FulfillmentSchema = z.object({
+  id: z.string(),
   orderId: z.string(),
-
-  carrier: z.string().nullable().optional(),
-  tracking: z.string().nullable().optional(),
-
-  status: z.enum([
-    "PENDING",
-    "IN_TRANSIT",
-    "OUT_FOR_DELIVERY",
-    "DELIVERED",
-    "FAILED",
-  ]).default("PENDING"),
+  order: z.string(),
+  carrier: z.string().optional(),
+  tracking: z.string().optional(),
+  status: z.enum(["PENDING", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "FAILED"]),
+  createdAt: z.date(),
+  updatedAt: z.date(),
 });
+// === AUTO-GENERATED END ===
