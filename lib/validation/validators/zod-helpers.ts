@@ -1,4 +1,4 @@
-import { ZodError, ZodSchema } from "zod";
+import { ZodSchema } from "zod";
 import { ValidationError } from "../errors/ValidationError";
 import { formatZodError } from "../errors/formatZodError";
 
