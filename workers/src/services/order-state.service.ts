@@ -1,29 +1,66 @@
-import { prisma } from "../prisma/client";
-import { OrderStatus } from "@prisma/client";
-import { canTransition } from "../domain/order-state-machine";
+export type OrderStatus =
+  | "PENDING"
+  | "PAID"
+  | "CONFIRMED"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "FAILED_DELIVERY"
+  | "RETURNED"
+  | "CANCELLED";
 
-export class OrderStateService {
-  static async transition(orderId: string, next: OrderStatus) {
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) throw new Error("Order not found");
+export type Actor = "SYSTEM" | "ADMIN" | "USER";
 
-    const current = order.status as OrderStatus;
+/**
+ * Allowed transitions between states.
+ * This is the authoritative state machine.
+ */
+export const transitions: Record<OrderStatus, OrderStatus[]> = {
+  PENDING: ["PAID", "CANCELLED"],
 
-    if (!canTransition(current, next)) {
-      throw new Error(`Invalid transition: ${current} → ${next}`);
-    }
+  PAID: ["CONFIRMED", "CANCELLED"],
 
-    return prisma.$transaction(async (tx) => {
-      await tx.order.update({
-        where: { id: orderId },
-        data: { status: next },
-      });
+  CONFIRMED: ["PROCESSING", "CANCELLED"],
 
-      await tx.orderStatusHistory.create({
-        data: { orderId, from: current, to: next },
-      });
+  PROCESSING: ["SHIPPED", "CANCELLED"],
 
-      return next;
-    });
+  SHIPPED: ["DELIVERED", "FAILED_DELIVERY"],
+
+  FAILED_DELIVERY: ["PROCESSING", "RETURNED"],
+
+  RETURNED: [],
+
+  DELIVERED: [],
+
+  CANCELLED: [],
+};
+
+/**
+ * Validates whether an actor can transition an order
+ * from one state to another.
+ */
+export function canTransition(
+  current: OrderStatus,
+  next: OrderStatus,
+  actor: Actor
+): boolean {
+  // illegal transition
+  if (!transitions[current]?.includes(next)) {
+    return false;
   }
+
+  // USER can only cancel
+  if (actor === "USER" && next !== "CANCELLED") {
+    return false;
+  }
+
+  // cannot cancel after shipping
+  if (
+    next === "CANCELLED" &&
+    (current === "SHIPPED" || current === "DELIVERED")
+  ) {
+    return false;
+  }
+
+  return true;
 }

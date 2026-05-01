@@ -1,5 +1,6 @@
 import { prisma } from "../prisma/client";
 import { PaymentProvider, PaymentStatus } from "@prisma/client";
+import { PaymentProducer } from "../queues/payment.producer";
 
 export const PaymentService = {
   async createBankTransfer(orderId: string, amount: number, paidByName?: string) {
@@ -33,8 +34,9 @@ export const PaymentService = {
 
       if (!payment) throw new Error("Payment not found");
 
+      // idempotency
       if (payment.status === PaymentStatus.SUCCESS) {
-        return payment; // idempotency guard
+        return payment;
       }
 
       const now = new Date();
@@ -49,12 +51,14 @@ export const PaymentService = {
         },
       });
 
-      await tx.order.update({
-        where: { id: payment.orderId },
-        data: {
-          paymentStatus: "PAID",
-          status: "CONFIRMED",
-        },
+      // DO NOT update order here
+      // Instead, emit event for workers to handle
+      setImmediate(() => {
+        PaymentProducer.emitPaymentSuccess({
+          paymentId,
+          orderId: payment.orderId,
+          amount: payment.amount,
+        });
       });
 
       return updated;
@@ -62,12 +66,22 @@ export const PaymentService = {
   },
 
   async failPayment(paymentId: string, notes?: string) {
-    return prisma.payment.update({
+    const updated = await prisma.payment.update({
       where: { id: paymentId },
       data: {
         status: PaymentStatus.FAILED,
         notes,
       },
     });
+
+    // emit event
+    setImmediate(() => {
+      PaymentProducer.emitPaymentFailed({
+        paymentId,
+        orderId: updated.orderId,
+      });
+    });
+
+    return updated;
   },
 };

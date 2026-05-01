@@ -1,38 +1,45 @@
 import { prisma } from "../prisma/client";
 import { ActorType } from "@prisma/client";
+import { redis } from "../redis/client"; // assuming you have this
 
 export const AuditService = {
   async log(input: {
     requestId?: string;
+    traceId?: string;
     userId?: string;
     actorType: ActorType;
     action: string;
     entityType: string;
     entityId: string;
-    metadata?: Record<string, string | number | boolean | null>;
+    metadata?: Record<string, any>;
     ipAddress?: string;
     userAgent?: string;
   }) {
+    const payload = {
+      requestId: input.requestId ?? null,
+      traceId: input.traceId ?? null,
+      userId: input.userId ?? null,
+      actorType: input.actorType,
+      action: input.action,
+      entityType: input.entityType,
+      entityId: input.entityId,
+      metadata: input.metadata ?? {},
+      ipAddress: input.ipAddress ?? null,
+      userAgent: input.userAgent ?? null,
+      createdAt: new Date(),
+    };
+
     try {
-      await prisma.auditLog.create({
-        data: {
-          requestId: input.requestId,
-          userId: input.userId,
-          actorType: input.actorType,
-          action: input.action,
-          entityType: input.entityType,
-          entityId: input.entityId,
-          metadata: input.metadata ?? {},
-          ipAddress: input.ipAddress,
-          userAgent: input.userAgent,
-        },
-      });
+      await prisma.auditLog.create({ data: payload });
     } catch (err) {
-      // ❗ Never block business logic
       console.error("[AUDIT LOG FAILED]", err);
 
-      // optional observability hook
-      process.emit?.("audit_log_failed", { err, input });
+      // fallback durability layer
+      try {
+        await redis.lpush("audit:failed", JSON.stringify(payload));
+      } catch (fallbackErr) {
+        console.error("[AUDIT FALLBACK FAILED]", fallbackErr);
+      }
     }
   },
 };

@@ -1,76 +1,76 @@
 import { prisma } from "../prisma/client";
 import { ReservationStatus } from "@prisma/client";
 
-export const InventoryService = {
-  async reserveStock(variantId: string, quantity: number, ttlMs: number) {
-    const expiresAt = new Date(Date.now() + ttlMs);
+export async function consumeReservation(reservationId: string, orderId: string) {
+  return prisma.$transaction(async (tx) => {
+    // Lock reservation row
+    const [reservation] = await tx.$queryRaw<
+      { id: string; status: string; orderId: string | null; quantity: number; variantId: string; expiresAt: Date }[]
+    >`
+      SELECT * FROM "StockReservation"
+      WHERE id = ${reservationId}
+      FOR UPDATE
+    `;
 
-    return prisma.$transaction(async (tx) => {
-      // 🔒 LOCK ROW (prevents race condition)
-      const variant = await tx.$queryRaw<
-        { stockQty: number }[]
-      >`SELECT stockQty FROM "ProductVariant" WHERE id = ${variantId} FOR UPDATE`;
+    if (!reservation) {
+      throw new Error("Reservation not found");
+    }
 
-      if (!variant.length) throw new Error("Variant not found");
-
-      const stockQty = variant[0].stockQty;
-
-      const activeReserved = await tx.stockReservation.aggregate({
-        where: {
-          variantId,
-          status: ReservationStatus.ACTIVE,
-          expiresAt: { gt: new Date() },
-        },
-        _sum: { quantity: true },
-      });
-
-      const reservedQty = activeReserved._sum.quantity ?? 0;
-      const available = stockQty - reservedQty;
-
-      if (available < quantity) {
-        throw new Error("Not enough stock available");
+    // Idempotency + ownership check
+    if (reservation.status === ReservationStatus.CONSUMED) {
+      if (reservation.orderId !== orderId) {
+        throw new Error("Reservation already consumed by another order");
       }
+      return reservation;
+    }
 
-      return tx.stockReservation.create({
-        data: {
-          variantId,
-          quantity,
-          expiresAt,
-          status: ReservationStatus.ACTIVE,
-        },
-      });
-    });
-  },
+    // Must be ACTIVE and not expired
+    if (
+      reservation.status !== ReservationStatus.ACTIVE ||
+      reservation.expiresAt <= new Date()
+    ) {
+      throw new Error("Reservation expired or invalid");
+    }
 
-  async releaseExpiredReservations() {
-    return prisma.stockReservation.updateMany({
-      where: {
-        status: ReservationStatus.ACTIVE,
-        expiresAt: { lt: new Date() },
-      },
+    if (reservation.quantity <= 0) {
+      throw new Error("Invalid reservation quantity");
+    }
+
+    // Lock variant row
+    const [variant] = await tx.$queryRaw<
+      { id: string; stockQty: number }[]
+    >`
+      SELECT * FROM "ProductVariant"
+      WHERE id = ${reservation.variantId}
+      FOR UPDATE
+    `;
+
+    if (!variant) {
+      throw new Error("Variant not found");
+    }
+
+    // Ensure stock is still available
+    if (variant.stockQty < reservation.quantity) {
+      throw new Error("Stock inconsistency detected");
+    }
+
+    // Deduct stock
+    await tx.productVariant.update({
+      where: { id: reservation.variantId },
       data: {
-        status: ReservationStatus.RELEASED,
+        stockQty: {
+          decrement: reservation.quantity,
+        },
       },
     });
-  },
 
-  async consumeReservation(reservationId: string, orderId: string) {
-    return prisma.$transaction(async (tx) => {
-      const reservation = await tx.stockReservation.findUnique({
-        where: { id: reservationId },
-      });
-
-      if (!reservation || reservation.status !== "ACTIVE") {
-        throw new Error("Invalid reservation");
-      }
-
-      return tx.stockReservation.update({
-        where: { id: reservationId },
-        data: {
-          status: ReservationStatus.CONSUMED,
-          orderId,
-        },
-      });
+    // Mark reservation as consumed
+    return tx.stockReservation.update({
+      where: { id: reservationId },
+      data: {
+        status: ReservationStatus.CONSUMED,
+        orderId,
+      },
     });
-  },
-};
+  });
+}

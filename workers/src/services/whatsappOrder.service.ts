@@ -1,30 +1,4 @@
-import { prisma } from "../prisma/client";
-import {
-  WhatsAppOrderStatus,
-  PaymentProvider,
-  WhatsAppPaymentMethod,
-} from "@prisma/client";
-import { OrderService } from "./order.service";
-import { InventoryService } from "./inventory.service";
-
 export const WhatsAppOrderService = {
-  async create(input: any) {
-    return prisma.whatsAppOrder.create({
-      data: {
-        ...input,
-        status: WhatsAppOrderStatus.PENDING,
-        items: {
-          create: input.items.map((i: any) => ({
-            variantId: i.variantId,
-            quantity: i.quantity,
-            priceAtTime: i.priceAtTime,
-          })),
-        },
-      },
-      include: { items: true },
-    });
-  },
-
   async convertToOrder(whatsappOrderId: string) {
     return prisma.$transaction(async (tx) => {
       const wa = await tx.whatsAppOrder.findUnique({
@@ -34,11 +8,21 @@ export const WhatsAppOrderService = {
 
       if (!wa) throw new Error("WhatsApp order not found");
 
+      if (wa.finalOrderId) {
+        return tx.order.findUnique({
+          where: { id: wa.finalOrderId },
+        });
+      }
+
       if (!wa.addressLine1 || !wa.state) {
         throw new Error("Missing address details");
       }
 
-      // 🔥 1. Reserve stock FIRST
+      if (wa.status !== WhatsAppOrderStatus.PENDING) {
+        throw new Error("Invalid WhatsApp order state");
+      }
+
+      // reserve stock (should ideally be batch operation)
       for (const item of wa.items) {
         await InventoryService.reserveStock(
           item.variantId,
@@ -47,7 +31,6 @@ export const WhatsAppOrderService = {
         );
       }
 
-      // 🔥 2. Create main order
       const order = await OrderService.createOrder({
         userId: wa.userId ?? undefined,
         phoneNumber: wa.phoneNumber,
@@ -66,7 +49,6 @@ export const WhatsAppOrderService = {
         paymentMethod: mapPaymentMethod(wa.paymentMethod),
       });
 
-      // 🔥 3. Update WhatsApp status safely
       await tx.whatsAppOrder.update({
         where: { id: whatsappOrderId },
         data: {
@@ -79,13 +61,3 @@ export const WhatsAppOrderService = {
     });
   },
 };
-
-// helper
-function mapPaymentMethod(method?: WhatsAppPaymentMethod) {
-  switch (method) {
-    case "CASH_ON_DELIVERY":
-      return PaymentProvider.CASH_ON_DELIVERY;
-    default:
-      return PaymentProvider.BANK_TRANSFER;
-  }
-}

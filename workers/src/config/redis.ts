@@ -1,25 +1,38 @@
 import { Redis } from "ioredis";
 
-export const connection = new Redis({
+const baseConfig = {
   host: process.env.REDIS_HOST || "localhost",
   port: Number(process.env.REDIS_PORT) || 6379,
   password: process.env.REDIS_PASSWORD || undefined,
+
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
-  reconnectOnError: (err) => {
-    const targetErrors = ["READONLY", "ETIMEDOUT"];
+
+  retryStrategy: (times: number) => {
+    return Math.min(times * 50, 2000);
+  },
+
+  reconnectOnError: (err: Error) => {
+    const targetErrors = [
+      "READONLY",
+      "ETIMEDOUT",
+      "ECONNRESET",
+      "EAI_AGAIN",
+    ];
     return targetErrors.some((msg) => err.message.includes(msg));
   },
-});
 
-export const subscriber = connection.duplicate();
-export const publisher = connection.duplicate();
+  keyPrefix: "store:",
+};
 
-export async function checkRedisHealth() {
-  try {
-    await connection.ping();
-    return { healthy: true };
-  } catch (err) {
-    return { healthy: false, error: err };
-  }
+export const redis = new Redis(baseConfig);
+export const pub = new Redis(baseConfig);
+export const sub = new Redis(baseConfig);
+
+export async function shutdownRedis() {
+  await Promise.all([
+    redis.quit(),
+    pub.quit(),
+    sub.quit(),
+  ]);
 }

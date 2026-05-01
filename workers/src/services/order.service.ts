@@ -1,61 +1,73 @@
 import { prisma } from "../prisma/client";
-import { OrderStatus, PaymentProvider, PaymentStatus } from "@prisma/client";
+import { OrderStatus, PaymentStatus } from "@prisma/client";
+import { OrderProducer } from "./queues/order.producer";
 
 export const OrderService = {
-  async createOrder(input: {
-    userId?: string;
-    phoneNumber: string;
-    addressLine1: string;
-    addressLine2?: string;
-    city?: string;
-    state: string;
-    lga?: string;
-    landmark?: string;
-    deliveryNote?: string;
-    items: { variantId: string; quantity: number; priceAtTime: number }[];
-    deliveryFee?: number;
-    discount?: number;
-    paymentMethod: PaymentProvider;
-  }) {
-    const { items, deliveryFee = 0, discount = 0 } = input;
+  async createOrder(input) {
+    return prisma.$transaction(async (tx) => {
+      if (!input.items.length) {
+        throw new Error("Order must have items");
+      }
 
-    const subtotal = items.reduce(
-      (sum, i) => sum + i.priceAtTime * i.quantity,
-      0
-    );
-
-    const totalAmount = subtotal + deliveryFee - discount;
-
-    return prisma.order.create({
-      data: {
-        ...input,
-        subtotal,
-        totalAmount,
-        paymentStatus: PaymentStatus.PENDING,
-        status: OrderStatus.PENDING,
-        items: {
-          create: items.map((i) => ({
-            variantId: i.variantId,
-            quantity: i.quantity,
-            priceAtTime: i.priceAtTime,
-          })),
+      // Fetch variants
+      const variants = await tx.productVariant.findMany({
+        where: {
+          id: { in: input.items.map(i => i.variantId) },
         },
-      },
-      include: { items: true },
-    });
-  },
+      });
 
-  async updateStatus(orderId: string, status: OrderStatus) {
-    return prisma.order.update({
-      where: { id: orderId },
-      data: { status },
-    });
-  },
+      const variantMap = new Map(variants.map(v => [v.id, v]));
 
-  async markPaid(orderId: string) {
-    return prisma.order.update({
-      where: { id: orderId },
-      data: { paymentStatus: PaymentStatus.SUCCESS },
+      // Build order items
+      const items = input.items.map(i => {
+        const variant = variantMap.get(i.variantId);
+        if (!variant) throw new Error("Invalid variant");
+
+        return {
+          variantId: i.variantId,
+          quantity: i.quantity,
+          priceAtTime: variant.price,
+        };
+      });
+
+      // Calculate totals
+      const subtotal = items.reduce(
+        (sum, i) => sum + i.priceAtTime * i.quantity,
+        0
+      );
+
+      const deliveryFee = input.deliveryFee ?? 0;
+      const discount = input.discount ?? 0;
+
+      const totalAmount = subtotal + deliveryFee - discount;
+
+      // Create order
+      const order = await tx.order.create({
+        data: {
+          ...input,
+          subtotal,
+          totalAmount,
+          currency: "NGN",
+          paymentStatus: PaymentStatus.PENDING,
+          status: OrderStatus.PENDING,
+          items: { create: items },
+          payments: {
+            create: {
+              provider: input.paymentMethod,
+              amount: totalAmount,
+              status: PaymentStatus.PENDING,
+            },
+          },
+        },
+        include: { items: true },
+      });
+
+      // Emit checkout.started AFTER commit
+      setImmediate(() => {
+        OrderProducer.emitCheckoutStarted(order);
+      });
+
+      return order;
     });
   },
 };
