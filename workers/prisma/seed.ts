@@ -1,10 +1,12 @@
 import {
   PrismaClient,
-  OrderStatus,
+  OrderChannel,
+  DeliveryMethod,
   PaymentStatus,
-  PaymentProvider,
+  OrderStatus,
+  ReservationStatus,
+  Currency,
   ShipmentStatus,
-  ReservationStatus
 } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -12,46 +14,67 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding database...");
 
-  // -------------------------------------
-  // USERS
-  // -------------------------------------
+  // -----------------------------
+  // PROVIDERS
+  // -----------------------------
+  const bankTransfer = await prisma.paymentProvider.create({
+    data: {
+      code: "BANK_TRANSFER",
+      name: "Bank Transfer",
+    },
+  });
+
+  const gigProvider = await prisma.shipmentProvider.create({
+    data: {
+      code: "GIG",
+      name: "GIG Logistics",
+    },
+  });
+
+  // -----------------------------
+  // USER + CUSTOMER
+  // -----------------------------
   const user = await prisma.user.create({
     data: {
       name: "Test User",
       phone: "08012345678",
       email: "test@example.com",
+      customer: {
+        create: {
+          primaryPhone: "08012345678",
+        },
+      },
     },
+    include: { customer: true },
   });
 
-  // -------------------------------------
-  // PRODUCTS + VARIANTS
-  // -------------------------------------
+  // -----------------------------
+  // PRODUCT + VARIANTS + IMAGES
+  // -----------------------------
   const product = await prisma.product.create({
     data: {
       name: "Ankara Fabric",
       slug: "ankara-fabric",
-      description: "High quality African print fabric",
+      description: "Beautiful patterned fabric",
       fabricType: "WAX",
       color: "Blue",
-      pattern: "Floral",
+      pattern: "Geometric",
       images: {
-        create: [
-          { url: "https://example.com/image1.jpg", alt: "Fabric Image 1" },
-        ],
+        create: [{ url: "https://example.com/image.jpg", alt: "Sample image" }],
       },
       variants: {
         create: [
           {
             name: "2 yards",
             sku: "ANK-2Y",
-            price: 5000,
-            stockQty: 20,
+            price: 2500,
+            stockQty: 10,
           },
           {
             name: "4 yards",
             sku: "ANK-4Y",
-            price: 9000,
-            stockQty: 15,
+            price: 5000,
+            stockQty: 5,
           },
         ],
       },
@@ -61,21 +84,37 @@ async function main() {
 
   const variant = product.variants[0];
 
-  // -------------------------------------
-  // ORDER
-  // -------------------------------------
-  const order = await prisma.order.create({
+  // -----------------------------
+  // ADDRESS
+  // -----------------------------
+  const address = await prisma.address.create({
     data: {
-      userId: user.id,
-      phoneNumber: "08012345678",
-      addressLine1: "123 Test Street",
+      line1: "123 Test Street",
       city: "Lagos",
       state: "Lagos",
+    },
+  });
+
+  // -----------------------------
+  // ORDER
+  // -----------------------------
+  const order = await prisma.order.create({
+    data: {
+      customerId: user.customer!.id,
+      channel: OrderChannel.WHATSAPP,
+      phoneNumber: "08012345678",
+      addressId: address.id,
+      deliveryMethod: DeliveryMethod.DELIVERY,
+
       subtotal: 5000,
+      deliveryFee: 0,
+      discount: 0,
       totalAmount: 5000,
-      paymentMethod: PaymentProvider.BANK_TRANSFER,
+      currency: Currency.NGN,
+
       paymentStatus: PaymentStatus.PENDING,
       status: OrderStatus.PENDING,
+
       items: {
         create: [
           {
@@ -85,89 +124,51 @@ async function main() {
           },
         ],
       },
-    },
-    include: { items: true },
-  });
 
-  // -------------------------------------
-  // STOCK RESERVATION
-  // -------------------------------------
-  await prisma.stockReservation.create({
-    data: {
-      variantId: variant.id,
-      orderId: order.id,
-      quantity: 1,
-      status: ReservationStatus.ACTIVE,
-      expiresAt: new Date(Date.now() + 1000 * 60 * 30), // 30 mins
-    },
-  });
-
-  // -------------------------------------
-  // PAYMENT
-  // -------------------------------------
-  await prisma.payment.create({
-    data: {
-      orderId: order.id,
-      provider: PaymentProvider.BANK_TRANSFER,
-      amount: 5000,
-      status: PaymentStatus.PENDING,
-    },
-  });
-
-  // -------------------------------------
-  // SHIPMENT
-  // -------------------------------------
-  await prisma.shipment.create({
-    data: {
-      orderId: order.id,
-      provider: "GIG",
-      trackingNumber: "GIG123456",
-      status: ShipmentStatus.PENDING,
-    },
-  });
-
-  // -------------------------------------
-  // WHATSAPP ORDER
-  // -------------------------------------
-  await prisma.whatsAppOrder.create({
-    data: {
-      phoneNumber: "08098765432",
-      status: "PENDING",
-      items: {
+      reservations: {
         create: [
           {
             variantId: variant.id,
-            quantity: 2,
-            priceAtTime: 5000,
+            quantity: 1,
+            status: ReservationStatus.ACTIVE,
+            expiresAt: new Date(Date.now() + 1000 * 60 * 30),
+          },
+        ],
+      },
+
+      statusHistory: {
+        create: [
+          {
+            from: OrderStatus.PENDING,
+            to: OrderStatus.PENDING,
           },
         ],
       },
     },
   });
 
-  // -------------------------------------
-  // AUDIT LOG
-  // -------------------------------------
-  await prisma.auditLog.create({
+  // -----------------------------
+  // PAYMENT
+  // -----------------------------
+  await prisma.payment.create({
     data: {
-      userId: user.id,
-      actorType: "SYSTEM",
-      action: "ORDER_CREATED",
-      entityType: "Order",
-      entityId: order.id,
-      metadata: { message: "Order created during seed" },
+      orderId: order.id,
+      providerId: bankTransfer.id,
+      amount: 5000,
+      currency: Currency.NGN,
+      status: PaymentStatus.PENDING,
     },
   });
 
-  // -------------------------------------
-  // ORDER STATUS HISTORY
-  // -------------------------------------
-  await prisma.orderStatusHistory.create({
+  // -----------------------------
+  // SHIPMENT
+  // -----------------------------
+  await prisma.shipment.create({
     data: {
       orderId: order.id,
-      from: OrderStatus.PENDING,
-      to: OrderStatus.PENDING,
-      actorType: "SYSTEM",
+      providerId: gigProvider.id,
+      trackingNumber: "GIG123456",
+      status: ShipmentStatus.PENDING,
     },
   });
 
@@ -179,6 +180,4 @@ main()
     console.error(e);
     process.exit(1);
   })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .finally(() => prisma.$disconnect());

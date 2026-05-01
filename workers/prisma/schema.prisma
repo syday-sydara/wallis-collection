@@ -43,11 +43,6 @@ enum OrderStatus {
   CANCELLED
 }
 
-enum PaymentProvider {
-  BANK_TRANSFER
-  CASH_ON_DELIVERY
-}
-
 enum PaymentStatus {
   PENDING
   AWAITING_CONFIRMATION
@@ -61,25 +56,6 @@ enum ShipmentStatus {
   IN_TRANSIT
   DELIVERED
   FAILED
-}
-
-enum ShipmentProvider {
-  GIG
-  DHL
-  FEDEX
-  LOCAL
-}
-
-enum WhatsAppOrderStatus {
-  PENDING
-  CONFIRMED
-  PAID
-  CANCELLED
-}
-
-enum WhatsAppPaymentMethod {
-  BANK_TRANSFER
-  CASH_ON_DELIVERY
 }
 
 enum DeliveryMethod {
@@ -97,8 +73,15 @@ enum Currency {
   NGN
 }
 
+enum OrderChannel {
+  WHATSAPP
+  WEB
+  IN_STORE
+  OTHER
+}
+
 // =====================================
-// USER
+// IDENTITY
 // =====================================
 
 model User {
@@ -107,12 +90,42 @@ model User {
   phone String? @unique
   email String? @unique
 
-  orders         Order[]
-  whatsappOrders WhatsAppOrder[]
+  customer Customer?
 
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  AuditLog  AuditLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  AuditLog AuditLog[]
+}
+
+model Customer {
+  id           String  @id @default(cuid())
+  userId       String? @unique
+  user         User?   @relation(fields: [userId], references: [id])
+  primaryPhone String
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+}
+
+// =====================================
+// ADDRESS
+// =====================================
+
+model Address {
+  id       String  @id @default(cuid())
+  line1    String
+  line2    String?
+  city     String?
+  state    String
+  lga      String?
+  landmark String?
+
+  // Back‑relation to Order.shippingAddress
+  orders Order[]
+
+  createdAt DateTime @default(now())
 }
 
 // =====================================
@@ -153,11 +166,10 @@ model ProductVariant {
   isActive Boolean @default(true)
 
   reservations StockReservation[]
+  OrderItem    OrderItem[]
 
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  OrderItem         OrderItem[]
-  WhatsAppOrderItem WhatsAppOrderItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([productId, isActive])
 }
@@ -188,10 +200,9 @@ model StockReservation {
 
   quantity Int
 
-  status ReservationStatus @default(ACTIVE)
-
+  status    ReservationStatus @default(ACTIVE)
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime          @default(now())
 
   @@index([variantId])
   @@index([orderId])
@@ -199,24 +210,46 @@ model StockReservation {
 }
 
 // =====================================
-// ORDER SYSTEM
+// PROVIDERS (REPLACES ENUMS)
+// =====================================
+
+model PaymentProvider {
+  id       String  @id @default(cuid())
+  code     String  @unique
+  name     String
+  isActive Boolean @default(true)
+
+  payments Payment[]
+}
+
+model ShipmentProvider {
+  id       String  @id @default(cuid())
+  code     String  @unique
+  name     String
+  isActive Boolean @default(true)
+
+  shipments Shipment[]
+}
+
+// =====================================
+// ORDER SYSTEM (UNIFIED)
 // =====================================
 
 model Order {
   id String @id @default(cuid())
 
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id])
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  channel OrderChannel @default(WHATSAPP)
 
   phoneNumber String
 
-  addressLine1 String
-  addressLine2 String?
-  city         String?
-  state        String
-  lga          String?
-  landmark     String?
-  deliveryNote String?
+  addressId String?
+  address   Address? @relation(fields: [addressId], references: [id])
+
+  deliveryMethod DeliveryMethod @default(DELIVERY)
+  deliveryNote   String?
 
   subtotal    Int
   deliveryFee Int @default(0)
@@ -225,27 +258,29 @@ model Order {
 
   currency Currency @default(NGN)
 
-  paymentMethod PaymentProvider
-  paymentStatus PaymentStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+  status        OrderStatus   @default(PENDING)
+  cancelReason  String?
 
-  status       OrderStatus @default(PENDING)
-  cancelReason String?
+  items         OrderItem[]
+  payments      Payment[]
+  shipment      Shipment?
+  reservations  StockReservation[]
+  statusHistory OrderStatusHistory[]
 
-  items    OrderItem[]
-  payments Payment[]
-  shipment Shipment?
+  // WhatsApp-specific fields (nullable)
+  whatsappSessionId String?
+  lastMessageAt     DateTime?
 
   ipAddress String?
   userAgent String?
 
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  StockReservation   StockReservation[]
-  WhatsAppOrder      WhatsAppOrder?
-  OrderStatusHistory OrderStatusHistory[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([phoneNumber, createdAt])
   @@index([status, paymentStatus, createdAt])
+  @@index([channel])
 }
 
 // =====================================
@@ -279,9 +314,11 @@ model Payment {
   orderId String
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  provider PaymentProvider
+  providerId String
+  provider   PaymentProvider @relation(fields: [providerId], references: [id])
+
   amount   Int
-  currency Currency        @default(NGN)
+  currency Currency @default(NGN)
 
   status PaymentStatus @default(PENDING)
 
@@ -313,7 +350,8 @@ model Shipment {
   orderId String @unique
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  provider       ShipmentProvider?
+  providerId     String?
+  provider       ShipmentProvider? @relation(fields: [providerId], references: [id])
   trackingNumber String?
 
   status ShipmentStatus @default(PENDING)
@@ -322,64 +360,6 @@ model Shipment {
   deliveredAt DateTime?
 
   createdAt DateTime @default(now())
-}
-
-// =====================================
-// WHATSAPP COMMERCE
-// =====================================
-
-model WhatsAppOrder {
-  id String @id @default(cuid())
-
-  phoneNumber String
-
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id])
-
-  status WhatsAppOrderStatus @default(PENDING)
-
-  addressLine1 String?
-  addressLine2 String?
-  city         String?
-  state        String?
-  lga          String?
-  landmark     String?
-
-  paymentMethod  WhatsAppPaymentMethod?
-  deliveryMethod DeliveryMethod         @default(DELIVERY)
-
-  notes         String?
-  lastMessageAt DateTime?
-  sessionId     String?
-
-  items WhatsAppOrderItem[]
-
-  finalOrderId String? @unique
-  finalOrder   Order?  @relation(fields: [finalOrderId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([phoneNumber, createdAt])
-  @@index([status, createdAt])
-  @@index([status, lastMessageAt])
-  @@index([sessionId])
-}
-
-model WhatsAppOrderItem {
-  id              String        @id @default(cuid())
-  whatsappOrderId String
-  order           WhatsAppOrder @relation(fields: [whatsappOrderId], references: [id], onDelete: Cascade)
-
-  variantId String
-  variant   ProductVariant @relation(fields: [variantId], references: [id])
-
-  quantity    Int @default(1)
-  priceAtTime Int
-
-  createdAt DateTime @default(now())
-
-  @@index([whatsappOrderId])
 }
 
 // =====================================
@@ -393,8 +373,7 @@ model AuditLog {
   user   User?   @relation(fields: [userId], references: [id])
 
   actorType ActorType
-
-  action String
+  action    String
 
   entityType String
   entityId   String
