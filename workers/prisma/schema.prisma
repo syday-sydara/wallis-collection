@@ -12,75 +12,8 @@ datasource db {
 }
 
 // =====================================
-// USER
+// ENUMS
 // =====================================
-
-model User {
-  id        String   @id @default(cuid())
-  name      String?
-  phone     String?  @unique
-  email     String?  @unique
-
-  orders          Order[]
-  whatsappOrders  WhatsAppOrder[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// =====================================
-// PRODUCT CATALOG
-// =====================================
-
-model Product {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String?
-
-  fabricType  FabricType
-  color       String?
-  pattern     String?
-
-  isActive    Boolean  @default(true)
-  deletedAt   DateTime?
-
-  images      ProductImage[]
-  variants    ProductVariant[]
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model ProductVariant {
-  id        String   @id @default(cuid())
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
-
-  name      String
-  sku       String?  @unique
-
-  price     Int      // in kobo
-  stockQty  Int      @default(0)
-
-  isActive  Boolean  @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  reservations StockReservation[]
-}
-
-model ProductImage {
-  id        String   @id @default(cuid())
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
-
-  url       String
-  alt       String?
-
-  createdAt DateTime @default(now())
-}
 
 enum FabricType {
   WAX
@@ -94,145 +27,20 @@ enum FabricType {
   OTHER
 }
 
-// =====================================
-// INVENTORY (ANTI-OVERSELLING)
-// =====================================
-
-model StockReservation {
-  id        String         @id @default(cuid())
-
-  variantId String
-  variant   ProductVariant @relation(fields: [variantId], references: [id])
-
-  orderId   String?
-  order     Order?         @relation(fields: [orderId], references: [id])
-
-  quantity  Int
-
-  status    ReservationStatus @default(ACTIVE)
-
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([variantId])
-  @@index([orderId])
-}
-
 enum ReservationStatus {
   ACTIVE
   CONSUMED
   RELEASED
 }
 
-// =====================================
-// ORDER SYSTEM
-// =====================================
-
-model Order {
-  id          String      @id @default(cuid())
-
-  userId      String?
-  user        User?       @relation(fields: [userId], references: [id])
-
-  phoneNumber String
-
-  // Address (Nigeria-friendly)
-  addressLine1 String
-  addressLine2 String?
-  city         String?
-  state        String
-  lga          String?
-  landmark     String?
-  deliveryNote String?
-
-  // Financials
-  subtotal     Int
-  deliveryFee  Int @default(0)
-  discount     Int @default(0)
-  totalAmount  Int
-
-  currency     String @default("NGN")
-
-  // Payment summary (important)
-  paymentMethod PaymentProvider
-  paymentStatus PaymentStatus @default(PENDING)
-
-  status        OrderStatus   @default(PENDING)
-
-  items       OrderItem[]
-  payments    Payment[]
-  shipment    Shipment?
-
-  ipAddress String?
-  userAgent String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([phoneNumber, createdAt])
-  @@index([status, createdAt])
-  @@index([paymentStatus, createdAt])
-}
-
-// =====================================
-// ORDER ITEMS
-// =====================================
-
-model OrderItem {
-  id        String   @id @default(cuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
-
-  variantId String
-  variant   ProductVariant @relation(fields: [variantId], references: [id])
-
-  quantity  Int      @default(1)
-  priceAtTime Int
-
-  createdAt DateTime @default(now())
-}
-
 enum OrderStatus {
   PENDING
+  PAID
   CONFIRMED
   PROCESSING
   SHIPPED
   DELIVERED
   CANCELLED
-}
-
-// =====================================
-// PAYMENTS (MANUAL-FIRST)
-// =====================================
-
-model Payment {
-  id        String          @id @default(cuid())
-
-  orderId   String
-  order     Order           @relation(fields: [orderId], references: [id])
-
-  provider  PaymentProvider
-  amount    Int
-  currency  String          @default("NGN")
-
-  status    PaymentStatus   @default(PENDING)
-
-  reference String?         @unique
-
-  // Bank transfer fields
-  paidByName String?
-  paidAt     DateTime?
-  proofUrl   String?
-
-  // Admin verification
-  verifiedBy String?
-  verifiedAt DateTime?
-
-  notes      String?
-
-  createdAt  DateTime       @default(now())
-
-  @@index([status, createdAt])
 }
 
 enum PaymentProvider {
@@ -247,26 +55,6 @@ enum PaymentStatus {
   FAILED
 }
 
-// =====================================
-// SHIPPING / DELIVERY
-// =====================================
-
-model Shipment {
-  id        String   @id @default(cuid())
-  orderId   String   @unique
-  order     Order    @relation(fields: [orderId], references: [id])
-
-  provider  String?
-  trackingNumber String?
-
-  status    ShipmentStatus @default(PENDING)
-
-  shippedAt   DateTime?
-  deliveredAt DateTime?
-
-  createdAt DateTime @default(now())
-}
-
 enum ShipmentStatus {
   PENDING
   SHIPPED
@@ -275,59 +63,11 @@ enum ShipmentStatus {
   FAILED
 }
 
-// =====================================
-// WHATSAPP COMMERCE
-// =====================================
-
-model WhatsAppOrder {
-  id          String              @id @default(cuid())
-
-  phoneNumber String
-
-  userId      String?
-  user        User?               @relation(fields: [userId], references: [id])
-
-  status      WhatsAppOrderStatus @default(PENDING)
-
-  // Address
-  addressLine1 String?
-  addressLine2 String?
-  city         String?
-  state        String?
-  lga          String?
-  landmark     String?
-
-  paymentMethod WhatsAppPaymentMethod?
-  deliveryMethod DeliveryMethod @default(DELIVERY)
-
-  notes         String?
-  lastMessageAt DateTime?
-
-  items       WhatsAppOrderItem[]
-
-  finalOrderId String?
-  finalOrder   Order?            @relation(fields: [finalOrderId], references: [id])
-
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-
-  @@index([phoneNumber, createdAt])
-  @@index([status, createdAt])
-  @@index([status, lastMessageAt])
-}
-
-model WhatsAppOrderItem {
-  id              String        @id @default(cuid())
-  whatsappOrderId String
-  order           WhatsAppOrder @relation(fields: [whatsappOrderId], references: [id])
-
-  variantId       String
-  variant         ProductVariant @relation(fields: [variantId], references: [id])
-
-  quantity        Int           @default(1)
-  priceAtTime     Int
-
-  createdAt       DateTime      @default(now())
+enum ShipmentProvider {
+  GIG
+  DHL
+  FEDEX
+  LOCAL
 }
 
 enum WhatsAppOrderStatus {
@@ -347,24 +87,321 @@ enum DeliveryMethod {
   PICKUP
 }
 
+enum ActorType {
+  USER
+  ADMIN
+  SYSTEM
+}
+
+enum Currency {
+  NGN
+}
+
 // =====================================
-// AUDIT LOG (IMPORTANT)
+// USER
+// =====================================
+
+model User {
+  id    String  @id @default(cuid())
+  name  String?
+  phone String? @unique
+  email String? @unique
+
+  orders         Order[]
+  whatsappOrders WhatsAppOrder[]
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  AuditLog  AuditLog[]
+}
+
+// =====================================
+// PRODUCT CATALOG
+// =====================================
+
+model Product {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+
+  fabricType FabricType
+  color      String?
+  pattern    String?
+
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+
+  images   ProductImage[]
+  variants ProductVariant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  name String
+  sku  String @unique
+
+  price    Int
+  stockQty Int @default(0)
+
+  isActive Boolean @default(true)
+
+  reservations StockReservation[]
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  OrderItem         OrderItem[]
+  WhatsAppOrderItem WhatsAppOrderItem[]
+
+  @@index([productId, isActive])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  url String
+  alt String?
+
+  createdAt DateTime @default(now())
+}
+
+// =====================================
+// INVENTORY
+// =====================================
+
+model StockReservation {
+  id String @id @default(cuid())
+
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  orderId String?
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  quantity Int
+
+  status ReservationStatus @default(ACTIVE)
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([variantId])
+  @@index([orderId])
+  @@index([status, expiresAt])
+}
+
+// =====================================
+// ORDER SYSTEM
+// =====================================
+
+model Order {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  phoneNumber String
+
+  addressLine1 String
+  addressLine2 String?
+  city         String?
+  state        String
+  lga          String?
+  landmark     String?
+  deliveryNote String?
+
+  subtotal    Int
+  deliveryFee Int @default(0)
+  discount    Int @default(0)
+  totalAmount Int
+
+  currency Currency @default(NGN)
+
+  paymentMethod PaymentProvider
+  paymentStatus PaymentStatus   @default(PENDING)
+
+  status       OrderStatus @default(PENDING)
+  cancelReason String?
+
+  items    OrderItem[]
+  payments Payment[]
+  shipment Shipment?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  StockReservation   StockReservation[]
+  WhatsAppOrder      WhatsAppOrder?
+  OrderStatusHistory OrderStatusHistory[]
+
+  @@index([phoneNumber, createdAt])
+  @@index([status, paymentStatus, createdAt])
+}
+
+// =====================================
+// ORDER ITEMS
+// =====================================
+
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  quantity    Int @default(1)
+  priceAtTime Int
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([variantId])
+}
+
+// =====================================
+// PAYMENTS
+// =====================================
+
+model Payment {
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  provider PaymentProvider
+  amount   Int
+  currency Currency        @default(NGN)
+
+  status PaymentStatus @default(PENDING)
+
+  reference     String? @unique
+  transactionId String? @unique
+
+  paidByName String?
+  paidAt     DateTime?
+  proofUrl   String?
+
+  verifiedBy String?
+  verifiedAt DateTime?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@index([orderId, status])
+  @@index([reference])
+}
+
+// =====================================
+// SHIPPING
+// =====================================
+
+model Shipment {
+  id      String @id @default(cuid())
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  provider       ShipmentProvider?
+  trackingNumber String?
+
+  status ShipmentStatus @default(PENDING)
+
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+
+  createdAt DateTime @default(now())
+}
+
+// =====================================
+// WHATSAPP COMMERCE
+// =====================================
+
+model WhatsAppOrder {
+  id String @id @default(cuid())
+
+  phoneNumber String
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  status WhatsAppOrderStatus @default(PENDING)
+
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  lga          String?
+  landmark     String?
+
+  paymentMethod  WhatsAppPaymentMethod?
+  deliveryMethod DeliveryMethod         @default(DELIVERY)
+
+  notes         String?
+  lastMessageAt DateTime?
+  sessionId     String?
+
+  items WhatsAppOrderItem[]
+
+  finalOrderId String? @unique
+  finalOrder   Order?  @relation(fields: [finalOrderId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([phoneNumber, createdAt])
+  @@index([status, createdAt])
+  @@index([status, lastMessageAt])
+  @@index([sessionId])
+}
+
+model WhatsAppOrderItem {
+  id              String        @id @default(cuid())
+  whatsappOrderId String
+  order           WhatsAppOrder @relation(fields: [whatsappOrderId], references: [id], onDelete: Cascade)
+
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  quantity    Int @default(1)
+  priceAtTime Int
+
+  createdAt DateTime @default(now())
+
+  @@index([whatsappOrderId])
+}
+
+// =====================================
+// AUDIT LOG
 // =====================================
 
 model AuditLog {
-  id        String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
 
   actorType ActorType
 
-  action    String
+  action String
 
   entityType String
   entityId   String
 
-  metadata  Json?
+  metadata Json?
+
+  traceId String?
 
   ipAddress String?
   userAgent String?
@@ -376,16 +413,22 @@ model AuditLog {
   @@index([action, createdAt])
 }
 
-enum ActorType {
-  USER
-  ADMIN
-  SYSTEM
-}
+// =====================================
+// ORDER STATUS HISTORY
+// =====================================
 
 model OrderStatusHistory {
-  id        String   @id @default(cuid())
-  orderId   String
-  from      String
-  to        String
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  from OrderStatus
+  to   OrderStatus
+
+  actorType ActorType @default(SYSTEM)
+
   createdAt DateTime @default(now())
+
+  @@index([orderId])
 }
