@@ -1,3 +1,9 @@
+// services/whatsapp-order.service.ts
+import { prisma } from "../prisma/client";
+import { WhatsAppOrderStatus } from "@prisma/client";
+import { InventoryService } from "./inventory.service";
+import { OrderService } from "./order.service";
+
 export const WhatsAppOrderService = {
   async convertToOrder(whatsappOrderId: string) {
     return prisma.$transaction(async (tx) => {
@@ -6,31 +12,38 @@ export const WhatsAppOrderService = {
         include: { items: true },
       });
 
-      if (!wa) throw new Error("WhatsApp order not found");
+      if (!wa) {
+        throw new Error("WhatsApp order not found");
+      }
 
+      // Idempotency: already converted
       if (wa.finalOrderId) {
         return tx.order.findUnique({
           where: { id: wa.finalOrderId },
         });
       }
 
+      // Validate address
       if (!wa.addressLine1 || !wa.state) {
         throw new Error("Missing address details");
       }
 
+      // Validate state
       if (wa.status !== WhatsAppOrderStatus.PENDING) {
         throw new Error("Invalid WhatsApp order state");
       }
 
-      // reserve stock (should ideally be batch operation)
+      // Reserve stock for each item
+      // NOTE: This should ideally be a batch reservation
       for (const item of wa.items) {
         await InventoryService.reserveStock(
           item.variantId,
           item.quantity,
-          15 * 60 * 1000
+          15 * 60 * 1000 // 15 minutes
         );
       }
 
+      // Create order
       const order = await OrderService.createOrder({
         userId: wa.userId ?? undefined,
         phoneNumber: wa.phoneNumber,
@@ -44,11 +57,11 @@ export const WhatsAppOrderService = {
         items: wa.items.map((i) => ({
           variantId: i.variantId,
           quantity: i.quantity,
-          priceAtTime: i.priceAtTime,
         })),
         paymentMethod: mapPaymentMethod(wa.paymentMethod),
       });
 
+      // Mark WhatsApp order as converted
       await tx.whatsAppOrder.update({
         where: { id: whatsappOrderId },
         data: {

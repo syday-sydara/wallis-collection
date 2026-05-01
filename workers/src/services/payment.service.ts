@@ -1,6 +1,6 @@
 import { prisma } from "../prisma/client";
 import { PaymentProvider, PaymentStatus } from "@prisma/client";
-import { PaymentProducer } from "../queues/payment.producer";
+import { PaymentProducer } from "../producers/payment.producer";
 
 export const PaymentService = {
   async createBankTransfer(orderId: string, amount: number, paidByName?: string) {

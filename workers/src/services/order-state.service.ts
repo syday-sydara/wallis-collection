@@ -12,10 +12,10 @@ export type OrderStatus =
 export type Actor = "SYSTEM" | "ADMIN" | "USER";
 
 /**
- * Allowed transitions between states.
- * This is the authoritative state machine.
+ * Authoritative state machine.
+ * Every state explicitly defines its allowed transitions.
  */
-export const transitions: Record<OrderStatus, OrderStatus[]> = {
+export const transitions: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: ["PAID", "CANCELLED"],
 
   PAID: ["CONFIRMED", "CANCELLED"],
@@ -33,7 +33,7 @@ export const transitions: Record<OrderStatus, OrderStatus[]> = {
   DELIVERED: [],
 
   CANCELLED: [],
-};
+} as const;
 
 /**
  * Validates whether an actor can transition an order
@@ -44,17 +44,17 @@ export function canTransition(
   next: OrderStatus,
   actor: Actor
 ): boolean {
-  // illegal transition
-  if (!transitions[current]?.includes(next)) {
+  // 1. Illegal transition based on the state machine
+  if (!transitions[current].includes(next)) {
     return false;
   }
 
-  // USER can only cancel
+  // 2. USER can only cancel
   if (actor === "USER" && next !== "CANCELLED") {
     return false;
   }
 
-  // cannot cancel after shipping
+  // 3. Cannot cancel after shipping or delivery
   if (
     next === "CANCELLED" &&
     (current === "SHIPPED" || current === "DELIVERED")

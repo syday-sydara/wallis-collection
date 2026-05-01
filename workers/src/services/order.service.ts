@@ -1,9 +1,17 @@
+// services/order.service.ts
 import { prisma } from "../prisma/client";
 import { OrderStatus, PaymentStatus } from "@prisma/client";
-import { OrderProducer } from "./queues/order.producer";
+import { OrderProducer } from "../producers/order.producer";
 
 export const OrderService = {
-  async createOrder(input) {
+  async createOrder(input: {
+    userId: string;
+    items: { variantId: string; quantity: number }[];
+    deliveryFee?: number;
+    discount?: number;
+    paymentMethod: string;
+    addressId: string;
+  }) {
     return prisma.$transaction(async (tx) => {
       if (!input.items.length) {
         throw new Error("Order must have items");
@@ -15,6 +23,10 @@ export const OrderService = {
           id: { in: input.items.map(i => i.variantId) },
         },
       });
+
+      if (variants.length !== input.items.length) {
+        throw new Error("One or more variants are invalid");
+      }
 
       const variantMap = new Map(variants.map(v => [v.id, v]));
 
@@ -44,12 +56,15 @@ export const OrderService = {
       // Create order
       const order = await tx.order.create({
         data: {
-          ...input,
+          userId: input.userId,
+          addressId: input.addressId,
           subtotal,
           totalAmount,
           currency: "NGN",
           paymentStatus: PaymentStatus.PENDING,
           status: OrderStatus.PENDING,
+          deliveryFee,
+          discount,
           items: { create: items },
           payments: {
             create: {
@@ -59,12 +74,12 @@ export const OrderService = {
             },
           },
         },
-        include: { items: true },
+        include: { items: true, payments: true },
       });
 
       // Emit checkout.started AFTER commit
       setImmediate(() => {
-        OrderProducer.emitCheckoutStarted(order);
+        OrderProducer.checkoutStarted(order);
       });
 
       return order;

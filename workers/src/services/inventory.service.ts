@@ -2,10 +2,17 @@ import { prisma } from "../prisma/client";
 import { ReservationStatus } from "@prisma/client";
 
 export async function consumeReservation(reservationId: string, orderId: string) {
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async tx => {
     // Lock reservation row
     const [reservation] = await tx.$queryRaw<
-      { id: string; status: string; orderId: string | null; quantity: number; variantId: string; expiresAt: Date }[]
+      {
+        id: string;
+        status: ReservationStatus;
+        orderId: string | null;
+        quantity: number;
+        variantId: string;
+        expiresAt: Date;
+      }[]
     >`
       SELECT * FROM "StockReservation"
       WHERE id = ${reservationId}
