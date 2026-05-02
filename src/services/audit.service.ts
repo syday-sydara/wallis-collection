@@ -1,7 +1,7 @@
 // services/audit.service.ts
 import { prisma } from "../lib/prisma";
 import { ActorType } from "@prisma/client";
-import { redis } from "../redis/client";
+import { redis } from "../config/redis";
 import { AuditProducer } from "../producers/audit.producer";
 
 export const AuditService = {
@@ -35,7 +35,7 @@ export const AuditService = {
       // Primary durable store
       const log = await prisma.auditLog.create({ data: payload });
 
-      // Emit event for async processing
+      // Emit event for async processing (idempotent via jobId = logId)
       await AuditProducer.created(log.id);
 
       return log;
@@ -44,7 +44,7 @@ export const AuditService = {
 
       // Fallback durability layer (Redis)
       try {
-        await redis.lPush("audit:failed", JSON.stringify(payload));
+        await redis.lpush("audit:failed", JSON.stringify(payload));
       } catch (fallbackErr) {
         console.error("[AUDIT FALLBACK FAILED]", fallbackErr);
       }

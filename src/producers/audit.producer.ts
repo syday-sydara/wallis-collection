@@ -1,24 +1,42 @@
-// queues/audit.queue.ts
-import { Queue } from "bullmq";
-import { connection } from "../config/redis";
+// producers/audit.producer.ts
+import { auditQueue, AUDIT_QUEUE_NAME } from "../queues/audit.queue";
+import { Events } from "../events";
+import type { EventName, EventPayloads } from "../events/payloads";
 
-// Shared constant — prevents name drift across producers/workers
-export const AUDIT_QUEUE_NAME = "audit";
+/**
+ * AuditProducer
+ *
+ * Responsibilities:
+ * - Emit audit events into the audit queue
+ * - Enforce deterministic jobId (logId)
+ * - Guarantee type‑safe event emission
+ */
+export const AuditProducer = {
+  /**
+   * Generic typed emitter
+   */
+  async emit<E extends EventName>(
+    event: E,
+    payload: EventPayloads[E]
+  ) {
+    const jobId =
+      (payload as any).logId ??
+      `${event}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-export const auditQueue = new Queue(AUDIT_QUEUE_NAME, {
-  connection,
-  prefix: "bull", // isolates BullMQ keys in Redis (Nigeria‑first reliability)
-
-  defaultJobOptions: {
-    attempts: 3, // retry transient failures
-    backoff: { type: "fixed", delay: 1000 }, // simple retry strategy
-    removeOnComplete: true,
-    removeOnFail: false, // keep failed jobs for debugging
+    await auditQueue.add(event, payload, {
+      jobId,
+      removeOnComplete: true,
+      removeOnFail: false, // keep failed audit jobs for debugging
+    });
   },
 
-  // Optional: rate limit if audit logs spike heavily
-  // limiter: {
-  //   max: 100,
-  //   duration: 1000,
-  // },
-});
+  /**
+   * Convenience wrapper for audit.created
+   */
+  created(logId: string) {
+    return this.emit(Events.AUDIT_LOG_CREATED, {
+      logId,
+      timestamp: new Date(),
+    });
+  },
+};
