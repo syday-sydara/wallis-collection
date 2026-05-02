@@ -2,25 +2,66 @@
 import { prisma } from "../lib/prisma";
 import { OrderStatus, PaymentStatus } from "@prisma/client";
 import { OrderProducer } from "../producers/order.producer";
+import { normalizePhone } from "../utils/phone";
 
 export const OrderService = {
   async createOrder(input: {
-    userId: string;
+    userId?: string;
+    name?: string;
+    email?: string;
+    phoneNumber: string;
     items: { variantId: string; quantity: number }[];
     deliveryFee?: number;
     discount?: number;
     paymentMethod: string;
     addressId: string;
+    notes?: string;
+    externalRef?: string;
   }) {
     return prisma.$transaction(async (tx) => {
+      // ------------------------------------------------------
+      // 1. Validate items
+      // ------------------------------------------------------
       if (!input.items.length) {
         throw new Error("Order must have items");
       }
 
-      // Fetch variants
+      // ------------------------------------------------------
+      // 2. Normalize + validate phone
+      // ------------------------------------------------------
+      const phone = normalizePhone(input.phoneNumber);
+      if (!phone) throw new Error("Invalid phone number");
+
+      // ------------------------------------------------------
+      // 3. Find or create customer
+      // ------------------------------------------------------
+      const customer = await tx.customer.upsert({
+        where: { phone },
+        update: {
+          name: input.name ?? undefined,
+          email: input.email ?? undefined,
+        },
+        create: {
+          phone,
+          name: input.name ?? null,
+          email: input.email ?? null,
+        },
+      });
+
+      // ------------------------------------------------------
+      // 4. Find most recent WhatsApp session for this customer
+      // ------------------------------------------------------
+      const session = await tx.whatsAppSession.findFirst({
+        where: { customerId: customer.id },
+        orderBy: { lastInboundAt: "desc" },
+      });
+
+      // ------------------------------------------------------
+      // 5. Fetch variants
+      // ------------------------------------------------------
       const variants = await tx.productVariant.findMany({
         where: {
-          id: { in: input.items.map(i => i.variantId) },
+          id: { in: input.items.map((i) => i.variantId) },
         },
       });
 
@@ -28,10 +69,12 @@ export const OrderService = {
         throw new Error("One or more variants are invalid");
       }
 
-      const variantMap = new Map(variants.map(v => [v.id, v]));
+      const variantMap = new Map(variants.map((v) => [v.id, v]));
 
-      // Build order items
-      const items = input.items.map(i => {
+      // ------------------------------------------------------
+      // 6. Build order items
+      // ------------------------------------------------------
+      const items = input.items.map((i) => {
         const variant = variantMap.get(i.variantId);
         if (!variant) throw new Error("Invalid variant");
 
@@ -42,7 +85,9 @@ export const OrderService = {
         };
       });
 
-      // Calculate totals
+      // ------------------------------------------------------
+      // 7. Calculate totals
+      // ------------------------------------------------------
       const subtotal = items.reduce(
         (sum, i) => sum + i.priceAtTime * i.quantity,
         0
@@ -53,19 +98,33 @@ export const OrderService = {
 
       const totalAmount = subtotal + deliveryFee - discount;
 
-      // Create order
+      // ------------------------------------------------------
+      // 8. Create order
+      // ------------------------------------------------------
       const order = await tx.order.create({
         data: {
-          userId: input.userId,
+          userId: input.userId ?? null,
+          customerId: customer.id,
+          phone,
+          phoneNormalized: phone,
           addressId: input.addressId,
+          notes: input.notes ?? null,
+          externalRef: input.externalRef ?? null,
+
           subtotal,
           totalAmount,
           currency: "NGN",
-          paymentStatus: PaymentStatus.PENDING,
-          status: OrderStatus.PENDING,
           deliveryFee,
           discount,
+
+          status: OrderStatus.PENDING,
+          paymentStatus: PaymentStatus.PENDING,
+
+          // Link to WhatsApp session if exists
+          whatsAppSessionId: session?.id ?? null,
+
           items: { create: items },
+
           payments: {
             create: {
               provider: input.paymentMethod,
@@ -77,7 +136,9 @@ export const OrderService = {
         include: { items: true, payments: true },
       });
 
-      // Emit checkout.started AFTER commit
+      // ------------------------------------------------------
+      // 9. Emit checkout.started AFTER commit
+      // ------------------------------------------------------
       setImmediate(() => {
         OrderProducer.checkoutStarted(order);
       });

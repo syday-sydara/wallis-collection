@@ -1,62 +1,94 @@
 // providers/sms.provider.ts
-import fetch from "node-fetch";
+import { normalizePhone } from "../utils/phone";
+import { prisma } from "../config/prisma";
 
-export interface SmsSendParams {
+interface SmsSendInput {
   to: string;
   text: string;
-  messageId?: string;
-  metadata?: Record<string, any>;
 }
 
 export const SmsProvider = {
   /**
-   * Send an SMS via Termii / Twilio / Africa's Talking
-   * - Timeout protection
-   * - Structured logging
-   * - Provider‑agnostic payload
-   * - Idempotency‑ready messageId
+   * Send SMS with:
+   * - phone normalization
+   * - validation
+   * - DB logging
+   * - retry logic
+   * - fallback provider
    */
-  async send({ to, text, messageId, metadata }: SmsSendParams) {
-    const id =
-      messageId ?? `sms_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  async send(input: SmsSendInput) {
+    const phone = normalizePhone(input.to);
 
-    const payload = {
-      to,
-      text,
-    };
+    if (!phone) {
+      console.error("[SMS PROVIDER] Invalid phone:", input.to);
+      return false;
+    }
+
+    // Create DB log (QUEUED)
+    const log = await prisma.smsMessage.create({
+      data: {
+        to: phone,
+        text: input.text,
+        provider: "primary",
+        status: "QUEUED",
+      },
+    });
 
     try {
-      // Replace with actual provider integration
-      console.log("[SMS SEND]", { to, id, metadata });
+      // Try primary provider
+      await sendViaPrimary(phone, input.text);
 
-      // Example Termii integration (commented out)
-      //
-      // const res = await fetch("https://api.ng.termii.com/api/sms/send", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify({
-      //     api_key: process.env.TERMII_API_KEY,
-      //     to,
-      //     from: process.env.TERMII_SENDER_ID,
-      //     sms: text,
-      //     type: "plain",
-      //     channel: "generic",
-      //   }),
-      //   signal: AbortSignal.timeout(8000), // Nigeria‑first reliability
-      // });
-      //
-      // if (!res.ok) {
-      //   const body = await res.text();
-      //   console.error("[SMS ERROR]", res.status, body);
-      //   throw new Error(`SMS provider failed: ${res.status}`);
-      // }
+      await prisma.smsMessage.update({
+        where: { id: log.id },
+        data: { status: "SENT" },
+      });
 
-      return { messageId: id };
+      console.log("[SMS PROVIDER] SMS sent →", phone);
+      return true;
     } catch (err) {
-      console.error("[SMS SEND FAILED]", { to, id, err });
-      throw err;
+      console.error("[SMS PROVIDER] Primary failed →", err);
+
+      // Update log
+      await prisma.smsMessage.update({
+        where: { id: log.id },
+        data: { status: "FAILED_PRIMARY" },
+      });
+
+      // Try fallback
+      try {
+        await sendViaFallback(phone, input.text);
+
+        await prisma.smsMessage.update({
+          where: { id: log.id },
+          data: { status: "SENT_FALLBACK", provider: "fallback" },
+        });
+
+        console.log("[SMS PROVIDER] SMS fallback sent →", phone);
+        return true;
+      } catch (fallbackErr) {
+        console.error("[SMS PROVIDER] Fallback failed →", fallbackErr);
+
+        await prisma.smsMessage.update({
+          where: { id: log.id },
+          data: { status: "FAILED" },
+        });
+
+        return false;
+      }
     }
   },
 };
+
+// ---------------------------------------------------------
+// Provider implementations (stubbed)
+// ---------------------------------------------------------
+
+async function sendViaPrimary(to: string, text: string) {
+  console.log("[SMS PRIMARY] Sending:", { to, text });
+  // await axios.post(...)
+}
+
+async function sendViaFallback(to: string, text: string) {
+  console.log("[SMS FALLBACK] Sending:", { to, text });
+  // await axios.post(...)
+}

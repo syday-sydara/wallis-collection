@@ -2,24 +2,102 @@
 import { Worker } from "bullmq";
 import { WHATSAPP_OUTBOUND_QUEUE_NAME } from "../queues/whatsapp.outbound.queue";
 import { connection } from "../config/redis";
-import { WhatsAppService } from "../services/whatsapp.service";
+import { WhatsAppProvider } from "../providers/whatsapp.provider";
+import { prisma } from "../config/prisma";
+import { normalizePhone } from "../utils/phone";
+import { redis } from "../config/redis";
 
 export const whatsappOutboundWorker = new Worker(
   WHATSAPP_OUTBOUND_QUEUE_NAME,
   async job => {
-    const { to, template, variables } = job.data;
+    const { to, template, variables, messageId, sessionId } = job.data;
+
+    const phone = normalizePhone(to);
+    if (!phone) {
+      console.error("[WHATSAPP WORKER] Invalid phone:", to);
+      return;
+    }
+
+    // ---------------------------------------------------------
+    // 1. Mark message as SENDING
+    // ---------------------------------------------------------
+    await prisma.whatsAppMessage.update({
+      where: { id: messageId },
+      data: { status: "SENDING" },
+    });
+
+    redis.publish(
+      "whatsapp:events",
+      JSON.stringify({
+        type: "message.outbound.sending",
+        messageId,
+        sessionId,
+        timestamp: Date.now(),
+      })
+    );
 
     try {
-      await WhatsAppService.sendTemplate({
-        to,
+      // ---------------------------------------------------------
+      // 2. Send via provider
+      // ---------------------------------------------------------
+      await WhatsAppProvider.send({
+        to: phone,
         template,
         variables,
       });
 
-      console.log("[WHATSAPP OUTBOUND WORKER] Sent:", { to, template });
+      // ---------------------------------------------------------
+      // 3. Mark as SENT
+      // ---------------------------------------------------------
+      await prisma.whatsAppMessage.update({
+        where: { id: messageId },
+        data: { status: "SENT" },
+      });
+
+      // Update session activity
+      await prisma.whatsAppSession.update({
+        where: { id: sessionId },
+        data: { lastMessageAt: new Date() },
+      });
+
+      // Emit real-time event
+      redis.publish(
+        "whatsapp:events",
+        JSON.stringify({
+          type: "message.outbound.sent",
+          messageId,
+          sessionId,
+          timestamp: Date.now(),
+        })
+      );
+
+      console.log("[WHATSAPP WORKER] Sent:", { to: phone, template });
     } catch (err) {
-      console.error("[WHATSAPP OUTBOUND WORKER] Failed:", err);
-      throw err;
+      console.error("[WHATSAPP WORKER] Failed:", err);
+
+      // ---------------------------------------------------------
+      // 4. Mark as FAILED
+      // ---------------------------------------------------------
+      await prisma.whatsAppMessage.update({
+        where: { id: messageId },
+        data: {
+          status: "FAILED",
+          error: String(err),
+        },
+      });
+
+      redis.publish(
+        "whatsapp:events",
+        JSON.stringify({
+          type: "message.outbound.failed",
+          messageId,
+          sessionId,
+          error: String(err),
+          timestamp: Date.now(),
+        })
+      );
+
+      throw err; // allow BullMQ retry logic
     }
   },
   {
@@ -28,16 +106,15 @@ export const whatsappOutboundWorker = new Worker(
   }
 );
 
-// Lifecycle logging
 whatsappOutboundWorker.on("ready", () =>
-  console.log("[WHATSAPP OUTBOUND WORKER] Ready")
+  console.log("[WHATSAPP WORKER] Ready")
 );
 
 whatsappOutboundWorker.on("failed", (job, err) =>
-  console.error(`[WHATSAPP OUTBOUND WORKER] Job failed ${job?.id}`, err)
+  console.error(`[WHATSAPP WORKER] Job failed ${job?.id}`, err)
 );
 
 process.on("SIGTERM", async () => {
-  console.log("[WHATSAPP OUTBOUND WORKER] Shutting down...");
+  console.log("[WHATSAPP WORKER] Shutting down...");
   await whatsappOutboundWorker.close();
 });

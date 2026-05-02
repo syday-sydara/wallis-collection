@@ -6,14 +6,9 @@ import {
   NotificationTemplates,
   NotificationMessage,
 } from "../templates/notification.templates";
+import { normalizePhone } from "../utils/phone";
 
 export const NotificationService = {
-  /**
-   * Main entry point
-   * - Renders template
-   * - Dispatches across channels
-   * - Each channel isolated (Promise.allSettled)
-   */
   async send(event: string, payload: any) {
     const templateFn = NotificationTemplates[event];
 
@@ -22,7 +17,6 @@ export const NotificationService = {
       return;
     }
 
-    // Render unified message object
     const message: NotificationMessage = templateFn(payload);
 
     await Promise.allSettled([
@@ -32,9 +26,6 @@ export const NotificationService = {
     ]);
   },
 
-  // ---------------------------------------------------------
-  // EMAIL
-  // ---------------------------------------------------------
   async sendEmail(message: NotificationMessage, payload: any) {
     if (!payload.email) return;
 
@@ -52,55 +43,35 @@ export const NotificationService = {
     }
   },
 
-  // ---------------------------------------------------------
-  // SMS
-  // ---------------------------------------------------------
   async sendSMS(message: NotificationMessage, payload: any) {
-    if (!payload.phoneNumber) return;
+    const phone = normalizePhone(payload.phoneNumber);
+    if (!phone) return;
 
     try {
       await SmsProvider.send({
-        to: payload.phoneNumber,
+        to: phone,
         text: message.bodyText,
       });
 
-      console.log("[NOTIFICATION] SMS sent →", payload.phoneNumber);
+      console.log("[NOTIFICATION] SMS sent →", phone);
     } catch (err) {
-      console.error("[NOTIFICATION] SMS failed →", payload.phoneNumber, err);
+      console.error("[NOTIFICATION] SMS failed →", phone, err);
     }
   },
 
-  // ---------------------------------------------------------
-  // WHATSAPP (via WhatsAppService → outbound queue)
-  // ---------------------------------------------------------
   async sendWhatsApp(message: NotificationMessage, payload: any) {
-    const phone =
-      payload.phoneNumber ??
-      payload.customerPhone ??
-      payload.whatsappPhone;
-
-    const sessionId = payload.sessionId;
-
-    // WhatsApp requires both phone + sessionId
-    if (!phone || !sessionId) return;
-
     try {
       await WhatsAppService.sendTemplate({
-        sessionId,
-        to: phone,
-        template: message.event, // template key
-        variables: payload,      // passed to template resolver
+        event: message.event,
+        payload,
       });
 
-      console.log("[NOTIFICATION] WhatsApp enqueued →", phone);
+      console.log("[NOTIFICATION] WhatsApp enqueued →", payload);
     } catch (err) {
-      console.error("[NOTIFICATION] WhatsApp enqueue failed →", phone, err);
+      console.error("[NOTIFICATION] WhatsApp enqueue failed →", err);
     }
   },
 
-  // ---------------------------------------------------------
-  // Convenience wrappers
-  // ---------------------------------------------------------
   sendOrderConfirmed(payload: any) {
     return this.send("order.confirmed", payload);
   },

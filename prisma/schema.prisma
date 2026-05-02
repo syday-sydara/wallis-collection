@@ -79,7 +79,7 @@ model ProductVariant {
   productId String
   sku       String   @unique
   name      String
-  price     Int // minor units (kobo)
+  price     Int
   currency  String
   stockQty  Int      @default(0)
   isActive  Boolean  @default(true)
@@ -115,12 +115,28 @@ model StockReservation {
 }
 
 // ------------------------------------------------------
+// CUSTOMER
+// ------------------------------------------------------
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String?
+  phone     String?  @unique
+  createdAt DateTime @default(now())
+
+  orders   Order[]
+  sessions WhatsAppSession[]
+}
+
+// ------------------------------------------------------
 // ORDERS (RESERVATION-DRIVEN)
 // ------------------------------------------------------
 
 model Order {
   id              String      @id @default(cuid())
   userId          String?
+  customerId      String?
   externalRef     String?     @unique
   status          OrderStatus @default(PENDING)
   totalAmount     Int         @default(0)
@@ -131,16 +147,19 @@ model Order {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  user          User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
   reservations  StockReservation[]
   payments      Payment[]
   statusHistory OrderStatusHistory[]
 
-  // WhatsApp session relation (corrected)
+  // WhatsApp session relation
   whatsAppSessionId String?
   whatsAppSession   WhatsAppSession? @relation("WhatsAppOrderSession", fields: [whatsAppSessionId], references: [id])
 
   @@index([userId])
+  @@index([customerId])
   @@index([status])
   @@index([whatsAppSessionId])
 }
@@ -186,22 +205,24 @@ model Payment {
 model WhatsAppSession {
   id              String    @id @default(cuid())
   phone           String
-  phoneNormalized String
-  lastMessageAt   DateTime?
+  phoneNormalized String     @unique
+  customerId      String?
+  lastInboundAt   DateTime?
+  lastOutboundAt  DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   messages WhatsAppMessage[]
   orders   Order[]           @relation("WhatsAppOrderSession")
-
-  @@unique([phoneNormalized])
 }
 
 model WhatsAppMessage {
   id         String   @id @default(cuid())
   sessionId  String
-  direction  String
+  direction  String   // INBOUND | OUTBOUND
   body       String
+  status     String   // QUEUED | SENDING | SENT | DELIVERED | READ | FAILED
   rawPayload Json?
   createdAt  DateTime @default(now())
 
@@ -232,4 +253,17 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+// ------------------------------------------------------
+// SMS LOGGING
+// ------------------------------------------------------
+
+model SmsMessage {
+  id        String   @id @default(cuid())
+  to        String
+  text      String
+  provider  String
+  status    String   // QUEUED, SENT, FAILED_PRIMARY, SENT_FALLBACK, FAILED
+  createdAt DateTime @default(now())
 }
