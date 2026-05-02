@@ -1,102 +1,126 @@
-// services/notification.service.ts
-import { EmailProvider } from "../providers/email.provider";
-import { SmsProvider } from "../providers/sms.provider";
-import { WhatsAppService } from "./whatsapp.service";
-import {
-  NotificationTemplates,
-  NotificationMessage,
-} from "../templates/notification.templates";
+// services/whatsapp.service.ts
+import { prisma } from "../lib/prisma";
 import { normalizePhone } from "../utils/phone";
+import { WhatsAppSessionManager } from "./whatsapp-session-manager";
+import { WhatsAppProvider } from "../providers/whatsapp.provider";
 
-export const NotificationService = {
-  async send(event: string, payload: any) {
-    const templateFn = NotificationTemplates[event];
+export const WhatsAppService = {
+  /**
+   * Send a WhatsApp template message using a sessionId.
+   * This is the ONLY entry point for outbound WhatsApp notifications.
+   */
+  async sendTemplate(input: {
+    sessionId: string;
+    event: string;
+    payload: any;
+  }) {
+    const { sessionId, event, payload } = input;
 
-    if (!templateFn) {
-      console.warn("[NOTIFICATION] No template found for:", event);
+    // ------------------------------------------------------
+    // 1. Load session
+    // ------------------------------------------------------
+    const session = await prisma.whatsAppSession.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) {
+      console.error("[WHATSAPP] Session not found →", sessionId);
       return;
     }
 
-    const message: NotificationMessage = templateFn(payload);
-
-    await Promise.allSettled([
-      this.sendEmail(message, payload),
-      this.sendSMS(message, payload),
-      this.sendWhatsApp(message, payload),
-    ]);
-  },
-
-  async sendEmail(message: NotificationMessage, payload: any) {
-    if (!payload.email) return;
-
-    try {
-      await EmailProvider.send({
-        to: payload.email,
-        subject: message.subject,
-        html: message.bodyHtml,
-        text: message.bodyText,
-      });
-
-      console.log("[NOTIFICATION] Email sent →", payload.email);
-    } catch (err) {
-      console.error("[NOTIFICATION] Email failed →", payload.email, err);
+    // ------------------------------------------------------
+    // 2. Resolve phone
+    // ------------------------------------------------------
+    const phone = normalizePhone(session.phoneNormalized);
+    if (!phone) {
+      console.error("[WHATSAPP] Invalid phone for session →", sessionId);
+      return;
     }
-  },
 
-  async sendSMS(message: NotificationMessage, payload: any) {
-    const phone = normalizePhone(payload.phoneNumber);
-    if (!phone) return;
+    // ------------------------------------------------------
+    // 3. Resolve template
+    // ------------------------------------------------------
+    const template = this.resolveTemplate(event, payload);
 
+    if (!template) {
+      console.warn("[WHATSAPP] No template for event →", event);
+      return;
+    }
+
+    // ------------------------------------------------------
+    // 4. Record outbound message (QUEUED)
+    // ------------------------------------------------------
+    const messageRecord = await prisma.whatsAppMessage.create({
+      data: {
+        sessionId,
+        direction: "OUTBOUND",
+        body: template.bodyText ?? "",
+        status: "QUEUED",
+        rawPayload: {
+          event,
+          payload,
+          template,
+        },
+      },
+    });
+
+    // ------------------------------------------------------
+    // 5. Enqueue provider send
+    // ------------------------------------------------------
     try {
-      await SmsProvider.send({
+      await WhatsAppProvider.sendTemplate({
         to: phone,
-        text: message.bodyText,
+        template,
+        messageId: messageRecord.id,
       });
 
-      console.log("[NOTIFICATION] SMS sent →", phone);
+      console.log("[WHATSAPP] Enqueued outbound →", messageRecord.id);
     } catch (err) {
-      console.error("[NOTIFICATION] SMS failed →", phone, err);
-    }
-  },
+      console.error("[WHATSAPP] Provider enqueue failed →", err);
 
-  async sendWhatsApp(message: NotificationMessage, payload: any) {
-    try {
-      await WhatsAppService.sendTemplate({
-        event: message.event,
-        payload,
+      await prisma.whatsAppMessage.update({
+        where: { id: messageRecord.id },
+        data: { status: "FAILED" },
       });
-
-      console.log("[NOTIFICATION] WhatsApp enqueued →", payload);
-    } catch (err) {
-      console.error("[NOTIFICATION] WhatsApp enqueue failed →", err);
     }
+
+    return messageRecord;
   },
 
-  sendOrderConfirmed(payload: any) {
-    return this.send("order.confirmed", payload);
-  },
+  /**
+   * Resolve a template for a given event.
+   * This keeps WhatsAppService decoupled from NotificationService.
+   */
+  resolveTemplate(event: string, payload: any) {
+    const templates = {
+      "order.confirmed": () => ({
+        name: "order_confirmed",
+        language: "en",
+        components: [
+          { type: "body", parameters: [{ type: "text", text: payload.orderId }] },
+        ],
+        bodyText: `Your order ${payload.orderId} has been confirmed.`,
+      }),
 
-  sendOrderShipped(payload: any) {
-    return this.send("order.shipped", payload);
-  },
+      "order.shipped": () => ({
+        name: "order_shipped",
+        language: "en",
+        components: [
+          { type: "body", parameters: [{ type: "text", text: payload.orderId }] },
+        ],
+        bodyText: `Your order ${payload.orderId} has been shipped.`,
+      }),
 
-  sendOrderDelivered(payload: any) {
-    return this.send("order.delivered", payload);
-  },
+      "order.delivered": () => ({
+        name: "order_delivered",
+        language: "en",
+        components: [
+          { type: "body", parameters: [{ type: "text", text: payload.orderId }] },
+        ],
+        bodyText: `Your order ${payload.orderId} has been delivered.`,
+      }),
+    };
 
-  sendPaymentSuccess(payload: any) {
-    return this.send("payment.success", payload);
-  },
-
-  sendPaymentFailed(payload: any) {
-    return this.send("payment.failed", payload);
-  },
-
-  sendShipmentCreated(payload: any) {
-    return this.send("shipment.created", payload);
-  },
-
-  sendFailedDelivery(payload: any) {
-    return this.send("shipment.failed_delivery", payload);
+    return templates[event]?.();
   },
 };

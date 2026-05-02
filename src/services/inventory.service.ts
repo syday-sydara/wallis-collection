@@ -1,5 +1,5 @@
 // services/inventory.service.ts
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma/prisma";
 import { ReservationStatus } from "@prisma/client";
 import { InventoryReserveProducer } from "../producers/inventory.reserve.producer";
 import { OrderProducer } from "../producers/order.producer";

@@ -1,5 +1,5 @@
 import { normalizePhone } from "../utils/phone";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma/prisma";
 
 export async function createOrder(input) {
   // 1. Normalize + validate

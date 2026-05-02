@@ -1,5 +1,5 @@
 // services/audit.service.ts
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma/prisma";
 import { ActorType } from "@prisma/client";
 import { redis } from "../config/redis";
 import { AuditProducer } from "../producers/audit.producer";

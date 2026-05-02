@@ -2,7 +2,7 @@
 import { Worker } from "bullmq";
 import { RESERVATION_EXPIRY_QUEUE_NAME } from "../queues/reservation.expiry.queue";
 import { connection } from "../config/redis";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma/prisma";
 import { ReservationStatus } from "@prisma/client";
 import { OrderProducer } from "../producers/order.producer";
 

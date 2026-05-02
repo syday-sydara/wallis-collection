@@ -142,7 +142,7 @@ model Order {
   totalAmount     Int         @default(0)
   currency        String
   phone           String?
-  phoneNormalized String?
+  phoneNormalized String
   notes           String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt

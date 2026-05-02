@@ -1,5 +1,5 @@
 // services/customer.service.ts
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma/prisma";
 import { normalizePhone } from "../utils/phone";
 
 export const CustomerService = {

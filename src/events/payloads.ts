@@ -1,7 +1,6 @@
 import type { Actor } from "../domain/order-state-machine";
 import { Events } from "./events";
 
-// Ensures EventPayloads keys ALWAYS match Events.* values
 export type EventName = (typeof Events)[keyof typeof Events];
 
 export interface EventPayloads {
@@ -10,23 +9,25 @@ export interface EventPayloads {
   // -----------------------------
   "order.created": {
     orderId: string;
-    userId?: string;
+    customerId?: string;
     sessionId?: string;
-    customerPhone?: string; // <-- added
+    customerPhone?: string;
     timestamp: Date;
   };
 
   "order.confirmed": {
     orderId: string;
     actor: Actor;
-    customerPhone?: string; // <-- added
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
   "order.processing": {
     orderId: string;
     actor: Actor;
-    customerPhone?: string; // <-- added
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
@@ -35,28 +36,32 @@ export interface EventPayloads {
     shipmentId: string;
     carrier?: string;
     trackingNumber?: string;
-    customerPhone?: string; // <-- added
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
   "order.delivered": {
     orderId: string;
-    deliveredAt: Date;
-    customerPhone?: string; // <-- added
+    deliveredAt?: Date;
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
   "order.failed_delivery": {
     orderId: string;
     reason?: string;
-    customerPhone?: string; // <-- added
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
   "order.returned": {
     orderId: string;
     reason?: string;
-    customerPhone?: string; // <-- added
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
@@ -64,7 +69,8 @@ export interface EventPayloads {
     orderId: string;
     actor: Actor;
     reason?: string;
-    customerPhone?: string; // <-- added
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
@@ -73,7 +79,8 @@ export interface EventPayloads {
     from: string;
     to: string;
     actor: Actor;
-    customerPhone?: string; // <-- added
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
@@ -83,7 +90,8 @@ export interface EventPayloads {
   "payment.initiated": {
     paymentId: string;
     orderId: string;
-    customerPhone?: string; // <-- added
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
@@ -91,7 +99,8 @@ export interface EventPayloads {
     paymentId: string;
     orderId: string;
     providerReference?: string;
-    customerPhone?: string; // <-- added
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
@@ -99,7 +108,8 @@ export interface EventPayloads {
     paymentId: string;
     orderId: string;
     reason?: string;
-    customerPhone?: string; // <-- added
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
@@ -107,7 +117,8 @@ export interface EventPayloads {
     paymentId: string;
     orderId: string;
     verifiedBy: string;
-    customerPhone?: string; // <-- added
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
@@ -116,7 +127,8 @@ export interface EventPayloads {
     orderId: string;
     amount: number;
     reason?: string;
-    customerPhone?: string; // <-- added
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
@@ -127,18 +139,25 @@ export interface EventPayloads {
     reservationId: string;
     variantId: string;
     quantity: number;
+    orderId?: string;
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
   "stock.released": {
     reservationId: string;
     reason?: string;
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
   "stock.consumed": {
     reservationId: string;
     orderId: string;
+    sessionId?: string;
+    customerPhone?: string;
     timestamp: Date;
   };
 
@@ -200,15 +219,12 @@ export interface EventPayloads {
 }
 
 // ---------------------------------------------
-// TYPE SAFETY CHECKS (compile-time only)
+// TYPE SAFETY CHECKS
 // ---------------------------------------------
-
-// 1. Ensure every event in Events has a payload
 type _CheckAllEventsHavePayloads = {
   [E in EventName]: E extends keyof EventPayloads ? true : never;
 };
 
-// 2. Ensure no extra payload keys exist
 type _CheckNoExtraPayloads = {
   [E in keyof EventPayloads]: E extends EventName ? true : never;
 };

@@ -1,7 +1,7 @@
 // producers/order.producer.ts
-import { orderQueue, ORDER_QUEUE_NAME } from "../queues/order.queue";
+import { orderQueue } from "../queues/order.queue";
 import { Events } from "../events/events";
-import type { EventName, EventPayloads } from "../events/payloads";
+import type { Actor, EventName, EventPayloads } from "../events/payloads";
 
 /**
  * OrderProducer
@@ -12,10 +12,7 @@ import type { EventName, EventPayloads } from "../events/payloads";
  * - Guarantee timestamp injection
  */
 export const OrderProducer = {
-  async emit<E extends EventName>(
-    event: E,
-    payload: EventPayloads[E]
-  ) {
+  async emit<E extends EventName>(event: E, payload: EventPayloads[E]) {
     const jobId =
       (payload as any).orderId ??
       (payload as any).reservationId ??
@@ -33,132 +30,165 @@ export const OrderProducer = {
   // -----------------------------
   // ORDER LIFECYCLE
   // -----------------------------
-  created(orderId: string) {
-    return this.emit(Events.ORDER_CREATED, {
-      orderId,
-      timestamp: new Date(),
-    });
+  orderCreated(data: {
+    orderId: string;
+    customerId?: string;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.ORDER_CREATED, data);
   },
 
-  confirmed(orderId: string, actor: string) {
-    return this.emit(Events.ORDER_CONFIRMED, {
-      orderId,
-      actor,
-      timestamp: new Date(),
-    });
+  orderConfirmed(data: {
+    orderId: string;
+    actor: Actor;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.ORDER_CONFIRMED, data);
   },
 
-  processing(orderId: string, actor: string) {
-    return this.emit(Events.ORDER_PROCESSING, {
-      orderId,
-      actor,
-      timestamp: new Date(),
-    });
+  orderProcessing(data: {
+    orderId: string;
+    actor: Actor;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.ORDER_PROCESSING, data);
   },
 
-  shipped(orderId: string, shipmentId: string) {
-    return this.emit(Events.ORDER_SHIPPED, {
-      orderId,
-      shipmentId,
-      timestamp: new Date(),
-    });
+  orderShipped(data: {
+    orderId: string;
+    shipmentId: string;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.ORDER_SHIPPED, data);
   },
 
-  delivered(orderId: string) {
-    return this.emit(Events.ORDER_DELIVERED, {
-      orderId,
-      timestamp: new Date(),
-    });
+  orderDelivered(data: {
+    orderId: string;
+    deliveredAt: Date;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.ORDER_DELIVERED, data);
   },
 
-  failedDelivery(orderId: string, reason?: string) {
-    return this.emit(Events.ORDER_FAILED_DELIVERY, {
-      orderId,
-      reason,
-      timestamp: new Date(),
-    });
+  orderFailedDelivery(data: {
+    orderId: string;
+    reason?: string;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.ORDER_FAILED_DELIVERY, data);
   },
 
-  returned(orderId: string, reason?: string) {
-    return this.emit(Events.ORDER_RETURNED, {
-      orderId,
-      reason,
-      timestamp: new Date(),
-    });
+  orderReturned(data: {
+    orderId: string;
+    reason?: string;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.ORDER_RETURNED, data);
   },
 
-  cancelled(orderId: string, actor: string, reason?: string) {
-    return this.emit(Events.ORDER_CANCELLED, {
-      orderId,
-      actor,
-      reason,
-      timestamp: new Date(),
-    });
+  orderCancelled(data: {
+    orderId: string;
+    actor: Actor;
+    reason?: string;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.ORDER_CANCELLED, data);
   },
 
   // -----------------------------
   // PAYMENTS
   // -----------------------------
-  paymentInitiated(orderId: string, paymentId: string) {
-    return this.emit(Events.PAYMENT_INITIATED, {
-      orderId,
-      paymentId,
-      timestamp: new Date(),
-    });
+  paymentInitiated(data: {
+    orderId: string;
+    paymentId: string;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.PAYMENT_INITIATED, data);
   },
 
-  paymentSuccess(orderId: string, paymentId: string) {
-    return this.emit(Events.PAYMENT_SUCCESS, {
-      orderId,
-      paymentId,
-      timestamp: new Date(),
-    });
+  paymentSuccess(data: {
+    orderId: string;
+    paymentId: string;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.PAYMENT_SUCCESS, data);
   },
 
-  paymentFailed(orderId: string, paymentId: string, reason?: string) {
-    return this.emit(Events.PAYMENT_FAILED, {
-      orderId,
-      paymentId,
-      reason,
-      timestamp: new Date(),
-    });
+  paymentFailed(data: {
+    orderId: string;
+    paymentId: string;
+    reason?: string;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.PAYMENT_FAILED, data);
   },
 
-  paymentConfirmed(orderId: string, paymentId: string, actor: string) {
-    return this.emit(Events.PAYMENT_CONFIRMED, {
-      orderId,
-      paymentId,
-      actor,
-      timestamp: new Date(),
-    });
+  paymentConfirmed(data: {
+    orderId: string;
+    paymentId: string;
+    actor: Actor;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.PAYMENT_CONFIRMED, data);
   },
 
   // -----------------------------
   // INVENTORY
   // -----------------------------
-  stockReserved(reservationId: string, variantId: string, orderId?: string) {
-    return this.emit(Events.STOCK_RESERVED, {
-      reservationId,
-      variantId,
-      orderId,
-      timestamp: new Date(),
-    });
+  stockReserved(data: {
+    reservationId: string;
+    variantId: string;
+    quantity: number;
+    orderId?: string;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.STOCK_RESERVED, data);
   },
 
-  stockReleased(reservationId: string, reason?: string) {
-    return this.emit(Events.STOCK_RELEASED, {
-      reservationId,
-      reason,
-      timestamp: new Date(),
-    });
+  stockReleased(data: {
+    reservationId: string;
+    reason?: string;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.STOCK_RELEASED, data);
   },
 
-  stockConsumed(reservationId: string, orderId: string) {
-    return this.emit(Events.STOCK_CONSUMED, {
-      reservationId,
-      orderId,
-      timestamp: new Date(),
-    });
+  stockConsumed(data: {
+    reservationId: string;
+    orderId: string;
+    sessionId?: string;
+    customerPhone?: string;
+    timestamp: Date;
+  }) {
+    return this.emit(Events.STOCK_CONSUMED, data);
   },
 
   // -----------------------------
@@ -167,7 +197,7 @@ export const OrderProducer = {
   whatsappSessionStarted(sessionId: string, phoneNumber: string) {
     return this.emit(Events.WHATSAPP_SESSION_STARTED, {
       sessionId,
-      phoneNumber,
+      phone: phoneNumber,
       timestamp: new Date(),
     });
   },
@@ -175,22 +205,24 @@ export const OrderProducer = {
   whatsappSessionUpdated(sessionId: string, lastMessageAt: string) {
     return this.emit(Events.WHATSAPP_SESSION_UPDATED, {
       sessionId,
-      lastMessageAt,
+      lastMessageAt: new Date(lastMessageAt),
       timestamp: new Date(),
     });
   },
 
-  whatsappMessageReceived(sessionId: string, message: string) {
+  whatsappMessageReceived(sessionId: string, messageId: string, message: string) {
     return this.emit(Events.WHATSAPP_MESSAGE_RECEIVED, {
       sessionId,
+      messageId,
       message,
       timestamp: new Date(),
     });
   },
 
-  whatsappMessageSent(sessionId: string, message: string) {
+  whatsappMessageSent(sessionId: string, messageId: string, message: string) {
     return this.emit(Events.WHATSAPP_MESSAGE_SENT, {
       sessionId,
+      messageId,
       message,
       timestamp: new Date(),
     });
