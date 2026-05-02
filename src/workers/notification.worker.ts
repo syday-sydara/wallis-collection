@@ -2,7 +2,6 @@
 import { Worker } from "bullmq";
 import { connection } from "../config/redis";
 import { NOTIFICATION_QUEUE_NAME } from "../queues/notification.queue";
-import { Events } from "../events";
 import type { EventName, EventPayloads } from "../events/payloads";
 import { NotificationService } from "../services/notification.service";
 
@@ -13,38 +12,10 @@ export const notificationWorker = new Worker<EventPayloads[EventName]>(
     const payload = job.data as EventPayloads[typeof event];
 
     try {
-      switch (event) {
-        case Events.ORDER_CONFIRMED:
-          await NotificationService.sendOrderConfirmed(payload);
-          break;
+      // Single unified entry point
+      await NotificationService.send(event, payload);
 
-        case Events.ORDER_SHIPPED:
-          await NotificationService.sendOrderShipped(payload);
-          break;
-
-        case Events.ORDER_DELIVERED:
-          await NotificationService.sendOrderDelivered(payload);
-          break;
-
-        case Events.PAYMENT_SUCCESS:
-          await NotificationService.sendPaymentSuccess(payload);
-          break;
-
-        case Events.PAYMENT_FAILED:
-          await NotificationService.sendPaymentFailed(payload);
-          break;
-
-        case Events.SHIPMENT_CREATED:
-          await NotificationService.sendShipmentCreated(payload);
-          break;
-
-        case Events.SHIPMENT_FAILED_DELIVERY:
-          await NotificationService.sendFailedDelivery(payload);
-          break;
-
-        default:
-          console.warn("[NOTIFICATION WORKER] Unhandled event:", event);
-      }
+      console.log(`[NOTIFICATION WORKER] Processed → ${event}`);
     } catch (err) {
       console.error(`[NOTIFICATION WORKER] Error processing ${event}`, err);
       throw err; // allow BullMQ retry

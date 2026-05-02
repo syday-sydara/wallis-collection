@@ -1,126 +1,141 @@
-// services/whatsapp.service.ts
-import { prisma } from "../lib/prisma";
+// services/notification.service.ts
+import { EmailProvider } from "../providers/email.provider";
+import { SmsProvider } from "../providers/sms.provider";
+import { WhatsAppService } from "./whatsapp.service";
+import {
+  NotificationTemplates,
+  NotificationMessage,
+} from "../templates/notification.templates";
 import { normalizePhone } from "../utils/phone";
-import { WhatsAppSessionManager } from "./whatsapp-session-manager";
-import { WhatsAppProvider } from "../providers/whatsapp.provider";
+import { prisma } from "../lib/prisma";
 
-export const WhatsAppService = {
+export const NotificationService = {
   /**
-   * Send a WhatsApp template message using a sessionId.
-   * This is the ONLY entry point for outbound WhatsApp notifications.
+   * Main entry point for all notifications.
+   * Accepts eventName + eventPayload from NotificationWorker.
    */
-  async sendTemplate(input: {
-    sessionId: string;
-    event: string;
-    payload: any;
-  }) {
-    const { sessionId, event, payload } = input;
+  async send(event: string, payload: any) {
+    const templateFn = NotificationTemplates[event];
 
-    // ------------------------------------------------------
-    // 1. Load session
-    // ------------------------------------------------------
-    const session = await prisma.whatsAppSession.findUnique({
-      where: { id: sessionId },
-    });
-
-    if (!session) {
-      console.error("[WHATSAPP] Session not found →", sessionId);
+    if (!templateFn) {
+      console.warn("[NOTIFICATION] No template found for:", event);
       return;
     }
 
-    // ------------------------------------------------------
-    // 2. Resolve phone
-    // ------------------------------------------------------
-    const phone = normalizePhone(session.phoneNormalized);
-    if (!phone) {
-      console.error("[WHATSAPP] Invalid phone for session →", sessionId);
-      return;
-    }
+    const message: NotificationMessage = templateFn(payload);
 
-    // ------------------------------------------------------
-    // 3. Resolve template
-    // ------------------------------------------------------
-    const template = this.resolveTemplate(event, payload);
+    // Resolve customer email if needed
+    const email = await this.resolveEmail(payload);
 
-    if (!template) {
-      console.warn("[WHATSAPP] No template for event →", event);
-      return;
-    }
-
-    // ------------------------------------------------------
-    // 4. Record outbound message (QUEUED)
-    // ------------------------------------------------------
-    const messageRecord = await prisma.whatsAppMessage.create({
-      data: {
-        sessionId,
-        direction: "OUTBOUND",
-        body: template.bodyText ?? "",
-        status: "QUEUED",
-        rawPayload: {
-          event,
-          payload,
-          template,
-        },
-      },
-    });
-
-    // ------------------------------------------------------
-    // 5. Enqueue provider send
-    // ------------------------------------------------------
-    try {
-      await WhatsAppProvider.sendTemplate({
-        to: phone,
-        template,
-        messageId: messageRecord.id,
-      });
-
-      console.log("[WHATSAPP] Enqueued outbound →", messageRecord.id);
-    } catch (err) {
-      console.error("[WHATSAPP] Provider enqueue failed →", err);
-
-      await prisma.whatsAppMessage.update({
-        where: { id: messageRecord.id },
-        data: { status: "FAILED" },
-      });
-    }
-
-    return messageRecord;
+    await Promise.allSettled([
+      this.sendEmail(message, email),
+      this.sendSMS(message, payload),
+      this.sendWhatsApp(message, payload),
+    ]);
   },
 
-  /**
-   * Resolve a template for a given event.
-   * This keeps WhatsAppService decoupled from NotificationService.
-   */
-  resolveTemplate(event: string, payload: any) {
-    const templates = {
-      "order.confirmed": () => ({
-        name: "order_confirmed",
-        language: "en",
-        components: [
-          { type: "body", parameters: [{ type: "text", text: payload.orderId }] },
-        ],
-        bodyText: `Your order ${payload.orderId} has been confirmed.`,
-      }),
+  // ------------------------------------------------------
+  // EMAIL
+  // ------------------------------------------------------
+  async resolveEmail(payload: any): Promise<string | null> {
+    if (payload.email) return payload.email;
 
-      "order.shipped": () => ({
-        name: "order_shipped",
-        language: "en",
-        components: [
-          { type: "body", parameters: [{ type: "text", text: payload.orderId }] },
-        ],
-        bodyText: `Your order ${payload.orderId} has been shipped.`,
-      }),
+    if (payload.customerId) {
+      const customer = await prisma.customer.findUnique({
+        where: { id: payload.customerId },
+      });
+      return customer?.email ?? null;
+    }
 
-      "order.delivered": () => ({
-        name: "order_delivered",
-        language: "en",
-        components: [
-          { type: "body", parameters: [{ type: "text", text: payload.orderId }] },
-        ],
-        bodyText: `Your order ${payload.orderId} has been delivered.`,
-      }),
-    };
+    return null;
+  },
 
-    return templates[event]?.();
+  async sendEmail(message: NotificationMessage, email: string | null) {
+    if (!email) return;
+
+    try {
+      await EmailProvider.send({
+        to: email,
+        subject: message.subject,
+        html: message.bodyHtml,
+        text: message.bodyText,
+      });
+
+      console.log("[NOTIFICATION] Email sent →", email);
+    } catch (err) {
+      console.error("[NOTIFICATION] Email failed →", email, err);
+    }
+  },
+
+  // ------------------------------------------------------
+  // SMS (uses customerPhone)
+  // ------------------------------------------------------
+  async sendSMS(message: NotificationMessage, payload: any) {
+    const phone = normalizePhone(payload.customerPhone);
+    if (!phone) return;
+
+    try {
+      await SmsProvider.send({
+        to: phone,
+        text: message.bodyText,
+      });
+
+      console.log("[NOTIFICATION] SMS sent →", phone);
+    } catch (err) {
+      console.error("[NOTIFICATION] SMS failed →", phone, err);
+    }
+  },
+
+  // ------------------------------------------------------
+  // WHATSAPP (uses sessionId)
+  // ------------------------------------------------------
+  async sendWhatsApp(message: NotificationMessage, payload: any) {
+    if (!payload.sessionId) {
+      console.warn("[NOTIFICATION] WhatsApp skipped → no sessionId");
+      return;
+    }
+
+    try {
+      await WhatsAppService.sendTemplate({
+        sessionId: payload.sessionId,
+        event: message.event,
+        payload,
+      });
+
+      console.log("[NOTIFICATION] WhatsApp enqueued → session:", payload.sessionId);
+    } catch (err) {
+      console.error("[NOTIFICATION] WhatsApp enqueue failed →", err);
+    }
+  },
+
+  // ------------------------------------------------------
+  // Convenience wrappers
+  // ------------------------------------------------------
+  sendOrderConfirmed(payload: any) {
+    return this.send("order.confirmed", payload);
+  },
+
+  sendOrderShipped(payload: any) {
+    return this.send("order.shipped", payload);
+  },
+
+  sendOrderDelivered(payload: any) {
+    return this.send("order.delivered", payload);
+  },
+
+  sendPaymentSuccess(payload: any) {
+    return this.send("payment.success", payload);
+  },
+
+  sendPaymentFailed(payload: any) {
+    return this.send("payment.failed", payload);
+  },
+
+  sendShipmentCreated(payload: any) {
+    return this.send("shipment.created", payload);
+  },
+
+  sendFailedDelivery(payload: any) {
+    return this.send("shipment.failed_delivery", payload);
   },
 };
