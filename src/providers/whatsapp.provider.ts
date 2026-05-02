@@ -1,55 +1,40 @@
 // providers/whatsapp.provider.ts
-import fetch from "node-fetch";
-
-export interface WhatsAppSendParams {
-  to: string;
-  text: string;
-  messageId?: string;
-  metadata?: Record<string, any>;
-}
+import axios from "axios";
 
 export const WhatsAppProvider = {
-  /**
-   * Send a WhatsApp message via WhatsApp Cloud API
-   * - Retries transient failures
-   * - Logs failures for observability
-   * - Returns messageId for idempotency
-   */
-  async send({ to, text, messageId, metadata }: WhatsAppSendParams) {
-    const id = messageId ?? `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-
+  async send({ to, template, variables }) {
     const payload = {
       messaging_product: "whatsapp",
       to,
-      type: "text",
-      text: { body: text },
+      type: "template",
+      template: {
+        name: template,
+        language: { code: "en_US" },
+        components: [
+          {
+            type: "body",
+            parameters: variables.map(v => ({ type: "text", text: v })),
+          },
+        ],
+      },
     };
 
     try {
-      const res = await fetch(
-        `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+      const res = await axios.post(
+        `https://graph.facebook.com/v19.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
+        payload,
         {
-          method: "POST",
           headers: {
-            Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+            Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(payload),
-          // Timeout protection (Nigeria‑first reliability)
-          signal: AbortSignal.timeout(8000),
+          timeout: 8000,
         }
       );
 
-      if (!res.ok) {
-        const body = await res.text();
-        console.error("[WHATSAPP ERROR]", res.status, body);
-        throw new Error(`WhatsApp API failed: ${res.status}`);
-      }
-
-      console.log("[WHATSAPP SENT]", { to, id, metadata });
-      return { messageId: id };
+      return res.data;
     } catch (err) {
-      console.error("[WHATSAPP SEND FAILED]", err);
+      console.error("[WHATSAPP PROVIDER ERROR]", err.response?.data || err);
       throw err;
     }
   },

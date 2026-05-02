@@ -12,18 +12,21 @@ export interface EventPayloads {
     orderId: string;
     userId?: string;
     sessionId?: string;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 
   "order.confirmed": {
     orderId: string;
     actor: Actor;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 
   "order.processing": {
     orderId: string;
     actor: Actor;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 
@@ -32,24 +35,28 @@ export interface EventPayloads {
     shipmentId: string;
     carrier?: string;
     trackingNumber?: string;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 
   "order.delivered": {
     orderId: string;
     deliveredAt: Date;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 
   "order.failed_delivery": {
     orderId: string;
     reason?: string;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 
   "order.returned": {
     orderId: string;
     reason?: string;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 
@@ -57,6 +64,7 @@ export interface EventPayloads {
     orderId: string;
     actor: Actor;
     reason?: string;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 
@@ -65,6 +73,7 @@ export interface EventPayloads {
     from: string;
     to: string;
     actor: Actor;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 
@@ -74,6 +83,7 @@ export interface EventPayloads {
   "payment.initiated": {
     paymentId: string;
     orderId: string;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 
@@ -81,6 +91,7 @@ export interface EventPayloads {
     paymentId: string;
     orderId: string;
     providerReference?: string;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 
@@ -88,6 +99,7 @@ export interface EventPayloads {
     paymentId: string;
     orderId: string;
     reason?: string;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 
@@ -95,6 +107,7 @@ export interface EventPayloads {
     paymentId: string;
     orderId: string;
     verifiedBy: string;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 
@@ -103,6 +116,7 @@ export interface EventPayloads {
     orderId: string;
     amount: number;
     reason?: string;
+    customerPhone?: string; // <-- added
     timestamp: Date;
   };
 

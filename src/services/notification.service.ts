@@ -1,18 +1,18 @@
 // services/notification.service.ts
 import { EmailProvider } from "../providers/email.provider";
 import { SmsProvider } from "../providers/sms.provider";
-import { WhatsAppProvider } from "../providers/whatsapp.provider";
+import { WhatsAppOutboundProducer } from "../producers/whatsapp.outbound.producer";
 import {
   NotificationTemplates,
   NotificationMessage,
-} from "./notification.templates";
+} from "../templates/notification.templates";
 
 export const NotificationService = {
   /**
    * Main entry point
    * - Renders template
    * - Dispatches across channels
-   * - Each channel isolated (no cross‑failure)
+   * - Each channel isolated (Promise.allSettled)
    */
   async send(event: string, payload: any) {
     const template = NotificationTemplates[event];
@@ -31,9 +31,9 @@ export const NotificationService = {
     ]);
   },
 
-  /**
-   * EMAIL
-   */
+  // ---------------------------------------------------------
+  // EMAIL
+  // ---------------------------------------------------------
   async sendEmail(message: NotificationMessage, payload: any) {
     if (!payload.email) return;
 
@@ -51,9 +51,9 @@ export const NotificationService = {
     }
   },
 
-  /**
-   * SMS
-   */
+  // ---------------------------------------------------------
+  // SMS
+  // ---------------------------------------------------------
   async sendSMS(message: NotificationMessage, payload: any) {
     if (!payload.phoneNumber) return;
 
@@ -69,28 +69,28 @@ export const NotificationService = {
     }
   },
 
-  /**
-   * WHATSAPP
-   */
+  // ---------------------------------------------------------
+  // WHATSAPP (via outbound queue)
+  // ---------------------------------------------------------
   async sendWhatsApp(message: NotificationMessage, payload: any) {
     if (!payload.phoneNumber) return;
 
     try {
-      await WhatsAppProvider.send({
-        to: payload.phoneNumber,
-        text: message.bodyText,
-        metadata: { event: message.event },
-      });
+      await WhatsAppOutboundProducer.send(
+        message.event, // template key
+        payload.phoneNumber,
+        payload // variables passed to template resolver
+      );
 
-      console.log("[NOTIFICATION] WhatsApp sent →", payload.phoneNumber);
+      console.log("[NOTIFICATION] WhatsApp enqueued →", payload.phoneNumber);
     } catch (err) {
-      console.error("[NOTIFICATION] WhatsApp failed →", payload.phoneNumber, err);
+      console.error("[NOTIFICATION] WhatsApp enqueue failed →", payload.phoneNumber, err);
     }
   },
 
-  /**
-   * Convenience wrappers
-   */
+  // ---------------------------------------------------------
+  // Convenience wrappers
+  // ---------------------------------------------------------
   sendOrderConfirmed(payload: any) {
     return this.send("order.confirmed", payload);
   },
