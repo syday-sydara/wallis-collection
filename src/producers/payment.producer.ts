@@ -1,22 +1,28 @@
 // producers/payment.producer.ts
-import { paymentQueue } from "../queues/payment.queue";
+import { paymentQueue, PAYMENT_QUEUE_NAME } from "../queues/payment.queue";
 import { Events } from "../events";
-import type { EventPayloads, EventName } from "../events/payloads";
+import type { EventName, EventPayloads } from "../events/payloads";
 
+/**
+ * PaymentProducer
+ *
+ * Responsibilities:
+ * - Emit typed payment events
+ * - Enforce deterministic jobId (paymentId-first)
+ * - Guarantee timestamp injection
+ */
 export const PaymentProducer = {
-  async emit<Event extends EventName>(
-    event: Event,
-    payload: EventPayloads[Event]
+  async emit<E extends EventName>(
+    event: E,
+    payload: EventPayloads[E]
   ) {
+    const jobId =
+      (payload as any).paymentId ??
+      (payload as any).orderId ??
+      `${event}-${Date.now()}`;
+
     await paymentQueue.add(event, payload, {
-      jobId:
-        `${event}-` +
-        (payload.paymentId ??
-          payload.orderId ??
-          payload.reservationId ??
-          payload.sessionId ??
-          payload.logId ??
-          "unknown"),
+      jobId,
       removeOnComplete: true,
       removeOnFail: false,
     });
@@ -26,15 +32,28 @@ export const PaymentProducer = {
   // PAYMENT WRAPPERS
   // -----------------------------
   initiated(paymentId: string, orderId: string) {
-    return this.emit(Events.PAYMENT_INITIATED, { paymentId, orderId });
+    return this.emit(Events.PAYMENT_INITIATED, {
+      paymentId,
+      orderId,
+      timestamp: new Date(),
+    });
   },
 
   success(paymentId: string, orderId: string) {
-    return this.emit(Events.PAYMENT_SUCCESS, { paymentId, orderId });
+    return this.emit(Events.PAYMENT_SUCCESS, {
+      paymentId,
+      orderId,
+      timestamp: new Date(),
+    });
   },
 
   failed(paymentId: string, orderId: string, reason?: string) {
-    return this.emit(Events.PAYMENT_FAILED, { paymentId, orderId, reason });
+    return this.emit(Events.PAYMENT_FAILED, {
+      paymentId,
+      orderId,
+      reason,
+      timestamp: new Date(),
+    });
   },
 
   confirmed(paymentId: string, orderId: string, verifiedBy: string) {
@@ -42,6 +61,7 @@ export const PaymentProducer = {
       paymentId,
       orderId,
       verifiedBy,
+      timestamp: new Date(),
     });
   },
 };

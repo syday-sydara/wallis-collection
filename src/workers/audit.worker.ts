@@ -1,6 +1,6 @@
 // workers/audit.worker.ts
 import { Worker } from "bullmq";
-import { auditQueue, AUDIT_QUEUE_NAME } from "../queues/audit.queue";
+import { AUDIT_QUEUE_NAME } from "../queues/audit.queue";
 import { connection } from "../config/redis";
 import { prisma } from "../config/prisma";
 import { Events } from "../events";
@@ -17,7 +17,18 @@ export const auditWorker = new Worker<EventPayloads[EventName]>(
         case Events.AUDIT_LOG_CREATED: {
           const { logId } = payload;
 
-          // Persist audit log
+          // Idempotency: ensure we don't double-process
+          const existing = await prisma.auditLog.findUnique({
+            where: { id: logId },
+            select: { processedAt: true },
+          });
+
+          if (existing?.processedAt) {
+            console.log(`[AUDIT WORKER] Skipping already processed log ${logId}`);
+            return;
+          }
+
+          // Mark audit log as processed
           await prisma.auditLog.update({
             where: { id: logId },
             data: { processedAt: new Date() },
@@ -40,7 +51,11 @@ export const auditWorker = new Worker<EventPayloads[EventName]>(
   }
 );
 
-// Worker-level logging
+// Worker lifecycle logging
+auditWorker.on("ready", () => {
+  console.log("[AUDIT WORKER] Ready");
+});
+
 auditWorker.on("completed", job => {
   console.log(`[AUDIT WORKER] Completed job ${job.id}`);
 });
@@ -51,4 +66,11 @@ auditWorker.on("failed", (job, err) => {
 
 auditWorker.on("error", err => {
   console.error("[AUDIT WORKER] Worker error", err);
+});
+
+// Graceful shutdown (optional)
+process.on("SIGTERM", async () => {
+  console.log("[AUDIT WORKER] Shutting down...");
+  await auditWorker.close();
+  await prisma.$disconnect();
 });
