@@ -1,7 +1,7 @@
 // services/notification.service.ts
 import { EmailProvider } from "../providers/email.provider";
 import { SmsProvider } from "../providers/sms.provider";
-import { WhatsAppOutboundProducer } from "../producers/whatsapp.outbound.producer";
+import { WhatsAppService } from "./whatsapp.service";
 import {
   NotificationTemplates,
   NotificationMessage,
@@ -15,14 +15,15 @@ export const NotificationService = {
    * - Each channel isolated (Promise.allSettled)
    */
   async send(event: string, payload: any) {
-    const template = NotificationTemplates[event];
+    const templateFn = NotificationTemplates[event];
 
-    if (!template) {
+    if (!templateFn) {
       console.warn("[NOTIFICATION] No template found for:", event);
       return;
     }
 
-    const message = template(payload);
+    // Render unified message object
+    const message: NotificationMessage = templateFn(payload);
 
     await Promise.allSettled([
       this.sendEmail(message, payload),
@@ -70,21 +71,30 @@ export const NotificationService = {
   },
 
   // ---------------------------------------------------------
-  // WHATSAPP (via outbound queue)
+  // WHATSAPP (via WhatsAppService → outbound queue)
   // ---------------------------------------------------------
   async sendWhatsApp(message: NotificationMessage, payload: any) {
-    if (!payload.phoneNumber) return;
+    const phone =
+      payload.phoneNumber ??
+      payload.customerPhone ??
+      payload.whatsappPhone;
+
+    const sessionId = payload.sessionId;
+
+    // WhatsApp requires both phone + sessionId
+    if (!phone || !sessionId) return;
 
     try {
-      await WhatsAppOutboundProducer.send(
-        message.event, // template key
-        payload.phoneNumber,
-        payload // variables passed to template resolver
-      );
+      await WhatsAppService.sendTemplate({
+        sessionId,
+        to: phone,
+        template: message.event, // template key
+        variables: payload,      // passed to template resolver
+      });
 
-      console.log("[NOTIFICATION] WhatsApp enqueued →", payload.phoneNumber);
+      console.log("[NOTIFICATION] WhatsApp enqueued →", phone);
     } catch (err) {
-      console.error("[NOTIFICATION] WhatsApp enqueue failed →", payload.phoneNumber, err);
+      console.error("[NOTIFICATION] WhatsApp enqueue failed →", phone, err);
     }
   },
 
