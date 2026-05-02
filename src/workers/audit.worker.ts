@@ -1,4 +1,3 @@
-// workers/audit.worker.ts
 import { Worker } from "bullmq";
 import { auditQueue } from "../queues/audit.queue";
 import { connection } from "../config/redis";
@@ -13,11 +12,11 @@ export const auditWorker = new Worker<EventPayloads[EventName]>(
 
     switch (event) {
       case Events.AUDIT_LOG_CREATED: {
-        const { logId } = payload;
+        if ("logId" in payload) {
+          const { logId } = payload;
 
-        // Forward to analytics / SIEM / monitoring pipelines
-        // (intentionally left as a hook)
-
+          // Forward to analytics / SIEM / monitoring pipelines
+        }
         break;
       }
 
@@ -27,7 +26,6 @@ export const auditWorker = new Worker<EventPayloads[EventName]>(
   },
   {
     connection,
-    // Nigeria‑first reliability: prevents worker from stalling silently
     concurrency: 5,
   }
 );

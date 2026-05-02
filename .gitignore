@@ -12,12 +12,17 @@ node_modules/
 !.yarn/versions
 
 # -------------------------
-# Next.js
+# Build Output
+# -------------------------
+dist/
+build/
+out/
+
+# -------------------------
+# Next.js (if used anywhere)
 # -------------------------
 .next/
 .next/cache/
-out/
-build/
 
 # -------------------------
 # Production / Deployment
@@ -32,9 +37,7 @@ build/
 .env.key
 .env.*
 !.env.example
-
 !/.env.enc
-
 
 # -------------------------
 # Prisma
