@@ -1,4 +1,4 @@
-import { prisma } from "../prisma/client";
+import { prisma } from "../lib/prisma";
 import { ReservationStatus } from "@prisma/client";
 
 export class InventoryService {

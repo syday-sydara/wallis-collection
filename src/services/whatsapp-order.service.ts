@@ -1,5 +1,5 @@
 // services/whatsapp-order.service.ts
-import { prisma } from "../prisma/client";
+import { prisma } from "../lib/prisma";
 import { WhatsAppOrderStatus } from "@prisma/client";
 import { InventoryService } from "./inventory.service";
 import { OrderService } from "./order.service";

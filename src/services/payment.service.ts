@@ -1,4 +1,4 @@
-import { prisma } from "../prisma/client";
+import { prisma } from "../lib/prisma";
 import { PaymentProvider, PaymentStatus } from "@prisma/client";
 import { PaymentProducer } from "../producers/payment.producer";
 

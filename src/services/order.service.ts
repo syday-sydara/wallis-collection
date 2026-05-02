@@ -1,5 +1,5 @@
 // services/order.service.ts
-import { prisma } from "../prisma/client";
+import { prisma } from "../lib/prisma";
 import { OrderStatus, PaymentStatus } from "@prisma/client";
 import { OrderProducer } from "../producers/order.producer";
 

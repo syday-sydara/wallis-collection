@@ -16,11 +16,10 @@ const transitions: Record<OrderStatus, OrderStatus[]> = {
   PROCESSING: ["SHIPPED", "FAILED_DELIVERY", "CANCELLED"],
   SHIPPED: ["DELIVERED", "FAILED_DELIVERY"],
   FAILED_DELIVERY: ["PROCESSING", "RETURNED", "CANCELLED"],
-  RETURNED: ["CANCELLED"],
-  DELIVERED: [],
-  CANCELLED: [],
+  RETURNED: [],        // terminal
+  DELIVERED: [],       // terminal
+  CANCELLED: [],       // terminal
 };
-
 
 export function canTransition(
   current: OrderStatus,
@@ -47,7 +46,6 @@ export function canTransition(
   }
 
   // 4. ADMIN/SYSTEM cannot cancel delivered or returned orders
-  // (FAILED_DELIVERY cancellation is allowed)
   if (
     actor !== "USER" &&
     next === "CANCELLED" &&
@@ -58,5 +56,3 @@ export function canTransition(
 
   return true;
 }
-
-
