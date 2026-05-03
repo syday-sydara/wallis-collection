@@ -270,14 +270,41 @@ model SmsMessage {
 
 model MessageDeliveryLog {
   id          String   @id @default(cuid())
-  messageId   String?  // WhatsApp messages have a DB id, SMS/Email may not
+
+  // Core delivery info
   channel     String   // "whatsapp" | "sms" | "email"
   status      String   // "SENT" | "FAILED" | "FALLBACK" | "RETRY" | "QUEUED"
-  error       String?  // error message if failed
-  payload     Json?    // raw payload sent to provider
-  metadata    Json?    // extra info (latency, provider response, etc.)
+
+  // Correlation metadata
+  orderId         String?
+  sessionId       String?
+  customerId      String?
+  phoneNormalized String?
+  eventName       String?
+
+  // Provider metadata
+  messageId          String?   // internal message id (e.g. WhatsAppMessage.id)
+  providerMessageId  String?   // provider's message id
+  providerStatus     String?   // provider-specific status
+  latencyMs          Int?
+
+  // Error metadata
+  error       Json?    // structured error object
+
+  // Raw payload + metadata
+  payload     Json?
+  metadata    Json?
+
   createdAt   DateTime @default(now())
 
-  // Optional relation to WhatsAppMessage
+  // Relations
   whatsAppMessage WhatsAppMessage? @relation(fields: [messageId], references: [id])
+
+  @@index([messageId])
+  @@index([orderId])
+  @@index([sessionId])
+  @@index([customerId])
+  @@index([phoneNormalized])
+  @@index([createdAt])
 }
+

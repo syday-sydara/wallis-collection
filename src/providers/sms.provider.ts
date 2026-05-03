@@ -7,24 +7,31 @@ import { SmsRetryQueue } from "../queues/messaging/sms-retry.queue";
 import { logger } from "../lib/logger";
 import { metrics } from "../lib/metrics";
 import { DeliveryLog } from "../lib/delivery-log";
+import { Correlation } from "../lib/correlation";
 
 interface SmsSendInput {
   to: string;
   text: string;
-  subject?: string; // needed for email fallback
+  subject?: string;
 }
 
 export const SmsProvider = {
   async send(input: SmsSendInput) {
+    const ctx = Correlation.get();
+
     const phone = normalizePhone(input.to);
     if (!phone) {
-      logger.warn("SMS send failed: invalid phone", { to: input.to });
+      logger.warn("SMS send failed: invalid phone", {
+        ...ctx,
+        to: input.to,
+      });
 
       await DeliveryLog.write({
         channel: "sms",
         status: "FAILED",
         error: "Invalid phone",
         payload: input,
+        ...ctx,
       });
 
       throw new Error("Invalid phone");
@@ -34,7 +41,11 @@ export const SmsProvider = {
     // Breaker OPEN → queue immediately
     // ---------------------------------------------------------
     if (SmsBreaker.getState() === "OPEN") {
-      logger.warn("SMS breaker OPEN — queuing message", { to: phone });
+      logger.warn("SMS breaker OPEN — queuing message", {
+        ...ctx,
+        to: phone,
+      });
+
       metrics.increment("sms.fallback.queued");
 
       await DeliveryLog.write({
@@ -42,12 +53,16 @@ export const SmsProvider = {
         status: "QUEUED",
         payload: input,
         metadata: { reason: "breaker-open" },
+        ...ctx,
       });
 
       return SmsRetryQueue.enqueue({
         to: phone,
         text: input.text,
         subject: input.subject ?? "Notification",
+        traceId: ctx.traceId,
+        requestId: ctx.requestId,
+        spanId: ctx.spanId,
       });
     }
 
@@ -89,11 +104,17 @@ export const SmsProvider = {
         metrics.observe("sms.latency", Date.now() - start);
         metrics.increment("sms.success");
 
-        // AUDIT LOG: SENT
+        logger.info("SMS message sent", {
+          ...ctx,
+          to: phone,
+        });
+
         await DeliveryLog.write({
           channel: "sms",
           status: "SENT",
           payload: input,
+          metadata: { providerResponse: result },
+          ...ctx,
         });
 
         return result;
@@ -101,16 +122,17 @@ export const SmsProvider = {
         metrics.increment("sms.failure");
 
         logger.error("SMS provider failure", {
+          ...ctx,
           error: err.message,
           to: phone,
         });
 
-        // AUDIT LOG: FAILED
         await DeliveryLog.write({
           channel: "sms",
           status: "FAILED",
           error: err.message,
           payload: input,
+          ...ctx,
         });
 
         throw new Error(`SmsProvider failure: ${err.message}`);
