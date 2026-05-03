@@ -1,5 +1,4 @@
 // providers/email.provider.ts
-import fetch from "node-fetch";
 
 export interface EmailSendParams {
   to: string;
