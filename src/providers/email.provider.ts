@@ -21,13 +21,6 @@ export const EmailProvider = {
     const id =
       messageId ?? `email_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-    const payload = {
-      to,
-      subject,
-      html,
-      text,
-    };
-
     try {
       // Replace this with your actual provider integration
       console.log("[EMAIL SEND]", { to, subject, id, metadata });
