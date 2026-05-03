@@ -1,6 +1,11 @@
 // providers/sms.provider.ts
+import axios from "axios";
+import { SmsBreaker } from "../lib/circuit-breakers";
 import { normalizePhone } from "../utils/phone";
-import { prisma } from "../config/prisma";
+import { retryWithBackoff } from "../lib/retry";
+import { SmsRetryQueue } from "./queues/sms-retry.queue";
+import { logger } from "../lib/logger";
+import { metrics } from "../lib/metrics";
 
 interface SmsSendInput {
   to: string;
@@ -8,87 +13,68 @@ interface SmsSendInput {
 }
 
 export const SmsProvider = {
-  /**
-   * Send SMS with:
-   * - phone normalization
-   * - validation
-   * - DB logging
-   * - retry logic
-   * - fallback provider
-   */
   async send(input: SmsSendInput) {
     const phone = normalizePhone(input.to);
-
     if (!phone) {
-      console.error("[SMS PROVIDER] Invalid phone:", input.to);
-      return false;
+      logger.warn("SMS send failed: invalid phone", { to: input.to });
+      throw new Error("Invalid phone");
     }
 
-    // Create DB log (QUEUED)
-    const log = await prisma.smsMessage.create({
-      data: {
-        to: phone,
-        text: input.text,
-        provider: "primary",
-        status: "QUEUED",
-      },
-    });
+    // If breaker is OPEN → fallback immediately
+    if (SmsBreaker.getState() === "OPEN") {
+      logger.warn("SMS breaker OPEN — queuing message", { to: phone });
+      metrics.increment("sms.fallback.queued");
+      return SmsRetryQueue.enqueue({ to: phone, text: input.text });
+    }
 
-    try {
-      // Try primary provider
-      await sendViaPrimary(phone, input.text);
+    return SmsBreaker.exec(async () => {
+      const start = Date.now();
 
-      await prisma.smsMessage.update({
-        where: { id: log.id },
-        data: { status: "SENT" },
-      });
-
-      console.log("[SMS PROVIDER] SMS sent →", phone);
-      return true;
-    } catch (err) {
-      console.error("[SMS PROVIDER] Primary failed →", err);
-
-      // Update log
-      await prisma.smsMessage.update({
-        where: { id: log.id },
-        data: { status: "FAILED_PRIMARY" },
-      });
-
-      // Try fallback
       try {
-        await sendViaFallback(phone, input.text);
+        const result = await retryWithBackoff(async () => {
+          const res = await axios.post(
+            "https://sms-provider/api/send",
+            {
+              to: phone,
+              text: input.text,
+            },
+            {
+              timeout: 5000,
+              validateStatus: () => true,
+            }
+          );
 
-        await prisma.smsMessage.update({
-          where: { id: log.id },
-          data: { status: "SENT_FALLBACK", provider: "fallback" },
+          // HTTP error
+          if (res.status >= 400) {
+            throw new Error(
+              `SMS HTTP ${res.status}: ${JSON.stringify(res.data)}`
+            );
+          }
+
+          // Logical error inside 200
+          if (res.data?.error) {
+            throw new Error(
+              `SMS logical error: ${JSON.stringify(res.data.error)}`
+            );
+          }
+
+          return res.data;
         });
 
-        console.log("[SMS PROVIDER] SMS fallback sent →", phone);
-        return true;
-      } catch (fallbackErr) {
-        console.error("[SMS PROVIDER] Fallback failed →", fallbackErr);
+        metrics.observe("sms.latency", Date.now() - start);
+        metrics.increment("sms.success");
 
-        await prisma.smsMessage.update({
-          where: { id: log.id },
-          data: { status: "FAILED" },
+        return result;
+      } catch (err: any) {
+        metrics.increment("sms.failure");
+
+        logger.error("SMS provider failure", {
+          error: err.message,
+          to: phone,
         });
 
-        return false;
+        throw new Error(`SmsProvider failure: ${err.message}`);
       }
-    }
+    });
   },
 };
-
-// ---------------------------------------------------------
-// Provider implementations (stubbed)
-// ---------------------------------------------------------
-
-async function sendViaPrimary(to: string, text: string) {
-  console.log("[SMS PRIMARY] Sending:", { to, text });
-  // await axios.post(...)
-}
-
-async function sendViaFallback(to: string, text: string) {
-  console.log("[SMS FALLBACK] Sending:", { to, text });
-  // await axios.post(...)
-}

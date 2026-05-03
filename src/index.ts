@@ -3,7 +3,8 @@ import path from "path";
 
 console.log("🚀 BullMQ Worker System Starting...");
 
-const workersDir = path.join(__dirname, "workers");
+// Your workers live in the SAME directory as this file
+const workersDir = __dirname;
 const workers: any[] = [];
 
 async function findWorkerFiles(dir: string): Promise<string[]> {
