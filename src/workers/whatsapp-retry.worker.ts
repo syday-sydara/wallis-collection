@@ -2,6 +2,8 @@
 import { Worker, Job } from "bullmq";
 import { redis } from "../lib/queue/connection";
 import { WhatsAppProvider } from "../providers/whatsapp.provider";
+import { SmsProvider } from "../providers/sms.provider";
+import { EmailProvider } from "../providers/email.provider";
 import { logger } from "../lib/logger";
 import { metrics } from "../lib/metrics";
 
@@ -10,34 +12,69 @@ const QUEUE_NAME = "whatsapp.retry";
 export const WhatsAppRetryWorker = new Worker(
   QUEUE_NAME,
   async (job: Job) => {
-    const { to, template, variables } = job.data;
+    const { to, template, variables, text, subject } = job.data;
 
     logger.info("WhatsApp retry worker processing job", {
       jobId: job.id,
       to,
     });
 
+    // ---------------------------------------------------------
+    // Tier 1: WhatsApp
+    // ---------------------------------------------------------
     try {
       await WhatsAppProvider.send({ to, template, variables });
 
       metrics.increment("whatsapp.retry.success");
-
-      logger.info("WhatsApp retry succeeded", {
-        jobId: job.id,
-        to,
-      });
+      logger.info("WhatsApp retry succeeded", { jobId: job.id, to });
 
       return true;
-    } catch (err: any) {
-      metrics.increment("whatsapp.retry.failure");
-
-      logger.error("WhatsApp retry failed", {
+    } catch (waErr: any) {
+      logger.warn("WhatsApp retry failed, falling back to SMS", {
         jobId: job.id,
         to,
-        error: err.message,
+        error: waErr.message,
+      });
+    }
+
+    // ---------------------------------------------------------
+    // Tier 2: SMS fallback
+    // ---------------------------------------------------------
+    try {
+      await SmsProvider.send({ to, text });
+
+      metrics.increment("sms.fallback.success");
+      logger.info("SMS fallback succeeded", { jobId: job.id, to });
+
+      return true;
+    } catch (smsErr: any) {
+      logger.warn("SMS fallback failed, falling back to Email", {
+        jobId: job.id,
+        to,
+        error: smsErr.message,
+      });
+    }
+
+    // ---------------------------------------------------------
+    // Tier 3: Email fallback
+    // ---------------------------------------------------------
+    try {
+      await EmailProvider.send({ to, subject, text });
+
+      metrics.increment("email.fallback.success");
+      logger.info("Email fallback succeeded", { jobId: job.id, to });
+
+      return true;
+    } catch (emailErr: any) {
+      metrics.increment("whatsapp.retry.failure");
+
+      logger.error("All fallback channels failed", {
+        jobId: job.id,
+        to,
+        error: emailErr.message,
       });
 
-      throw err; // BullMQ will retry
+      throw emailErr; // BullMQ will retry again
     }
   },
   { connection: redis }

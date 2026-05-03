@@ -1,4 +1,8 @@
 // providers/email.provider.ts
+import { logger } from "../lib/logger";
+import { metrics } from "../lib/metrics";
+import { EmailBreaker } from "../lib/circuit-breakers";
+import { retryWithBackoff } from "../lib/retry";
 
 export interface EmailSendParams {
   to: string;
@@ -10,51 +14,65 @@ export interface EmailSendParams {
 }
 
 export const EmailProvider = {
-  /**
-   * Send an email via SendGrid / SES / Mailgun / Resend / SMTP
-   * - Timeout protection
-   * - Structured logging
-   * - Provider‑agnostic payload
-   * - Idempotency‑ready messageId
-   */
-  async send({ to, subject, html, text, messageId, metadata }: EmailSendParams) {
+  async send(params: EmailSendParams) {
+    const { to, subject, html, text, messageId, metadata } = params;
+
     const id =
-      messageId ?? `email_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      messageId ??
+      `email_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-    try {
-      // Replace this with your actual provider integration
-      console.log("[EMAIL SEND]", { to, subject, id, metadata });
+    return EmailBreaker.exec(async () => {
+      const start = Date.now();
 
-      // Example provider call (commented out)
-      //
-      // const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      //   method: "POST",
-      //   headers: {
-      //     Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify({
-      //     personalizations: [{ to: [{ email: to }] }],
-      //     from: { email: process.env.EMAIL_FROM },
-      //     subject,
-      //     content: [
-      //       { type: "text/plain", value: text },
-      //       { type: "text/html", value: html },
-      //     ],
-      //   }),
-      //   signal: AbortSignal.timeout(8000), // Nigeria‑first reliability
-      // });
-      //
-      // if (!res.ok) {
-      //   const body = await res.text();
-      //   console.error("[EMAIL ERROR]", res.status, body);
-      //   throw new Error(`Email provider failed: ${res.status}`);
-      // }
+      try {
+        const result = await retryWithBackoff(async () => {
+          // Replace with your actual provider integration
+          logger.info("[EMAIL SEND]", { to, subject, id, metadata });
 
-      return { messageId: id };
-    } catch (err) {
-      console.error("[EMAIL SEND FAILED]", { to, subject, id, err });
-      throw err;
-    }
+          // Example provider call:
+          //
+          // const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+          //   method: "POST",
+          //   headers: {
+          //     Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
+          //     "Content-Type": "application/json",
+          //   },
+          //   body: JSON.stringify({
+          //     personalizations: [{ to: [{ email: to }] }],
+          //     from: { email: process.env.EMAIL_FROM },
+          //     subject,
+          //     content: [
+          //       { type: "text/plain", value: text },
+          //       { type: "text/html", value: html },
+          //     ],
+          //   }),
+          //   signal: AbortSignal.timeout(8000),
+          // });
+          //
+          // if (!res.ok) {
+          //   const body = await res.text();
+          //   throw new Error(`Email provider failed: ${res.status} ${body}`);
+          // }
+
+          return { messageId: id };
+        });
+
+        metrics.increment("email.success");
+        metrics.observe("email.latency", Date.now() - start);
+
+        return result;
+      } catch (err: any) {
+        metrics.increment("email.failure");
+
+        logger.error("[EMAIL SEND FAILED]", {
+          to,
+          subject,
+          id,
+          error: err.message,
+        });
+
+        throw new Error(`EmailProvider failure: ${err.message}`);
+      }
+    });
   },
 };

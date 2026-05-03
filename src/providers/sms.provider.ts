@@ -3,13 +3,14 @@ import axios from "axios";
 import { SmsBreaker } from "../lib/circuit-breakers";
 import { normalizePhone } from "../utils/phone";
 import { retryWithBackoff } from "../lib/retry";
-import { SmsRetryQueue } from "./queues/sms-retry.queue";
+import { SmsRetryQueue } from "../queues/sms-retry.queue";   // <-- FIXED
 import { logger } from "../lib/logger";
 import { metrics } from "../lib/metrics";
 
 interface SmsSendInput {
   to: string;
   text: string;
+  subject?: string; // <-- needed for email fallback
 }
 
 export const SmsProvider = {
@@ -24,7 +25,13 @@ export const SmsProvider = {
     if (SmsBreaker.getState() === "OPEN") {
       logger.warn("SMS breaker OPEN — queuing message", { to: phone });
       metrics.increment("sms.fallback.queued");
-      return SmsRetryQueue.enqueue({ to: phone, text: input.text });
+
+      // IMPORTANT: include subject for email fallback
+      return SmsRetryQueue.enqueue({
+        to: phone,
+        text: input.text,
+        subject: input.subject ?? "Notification",
+      });
     }
 
     return SmsBreaker.exec(async () => {
@@ -44,14 +51,12 @@ export const SmsProvider = {
             }
           );
 
-          // HTTP error
           if (res.status >= 400) {
             throw new Error(
               `SMS HTTP ${res.status}: ${JSON.stringify(res.data)}`
             );
           }
 
-          // Logical error inside 200
           if (res.data?.error) {
             throw new Error(
               `SMS logical error: ${JSON.stringify(res.data.error)}`
