@@ -19,7 +19,7 @@ export const inventoryWorker = new Worker<EventPayloads[EventName]>(
       }
 
       case Events.STOCK_RELEASED: {
-        const { reservationId, reason } = payload;
+        const { reason } = payload;
         // handle released
         break;
       }
