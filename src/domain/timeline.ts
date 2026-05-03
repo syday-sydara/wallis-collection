@@ -1,8 +1,17 @@
 // domain/timeline.ts
 
+export type TimelineEntryType =
+  | "order"
+  | "payment"
+  | "order_status"
+  | "whatsapp_message"
+  | "sms_message"
+  | "stock_reservation"
+  | "audit_log";
+
 export interface TimelineEntry {
   id: string;
-  type: string;               // "order" | "payment" | "whatsapp_message" | ...
+  type: TimelineEntryType;
   timestamp: Date;
 
   // Correlation metadata
@@ -13,9 +22,12 @@ export interface TimelineEntry {
   paymentId?: string;
   reservationId?: string;
 
+  // Optional: where the event originated
+  source?: "system" | "customer" | "agent" | "automation" | "webhook";
+
   // Enriched, frontend‑ready metadata
   title: string;
   description?: string;
-  icon?: string;              // optional UI hint
-  data: Record<string, any>;  // raw + enriched
+  icon?: string;
+  data: Record<string, any>;
 }

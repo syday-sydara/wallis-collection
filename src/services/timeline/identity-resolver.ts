@@ -27,7 +27,7 @@ export class TimelineIdentityResolver {
     }
 
     // ------------------------------------------------------
-    // 2. Resolve via phone
+    // 2. Resolve via phone → customer
     // ------------------------------------------------------
     if (phoneNormalized && !customerId) {
       const customer = await prisma.customer.findUnique({
@@ -40,22 +40,30 @@ export class TimelineIdentityResolver {
     }
 
     // ------------------------------------------------------
-    // 3. Resolve sessionId via phone or customer
+    // 3. Resolve sessionId via phone
     // ------------------------------------------------------
-    if (!sessionId) {
-      if (phoneNormalized) {
-        const session = await prisma.whatsAppSession.findUnique({
-          where: { phoneNormalized },
-        });
-        if (session) sessionId = session.id;
-      }
+    if (!sessionId && phoneNormalized) {
+      const session = await prisma.whatsAppSession.findUnique({
+        where: { phoneNormalized },
+      });
 
-      if (!sessionId && customerId) {
-        const session = await prisma.whatsAppSession.findFirst({
-          where: { customerId },
-          orderBy: { lastInboundAt: "desc" },
-        });
-        if (session) sessionId = session.id;
+      if (session) {
+        sessionId = session.id;
+      }
+    }
+
+    // ------------------------------------------------------
+    // 4. Resolve sessionId via customer
+    // ------------------------------------------------------
+    if (!sessionId && customerId) {
+      const session = await prisma.whatsAppSession.findFirst({
+        where: { customerId },
+        orderBy: { lastInboundAt: "desc" },
+      });
+
+      if (session) {
+        sessionId = session.id;
+        phoneNormalized = phoneNormalized ?? session.phoneNormalized;
       }
     }
 
