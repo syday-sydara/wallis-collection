@@ -1,6 +1,6 @@
 // queues/notification.queue.ts
 import { Queue } from "bullmq";
-import { connection } from "../config/redis";
+import { connection } from "../config/env";
 
 // Shared constant — prevents name drift across producers/workers
 export const NOTIFICATION_QUEUE_NAME = "notification";

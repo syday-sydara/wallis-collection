@@ -1,6 +1,6 @@
 // queues/inventory.reserve.queue.ts
 import { Queue } from "bullmq";
-import { connection } from "../config/redis";
+import { connection } from "../config/env";
 
 // Shared constant — prevents name drift across producers/workers
 export const INVENTORY_RESERVE_QUEUE_NAME = "inventory.reserve";

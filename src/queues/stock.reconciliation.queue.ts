@@ -1,6 +1,6 @@
 // queues/stock.reconciliation.queue.ts
 import { Queue } from "bullmq";
-import { connection } from "../config/redis";
+import { connection } from "../config/env";
 
 // Shared constant — prevents name drift across producers/workers
 export const STOCK_RECONCILIATION_QUEUE_NAME = "stock.reconciliation";

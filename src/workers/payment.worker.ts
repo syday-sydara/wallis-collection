@@ -1,6 +1,6 @@
 // workers/payment.worker.ts
 import { Worker } from "bullmq";
-import { connection } from "../config/redis";
+import { connection } from "../config/env";
 import { Events } from "../events";
 import { PaymentService } from "../services/payment.service";
 

@@ -267,3 +267,17 @@ model SmsMessage {
   status    String   // QUEUED, SENT, FAILED_PRIMARY, SENT_FALLBACK, FAILED
   createdAt DateTime @default(now())
 }
+
+model MessageDeliveryLog {
+  id          String   @id @default(cuid())
+  messageId   String?  // WhatsApp messages have a DB id, SMS/Email may not
+  channel     String   // "whatsapp" | "sms" | "email"
+  status      String   // "SENT" | "FAILED" | "FALLBACK" | "RETRY" | "QUEUED"
+  error       String?  // error message if failed
+  payload     Json?    // raw payload sent to provider
+  metadata    Json?    // extra info (latency, provider response, etc.)
+  createdAt   DateTime @default(now())
+
+  // Optional relation to WhatsAppMessage
+  whatsAppMessage WhatsAppMessage? @relation(fields: [messageId], references: [id])
+}

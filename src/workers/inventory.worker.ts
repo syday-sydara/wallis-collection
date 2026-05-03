@@ -1,7 +1,7 @@
 // workers/inventory.reserve.worker.ts
 import { Worker } from "bullmq";
 import { INVENTORY_RESERVE_QUEUE_NAME } from "../queues/inventory.reserve.queue";
-import { connection } from "../config/redis";
+import { connection } from "../config/env";
 import { InventoryService } from "../services/inventory.service";
 
 export const inventoryReserveWorker = new Worker(

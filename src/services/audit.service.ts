@@ -1,7 +1,7 @@
 // services/audit.service.ts
 import { prisma } from "../lib/prisma/prisma";
 import { ActorType } from "@prisma/client";
-import { redis } from "../config/redis";
+import { redis } from "../config/env";
 import { AuditProducer } from "../producers/audit.producer";
 
 export const AuditService = {

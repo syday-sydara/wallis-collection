@@ -1,6 +1,6 @@
 // workers/notification.worker.ts
 import { Worker } from "bullmq";
-import { connection } from "../config/redis";
+import { connection } from "../config/env";
 import { NOTIFICATION_QUEUE_NAME } from "../queues/notification.queue";
 import type { EventName, EventPayloads } from "../events/payloads";
 import { NotificationService } from "../services/notification.service";

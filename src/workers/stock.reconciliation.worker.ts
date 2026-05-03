@@ -1,7 +1,7 @@
 // workers/stock.reconciliation.worker.ts
 import { Worker } from "bullmq";
 import { STOCK_RECONCILIATION_QUEUE_NAME } from "../queues/stock.reconciliation.queue";
-import { connection } from "../config/redis";
+import { connection } from "../config/env";
 import { prisma } from "../lib/prisma/prisma";
 import { ReservationStatus } from "@prisma/client";
 import { OrderProducer } from "../producers/order.producer";
