@@ -1,5 +1,5 @@
 // producers/audit.producer.ts
-import { auditQueue } from "../queues/audit.queue";
+import { auditQueue } from "../queues/domain/audit.queue";
 import { Events } from "../events";
 import type { EventName, EventPayloads } from "../events/payloads";
 

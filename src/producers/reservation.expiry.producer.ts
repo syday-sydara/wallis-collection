@@ -2,7 +2,7 @@
 import {
   reservationExpiryQueue,
   RESERVATION_EXPIRY_QUEUE_NAME,
-} from "../queues/reservation.expiry.queue";
+} from "../queues/domain/reservation.expiry.queue";
 
 /**
  * ReservationExpiryProducer

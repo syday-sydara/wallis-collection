@@ -1,6 +1,6 @@
 // workers/order.worker.ts
 import { Worker } from "bullmq";
-import { ORDER_QUEUE_NAME } from "../queues/order.queue";
+import { ORDER_QUEUE_NAME } from "../queues/domain/order.queue";
 import { connection } from "../config/env";
 import { Events } from "../events";
 import type { EventPayloads, EventName } from "../events/payloads";

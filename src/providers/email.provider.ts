@@ -3,6 +3,7 @@ import { logger } from "../lib/logger";
 import { metrics } from "../lib/metrics";
 import { EmailBreaker } from "../lib/circuit-breakers";
 import { retryWithBackoff } from "../lib/retry";
+import { DeliveryLog } from "../lib/delivery-log";
 
 export interface EmailSendParams {
   to: string;
@@ -26,39 +27,24 @@ export const EmailProvider = {
 
       try {
         const result = await retryWithBackoff(async () => {
-          // Replace with your actual provider integration
           logger.info("[EMAIL SEND]", { to, subject, id, metadata });
 
-          // Example provider call:
-          //
-          // const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
-          //   method: "POST",
-          //   headers: {
-          //     Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
-          //     "Content-Type": "application/json",
-          //   },
-          //   body: JSON.stringify({
-          //     personalizations: [{ to: [{ email: to }] }],
-          //     from: { email: process.env.EMAIL_FROM },
-          //     subject,
-          //     content: [
-          //       { type: "text/plain", value: text },
-          //       { type: "text/html", value: html },
-          //     ],
-          //   }),
-          //   signal: AbortSignal.timeout(8000),
-          // });
-          //
-          // if (!res.ok) {
-          //   const body = await res.text();
-          //   throw new Error(`Email provider failed: ${res.status} ${body}`);
-          // }
-
+          // TODO: Replace with actual provider integration
           return { messageId: id };
         });
 
         metrics.increment("email.success");
         metrics.observe("email.latency", Date.now() - start);
+
+        // -------------------------------
+        // AUDIT LOG: SENT
+        // -------------------------------
+        await DeliveryLog.write({
+          channel: "email",
+          status: "SENT",
+          messageId: id,
+          payload: { to, subject, metadata },
+        });
 
         return result;
       } catch (err: any) {
@@ -69,6 +55,17 @@ export const EmailProvider = {
           subject,
           id,
           error: err.message,
+        });
+
+        // -------------------------------
+        // AUDIT LOG: FAILED
+        // -------------------------------
+        await DeliveryLog.write({
+          channel: "email",
+          status: "FAILED",
+          messageId: id,
+          error: err.message,
+          payload: { to, subject, metadata },
         });
 
         throw new Error(`EmailProvider failure: ${err.message}`);

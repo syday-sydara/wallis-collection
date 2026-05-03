@@ -1,5 +1,5 @@
 // producers/notification.producer.ts
-import { notificationQueue } from "../queues/notification.queue";
+import { notificationQueue } from "../queues/messaging/notification.queue";
 import { Events } from "../events";
 import type { EventName, EventPayloads } from "../events/payloads";
 

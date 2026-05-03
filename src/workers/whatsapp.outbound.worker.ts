@@ -1,6 +1,6 @@
 // workers/whatsapp.outbound.worker.ts
 import { Worker } from "bullmq";
-import { WHATSAPP_OUTBOUND_QUEUE_NAME } from "../queues/whatsapp.outbound.queue";
+import { WHATSAPP_OUTBOUND_QUEUE_NAME } from "../queues/messaging/whatsapp.outbound.queue";
 import { connection, redis } from "../config/env";
 import { prisma } from "../config/prisma";
 

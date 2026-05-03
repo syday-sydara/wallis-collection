@@ -1,5 +1,5 @@
 // producers/order.producer.ts
-import { orderQueue } from "../queues/order.queue";
+import { orderQueue } from "../queues/domain/order.queue";
 import { Events } from "../events/events";
 import type { Actor, EventName, EventPayloads } from "../events/payloads";
 

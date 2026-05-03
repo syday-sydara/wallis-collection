@@ -1,6 +1,6 @@
 // queues/whatsapp.outbound.queue.ts
 import { Queue } from "bullmq";
-import { connection } from "../config/env";
+import { connection } from "../../config/env";
 
 export const WHATSAPP_OUTBOUND_QUEUE_NAME = "whatsapp.outbound";
 

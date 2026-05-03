@@ -1,10 +1,11 @@
 // providers/whatsapp.provider.ts
 import axios from "axios";
 import { WhatsAppBreaker } from "../lib/circuit-breakers";
-import { WhatsAppRetryQueue } from "../queues/whatsapp-retry.queue";   // FIXED
-import { retryWithBackoff } from "../lib/retry";                       // FIXED
+import { WhatsAppRetryQueue } from "../queues/messaging/whatsapp-retry.queue";
+import { retryWithBackoff } from "../lib/retry";
 import { logger } from "../lib/logger";
 import { metrics } from "../lib/metrics";
+import { DeliveryLog } from "../lib/delivery-log";
 
 interface WhatsAppSendInput {
   to: string;
@@ -16,12 +17,20 @@ interface WhatsAppSendInput {
 
 export const WhatsAppProvider = {
   async send(input: WhatsAppSendInput) {
-    // If breaker is OPEN → fallback immediately
+    // ---------------------------------------------------------
+    // Breaker OPEN → queue immediately
+    // ---------------------------------------------------------
     if (WhatsAppBreaker.getState() === "OPEN") {
       logger.warn("WhatsApp breaker OPEN — queuing message", { to: input.to });
       metrics.increment("whatsapp.fallback.queued");
 
-      // IMPORTANT: include fallback fields
+      await DeliveryLog.write({
+        channel: "whatsapp",
+        status: "QUEUED",
+        payload: input,
+        metadata: { reason: "breaker-open" },
+      });
+
       return WhatsAppRetryQueue.enqueue({
         to: input.to,
         template: input.template,
@@ -31,6 +40,9 @@ export const WhatsAppProvider = {
       });
     }
 
+    // ---------------------------------------------------------
+    // Normal execution path
+    // ---------------------------------------------------------
     return WhatsAppBreaker.exec(async () => {
       const start = Date.now();
 
@@ -67,6 +79,14 @@ export const WhatsAppProvider = {
         metrics.observe("whatsapp.latency", Date.now() - start);
         metrics.increment("whatsapp.success");
 
+        // AUDIT LOG: SENT
+        await DeliveryLog.write({
+          channel: "whatsapp",
+          status: "SENT",
+          payload: input,
+          metadata: { providerResponse: result },
+        });
+
         return result;
       } catch (err: any) {
         metrics.increment("whatsapp.failure");
@@ -74,6 +94,14 @@ export const WhatsAppProvider = {
         logger.error("WhatsApp provider failure", {
           error: err.message,
           to: input.to,
+        });
+
+        // AUDIT LOG: FAILED
+        await DeliveryLog.write({
+          channel: "whatsapp",
+          status: "FAILED",
+          error: err.message,
+          payload: input,
         });
 
         throw new Error(`WhatsAppProvider failure: ${err.message}`);

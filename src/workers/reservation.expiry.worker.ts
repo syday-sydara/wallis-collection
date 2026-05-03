@@ -1,6 +1,6 @@
 // workers/reservation.expiry.worker.ts
 import { Worker } from "bullmq";
-import { RESERVATION_EXPIRY_QUEUE_NAME } from "../queues/reservation.expiry.queue";
+import { RESERVATION_EXPIRY_QUEUE_NAME } from "../queues/domain/reservation.expiry.queue";
 import { connection } from "../config/env";
 import { prisma } from "../lib/prisma/prisma";
 import { ReservationStatus } from "@prisma/client";

@@ -1,5 +1,5 @@
 // producers/payment.producer.ts
-import { paymentQueue } from "../queues/payment.queue";
+import { paymentQueue } from "../queues/domain/payment.queue";
 import { Events } from "../events";
 import type { EventName, EventPayloads } from "../events/payloads";
 

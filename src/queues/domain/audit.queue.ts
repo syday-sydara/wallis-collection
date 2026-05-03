@@ -1,6 +1,6 @@
 // queues/audit.queue.ts
 import { Queue } from "bullmq";
-import { connection } from "../config/env";
+import { connection } from "../../config/env";
 
 // Shared constant — prevents name drift across producers/workers
 export const AUDIT_QUEUE_NAME = "audit";

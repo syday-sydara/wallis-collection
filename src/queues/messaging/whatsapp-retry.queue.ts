@@ -1,5 +1,5 @@
 // queues/whatsapp-retry.queue.ts
-import { queue } from "../lib/queue";
+import { queue } from "../../lib/queue";
 
 export const WhatsAppRetryQueue = {
   enqueue(input) {

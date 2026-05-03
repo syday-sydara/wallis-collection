@@ -5,6 +5,8 @@ import { SmsProvider } from "../providers/sms.provider";
 import { EmailProvider } from "../providers/email.provider";
 import { logger } from "../lib/logger";
 import { metrics } from "../lib/metrics";
+import { DeliveryLog } from "../lib/delivery-log";
+import { SmsDLQ } from "../queues/messaging/sms.dlq.queue";   // <-- NEW
 
 const QUEUE_NAME = "sms.retry";
 
@@ -19,14 +21,21 @@ export const SmsRetryWorker = new Worker(
     });
 
     // ---------------------------------------------------------
-    // Tier 1: SMS
+    // Tier 1: SMS retry
     // ---------------------------------------------------------
     try {
-      await SmsProvider.send({ to, text });
+      await SmsProvider.send({ to, text, subject });
 
       metrics.increment("sms.retry.success");
-      logger.info("SMS retry succeeded", { jobId: job.id, to });
 
+      await DeliveryLog.write({
+        channel: "sms",
+        status: "RETRY",
+        payload: job.data,
+        metadata: { attempt: job.attemptsMade },
+      });
+
+      logger.info("SMS retry succeeded", { jobId: job.id, to });
       return true;
     } catch (smsErr: any) {
       logger.warn("SMS retry failed, falling back to Email", {
@@ -34,17 +43,37 @@ export const SmsRetryWorker = new Worker(
         to,
         smsError: smsErr.message,
       });
+
+      await DeliveryLog.write({
+        channel: "sms",
+        status: "FALLBACK",
+        error: smsErr.message,
+        payload: job.data,
+        metadata: { fallbackTo: "email" },
+      });
     }
 
     // ---------------------------------------------------------
     // Tier 2: Email fallback
     // ---------------------------------------------------------
     try {
-      await EmailProvider.send({ to, subject, text });
+      await EmailProvider.send({
+        to,
+        subject,
+        text,
+        html: `<p>${text}</p>`,
+      });
 
       metrics.increment("email.fallback.success");
-      logger.info("Email fallback succeeded", { jobId: job.id, to });
 
+      await DeliveryLog.write({
+        channel: "email",
+        status: "SENT",
+        payload: job.data,
+        metadata: { via: "sms-fallback" },
+      });
+
+      logger.info("Email fallback succeeded", { jobId: job.id, to });
       return true;
     } catch (emailErr: any) {
       metrics.increment("sms.retry.failure");
@@ -53,6 +82,13 @@ export const SmsRetryWorker = new Worker(
         jobId: job.id,
         to,
         error: emailErr.message,
+      });
+
+      await DeliveryLog.write({
+        channel: "email",
+        status: "FAILED",
+        error: emailErr.message,
+        payload: job.data,
       });
 
       // Emit exhausted event
@@ -67,12 +103,18 @@ export const SmsRetryWorker = new Worker(
         })
       );
 
-      throw emailErr; // BullMQ will retry again
+      // Push to DLQ
+      await SmsDLQ.add("dead-letter", job.data);
+
+      throw emailErr; // BullMQ will retry again if attempts remain
     }
   },
   { connection: redis }
 );
 
+// ---------------------------------------------------------
+// Worker lifecycle events
+// ---------------------------------------------------------
 SmsRetryWorker.on("completed", (job) => {
   logger.info("SMS retry job completed", { jobId: job.id });
 });

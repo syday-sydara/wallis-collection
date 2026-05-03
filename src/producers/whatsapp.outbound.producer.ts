@@ -2,7 +2,7 @@
 import {
   whatsappOutboundQueue,
   WHATSAPP_OUTBOUND_QUEUE_NAME,
-} from "../queues/whatsapp.outbound.queue";
+} from "../queues/messaging/whatsapp.outbound.queue";
 
 export const WhatsAppOutboundProducer = {
   async send(template: string, to: string, variables: any) {

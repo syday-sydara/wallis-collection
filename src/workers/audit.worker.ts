@@ -1,6 +1,6 @@
 // workers/audit.worker.ts
 import { Worker } from "bullmq";
-import { AUDIT_QUEUE_NAME } from "../queues/audit.queue";
+import { AUDIT_QUEUE_NAME } from "../queues/domain/audit.queue";
 import { connection } from "../config/env";
 import { prisma } from "../config/prisma";
 import { Events } from "../events";

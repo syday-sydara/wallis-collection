@@ -2,7 +2,7 @@
 import {
   stockReconciliationQueue,
   STOCK_RECONCILIATION_QUEUE_NAME,
-} from "../queues/stock.reconciliation.queue";
+} from "../queues/domain/stock.reconciliation.queue";
 
 /**
  * StockReconciliationProducer

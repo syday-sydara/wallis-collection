@@ -1,9 +1,9 @@
 // workers/inventory.worker.ts
 import { Worker } from "bullmq";
-import { inventoryQueue } from "../queues/inventory.queue";
-import { connection } from "../config/env";
-import type { EventPayloads, EventName } from "../events/payloads";
-import { Events } from "../events"; // ← FIXED
+import { inventoryQueue } from "./inventory.queue";
+import { connection } from "../../config/env";
+import type { EventPayloads, EventName } from "../../events/payloads";
+import { Events } from "../../events"; // ← FIXED
 
 export const inventoryWorker = new Worker<EventPayloads[EventName]>(
   inventoryQueue.name,
