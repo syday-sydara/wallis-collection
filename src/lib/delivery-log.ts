@@ -1,4 +1,5 @@
-import { prisma } from "../lib/prisma";
+// lib/delivery-log.ts
+import { prisma } from "./prisma";
 
 export type DeliveryStatus =
   | "SENT"
