@@ -11,6 +11,11 @@ export const Audit = {
         ...input,
         traceId: ctx.traceId,
         requestId: ctx.requestId,
+        spanId: ctx.spanId,
+        sessionId: ctx.sessionId,
+        orderId: ctx.orderId,
+        customerId: ctx.customerId,
+        workflowId: ctx.workflowId,
       },
     });
   },

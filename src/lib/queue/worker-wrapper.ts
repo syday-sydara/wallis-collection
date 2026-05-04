@@ -3,11 +3,39 @@ import { Correlation } from "../correlation";
 
 export function withCorrelation(handler) {
   return async (job) => {
-    const ctx = {
-      traceId: job.data.traceId ?? job.id,
-      spanId: job.id,
-    };
+    const ctxFromJob = extractCorrelation(job.data);
 
-    return Correlation.run(ctx, () => handler(job));
+    // Create a new span for this specific worker execution
+    return Correlation.run(ctxFromJob, () =>
+      Correlation.withSpan(async () => {
+        return handler(job);
+      })
+    );
+  };
+}
+
+function extractCorrelation(data: any) {
+  if (!data) return Correlation.get();
+
+  const {
+    traceId,
+    requestId,
+    spanId,
+    sessionId,
+    orderId,
+    customerId,
+    workflowId,
+    ...rest
+  } = data;
+
+  return {
+    ...Correlation.get(),
+    traceId,
+    requestId,
+    spanId,
+    sessionId,
+    orderId,
+    customerId,
+    workflowId,
   };
 }

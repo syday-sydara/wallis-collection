@@ -1,5 +1,6 @@
 // lib/delivery-log.ts
 import { prisma } from "./prisma";
+import { Correlation } from "./correlation";
 
 export type DeliveryStatus =
   | "SENT"
@@ -37,30 +38,41 @@ interface LogInput {
 
 export const DeliveryLog = {
   async write(input: LogInput) {
+    const ctx = Correlation.get();
+
     try {
       return await prisma.messageDeliveryLog.create({
         data: {
           channel: input.channel,
           status: input.status,
 
-          orderId: input.orderId ?? null,
-          sessionId: input.sessionId ?? null,
-          customerId: input.customerId ?? null,
+          // Correlation context
+          traceId: ctx.traceId,
+          requestId: ctx.requestId,
+          spanId: ctx.spanId,
+          sessionId: input.sessionId ?? ctx.sessionId ?? null,
+          orderId: input.orderId ?? ctx.orderId ?? null,
+          customerId: input.customerId ?? ctx.customerId ?? null,
+
+          // Additional correlation metadata
           phoneNormalized: input.phoneNormalized ?? null,
           eventName: input.eventName ?? null,
 
+          // Provider metadata
           messageId: input.messageId ?? null,
           providerMessageId: input.providerMessageId ?? null,
 
+          // Error metadata
           error: input.error ?? null,
+
+          // Raw payload + metadata
           payload: input.payload ?? null,
           metadata: input.metadata ?? null,
         },
       });
     } catch (err) {
       console.error("[DeliveryLog] Failed to write log", err);
-      // Never throw — logging must not break the pipeline
-      return null;
+      return null; // logging must never break the pipeline
     }
   },
 };
