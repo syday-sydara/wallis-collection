@@ -1,9 +1,9 @@
 import * as React from "react";
 import { cn } from "@/lib/cn";
 
-export interface NavbarProps extends React.HTMLAttributes<HTMLDivElement> {}
+export interface AdminSidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-export function Navbar({ className, children, ...props }: NavbarProps) {
+export function AdminSidebar({ className, children, ...props }: AdminSidebarProps) {
   return (
     <div
       className={cn(
@@ -13,7 +13,7 @@ export function Navbar({ className, children, ...props }: NavbarProps) {
       {...props}
     >
       {children ?? (
-        <span className="text-text-muted">Navbar</span>
+        <span className="text-text-muted">AdminSidebar</span>
       )}
     </div>
   );
