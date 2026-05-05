@@ -13,7 +13,8 @@ export async function mountQueueDashboard(app: express.Express) {
   const serverAdapter = new ExpressAdapter();
   serverAdapter.setBasePath("/admin/queues");
 
-  const queues = ALL_QUEUES.map(
+  const queueNames = Array.isArray(ALL_QUEUES) ? ALL_QUEUES : [];
+  const queues = queueNames.map(
     (name) => new Queue(name, { connection: redis })
   );
 
