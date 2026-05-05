@@ -11,6 +11,67 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ------------------------------------------------------
+// ENUMS (KEEP ONLY THESE)
+// ------------------------------------------------------
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum ShipmentStatus {
+  PENDING
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  FAILED
+}
+
+enum WhatsAppOrderStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  CANCELLED
+}
+
+enum ActorType {
+  USER
+  ADMIN
+  SYSTEM
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CONSUMED
+  RELEASED
+}
+
+enum PaymentProvider {
+  BANK_TRANSFER
+  CASH_ON_DELIVERY
+}
+
+enum PaymentStatus {
+  PENDING
+  AWAITING_CONFIRMATION
+  SUCCESS
+  FAILED
+}
+
+enum WhatsAppPaymentMethod {
+  BANK_TRANSFER
+  CASH_ON_DELIVERY
+}
+
+enum DeliveryMethod {
+  DELIVERY
+  PICKUP
+}
+
 // =====================================
 // USER
 // =====================================
@@ -22,9 +83,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orders    Order[]
-  auditLogs AuditLog[] @relation("AuditLogUser")
+  orders          Order[]
+  auditLogs       AuditLog[] @relation("AuditLogUser")
+  whatsappOrders  WhatsAppOrder[]   // ← added
 }
+
 
 // ------------------------------------------------------
 // PRODUCT CATALOG
@@ -55,9 +118,12 @@ model ProductVariant {
 
   product      Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
   reservations StockReservation[]
+  orderItems   OrderItem[]        // ← added
+  whatsappOrderItems WhatsAppOrderItem[] // ← added
 
   @@index([productId])
 }
+
 
 // ------------------------------------------------------
 // RESERVATION-DRIVEN INVENTORY
@@ -80,12 +146,6 @@ model StockReservation {
   @@index([orderId])
 }
 
-enum ReservationStatus {
-  ACTIVE
-  CONSUMED
-  RELEASED
-}
-
 // =====================================
 // ORDER SYSTEM
 // =====================================
@@ -98,7 +158,6 @@ model Order {
 
   phoneNumber String
 
-  // Address (Nigeria-friendly)
   addressLine1 String
   addressLine2 String?
   city         String?
@@ -107,7 +166,6 @@ model Order {
   landmark     String?
   deliveryNote String?
 
-  // Financials
   subtotal     Int
   deliveryFee  Int @default(0)
   discount     Int @default(0)
@@ -115,7 +173,6 @@ model Order {
 
   currency     String @default("NGN")
 
-  // Payment summary (important)
   paymentMethod PaymentProvider
   paymentStatus PaymentStatus @default(PENDING)
 
@@ -124,6 +181,10 @@ model Order {
   items       OrderItem[]
   payments    Payment[]
   shipment    Shipment?
+
+  stockReservations StockReservation[]   // ← added
+  statusHistory     OrderStatusHistory[] // ← added
+  whatsappFinalOrders WhatsAppOrder[]    // ← added
 
   ipAddress String?
   userAgent String?
@@ -136,6 +197,7 @@ model Order {
   @@index([paymentStatus, createdAt])
 }
 
+
 model OrderStatusHistory {
   id        String      @id @default(cuid())
   orderId   String
@@ -146,6 +208,17 @@ model OrderStatusHistory {
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  variantId String
+  quantity  Int
+  price     Int
+
+  order   Order          @relation(fields: [orderId], references: [id])
+  variant ProductVariant @relation(fields: [variantId], references: [id])
 }
 
 // ------------------------------------------------------
@@ -166,12 +239,10 @@ model Payment {
 
   reference String?         @unique
 
-  // Bank transfer fields
   paidByName String?
   paidAt     DateTime?
   proofUrl   String?
 
-  // Admin verification
   verifiedBy String?
   verifiedAt DateTime?
 
@@ -180,18 +251,6 @@ model Payment {
   createdAt  DateTime       @default(now())
 
   @@index([status, createdAt])
-}
-
-enum PaymentProvider {
-  BANK_TRANSFER
-  CASH_ON_DELIVERY
-}
-
-enum PaymentStatus {
-  PENDING
-  AWAITING_CONFIRMATION
-  SUCCESS
-  FAILED
 }
 
 // =====================================
@@ -214,14 +273,6 @@ model Shipment {
   createdAt DateTime @default(now())
 }
 
-enum ShipmentStatus {
-  PENDING
-  SHIPPED
-  IN_TRANSIT
-  DELIVERED
-  FAILED
-}
-
 // ------------------------------------------------------
 // WHATSAPP SESSION + MESSAGES
 // ------------------------------------------------------
@@ -236,7 +287,6 @@ model WhatsAppOrder {
 
   status      WhatsAppOrderStatus @default(PENDING)
 
-  // Address
   addressLine1 String?
   addressLine2 String?
   city         String?
@@ -277,23 +327,6 @@ model WhatsAppOrderItem {
   createdAt       DateTime      @default(now())
 }
 
-enum WhatsAppOrderStatus {
-  PENDING
-  CONFIRMED
-  PAID
-  CANCELLED
-}
-
-enum WhatsAppPaymentMethod {
-  BANK_TRANSFER
-  CASH_ON_DELIVERY
-}
-
-enum DeliveryMethod {
-  DELIVERY
-  PICKUP
-}
-
 // ------------------------------------------------------
 // AUDIT LOG
 // ------------------------------------------------------
@@ -302,7 +335,7 @@ model AuditLog {
   id        String   @id @default(cuid())
 
   userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
+  user      User?    @relation("AuditLogUser", fields: [userId], references: [id], onDelete: SetNull)
 
   actorType ActorType
 
@@ -315,20 +348,6 @@ model AuditLog {
   userAgent  String?
   createdAt  DateTime  @default(now())
 
-  user User? @relation("AuditLogUser", fields: [userId], references: [id], onDelete: SetNull)
-
   @@index([entityType, entityId])
   @@index([createdAt])
-}
-
-enum ActorType {
-  USER
-  ADMIN
-  SYSTEM
-}
-
-model OrderStatusHistory {
-  id        String   @id @default(cuid())
-  to        String
-  createdAt DateTime @default(now())
 }
