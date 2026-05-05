@@ -6,11 +6,12 @@ import {
   ActorType,
   WhatsAppMessageStatus,
 } from "@prisma/client";
+import { randomInt } from "crypto";
 
 const prisma = new PrismaClient();
 
 function rand(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  return randomInt(min, max + 1);
 }
 
 function pick<T>(arr: T[]): T {
