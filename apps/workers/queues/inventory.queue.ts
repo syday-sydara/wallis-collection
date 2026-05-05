@@ -1,6 +1,6 @@
 // workers/inventory.worker.ts
 import { Worker } from "bullmq";
-import { inventoryQueue } from "../queues/inventory.queue";
+import { inventoryQueue } from "./inventory.queue";
 import { connection } from "../config/redis";
 import type { EventPayloads, EventName } from "../events/payloads";
 import { Events } from "../events"; // ← FIXED
