@@ -1,237 +1,239 @@
-import {
-  PrismaClient,
-  ReservationStatus,
-  OrderStatus,
-  PaymentStatus,
-  ActorType,
-  WhatsAppMessageStatus,
-} from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+import { faker } from "@faker-js/faker";
 
 const prisma = new PrismaClient();
 
-function rand(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+// Helpers
+function slugify(str: string) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
-function pick<T>(arr: T[]): T {
-  return arr[rand(0, arr.length - 1)];
+function randomPrice(min = 8000, max = 150000) {
+  return Math.floor(Math.random() * (max - min) + min);
+}
+
+function randomStock() {
+  return Math.floor(Math.random() * 50) + 5;
 }
 
 async function main() {
-  console.log("🌱 Seeding full test dataset...");
+  console.log("🌱 Seeding full system...");
 
   // ------------------------------------------------------
-  // USERS
+  // ADMIN USER
   // ------------------------------------------------------
-  const users = await prisma.$transaction(
-    Array.from({ length: 10 }).map((_, i) =>
-      prisma.user.create({
+  const admin = await prisma.user.create({
+    data: {
+      email: "admin@example.com",
+      name: "Admin User",
+    },
+  });
+
+  // ------------------------------------------------------
+  // PRODUCT CATALOG (24 products, 100+ variants)
+  // ------------------------------------------------------
+  const categories = [
+    "Ankara",
+    "Super Wax",
+    "Hollandais",
+    "Abaya",
+    "Kaftan",
+    "Lace",
+    "Swiss Voile",
+    "Adire",
+    "Atiku",
+    "George Wrapper",
+    "Chiffon",
+    "Silk",
+  ];
+
+  const colors = [
+    "Red",
+    "Blue",
+    "Green",
+    "Yellow",
+    "Purple",
+    "Black",
+    "White",
+    "Gold",
+    "Brown",
+    "Orange",
+  ];
+
+  const lengths = ["2 yards", "4 yards", "6 yards", "Full Set"];
+
+  const products: any[] = [];
+
+  for (let i = 0; i < 24; i++) {
+    const category = faker.helpers.arrayElement(categories);
+    const name = `${category} Fabric – ${faker.commerce.productAdjective()}`;
+    const slug = slugify(name + "-" + faker.string.alphanumeric(6));
+
+    const product = await prisma.product.create({
+      data: {
+        name,
+        slug,
+        description: faker.commerce.productDescription(),
+      },
+    });
+
+    const variantCount = Math.floor(Math.random() * 4) + 3;
+
+    for (let v = 0; v < variantCount; v++) {
+      const color = faker.helpers.arrayElement(colors);
+      const length = faker.helpers.arrayElement(lengths);
+
+      await prisma.productVariant.create({
         data: {
-          email: `user${i}@example.com`,
-          name: `User ${i}`,
-        },
-      })
-    )
-  );
-
-  // ------------------------------------------------------
-  // CUSTOMERS
-  // ------------------------------------------------------
-  const customers = await prisma.$transaction(
-    Array.from({ length: 100 }).map((_, i) =>
-      prisma.customer.create({
-        data: {
-          name: `Customer ${i}`,
-          email: `customer${i}@example.com`,
-          phone: `23480${rand(10000000, 99999999)}`,
-        },
-      })
-    )
-  );
-
-  // ------------------------------------------------------
-  // PRODUCTS + VARIANTS
-  // ------------------------------------------------------
-  const products = await prisma.$transaction(
-    Array.from({ length: 100 }).map((_, i) =>
-      prisma.product.create({
-        data: {
-          name: `Product ${i}`,
-          slug: `product-${i}`,
-          description: `Description for product ${i}`,
-          variants: {
-            create: Array.from({ length: 3 }).map((__, j) => ({
-              sku: `SKU-${i}-${j}`,
-              name: `Variant ${j}`,
-              price: rand(50000, 200000),
-              currency: "NGN",
-              stockQty: rand(10, 100),
-            })),
-          },
-        },
-        include: { variants: true },
-      })
-    )
-  );
-
-  const allVariants = products.flatMap((p) => p.variants);
-
-  // ------------------------------------------------------
-  // WHATSAPP SESSIONS + MESSAGES
-  // ------------------------------------------------------
-  const sessions = await prisma.$transaction(
-    customers.map((c) =>
-      prisma.whatsAppSession.create({
-        data: {
-          phone: c.phone!,
-          phoneNormalized: c.phone!,
-          customerId: c.id,
-          lastMessageAt: new Date(),
-        },
-      })
-    )
-  );
-
-  await prisma.$transaction(
-    Array.from({ length: 300 }).map(() => {
-      const session = pick(sessions);
-      return prisma.whatsAppMessage.create({
-        data: {
-          sessionId: session.id,
-          direction: pick(["INBOUND", "OUTBOUND"]),
-          body: "Test message",
-          status: pick([
-            WhatsAppMessageStatus.QUEUED,
-            WhatsAppMessageStatus.SENT,
-            WhatsAppMessageStatus.DELIVERED,
-          ]),
-        },
-      });
-    })
-  );
-
-  // ------------------------------------------------------
-  // RESERVATIONS
-  // ------------------------------------------------------
-  const reservations = await prisma.$transaction(
-    Array.from({ length: 300 }).map(() => {
-      const variant = pick(allVariants);
-      return prisma.stockReservation.create({
-        data: {
-          variantId: variant.id,
-          quantity: rand(1, 3),
-          status: ReservationStatus.ACTIVE,
-          expiresAt: new Date(Date.now() + rand(5, 30) * 60 * 1000),
-        },
-      });
-    })
-  );
-
-  // ------------------------------------------------------
-  // ORDERS + ITEMS + STATUS HISTORY
-  // ------------------------------------------------------
-  const orders = await prisma.$transaction(
-    Array.from({ length: 100 }).map((_, i) => {
-      const customer = pick(customers);
-      const session = pick(sessions);
-
-      return prisma.order.create({
-        data: {
-          customerId: customer.id,
-          status: pick([
-            OrderStatus.PENDING,
-            OrderStatus.AWAITING_PAYMENT,
-            OrderStatus.PAID,
-          ]),
+          productId: product.id,
+          sku: `SKU-${faker.string.alphanumeric(8).toUpperCase()}`,
+          name: `${color} – ${length}`,
+          price: randomPrice(),
           currency: "NGN",
-          phone: customer.phone!,
-          phoneNormalized: customer.phone!,
-          whatsAppSessionId: session.id,
-          totalAmount: 0,
-
-          statusHistory: {
-            create: {
-              status: OrderStatus.PENDING,
-              reason: "Order created in test dataset",
-            },
-          },
+          stockQty: randomStock(),
+          isActive: true,
         },
       });
-    })
-  );
+    }
 
-  // ------------------------------------------------------
-  // ORDER ITEMS + TOTAL AMOUNT FIX
-  // ------------------------------------------------------
-  for (const order of orders) {
-    const variant = pick(allVariants);
-    const qty = rand(1, 3);
-
-    await prisma.orderItem.create({
-      data: {
-        orderId: order.id,
-        variantId: variant.id,
-        quantity: qty,
-        unitPrice: variant.price,
-        currency: "NGN",
-      },
-    });
-
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        totalAmount: qty * variant.price,
-      },
-    });
+    products.push(product);
   }
 
-  // ------------------------------------------------------
-  // PAYMENTS
-  // ------------------------------------------------------
-  await prisma.$transaction(
-    orders.map((order) =>
-      prisma.payment.create({
-        data: {
-          orderId: order.id,
-          method: "bank_transfer",
-          status: pick([
-            PaymentStatus.PENDING,
-            PaymentStatus.TRANSFER_SENT,
-            PaymentStatus.VERIFIED,
-          ]),
-          amount: order.totalAmount,
-          currency: "NGN",
-        },
-      })
-    )
-  );
+  console.log("✔ Products + Variants seeded");
 
   // ------------------------------------------------------
-  // AUDIT LOGS
+  // PICK RANDOM VARIANT FOR ORDER FLOW
   // ------------------------------------------------------
-  await prisma.$transaction(
-    orders.map((order) =>
-      prisma.auditLog.create({
-        data: {
-          userId: pick(users).id,
-          actorType: ActorType.USER,
-          action: "ORDER_CREATED",
-          entityType: "Order",
-          entityId: order.id,
-          metadata: { seed: true },
-          ipAddress: "127.0.0.1",
-          userAgent: "seed-script",
-        },
-      })
-    )
-  );
+  const randomVariant = await prisma.productVariant.findFirst();
+  if (!randomVariant) throw new Error("No variants found");
 
-  console.log("🌱 Full test dataset seeded successfully!");
+  // ------------------------------------------------------
+  // RESERVATION
+  // ------------------------------------------------------
+  const reservation = await prisma.stockReservation.create({
+    data: {
+      variantId: randomVariant.id,
+      quantity: 1,
+      status: "ACTIVE",
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+    },
+  });
+
+  console.log("✔ Reservation created");
+
+  // ------------------------------------------------------
+  // ORDER
+  // ------------------------------------------------------
+  const order = await prisma.order.create({
+    data: {
+      phoneNumber: "+2348012345678",
+      addressLine1: "12 Adeola Odeku Street",
+      city: "Victoria Island",
+      state: "Lagos",
+      lga: "Eti-Osa",
+      subtotal: randomVariant.price,
+      deliveryFee: 2000,
+      discount: 0,
+      totalAmount: randomVariant.price + 2000,
+      paymentMethod: "BANK_TRANSFER",
+      paymentStatus: "PENDING",
+      status: "PENDING",
+      currency: "NGN",
+
+      items: {
+        create: [
+          {
+            variantId: randomVariant.id,
+            quantity: 1,
+            price: randomVariant.price,
+          },
+        ],
+      },
+
+      stockReservations: {
+        connect: { id: reservation.id },
+      },
+    },
+  });
+
+  console.log("✔ Order created");
+
+  // ------------------------------------------------------
+  // PAYMENT
+  // ------------------------------------------------------
+  await prisma.payment.create({
+    data: {
+      orderId: order.id,
+      provider: "BANK_TRANSFER",
+      amount: order.totalAmount,
+      currency: "NGN",
+      status: "PENDING",
+    },
+  });
+
+  console.log("✔ Payment created");
+
+  // ------------------------------------------------------
+  // SHIPMENT
+  // ------------------------------------------------------
+  await prisma.shipment.create({
+    data: {
+      orderId: order.id,
+      provider: "GIG Logistics",
+      trackingNumber: faker.string.alphanumeric(12).toUpperCase(),
+      status: "PENDING",
+    },
+  });
+
+  console.log("✔ Shipment created");
+
+  // ------------------------------------------------------
+  // WHATSAPP ORDER
+  // ------------------------------------------------------
+  await prisma.whatsAppOrder.create({
+    data: {
+      phoneNumber: "+2348012345678",
+      status: "PENDING",
+      state: "Lagos",
+      city: "Ikeja",
+      items: {
+        create: [
+          {
+            variantId: randomVariant.id,
+            quantity: 1,
+            priceAtTime: randomVariant.price,
+          },
+        ],
+      },
+    },
+  });
+
+  console.log("✔ WhatsApp order created");
+
+  // ------------------------------------------------------
+  // AUDIT LOG
+  // ------------------------------------------------------
+  await prisma.auditLog.create({
+    data: {
+      userId: admin.id,
+      actorType: "ADMIN",
+      action: "SEED_FULL_SYSTEM",
+      entityType: "SYSTEM",
+      entityId: "INIT",
+      metadata: { message: "Full system seed completed" },
+    },
+  });
+
+  console.log("✔ Audit log created");
+
+  console.log("🎉 FULL SEED COMPLETED SUCCESSFULLY!");
 }
 
 main()
   .catch((err) => {
-    console.error(err);
+    console.error("❌ Seed failed:", err);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

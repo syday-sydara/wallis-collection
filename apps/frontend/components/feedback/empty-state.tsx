@@ -1,9 +1,9 @@
 import * as React from "react";
 import { cn } from "@/lib/cn";
 
-export interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {}
+export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-export function Alert({ className, children, ...props }: AlertProps) {
+export function EmptyState({ className, children, ...props }: EmptyStateProps) {
   return (
     <div
       className={cn(
@@ -13,7 +13,7 @@ export function Alert({ className, children, ...props }: AlertProps) {
       {...props}
     >
       {children ?? (
-        <span className="text-text-muted text-sm">Alert component</span>
+        <span className="text-text-muted text-sm">EmptyState component</span>
       )}
     </div>
   );
