@@ -3,7 +3,12 @@
   "compilerOptions": {
     "jsx": "preserve",
     "allowJs": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "include": ["**/*.ts", "**/*.tsx"]
 }
