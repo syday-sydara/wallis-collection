@@ -19,7 +19,6 @@ export const inventoryWorker = new Worker<EventPayloads[EventName]>(
       }
 
       case Events.STOCK_RELEASED: {
-        const { reason } = payload;
         // handle released
         break;
       }
