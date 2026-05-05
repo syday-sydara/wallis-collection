@@ -23,7 +23,6 @@ export const inventoryWorker = new Worker<EventPayloads[EventName]>(
       }
 
       case Events.STOCK_CONSUMED: {
-        const { reservationId } = payload;
         // handle consumed
         break;
       }
