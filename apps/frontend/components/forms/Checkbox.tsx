@@ -1,9 +1,30 @@
-import clsx from "clsx";
+import * as React from "react";
+import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/cn";
 
-export function Checkbox({ className = "", ...props }) {
-  return (
-    <div className={clsx("rounded border border-gray-200 p-3 bg-white", className)} {...props}>
-      <span className="text-gray-400 text-sm">Checkbox component</span>
-    </div>
-  );
-}
+export interface CheckboxProps
+  extends React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root> {}
+
+export const Checkbox = React.forwardRef<
+  React.ElementRef<typeof CheckboxPrimitive.Root>,
+  CheckboxProps
+>(({ className, ...props }, ref) => (
+  <CheckboxPrimitive.Root
+    ref={ref}
+    className={cn(
+      "peer h-4 w-4 shrink-0 rounded-sm border border-border bg-bg",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+      "disabled:cursor-not-allowed disabled:opacity-50",
+      "data-[state=checked]:bg-brand data-[state=checked]:border-brand",
+      className
+    )}
+    {...props}
+  >
+    <CheckboxPrimitive.Indicator className="flex items-center justify-center text-text-inverse">
+      <Check className="h-3 w-3" />
+    </CheckboxPrimitive.Indicator>
+  </CheckboxPrimitive.Root>
+));
+
+Checkbox.displayName = "Checkbox";

@@ -1,9 +1,34 @@
-import clsx from "clsx";
+import * as React from "react";
+import { cn } from "@/lib/cn";
 
-export function PhoneInput({ className = "", ...props }) {
+export interface PhoneInputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {
+  countryCode?: string;
+}
+
+export function PhoneInput({
+  className,
+  countryCode = "+1",
+  ...props
+}: PhoneInputProps) {
   return (
-    <div className={clsx("rounded border border-gray-200 p-3 bg-white", className)} {...props}>
-      <span className="text-gray-400 text-sm">PhoneInput component</span>
+    <div
+      className={cn(
+        "flex items-center rounded-md border border-border bg-bg",
+        "focus-within:ring-2 focus-within:ring-brand",
+        className
+      )}
+    >
+      <span className="px-3 text-text-muted text-sm">{countryCode}</span>
+
+      <input
+        type="tel"
+        className={cn(
+          "w-full bg-transparent px-3 py-2 text-text-primary placeholder-text-muted",
+          "focus:outline-none"
+        )}
+        {...props}
+      />
     </div>
   );
 }
