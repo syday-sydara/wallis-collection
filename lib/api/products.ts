@@ -3,7 +3,7 @@ import {
   ProductSchema,
   ProductListSchema,
   Product,
-} from "../schemas/product";
+} from "../../packages/shared/src/schemas/product";
 
 // Strongly typed input for clarity
 export interface ProductGetBySlugInput {

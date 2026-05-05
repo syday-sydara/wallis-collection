@@ -3,7 +3,7 @@ import {
   ReservationSchema,
   ReservationListSchema,
   Reservation,
-} from "../schemas/reservation";
+} from "../../packages/shared/src/schemas/reservation";
 
 // Strongly typed create input
 export interface ReservationCreateInput {

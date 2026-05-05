@@ -3,7 +3,7 @@ import {
   PaymentSchema,
   Payment,
   PaymentListSchema,
-} from "../schemas/payment";
+} from "../../packages/shared/src/schemas/payment";
 
 // Strongly typed payment method
 export type PaymentMethod = Payment["method"];

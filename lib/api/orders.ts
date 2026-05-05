@@ -3,7 +3,7 @@ import {
   OrderSchema,
   OrderListSchema,
   Order,
-} from "../schemas/order";
+} from "../../packages/shared/src/schemas/order";
 
 // Optional: strongly typed status enum
 export type OrderStatus = Order["status"];
