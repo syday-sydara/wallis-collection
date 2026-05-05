@@ -1,14 +1,17 @@
+#!/usr/bin/env ts-node
+
 import fs from "fs";
 import path from "path";
 
-const baseDir = path.join(
-  process.cwd(),
-  "apps",
-  "frontend",
-  "components"
-);
+// ------------------------------------------------------
+// BASE DIRECTORY
+// ------------------------------------------------------
+const baseDir = path.join(process.cwd(), "apps", "frontend", "components");
 
-const structure = {
+// ------------------------------------------------------
+// COMPONENT STRUCTURE
+// ------------------------------------------------------
+const structure: Record<string, string[]> = {
   ui: ["Skeleton", "Button", "Input", "Card", "Badge", "Spinner"],
   layout: ["Navbar", "Sidebar", "Footer", "AdminSidebar", "ShopHeader"],
   "data-display": ["Table", "DataCard", "StatusPill", "Timeline"],
@@ -19,47 +22,151 @@ const structure = {
   shared: ["Modal", "Drawer", "Tabs", "Pagination"],
 };
 
-function ensureDir(dir) {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-    console.log("Created directory:", dir);
-  }
-}
+// ------------------------------------------------------
+// TEMPLATES
+// ------------------------------------------------------
+const baseTemplate = (name: string) => `import clsx from "clsx";
 
-function createComponentFile(dir, name) {
-  const filePath = path.join(dir, `${name}.tsx`);
-
-  if (fs.existsSync(filePath)) {
-    console.log("Skipping existing:", filePath);
-    return;
-  }
-
-  const content = `export function ${name}({ className = "" }: { className?: string }) {
+export function ${name}({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={className}>
-      {/* ${name} component */}
+    <div className={clsx("rounded border border-gray-200 p-3 bg-white", className)} {...props}>
+      <span className="text-gray-400 text-sm">${name} component</span>
     </div>
   );
 }
 `;
 
-  fs.writeFileSync(filePath, content);
-  console.log("Created component:", filePath);
+const uiTemplate = (name: string) => {
+  if (name === "Skeleton") {
+    return `export function Skeleton({ className = "" }) {
+  return <div className={\`animate-pulse bg-gray-200 rounded \${className}\`} />;
+}
+`;
+  }
+
+  if (name === "Spinner") {
+    return `export function Spinner() {
+  return (
+    <div className="animate-spin h-5 w-5 border-2 border-gray-300 border-t-transparent rounded-full" />
+  );
+}
+`;
+  }
+
+  return baseTemplate(name);
+};
+
+const layoutTemplate = (name: string) => `export function ${name}() {
+  return (
+    <div className="p-4 border-b bg-white">
+      <span className="text-gray-500">${name}</span>
+    </div>
+  );
+}
+`;
+
+const dataDisplayTemplate = (name: string) => {
+  if (name === "Table") {
+    return `export function Table() {
+  return (
+    <div className="border rounded p-4 text-gray-400 text-sm">
+      Table placeholder
+    </div>
+  );
+}
+`;
+  }
+
+  if (name === "Timeline") {
+    return `export function Timeline() {
+  return (
+    <div className="space-y-4">
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="border-l-2 pl-4">
+          <div className="h-3 w-1/3 bg-gray-200 rounded mb-1" />
+          <div className="h-3 w-1/2 bg-gray-200 rounded" />
+        </div>
+      ))}
+    </div>
+  );
+}
+`;
+  }
+
+  return baseTemplate(name);
+};
+
+const formTemplate = (name: string) => {
+  if (name === "TextField") {
+    return `export function TextField({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-sm text-gray-600">{label}</label>
+      <input className="border rounded px-3 py-2" />
+    </div>
+  );
+}
+`;
+  }
+
+  return baseTemplate(name);
+};
+
+// ------------------------------------------------------
+// TEMPLATE SELECTOR
+// ------------------------------------------------------
+function getTemplate(folder: string, name: string): string {
+  switch (folder) {
+    case "ui":
+      return uiTemplate(name);
+    case "layout":
+      return layoutTemplate(name);
+    case "data-display":
+      return dataDisplayTemplate(name);
+    case "forms":
+      return formTemplate(name);
+    default:
+      return baseTemplate(name);
+  }
 }
 
-function createIndexFile(dir, components) {
+// ------------------------------------------------------
+// FILESYSTEM HELPERS
+// ------------------------------------------------------
+function ensureDir(dir: string) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log("📁 Created directory:", dir);
+  }
+}
+
+function createComponentFile(dir: string, name: string, folder: string) {
+  const filePath = path.join(dir, `${name}.tsx`);
+
+  if (fs.existsSync(filePath)) {
+    console.log("⏭️  Skipping existing:", filePath);
+    return;
+  }
+
+  const content = getTemplate(folder, name);
+  fs.writeFileSync(filePath, content);
+  console.log("✨ Created component:", filePath);
+}
+
+function createIndexFile(dir: string, components: string[]) {
   const indexPath = path.join(dir, "index.ts");
 
-  const exports = components
-    .map((c) => `export * from "./${c}";`)
-    .join("\n");
+  const exports = components.map((c) => `export * from "./${c}";`).join("\n");
 
   fs.writeFileSync(indexPath, exports);
-  console.log("Created index:", indexPath);
+  console.log("🧩 Created index:", indexPath);
 }
 
+// ------------------------------------------------------
+// MAIN
+// ------------------------------------------------------
 function run() {
-  console.log("Generating component structure...");
+  console.log("🚀 Generating component structure...\n");
 
   ensureDir(baseDir);
 
@@ -70,13 +177,13 @@ function run() {
     const components = structure[folder];
 
     components.forEach((component) =>
-      createComponentFile(folderDir, component)
+      createComponentFile(folderDir, component, folder)
     );
 
     createIndexFile(folderDir, components);
   }
 
-  console.log("\n✨ Component structure generated successfully!");
+  console.log("\n🎉 Component structure generated successfully!");
 }
 
 run();
