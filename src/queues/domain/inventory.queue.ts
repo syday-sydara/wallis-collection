@@ -13,7 +13,7 @@ export const inventoryWorker = new Worker<EventPayloads[EventName]>(
 
     switch (event) {
       case Events.STOCK_RESERVED: {
-        const { variantId, quantity } = payload;
+        const { quantity } = payload;
         // handle reserved
         break;
       }
