@@ -1,0 +1,225 @@
+{
+  "title": "Unified Reliability Dashboard",
+  "uid": "unified-reliability",
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "row",
+      "title": "Redis Reliability",
+      "id": 100
+    },
+    {
+      "type": "stat",
+      "title": "Redis Connects / sec",
+      "id": 101,
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(redis_connect_total[5m]))" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Redis Reconnects / sec",
+      "id": 102,
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(redis_reconnect_total[5m]))" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Redis Errors / sec",
+      "id": 103,
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(redis_error_total[5m]))" }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Redis Errors by Code",
+      "id": 104,
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum by (code) (rate(redis_error_total[5m]))", "legendFormat": "{{code}}" }
+      ],
+      "lines": true,
+      "fill": 1
+    },
+
+    {
+      "type": "row",
+      "title": "Queue Reliability (BullMQ)",
+      "id": 200
+    },
+    {
+      "type": "stat",
+      "title": "Jobs Processed / sec",
+      "id": 201,
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(queue_jobs_processed_total[5m]))" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Jobs Failed / sec",
+      "id": 202,
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(queue_jobs_failed_total[5m]))" }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Queue Latency (p99)",
+      "id": 203,
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(queue_latency_ms_bucket[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ],
+      "lines": true,
+      "fill": 1
+    },
+
+    {
+      "type": "row",
+      "title": "Circuit Breakers",
+      "id": 300
+    },
+    {
+      "type": "stat",
+      "title": "Breaker Open Events",
+      "id": 301,
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(circuit_breaker_open_total[5m]))" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Breaker Half-Open Events",
+      "id": 302,
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(circuit_breaker_half_open_total[5m]))" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Breaker Close Events",
+      "id": 303,
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(circuit_breaker_close_total[5m]))" }
+      ]
+    },
+
+    {
+      "type": "row",
+      "title": "Provider Reliability (WhatsApp / SMS / Email)",
+      "id": 400
+    },
+    {
+      "type": "graph",
+      "title": "Provider Failures by Channel",
+      "id": 401,
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (channel) (rate(provider_failure_total[5m]))",
+          "legendFormat": "{{channel}}"
+        }
+      ],
+      "lines": true,
+      "fill": 1
+    },
+    {
+      "type": "graph",
+      "title": "Provider Latency (p99)",
+      "id": 402,
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(provider_latency_ms_bucket[5m])) by (le, channel))",
+          "legendFormat": "{{channel}} p99"
+        }
+      ],
+      "lines": true,
+      "fill": 1
+    },
+
+    {
+      "type": "row",
+      "title": "Retry Engine",
+      "id": 500
+    },
+    {
+      "type": "stat",
+      "title": "Retry Attempts / sec",
+      "id": 501,
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(retry_attempt_total[5m]))" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Retry Exhausted / sec",
+      "id": 502,
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(retry_exhausted_total[5m]))" }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Retry Delay Distribution",
+      "id": 503,
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(retry_delay_ms_bucket[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ],
+      "lines": true,
+      "fill": 1
+    },
+
+    {
+      "type": "row",
+      "title": "Correlation-Aware Debugging",
+      "id": 600
+    },
+    {
+      "type": "table",
+      "title": "Errors by Trace ID",
+      "id": 601,
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (traceId) (rate(redis_error_total[5m]) + rate(queue_jobs_failed_total[5m]) + rate(provider_failure_total[5m]))",
+          "legendFormat": "{{traceId}}"
+        }
+      ]
+    },
+    {
+      "type": "logs",
+      "title": "Unified Reliability Timeline",
+      "id": 602,
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "{app=\"your-app\"} |= \"traceId\""
+        }
+      ]
+    }
+  ]
+}

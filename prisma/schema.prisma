@@ -11,42 +11,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ------------------------------------------------------
-// ENUMS
-// ------------------------------------------------------
-
-enum ReservationStatus {
-  ACTIVE
-  CONSUMED
-  RELEASED
-  EXPIRED
-}
-
-enum PaymentStatus {
-  INITIATED
-  SUCCESS
-  FAILED
-  CONFIRMED
-}
-
-enum ActorType {
-  USER
-  SYSTEM
-  ADMIN
-  SERVICE
-}
-
-enum OrderStatus {
-  PENDING
-  AWAITING_PAYMENT
-  PAID
-  CANCELLED
-  FULFILLED
-}
-
-// ------------------------------------------------------
-// USER (OPTIONAL — KEEPING IT MINIMAL)
-// ------------------------------------------------------
+// =====================================
+// USER
+// =====================================
 
 model User {
   id        String   @id @default(cuid())
@@ -111,57 +78,62 @@ model StockReservation {
 
   @@index([variantId])
   @@index([orderId])
-  @@index([status, expiresAt])
 }
 
-// ------------------------------------------------------
-// CUSTOMER
-// ------------------------------------------------------
-
-model Customer {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String?
-  phone     String?  @unique
-  createdAt DateTime @default(now())
-
-  orders   Order[]
-  sessions WhatsAppSession[]
+enum ReservationStatus {
+  ACTIVE
+  CONSUMED
+  RELEASED
 }
 
-// ------------------------------------------------------
-// ORDERS (RESERVATION-DRIVEN)
-// ------------------------------------------------------
+// =====================================
+// ORDER SYSTEM
+// =====================================
 
 model Order {
-  id              String      @id @default(cuid())
-  userId          String?
-  customerId      String?
-  externalRef     String?     @unique
-  status          OrderStatus @default(PENDING)
-  totalAmount     Int         @default(0)
-  currency        String
-  phone           String?
-  phoneNormalized String
-  notes           String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id          String      @id @default(cuid())
 
-  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id])
 
-  reservations  StockReservation[]
-  payments      Payment[]
-  statusHistory OrderStatusHistory[]
+  phoneNumber String
 
-  // WhatsApp session relation
-  whatsAppSessionId String?
-  whatsAppSession   WhatsAppSession? @relation("WhatsAppOrderSession", fields: [whatsAppSessionId], references: [id])
+  // Address (Nigeria-friendly)
+  addressLine1 String
+  addressLine2 String?
+  city         String?
+  state        String
+  lga          String?
+  landmark     String?
+  deliveryNote String?
 
-  @@index([userId])
-  @@index([customerId])
-  @@index([status])
-  @@index([whatsAppSessionId])
+  // Financials
+  subtotal     Int
+  deliveryFee  Int @default(0)
+  discount     Int @default(0)
+  totalAmount  Int
+
+  currency     String @default("NGN")
+
+  // Payment summary (important)
+  paymentMethod PaymentProvider
+  paymentStatus PaymentStatus @default(PENDING)
+
+  status        OrderStatus   @default(PENDING)
+
+  items       OrderItem[]
+  payments    Payment[]
+  shipment    Shipment?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([phoneNumber, createdAt])
+  @@index([status, createdAt])
+  @@index([paymentStatus, createdAt])
 }
 
 model OrderStatusHistory {
@@ -181,54 +153,145 @@ model OrderStatusHistory {
 // ------------------------------------------------------
 
 model Payment {
-  id          String        @id @default(cuid())
-  orderId     String
-  provider    String
-  providerRef String?       @unique
-  status      PaymentStatus @default(INITIATED)
-  amount      Int
-  currency    String
-  metadata    Json?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id        String          @id @default(cuid())
 
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  order     Order           @relation(fields: [orderId], references: [id])
 
-  @@index([orderId])
-  @@index([status])
+  provider  PaymentProvider
+  amount    Int
+  currency  String          @default("NGN")
+
+  status    PaymentStatus   @default(PENDING)
+
+  reference String?         @unique
+
+  // Bank transfer fields
+  paidByName String?
+  paidAt     DateTime?
+  proofUrl   String?
+
+  // Admin verification
+  verifiedBy String?
+  verifiedAt DateTime?
+
+  notes      String?
+
+  createdAt  DateTime       @default(now())
+
+  @@index([status, createdAt])
+}
+
+enum PaymentProvider {
+  BANK_TRANSFER
+  CASH_ON_DELIVERY
+}
+
+enum PaymentStatus {
+  PENDING
+  AWAITING_CONFIRMATION
+  SUCCESS
+  FAILED
+}
+
+// =====================================
+// SHIPPING / DELIVERY
+// =====================================
+
+model Shipment {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id])
+
+  provider  String?
+  trackingNumber String?
+
+  status    ShipmentStatus @default(PENDING)
+
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+
+  createdAt DateTime @default(now())
+}
+
+enum ShipmentStatus {
+  PENDING
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  FAILED
 }
 
 // ------------------------------------------------------
 // WHATSAPP SESSION + MESSAGES
 // ------------------------------------------------------
 
-model WhatsAppSession {
-  id              String    @id @default(cuid())
-  phone           String
-  phoneNormalized String     @unique
-  customerId      String?
-  lastInboundAt   DateTime?
-  lastOutboundAt  DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+model WhatsAppOrder {
+  id          String              @id @default(cuid())
 
-  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  messages WhatsAppMessage[]
-  orders   Order[]           @relation("WhatsAppOrderSession")
+  phoneNumber String
+
+  userId      String?
+  user        User?               @relation(fields: [userId], references: [id])
+
+  status      WhatsAppOrderStatus @default(PENDING)
+
+  // Address
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  lga          String?
+  landmark     String?
+
+  paymentMethod WhatsAppPaymentMethod?
+  deliveryMethod DeliveryMethod @default(DELIVERY)
+
+  notes         String?
+  lastMessageAt DateTime?
+
+  items       WhatsAppOrderItem[]
+
+  finalOrderId String?
+  finalOrder   Order?            @relation(fields: [finalOrderId], references: [id])
+
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([phoneNumber, createdAt])
+  @@index([status, createdAt])
+  @@index([status, lastMessageAt])
 }
 
-model WhatsAppMessage {
-  id         String   @id @default(cuid())
-  sessionId  String
-  direction  String   // INBOUND | OUTBOUND
-  body       String
-  status     String   // QUEUED | SENDING | SENT | DELIVERED | READ | FAILED
-  rawPayload Json?
-  createdAt  DateTime @default(now())
+model WhatsAppOrderItem {
+  id              String        @id @default(cuid())
+  whatsappOrderId String
+  order           WhatsAppOrder @relation(fields: [whatsappOrderId], references: [id])
 
-  session WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  variantId       String
+  variant         ProductVariant @relation(fields: [variantId], references: [id])
 
-  @@index([sessionId])
+  quantity        Int           @default(1)
+  priceAtTime     Int
+
+  createdAt       DateTime      @default(now())
+}
+
+enum WhatsAppOrderStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  CANCELLED
+}
+
+enum WhatsAppPaymentMethod {
+  BANK_TRANSFER
+  CASH_ON_DELIVERY
+}
+
+enum DeliveryMethod {
+  DELIVERY
+  PICKUP
 }
 
 // ------------------------------------------------------
@@ -236,12 +299,15 @@ model WhatsAppMessage {
 // ------------------------------------------------------
 
 model AuditLog {
-  id         String    @id @default(cuid())
-  requestId  String?
-  traceId    String?
-  userId     String?
-  actorType  ActorType
-  action     String
+  id        String   @id @default(cuid())
+
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+
+  actorType ActorType
+
+  action    String
+
   entityType String
   entityId   String
   metadata   Json      @default("{}")
@@ -255,15 +321,14 @@ model AuditLog {
   @@index([createdAt])
 }
 
-// ------------------------------------------------------
-// SMS LOGGING
-// ------------------------------------------------------
+enum ActorType {
+  USER
+  ADMIN
+  SYSTEM
+}
 
-model SmsMessage {
+model OrderStatusHistory {
   id        String   @id @default(cuid())
   to        String
-  text      String
-  provider  String
-  status    String   // QUEUED, SENT, FAILED_PRIMARY, SENT_FALLBACK, FAILED
   createdAt DateTime @default(now())
 }
