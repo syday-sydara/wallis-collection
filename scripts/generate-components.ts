@@ -4,9 +4,9 @@ import fs from "fs";
 import path from "path";
 
 // ------------------------------------------------------
-// BASE DIRECTORY
+// BASE DIRECTORY (FIXED)
 // ------------------------------------------------------
-const baseDir = path.join(process.cwd(), "apps", "frontend", "components");
+const baseDir = path.join(__dirname, "..", "apps", "frontend", "components");
 
 // ------------------------------------------------------
 // COMPONENT STRUCTURE
@@ -167,6 +167,7 @@ function createIndexFile(dir: string, components: string[]) {
 // ------------------------------------------------------
 function run() {
   console.log("🚀 Generating component structure...\n");
+  console.log("Writing to:", baseDir, "\n");
 
   ensureDir(baseDir);
 
