@@ -19,7 +19,7 @@ export const EmailProvider = {
   async send(params: EmailSendParams) {
     const ctx = Correlation.get();
 
-    const { to, subject, html, text, messageId, metadata } = params;
+    const { to, subject, text, messageId, metadata } = params;
 
     const id =
       messageId ??
