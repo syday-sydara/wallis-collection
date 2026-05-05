@@ -24,8 +24,7 @@ function extractCorrelation(data: any) {
     sessionId,
     orderId,
     customerId,
-    workflowId,
-    ...rest
+    workflowId
   } = data;
 
   return {
