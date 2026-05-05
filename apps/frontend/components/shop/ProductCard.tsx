@@ -1,9 +1,20 @@
-import clsx from "clsx";
+import * as React from "react";
+import { cn } from "@/lib/cn";
 
-export function ProductCard({ className = "", ...props }) {
+export interface ProductCardProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+export function ProductCard({ className, children, ...props }: ProductCardProps) {
   return (
-    <div className={clsx("rounded border border-gray-200 p-3 bg-white", className)} {...props}>
-      <span className="text-gray-400 text-sm">ProductCard component</span>
+    <div
+      className={cn(
+        "rounded-md border border-border bg-bg p-4 shadow-sm",
+        className
+      )}
+      {...props}
+    >
+      {children ?? (
+        <span className="text-text-muted text-sm">ProductCard component</span>
+      )}
     </div>
   );
 }
