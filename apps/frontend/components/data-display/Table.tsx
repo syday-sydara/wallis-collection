@@ -1,7 +1,18 @@
-export function Table() {
+import * as React from "react";
+import { cn } from "@/lib/cn";
+
+export interface TableProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+export function Table({ className, children, ...props }: TableProps) {
   return (
-    <div className="border rounded p-4 text-gray-400 text-sm">
-      Table placeholder
+    <div
+      className={cn(
+        "rounded-md border border-border bg-bg p-4 text-sm text-text-muted",
+        className
+      )}
+      {...props}
+    >
+      {children ?? "Table placeholder"}
     </div>
   );
 }

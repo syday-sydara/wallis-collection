@@ -1,4 +1,5 @@
-export * from "./Table";
-export * from "./DataCard";
-export * from "./StatusPill";
-export * from "./Timeline";
+export * from "./data-card";
+export * from "./status-pill";
+export * from "./timeline";
+export * from "./table";
+

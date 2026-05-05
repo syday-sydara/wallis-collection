@@ -1,4 +1,5 @@
-import clsx from "clsx";
+import * as React from "react";
+import { cn } from "@/lib/cn";
 
 const statusColors = {
   paid: "bg-status-paid/10 text-status-paid",
@@ -16,19 +17,24 @@ const statusColors = {
   delayed: "bg-queue-delayed/10 text-queue-delayed",
 };
 
-type Status = keyof typeof statusColors;
+export type Status = keyof typeof statusColors;
 
-export function StatusPill({ status, className = "" }: { status: Status; className?: string }) {
+export interface StatusPillProps {
+  status: Status;
+  label?: string;
+  className?: string;
+}
+
+export function StatusPill({ status, label, className }: StatusPillProps) {
   return (
     <span
-      className={clsx(
-        "px-2 py-1 text-xs font-medium rounded-full",
+      className={cn(
+        "px-2 py-1 text-xs font-medium rounded-full capitalize",
         statusColors[status],
         className
       )}
     >
-      {status}
+      {label ?? status}
     </span>
   );
 }
-
