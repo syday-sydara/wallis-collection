@@ -9,11 +9,23 @@
 
     "strict": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
 
-    "baseUrl": "src",
+    "isolatedModules": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "importsNotUsedAsValues": "error",
+
+    "types": ["node"],
+    "lib": ["ES2022"],
+
+   "baseUrl": "src",
     "paths": {
+      "@/*": ["*"],
+      "@lib/*": ["lib/*"],
       "@config/*": ["config/*"],
       "@queues/*": ["queues/*"],
       "@workers/*": ["workers/*"],
