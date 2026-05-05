@@ -1,23 +1,27 @@
 import { z } from "zod";
 
-export const VariantSchema = z.object({
-  id: z.string().min(1),
-  sku: z.string().min(1),
-  name: z.string().min(1),
-  price: z.number().int().nonnegative(),
-  currency: z.string().min(1),
-  stockQty: z.number().int().nonnegative(),
+export const ProductVariantSchema = z.object({
+  id: z.string(),
+  productId: z.string(),
+  sku: z.string(),
+  name: z.string(),
+  price: z.number().int(),
+  currency: z.string(),
+  stockQty: z.number().int(),
+  isActive: z.boolean(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
 });
 
 export const ProductSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  slug: z.string().min(1),
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
   description: z.string().nullable(),
-  variants: z.array(VariantSchema),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  variants: z.array(ProductVariantSchema).optional(),
 });
 
-export const ProductListSchema = z.array(ProductSchema);
-
 export type Product = z.infer<typeof ProductSchema>;
-export type Variant = z.infer<typeof VariantSchema>;
+export type ProductVariant = z.infer<typeof ProductVariantSchema>;

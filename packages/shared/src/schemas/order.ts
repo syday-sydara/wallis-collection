@@ -1,25 +1,67 @@
 import { z } from "zod";
 
+export const OrderStatusEnum = z.enum([
+  "PENDING",
+  "AWAITING_CONFIRMATION",
+  "SUCCESS",
+  "FAILED",
+]);
+
+export const PaymentStatusEnum = z.enum([
+  "PENDING",
+  "AWAITING_CONFIRMATION",
+  "SUCCESS",
+  "FAILED",
+]);
+
+export const PaymentProviderEnum = z.enum([
+  "BANK_TRANSFER",
+  "CASH_ON_DELIVERY",
+]);
+
 export const OrderItemSchema = z.object({
-  id: z.string().min(1),
-  variantId: z.string().min(1),
-  quantity: z.number().int().positive(),
-  unitPrice: z.number().int().nonnegative(),
-  currency: z.string().min(1),
+  id: z.string(),
+  orderId: z.string(),
+  variantId: z.string(),
+  quantity: z.number().int(),
+  priceAtTime: z.number().int(),
+  createdAt: z.string().datetime(),
 });
 
 export const OrderSchema = z.object({
-  id: z.string().min(1),
-  status: z.string().min(1),
-  totalAmount: z.number().int().nonnegative(),
-  currency: z.string().min(1),
-  phone: z.string().nullable(),
-  phoneNormalized: z.string().min(1),
+  id: z.string(),
+
+  userId: z.string().nullable(),
+  phoneNumber: z.string(),
+
+  addressLine1: z.string(),
+  addressLine2: z.string().nullable(),
+  city: z.string().nullable(),
+  state: z.string(),
+  lga: z.string().nullable(),
+  landmark: z.string().nullable(),
+  deliveryNote: z.string().nullable(),
+
+  subtotal: z.number().int(),
+  deliveryFee: z.number().int(),
+  discount: z.number().int(),
+  totalAmount: z.number().int(),
+
+  currency: z.string(),
+
+  paymentMethod: PaymentProviderEnum,
+  paymentStatus: PaymentStatusEnum,
+
+  status: OrderStatusEnum,
+
+  ipAddress: z.string().nullable(),
+  userAgent: z.string().nullable(),
+
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+
   items: z.array(OrderItemSchema).optional(),
 });
 
-export const OrderListSchema = z.array(OrderSchema);
-
 export type Order = z.infer<typeof OrderSchema>;
 export type OrderItem = z.infer<typeof OrderItemSchema>;
-export type OrderList = z.infer<typeof OrderListSchema>;

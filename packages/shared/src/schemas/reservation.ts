@@ -1,13 +1,20 @@
 import { z } from "zod";
 
-export const ReservationSchema = z.object({
-  id: z.string().min(1),
-  variantId: z.string().min(1),
-  quantity: z.number().int().positive(),
-  status: z.enum(["active", "expired", "released"]),
+export const ReservationStatusEnum = z.enum([
+  "ACTIVE",
+  "CONSUMED",
+  "RELEASED",
+]);
+
+export const StockReservationSchema = z.object({
+  id: z.string(),
+  variantId: z.string(),
+  orderId: z.string().nullable(),
+  status: ReservationStatusEnum,
+  quantity: z.number().int(),
   expiresAt: z.string().datetime(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
 });
 
-export const ReservationListSchema = z.array(ReservationSchema);
-export type Reservation = z.infer<typeof ReservationSchema>;
-export type ReservationList = z.infer<typeof ReservationListSchema>;
+export type StockReservation = z.infer<typeof StockReservationSchema>;

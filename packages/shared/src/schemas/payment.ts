@@ -1,17 +1,21 @@
 import { z } from "zod";
+import { PaymentProviderEnum, PaymentStatusEnum } from "./order";
 
 export const PaymentSchema = z.object({
-  id: z.string().min(1),
-  orderId: z.string().min(1),
-  method: z.enum(["bank_transfer", "cash", "card", "manual"]),
-  status: z.enum(["pending", "verified", "failed", "refunded"]),
-  amount: z.number().int().nonnegative(),
-  currency: z.string().min(1),
-  createdAt: z.string().datetime().optional(),
-  updatedAt: z.string().datetime().optional(),
+  id: z.string(),
+  orderId: z.string(),
+  provider: PaymentProviderEnum,
+  amount: z.number().int(),
+  currency: z.string(),
+  status: PaymentStatusEnum,
+  reference: z.string().nullable(),
+  paidByName: z.string().nullable(),
+  paidAt: z.string().datetime().nullable(),
+  proofUrl: z.string().nullable(),
+  verifiedBy: z.string().nullable(),
+  verifiedAt: z.string().datetime().nullable(),
+  notes: z.string().nullable(),
+  createdAt: z.string().datetime(),
 });
 
-export const PaymentListSchema = z.array(PaymentSchema);
-
 export type Payment = z.infer<typeof PaymentSchema>;
-export type PaymentList = z.infer<typeof PaymentListSchema>;
