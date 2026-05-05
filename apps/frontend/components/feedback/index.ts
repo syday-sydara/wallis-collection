@@ -1,3 +1,3 @@
-export * from "./Toast";
-export * from "./Alert";
-export * from "./EmptyState";
+export * from "./toast";
+export * from "./alert";
+export * from "./empty-state";
