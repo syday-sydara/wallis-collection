@@ -1,7 +1,6 @@
 // lib/retry.ts
 import { logger } from "./logger";
 import { metrics } from "./metrics";
-import { Correlation } from "./correlation";
 
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
