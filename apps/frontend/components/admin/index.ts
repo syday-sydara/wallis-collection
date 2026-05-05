@@ -1,4 +1,4 @@
 export * from "./DashboardCard";
-export * from "./Metric";
-export * from "./ReservationRow";
-export * from "./QueueStatsCard";
+export * from "./reservation-row";
+export * from "./queue-stats-card";
+export * from "./metric";

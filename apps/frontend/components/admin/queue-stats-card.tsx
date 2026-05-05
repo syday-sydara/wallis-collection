@@ -1,9 +1,9 @@
 import * as React from "react";
 import { cn } from "@/lib/cn";
 
-export interface MetricProps extends React.HTMLAttributes<HTMLDivElement> {}
+export interface QueueStatsCardProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-export function Metric({ className, children, ...props }: MetricProps) {
+export function QueueStatsCard({ className, children, ...props }: QueueStatsCardProps) {
   return (
     <div
       className={cn(
@@ -13,7 +13,7 @@ export function Metric({ className, children, ...props }: MetricProps) {
       {...props}
     >
       {children ?? (
-        <span className="text-text-muted text-sm">Metric component</span>
+        <span className="text-text-muted text-sm">QueueStatsCard component</span>
       )}
     </div>
   );
