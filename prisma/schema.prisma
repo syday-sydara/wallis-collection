@@ -23,13 +23,12 @@ enum ReservationStatus {
 }
 
 enum PaymentStatus {
-  PENDING        // customer has not paid yet
-  TRANSFER_SENT  // customer claims they transferred
-  VERIFIED       // you confirmed the transfer hit your account
-  CASH_COLLECTED // rider collected cash
+  PENDING
+  TRANSFER_SENT
+  VERIFIED
+  CASH_COLLECTED
   CANCELLED
 }
-
 
 enum ActorType {
   USER
@@ -46,8 +45,25 @@ enum OrderStatus {
   FULFILLED
 }
 
+enum WhatsAppMessageStatus {
+  QUEUED
+  SENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum DeliveryStatus {
+  SENT
+  FAILED
+  FALLBACK
+  RETRY
+  QUEUED
+}
+
 // ------------------------------------------------------
-// USER (OPTIONAL — KEEPING IT MINIMAL)
+// USER
 // ------------------------------------------------------
 
 model User {
@@ -114,6 +130,7 @@ model StockReservation {
   @@index([variantId])
   @@index([orderId])
   @@index([status, expiresAt])
+  @@index([variantId, status])
 }
 
 // ------------------------------------------------------
@@ -132,20 +149,23 @@ model Customer {
 }
 
 // ------------------------------------------------------
-// ORDERS (RESERVATION-DRIVEN)
+// ORDERS
 // ------------------------------------------------------
 
 model Order {
   id              String      @id @default(cuid())
   userId          String?
   customerId      String?
-  externalRef     String?     @unique
+  externalRef     String?
+  externalRefProvider String?
   status          OrderStatus @default(PENDING)
   totalAmount     Int         @default(0)
   currency        String
   phone           String?
   phoneNormalized String
   notes           String?
+  sourceChannel   String?     // whatsapp | web | admin | pos | api
+  workflowId      String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -155,6 +175,7 @@ model Order {
   reservations  StockReservation[]
   payments      Payment[]
   statusHistory OrderStatusHistory[]
+  items         OrderItem[]
 
   // WhatsApp session relation
   whatsAppSessionId String?
@@ -164,6 +185,9 @@ model Order {
   @@index([customerId])
   @@index([status])
   @@index([whatsAppSessionId])
+  @@index([phoneNormalized])
+  @@index([workflowId])
+  @@unique([externalRefProvider, externalRef])
 }
 
 model OrderStatusHistory {
@@ -185,31 +209,45 @@ model OrderStatusHistory {
 model Payment {
   id          String        @id @default(cuid())
   orderId     String
-  method      String        // "bank_transfer" | "cash"
+  method      String
   status      PaymentStatus @default(PENDING)
   amount      Int
   currency    String
 
-  // For bank transfers
-  bankName    String?
-  accountName String?
-  accountNumber String?
-  reference   String?       // customer-provided transfer reference
+  bankName       String?
+  accountName    String?
+  accountNumber  String?
+  reference      String?
 
-  // For verification
-  verifiedAt  DateTime?
-  verifiedBy  String?       // admin or system
+  verifiedAt     DateTime?
+  verifiedBy     String?
 
-  metadata    Json?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  businessBankAccountId String?
+  businessBankAccount   BusinessBankAccount? @relation(fields: [businessBankAccountId], references: [id])
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  statusHistory PaymentStatusHistory[]
 
   @@index([orderId])
   @@index([status])
 }
 
+model PaymentStatusHistory {
+  id        String        @id @default(cuid())
+  paymentId String
+  status    PaymentStatus
+  reason    String?
+  createdAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+}
 
 // ------------------------------------------------------
 // WHATSAPP SESSION + MESSAGES
@@ -222,6 +260,7 @@ model WhatsAppSession {
   customerId      String?
   lastInboundAt   DateTime?
   lastOutboundAt  DateTime?
+  lastMessageAt   DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -231,11 +270,11 @@ model WhatsAppSession {
 }
 
 model WhatsAppMessage {
-  id         String   @id @default(cuid())
+  id         String                @id @default(cuid())
   sessionId  String
-  direction  String   // INBOUND | OUTBOUND
+  direction  String
   body       String
-  status     String   // QUEUED | SENDING | SENT | DELIVERED | READ | FAILED
+  status     WhatsAppMessageStatus
   rawPayload Json?
   createdAt  DateTime @default(now())
 
@@ -252,6 +291,7 @@ model AuditLog {
   id         String    @id @default(cuid())
   requestId  String?
   traceId    String?
+  spanId     String?
   userId     String?
   actorType  ActorType
   action     String
@@ -269,7 +309,7 @@ model AuditLog {
 }
 
 // ------------------------------------------------------
-// SMS LOGGING
+// SMS + DELIVERY LOGGING
 // ------------------------------------------------------
 
 model SmsMessage {
@@ -277,18 +317,21 @@ model SmsMessage {
   to        String
   text      String
   provider  String
-  status    String   // QUEUED, SENT, FAILED_PRIMARY, SENT_FALLBACK, FAILED
+  status    String
   createdAt DateTime @default(now())
 }
 
 model MessageDeliveryLog {
   id          String   @id @default(cuid())
 
-  // Core delivery info
-  channel     String   // "whatsapp" | "sms" | "email"
-  status      String   // "SENT" | "FAILED" | "FALLBACK" | "RETRY" | "QUEUED"
+  channel     String
+  status      DeliveryStatus
 
-  // Correlation metadata
+  // Correlation
+  traceId     String?
+  requestId   String?
+  spanId      String?
+
   orderId         String?
   sessionId       String?
   customerId      String?
@@ -296,22 +339,17 @@ model MessageDeliveryLog {
   eventName       String?
 
   // Provider metadata
-  messageId          String?   // internal message id (e.g. WhatsAppMessage.id)
-  providerMessageId  String?   // provider's message id
-  providerStatus     String?   // provider-specific status
-  latencyMs          Int?
+  messageId         String?
+  messageType       String?
+  providerMessageId String?
+  providerStatus    String?
+  latencyMs         Int?
 
-  // Error metadata
-  error       Json?    // structured error object
-
-  // Raw payload + metadata
+  error       Json?
   payload     Json?
   metadata    Json?
 
   createdAt   DateTime @default(now())
-
-  // Relations
-  whatsAppMessage WhatsAppMessage? @relation(fields: [messageId], references: [id])
 
   @@index([messageId])
   @@index([orderId])
@@ -320,6 +358,10 @@ model MessageDeliveryLog {
   @@index([phoneNormalized])
   @@index([createdAt])
 }
+
+// ------------------------------------------------------
+// ORDER ITEMS
+// ------------------------------------------------------
 
 model OrderItem {
   id         String   @id @default(cuid())
@@ -337,6 +379,9 @@ model OrderItem {
   @@index([variantId])
 }
 
+// ------------------------------------------------------
+// BUSINESS BANK ACCOUNTS
+// ------------------------------------------------------
 
 model BusinessBankAccount {
   id            String   @id @default(cuid())
@@ -345,4 +390,6 @@ model BusinessBankAccount {
   accountNumber String
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
+
+  payments Payment[]
 }
