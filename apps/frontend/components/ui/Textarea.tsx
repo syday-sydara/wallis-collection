@@ -1,13 +1,13 @@
 import * as React from "react";
 import { cn } from "@/lib/cn";
 
-export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {}
+export interface TextareaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
 
-export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, ...props }, ref) => {
     return (
-      <input
+      <textarea
         ref={ref}
         className={cn(
           "w-full px-3 py-2 rounded-md border border-border bg-bg text-text-primary placeholder-text-muted",
@@ -21,4 +21,4 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   }
 );
 
-Input.displayName = "Input";
+Textarea.displayName = "Textarea";
