@@ -1,4 +1,4 @@
 export * from "./modal";
-export * from "./Drawer";
-export * from "./Tabs";
-export * from "./Pagination";
+export * from "./drawer";
+export * from "./tabs";
+export * from "./pagination";

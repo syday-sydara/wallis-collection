@@ -1,6 +1,14 @@
-import clsx from "clsx";
+import * as React from "react";
+import { cn } from "@/lib/cn";
 
-export function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+export interface ModalProps {
+  open: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function Modal({ open, onClose, children, className }: ModalProps) {
   if (!open) return null;
 
   return (
@@ -9,7 +17,10 @@ export function Modal({ open, onClose, children }: { open: boolean; onClose: () 
       onClick={onClose}
     >
       <div
-        className="bg-bg rounded-lg shadow-xl p-6 max-w-lg w-full"
+        className={cn(
+          "bg-bg rounded-lg shadow-xl p-6 max-w-lg w-full",
+          className
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         {children}
@@ -17,4 +28,3 @@ export function Modal({ open, onClose, children }: { open: boolean; onClose: () 
     </div>
   );
 }
-
