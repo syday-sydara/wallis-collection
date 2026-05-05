@@ -2,8 +2,13 @@ import clsx from "clsx";
 
 export function Input({ className = "", ...props }) {
   return (
-    <div className={clsx("rounded border border-gray-200 p-3 bg-white", className)} {...props}>
-      <span className="text-gray-400 text-sm">Input component</span>
-    </div>
+    <input
+      className={clsx(
+        "w-full px-3 py-2 rounded-md border border-border bg-bg text-text-primary placeholder-text-muted focus:ring-2 focus:ring-brand focus:border-brand",
+        className
+      )}
+      {...props}
+    />
   );
 }
+

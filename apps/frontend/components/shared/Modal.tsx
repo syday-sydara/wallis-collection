@@ -1,9 +1,20 @@
 import clsx from "clsx";
 
-export function Modal({ className = "", ...props }) {
+export function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  if (!open) return null;
+
   return (
-    <div className={clsx("rounded border border-gray-200 p-3 bg-white", className)} {...props}>
-      <span className="text-gray-400 text-sm">Modal component</span>
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-overlay"
+      onClick={onClose}
+    >
+      <div
+        className="bg-bg rounded-lg shadow-xl p-6 max-w-lg w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
     </div>
   );
 }
+

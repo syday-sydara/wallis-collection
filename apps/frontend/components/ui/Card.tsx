@@ -2,8 +2,13 @@ import clsx from "clsx";
 
 export function Card({ className = "", ...props }) {
   return (
-    <div className={clsx("rounded border border-gray-200 p-3 bg-white", className)} {...props}>
-      <span className="text-gray-400 text-sm">Card component</span>
-    </div>
+    <div
+      className={clsx(
+        "bg-bg rounded-lg border border-border shadow-sm p-4",
+        className
+      )}
+      {...props}
+    />
   );
 }
+
