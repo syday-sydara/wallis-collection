@@ -1,17 +1,17 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env node
 
-import fs from "fs";
-import path from "path";
+const fs = require("fs");
+const path = require("path");
 
 // ------------------------------------------------------
-// BASE DIRECTORY (FIXED)
+// BASE DIRECTORY
 // ------------------------------------------------------
 const baseDir = path.join(__dirname, "..", "apps", "frontend", "components");
 
 // ------------------------------------------------------
 // COMPONENT STRUCTURE
 // ------------------------------------------------------
-const structure: Record<string, string[]> = {
+const structure = {
   ui: ["Skeleton", "Button", "Input", "Card", "Badge", "Spinner"],
   layout: ["Navbar", "Sidebar", "Footer", "AdminSidebar", "ShopHeader"],
   "data-display": ["Table", "DataCard", "StatusPill", "Timeline"],
@@ -25,9 +25,9 @@ const structure: Record<string, string[]> = {
 // ------------------------------------------------------
 // TEMPLATES
 // ------------------------------------------------------
-const baseTemplate = (name: string) => `import clsx from "clsx";
+const baseTemplate = (name) => `import clsx from "clsx";
 
-export function ${name}({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
+export function ${name}({ className = "", ...props }) {
   return (
     <div className={clsx("rounded border border-gray-200 p-3 bg-white", className)} {...props}>
       <span className="text-gray-400 text-sm">${name} component</span>
@@ -36,7 +36,7 @@ export function ${name}({ className = "", ...props }: React.HTMLAttributes<HTMLD
 }
 `;
 
-const uiTemplate = (name: string) => {
+const uiTemplate = (name) => {
   if (name === "Skeleton") {
     return `export function Skeleton({ className = "" }) {
   return <div className={\`animate-pulse bg-gray-200 rounded \${className}\`} />;
@@ -56,7 +56,7 @@ const uiTemplate = (name: string) => {
   return baseTemplate(name);
 };
 
-const layoutTemplate = (name: string) => `export function ${name}() {
+const layoutTemplate = (name) => `export function ${name}() {
   return (
     <div className="p-4 border-b bg-white">
       <span className="text-gray-500">${name}</span>
@@ -65,7 +65,7 @@ const layoutTemplate = (name: string) => `export function ${name}() {
 }
 `;
 
-const dataDisplayTemplate = (name: string) => {
+const dataDisplayTemplate = (name) => {
   if (name === "Table") {
     return `export function Table() {
   return (
@@ -96,9 +96,9 @@ const dataDisplayTemplate = (name: string) => {
   return baseTemplate(name);
 };
 
-const formTemplate = (name: string) => {
+const formTemplate = (name) => {
   if (name === "TextField") {
-    return `export function TextField({ label }: { label: string }) {
+    return `export function TextField({ label }) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-sm text-gray-600">{label}</label>
@@ -115,7 +115,7 @@ const formTemplate = (name: string) => {
 // ------------------------------------------------------
 // TEMPLATE SELECTOR
 // ------------------------------------------------------
-function getTemplate(folder: string, name: string): string {
+function getTemplate(folder, name) {
   switch (folder) {
     case "ui":
       return uiTemplate(name);
@@ -133,14 +133,14 @@ function getTemplate(folder: string, name: string): string {
 // ------------------------------------------------------
 // FILESYSTEM HELPERS
 // ------------------------------------------------------
-function ensureDir(dir: string) {
+function ensureDir(dir) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
     console.log("📁 Created directory:", dir);
   }
 }
 
-function createComponentFile(dir: string, name: string, folder: string) {
+function createComponentFile(dir, name, folder) {
   const filePath = path.join(dir, `${name}.tsx`);
 
   if (fs.existsSync(filePath)) {
@@ -153,9 +153,8 @@ function createComponentFile(dir: string, name: string, folder: string) {
   console.log("✨ Created component:", filePath);
 }
 
-function createIndexFile(dir: string, components: string[]) {
+function createIndexFile(dir, components) {
   const indexPath = path.join(dir, "index.ts");
-
   const exports = components.map((c) => `export * from "./${c}";`).join("\n");
 
   fs.writeFileSync(indexPath, exports);

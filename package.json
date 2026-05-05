@@ -12,8 +12,7 @@
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate deploy",
-    "generate:components": "ts-node scripts/generate-components.ts"
+    "prisma:migrate": "prisma migrate deploy"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -29,6 +28,7 @@
     "dotenv": "^16.4.0",
     "express": "^5.2.1",
     "framer-motion": "^12.38.0",
+    "fs": "0.0.1-security",
     "helmet": "^8.1.0",
     "libphonenumber-js": "^1.12.42",
     "lucide-react": "^1.7.0",
@@ -36,6 +36,7 @@
     "next": "16.2.2",
     "ora": "^9.4.0",
     "p-limit": "^7.3.0",
+    "path": "^0.12.7",
     "react": "19.2.4",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.4",
