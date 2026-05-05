@@ -161,7 +161,7 @@ async function main() {
   // ------------------------------------------------------
   // PAYMENT
   // ------------------------------------------------------
-  const payment = await prisma.payment.create({
+  await prisma.payment.create({
     data: {
       orderId: order.id,
       provider: "BANK_TRANSFER",
