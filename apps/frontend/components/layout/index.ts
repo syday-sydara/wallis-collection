@@ -1,5 +1,8 @@
+// storefront
 export * from "./navbar";
-export * from "./side-bar";
-export * from "./footer";
-export * from "./admin-sidebar";
 export * from "./shop-header";
+export * from "./footer";
+export * from "./side-bar";
+
+// admin
+export * from "./admin-sidebar";
