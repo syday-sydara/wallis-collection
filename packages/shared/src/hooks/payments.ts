@@ -1,4 +1,5 @@
-import { paymentsApi } from "@/sdk";
+import { paymentsApi } from "../api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const usePayments = () =>
   useQuery({

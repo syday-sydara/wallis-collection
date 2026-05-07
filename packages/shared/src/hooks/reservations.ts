@@ -1,4 +1,5 @@
-import { reservationsApi } from "@/lib/api/reservations";
+import { reservationsApi } from "../api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const useReservations = () =>
   useQuery({
