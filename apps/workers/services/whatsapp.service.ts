@@ -1,6 +1,6 @@
 // services/whatsapp.service.ts
 import { whatsappTemplates } from "../templates/whatsapp.templates";
-import { WhatsAppOutboundProducer } from "../producers/whatsapp.outbound.producer";
+import { WhatsAppOutboundProducer } from "../producers/whatsapp.producer";
 import { normalizePhone } from "../utils/phone";
 import { prisma } from "../config/prisma";
 import { WhatsAppSessionManager } from "./whatsapp-session-manager";
