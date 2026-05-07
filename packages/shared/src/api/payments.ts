@@ -1,12 +1,12 @@
 import { http } from "./http";
 import {
   PaymentSchema,
-  Payment,
   PaymentListSchema,
-} from "../../packages/shared/src/schemas/payment";
+  Payment,
+} from "@/schemas";
 
-// Strongly typed payment method
-export type PaymentMethod = Payment["method"];
+// Strongly typed payment provider
+export type PaymentMethod = Payment["provider"];
 
 // Strongly typed payment status
 export type PaymentStatus = Payment["status"];
@@ -14,7 +14,7 @@ export type PaymentStatus = Payment["status"];
 // Create input
 export interface PaymentCreateInput {
   orderId: string;
-  method: PaymentMethod;
+  provider: PaymentMethod; // ← correct
 }
 
 // Verify input
@@ -29,14 +29,12 @@ export const paymentsApi = {
   verify: (input: PaymentVerifyInput): Promise<Payment> =>
     http.post<Payment>("/api/payments/verify", input, PaymentSchema),
 
-  // Optional but recommended for admin flows
   get: (id: string): Promise<Payment> =>
     http.get<Payment>(`/api/payments/${id}`, PaymentSchema),
 
   list: (): Promise<Payment[]> =>
     http.get<Payment[]>("/api/payments", PaymentListSchema),
 
-  // Optional lifecycle endpoint
   refund: (id: string): Promise<Payment> =>
     http.post<Payment>(`/api/payments/${id}/refund`, {}, PaymentSchema),
 };

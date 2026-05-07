@@ -5,7 +5,10 @@ import { z } from "zod";
 // ------------------------------------------------------
 function newTraceId() {
   const prefix = typeof window === "undefined" ? "server" : "client";
-  return `${prefix}-${crypto.randomUUID()}`;
+  const uuid =
+    (typeof crypto !== "undefined" && crypto.randomUUID?.()) ||
+    Math.random().toString(36).slice(2);
+  return `${prefix}-${uuid}`;
 }
 
 // ------------------------------------------------------
@@ -16,15 +19,34 @@ export class HttpError extends Error {
     message: string,
     public status: number,
     public body: any,
-    public traceId?: string
+    public traceId?: string,
+    public requestId?: string
   ) {
     super(message);
   }
 }
 
-export class TimeoutError extends Error {}
-export class NetworkError extends Error {}
-export class SchemaError extends Error {}
+export class TimeoutError extends Error {
+  constructor(msg = "Request timed out", public traceId?: string) {
+    super(msg);
+  }
+}
+
+export class NetworkError extends Error {
+  constructor(msg: string, public traceId?: string) {
+    super(msg);
+  }
+}
+
+export class SchemaError extends Error {
+  constructor(
+    public issues: any,
+    public raw: any,
+    public traceId?: string
+  ) {
+    super("Invalid response schema");
+  }
+}
 
 // ------------------------------------------------------
 // RETRY LOGIC
@@ -50,7 +72,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
 }
 
 // ------------------------------------------------------
-// BASE URL
+// BASE URL (SSR-safe)
 // ------------------------------------------------------
 const BASE =
   typeof window === "undefined"
@@ -87,13 +109,15 @@ async function request<T>(
       clearTimeout(timeout);
 
       if (err.name === "AbortError") {
-        throw new TimeoutError("Request timed out");
+        throw new TimeoutError("Request timed out", traceId);
       }
 
-      throw new NetworkError(err.message);
+      throw new NetworkError(err.message, traceId);
     }
 
     clearTimeout(timeout);
+
+    const requestId = res.headers.get("x-request-id") || undefined;
 
     const text = await res.text();
     let json: any = null;
@@ -101,7 +125,13 @@ async function request<T>(
     try {
       json = text ? JSON.parse(text) : null;
     } catch {
-      throw new HttpError(`Invalid JSON from ${url}`, res.status, text, traceId);
+      throw new HttpError(
+        `Invalid JSON from ${url}`,
+        res.status,
+        text,
+        traceId,
+        requestId
+      );
     }
 
     if (!res.ok) {
@@ -109,7 +139,8 @@ async function request<T>(
         json?.message || `Request failed: ${res.status}`,
         res.status,
         json,
-        traceId
+        traceId,
+        requestId
       );
     }
 
@@ -117,7 +148,7 @@ async function request<T>(
       const parsed = schema.safeParse(json);
       if (!parsed.success) {
         console.error(parsed.error);
-        throw new SchemaError("Invalid response schema");
+        throw new SchemaError(parsed.error, json, traceId);
       }
       return parsed.data;
     }
@@ -134,18 +165,10 @@ export const http = {
     request<T>(url, {}, schema),
 
   post: <T>(url: string, body: any, schema?: z.ZodSchema<T>) =>
-    request<T>(
-      url,
-      { method: "POST", body: JSON.stringify(body) },
-      schema
-    ),
+    request<T>(url, { method: "POST", body: JSON.stringify(body) }, schema),
 
   put: <T>(url: string, body: any, schema?: z.ZodSchema<T>) =>
-    request<T>(
-      url,
-      { method: "PUT", body: JSON.stringify(body) },
-      schema
-    ),
+    request<T>(url, { method: "PUT", body: JSON.stringify(body) }, schema),
 
   del: <T>(url: string, schema?: z.ZodSchema<T>) =>
     request<T>(url, { method: "DELETE" }, schema),

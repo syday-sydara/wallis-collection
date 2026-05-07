@@ -3,7 +3,7 @@ import {
   ProductSchema,
   ProductListSchema,
   Product,
-} from "../../packages/shared/src/schemas/product";
+} from "@/schemas";
 
 // Strongly typed input for clarity
 export interface ProductGetBySlugInput {
@@ -17,7 +17,9 @@ export const productsApi = {
   getBySlug: ({ slug }: ProductGetBySlugInput): Promise<Product> =>
     http.get<Product>(`/api/products/${slug}`, ProductSchema),
 
-  // Optional: search support
+  getById: (id: string): Promise<Product> =>
+    http.get<Product>(`/api/products/id/${id}`, ProductSchema),
+
   search: (query: string): Promise<Product[]> =>
     http.get<Product[]>(
       `/api/products?search=${encodeURIComponent(query)}`,
