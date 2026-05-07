@@ -5,9 +5,16 @@ import { z } from "zod";
 // ------------------------------------------------------
 function newTraceId() {
   const prefix = typeof window === "undefined" ? "server" : "client";
+  const c = typeof crypto !== "undefined" ? crypto : undefined;
   const uuid =
-    (typeof crypto !== "undefined" && crypto.randomUUID?.()) ||
-    Math.random().toString(36).slice(2);
+    c?.randomUUID?.() ||
+    (() => {
+      if (!c?.getRandomValues) {
+        throw new Error("Secure random generator unavailable for trace id");
+      }
+      const bytes = c.getRandomValues(new Uint8Array(16));
+      return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    })();
   return `${prefix}-${uuid}`;
 }
 
