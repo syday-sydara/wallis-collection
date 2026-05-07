@@ -18,12 +18,17 @@ export const SmsProvider = {
 
   async send(input: SmsSendInput) {
     const ctx = Correlation.get();
+    const breaker = SmsBreaker;
 
-    if (SmsBreaker.isOpen()) {
+    if (!breaker || typeof breaker.isOpen !== "function" || typeof breaker.exec !== "function") {
+      throw new Error("SMS_BREAKER_UNAVAILABLE");
+    }
+
+    if (breaker.isOpen()) {
       throw new Error("SMS_BREAKER_OPEN");
     }
 
-    return SmsBreaker.exec(async () => {
+    return breaker.exec(async () => {
       const start = Date.now();
 
       try {
