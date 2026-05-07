@@ -11,72 +11,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ------------------------------------------------------
-// ENUMS
-// ------------------------------------------------------
-
-enum OrderStatus {
-  PENDING
-  CONFIRMED
-  SHIPPED
-  DELIVERED
-  CANCELLED
-}
-
-enum ShipmentStatus {
-  PENDING
-  SHIPPED
-  IN_TRANSIT
-  DELIVERED
-  FAILED
-}
-
-enum WhatsAppOrderStatus {
-  PENDING
-  CONFIRMED
-  PAID
-  CANCELLED
-}
-
-enum ActorType {
-  USER
-  ADMIN
-  SYSTEM
-}
-
-enum ReservationStatus {
-  ACTIVE
-  CONSUMED
-  RELEASED
-}
-
-enum PaymentProvider {
-  BANK_TRANSFER
-  CASH_ON_DELIVERY
-}
-
-enum PaymentStatus {
-  PENDING
-  AWAITING_CONFIRMATION
-  SUCCESS
-  FAILED
-}
-
-enum OrderPaymentMethod {
-  BANK_TRANSFER
-  CASH_ON_DELIVERY
-}
-
-enum WhatsAppPaymentMethod {
-  BANK_TRANSFER
-  CASH_ON_DELIVERY
-}
-
-enum DeliveryMethod {
-  DELIVERY
-  PICKUP
-}
-
 // =====================================
 // USER
 // =====================================
@@ -88,10 +22,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orders          Order[]
-  auditLogs       AuditLog[] @relation("AuditLogUser")
-  whatsappOrders  WhatsAppOrder[]
+  orders    Order[]
+  auditLogs AuditLog[] @relation("AuditLogUser")
 }
+
 
 // ------------------------------------------------------
 // PRODUCT CATALOG
@@ -122,11 +56,10 @@ model ProductVariant {
 
   product      Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
   reservations StockReservation[]
-  orderItems   OrderItem[]
-  whatsappOrderItems WhatsAppOrderItem[]
 
   @@index([productId])
 }
+
 
 // ------------------------------------------------------
 // RESERVATION-DRIVEN INVENTORY
@@ -147,7 +80,12 @@ model StockReservation {
 
   @@index([variantId])
   @@index([orderId])
-  @@index([expiresAt])
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CONSUMED
+  RELEASED
 }
 
 // =====================================
@@ -177,7 +115,8 @@ model Order {
 
   currency     String @default("NGN")
 
-  paymentMethod OrderPaymentMethod
+  // Payment summary (important)
+  paymentMethod PaymentProvider
   paymentStatus PaymentStatus @default(PENDING)
 
   status        OrderStatus   @default(PENDING)
@@ -185,10 +124,6 @@ model Order {
   items       OrderItem[]
   payments    Payment[]
   shipment    Shipment?
-
-  stockReservations StockReservation[]
-  statusHistory     OrderStatusHistory[]
-  whatsappOrder     WhatsAppOrder?   @relation("FinalOrder")
 
   ipAddress String?
   userAgent String?
@@ -200,6 +135,7 @@ model Order {
   @@index([status, createdAt])
   @@index([paymentStatus, createdAt])
 }
+
 
 model OrderStatusHistory {
   id        String      @id @default(cuid())
