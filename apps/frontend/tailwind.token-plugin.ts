@@ -4,7 +4,7 @@ import { tokens } from "./tailwind.tokens";
 export default plugin(function ({ addBase }) {
   const rootVars: Record<string, string> = {};
 
-  // Flatten tokens into CSS variables
+  // Flatten only primitive tokens into CSS variables
   const flatten = (obj: any, prefix = "") => {
     for (const key in obj) {
       const value = obj[key];
@@ -13,11 +13,13 @@ export default plugin(function ({ addBase }) {
       if (typeof value === "object") {
         flatten(value, varName);
       } else {
+        // Only create CSS variables for primitive values
         rootVars[`--${varName}`] = value;
       }
     }
   };
 
+  // IMPORTANT: Only flatten the primitive token set
   flatten(tokens);
 
   addBase({

@@ -5,16 +5,8 @@ export interface FooterProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Footer({ className, children, ...props }: FooterProps) {
   return (
-    <div
-      className={cn(
-        "p-4 border-t border-border bg-bg",
-        className
-      )}
-      {...props}
-    >
-      {children ?? (
-        <span className="text-text-muted">Footer</span>
-      )}
+    <div className="p-4 border-b bg-white">
+      <span className="text-gray-500">Footer</span>
     </div>
   );
 }

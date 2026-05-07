@@ -1,46 +1,47 @@
+// events/events.ts
+
 export const Events = {
-  // -----------------------------
-  // ORDER LIFECYCLE
-  // -----------------------------
-  ORDER_CREATED: "order.created",
-  ORDER_CONFIRMED: "order.confirmed",
-  ORDER_PROCESSING: "order.processing",
-  ORDER_SHIPPED: "order.shipped",
-  ORDER_DELIVERED: "order.delivered",
-  ORDER_FAILED_DELIVERY: "order.failed_delivery",
-  ORDER_RETURNED: "order.returned",
-  ORDER_CANCELLED: "order.cancelled",
-  ORDER_STATUS_UPDATED: "order.status.updated",
+  Order: {
+    Created: "order.created.v1",
+    Confirmed: "order.confirmed.v1",
+    Processing: "order.processing.v1",
+    Shipped: "order.shipped.v1",
+    Delivered: "order.delivered.v1",
+    FailedDelivery: "order.failed_delivery.v1",
+    Returned: "order.returned.v1",
+    Cancelled: "order.cancelled.v1",
+    StatusUpdated: "order.status.updated.v1",
+  },
 
-  // -----------------------------
-  // PAYMENT
-  // -----------------------------
-  PAYMENT_INITIATED: "payment.initiated",
-  PAYMENT_SUCCESS: "payment.success",
-  PAYMENT_FAILED: "payment.failed",
-  PAYMENT_CONFIRMED: "payment.confirmed",
-  PAYMENT_REFUNDED: "payment.refunded",
+  Payment: {
+    Initiated: "payment.initiated.v1",
+    Success: "payment.success.v1",
+    Failed: "payment.failed.v1",
+    Confirmed: "payment.confirmed.v1",
+    Refunded: "payment.refunded.v1",
+  },
 
-  // -----------------------------
-  // INVENTORY
-  // -----------------------------
-  STOCK_RESERVED: "stock.reserved",
-  STOCK_RELEASED: "stock.released",
-  STOCK_CONSUMED: "stock.consumed",
-  STOCK_EXPIRED: "stock.expired",
+  Inventory: {
+    Reserved: "stock.reserved.v1",
+    Released: "stock.released.v1",
+    Consumed: "stock.consumed.v1",
+    Expired: "stock.expired.v1",
+  },
 
-  // -----------------------------
-  // WHATSAPP
-  // -----------------------------
-  WHATSAPP_SESSION_STARTED: "whatsapp.session.started",
-  WHATSAPP_SESSION_UPDATED: "whatsapp.session.updated",
-  WHATSAPP_SESSION_ENDED: "whatsapp.session.ended",
-  WHATSAPP_MESSAGE_RECEIVED: "whatsapp.message.received",
-  WHATSAPP_MESSAGE_SENT: "whatsapp.message.sent",
+  WhatsApp: {
+    SessionStarted: "whatsapp.session.started.v1",
+    SessionUpdated: "whatsapp.session.updated.v1",
+    SessionEnded: "whatsapp.session.ended.v1",
+    MessageReceived: "whatsapp.message.received.v1",
+    MessageSent: "whatsapp.message.sent.v1",
+  },
 
-  // -----------------------------
-  // SYSTEM / AUDIT
-  // -----------------------------
-  AUDIT_LOG_CREATED: "audit.created",
-  SYSTEM_HEARTBEAT: "system.heartbeat",
+  System: {
+    AuditLogCreated: "audit.created.v1",
+    Heartbeat: "system.heartbeat.v1",
+  },
 } as const;
+
+// Flatten namespaced events into a union of string literals
+export type EventName =
+  (typeof Events)[keyof typeof Events][keyof (typeof Events)[keyof typeof Events]];

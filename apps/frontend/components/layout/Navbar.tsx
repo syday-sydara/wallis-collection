@@ -1,20 +1,7 @@
-import * as React from "react";
-import { cn } from "@/lib/cn";
-
-export interface NavbarProps extends React.HTMLAttributes<HTMLDivElement> {}
-
-export function Navbar({ className, children, ...props }: NavbarProps) {
+export function Navbar() {
   return (
-    <div
-      className={cn(
-        "p-4 border-b border-border bg-bg",
-        className
-      )}
-      {...props}
-    >
-      {children ?? (
-        <span className="text-text-muted">Navbar</span>
-      )}
+    <div className="p-4 border-b bg-white">
+      <span className="text-gray-500">Navbar</span>
     </div>
   );
 }

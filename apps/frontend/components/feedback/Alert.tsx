@@ -1,20 +1,9 @@
-import * as React from "react";
-import { cn } from "@/lib/cn";
+import clsx from "clsx";
 
-export interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {}
-
-export function Alert({ className, children, ...props }: AlertProps) {
+export function Alert({ className = "", ...props }) {
   return (
-    <div
-      className={cn(
-        "rounded-md border border-border bg-bg p-4 shadow-sm",
-        className
-      )}
-      {...props}
-    >
-      {children ?? (
-        <span className="text-text-muted text-sm">Alert component</span>
-      )}
+    <div className={clsx("rounded border border-gray-200 p-3 bg-white", className)} {...props}>
+      <span className="text-gray-400 text-sm">Alert component</span>
     </div>
   );
 }

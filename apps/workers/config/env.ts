@@ -16,7 +16,11 @@ const baseConfig = {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
 
-  retryStrategy: (times: number) => Math.min(times * 50, 2000),
+  retryStrategy: (times: number) => {
+    const base = Math.min(times * 50, 2000);
+    const jitter = Math.random() * 100;
+    return base + jitter;
+  }, // ← REQUIRED COMMA
 
   reconnectOnError: (err: Error) => {
     const transient = ["READONLY", "ETIMEDOUT", "ECONNRESET", "EAI_AGAIN"];

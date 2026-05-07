@@ -1,4 +1,4 @@
-// lib/circuit-breakers.ts
+// lib/circuit-breakers/registry.ts
 import { CircuitBreaker } from "./circuit-breaker";
 import { RedisCircuitStore } from "./stores/redis-store";
 import { PrometheusCircuitMetrics } from "./metrics/prometheus-adapter";
@@ -6,9 +6,15 @@ import { logger } from "../logger";
 import { Correlation } from "../correlation";
 import { redis } from "../queue/connection";
 
+// ------------------------------------------------------
+// Shared Redis store + metrics adapter
+// ------------------------------------------------------
 const store = new RedisCircuitStore(redis);
 const metrics = new PrometheusCircuitMetrics(require("prom-client"));
 
+// ------------------------------------------------------
+// Hardened base config (correlation-aware)
+// ------------------------------------------------------
 function baseConfig(name: string, overrides = {}) {
   return {
     failureThreshold: 5,
@@ -22,40 +28,62 @@ function baseConfig(name: string, overrides = {}) {
     },
 
     onStateChange: (breaker, from, to, durationMs) => {
-      const ctx = Correlation.get();
+      Correlation.withSpan(() => {
+        const ctx = Correlation.get();
 
-      logger.warn("Circuit breaker state change", {
-        ...ctx,
-        breaker,
-        from,
-        to,
-        durationMs,
+        logger.warn("Circuit breaker state change", {
+          breaker,
+          from,
+          to,
+          durationMs,
+          spanId: ctx.spanId,
+          parentSpanId: ctx.parentSpanId,
+          workflowId: ctx.workflowId,
+        });
+
+        metrics.recordStateChange(breaker, from, to, durationMs);
       });
-
-      metrics.recordStateChange(breaker, from, to, durationMs);
     },
 
     onFailure: (breaker, err) => {
-      const ctx = Correlation.get();
+      Correlation.withSpan(() => {
+        const ctx = Correlation.get();
 
-      logger.error("Circuit breaker failure", {
-        ...ctx,
-        breaker,
-        error: err?.message,
+        logger.error("Circuit breaker failure", {
+          breaker,
+          error: err?.message,
+          code: err?.code,
+          spanId: ctx.spanId,
+          parentSpanId: ctx.parentSpanId,
+          workflowId: ctx.workflowId,
+        });
+
+        metrics.recordFailure(breaker);
       });
-
-      metrics.recordFailure(breaker);
     },
 
     onSuccess: (breaker) => {
-      // Optional: metrics for success recovery
+      Correlation.withSpan(() => {
+        const ctx = Correlation.get();
+
+        metrics.recordSuccess(breaker);
+
+        logger.info("Circuit breaker success", {
+          breaker,
+          spanId: ctx.spanId,
+          parentSpanId: ctx.parentSpanId,
+          workflowId: ctx.workflowId,
+        });
+      });
     },
 
     ...overrides,
   };
 }
 
-// Per‑service tuning
+// ------------------------------------------------------
+// Per‑service breakers (Nigeria‑first tuning)
+// ------------------------------------------------------
 export const WhatsAppBreaker = new CircuitBreaker(
   baseConfig("whatsapp", { failureThreshold: 3, timeoutMs: 15_000 }),
   "whatsapp"
@@ -76,7 +104,9 @@ export const PaymentBreaker = new CircuitBreaker(
   "payment"
 );
 
-// Registry for admin endpoints
+// ------------------------------------------------------
+// Registry for admin endpoints + introspection
+// ------------------------------------------------------
 export const CircuitBreakers = {
   whatsapp: WhatsAppBreaker,
   sms: SmsBreaker,

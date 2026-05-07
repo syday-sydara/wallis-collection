@@ -18,3 +18,4 @@ export const StockReservationSchema = z.object({
 });
 
 export type StockReservation = z.infer<typeof StockReservationSchema>;
+export type StockReservationList = StockReservation[];

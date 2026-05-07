@@ -10,42 +10,47 @@ export type OrderStatus =
 
 export type Actor = "SYSTEM" | "ADMIN" | "USER";
 
-const transitions: Record<OrderStatus, OrderStatus[]> = {
+const TERMINAL: OrderStatus[] = [
+  "DELIVERED",
+  "RETURNED",
+  "CANCELLED",
+];
+
+const transitions: Readonly<Record<OrderStatus, readonly OrderStatus[]>> = {
   PENDING: ["CONFIRMED", "CANCELLED"],
   CONFIRMED: ["PROCESSING", "CANCELLED"],
   PROCESSING: ["SHIPPED", "FAILED_DELIVERY", "CANCELLED"],
   SHIPPED: ["DELIVERED", "FAILED_DELIVERY"],
   FAILED_DELIVERY: ["PROCESSING", "RETURNED", "CANCELLED"],
-  RETURNED: [],        // terminal
-  DELIVERED: [],       // terminal
-  CANCELLED: [],       // terminal
-};
+  RETURNED: [],
+  DELIVERED: [],
+  CANCELLED: [],
+} as const;
 
 export function canTransition(
   current: OrderStatus,
   next: OrderStatus,
   actor: Actor
 ): boolean {
+  // Normalize
+  if (!current || !next) return false;
+
   // 1. Terminal states cannot transition
-  if (["DELIVERED", "RETURNED", "CANCELLED"].includes(current)) {
-    return false;
-  }
+  if (TERMINAL.includes(current)) return false;
 
-  // 2. Transition must be allowed by the state machine
-  if (!transitions[current]?.includes(next)) {
-    return false;
-  }
+  // 2. No self-transitions
+  if (current === next) return false;
 
-  // 3. USER restrictions — users can only cancel early
+  // 3. Transition must be allowed by the state machine
+  if (!transitions[current]?.includes(next)) return false;
+
+  // 4. USER restrictions — users can only cancel early
   if (actor === "USER") {
     if (next !== "CANCELLED") return false;
-
-    if (["SHIPPED", "DELIVERED", "RETURNED"].includes(current)) {
-      return false;
-    }
+    if (["SHIPPED", "DELIVERED", "RETURNED"].includes(current)) return false;
   }
 
-  // 4. ADMIN/SYSTEM cannot cancel delivered or returned orders
+  // 5. ADMIN/SYSTEM cannot cancel delivered or returned orders
   if (
     actor !== "USER" &&
     next === "CANCELLED" &&

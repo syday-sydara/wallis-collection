@@ -11,67 +11,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ------------------------------------------------------
-// ENUMS (KEEP ONLY THESE)
-// ------------------------------------------------------
-
-enum OrderStatus {
-  PENDING
-  CONFIRMED
-  SHIPPED
-  DELIVERED
-  CANCELLED
-}
-
-enum ShipmentStatus {
-  PENDING
-  SHIPPED
-  IN_TRANSIT
-  DELIVERED
-  FAILED
-}
-
-enum WhatsAppOrderStatus {
-  PENDING
-  CONFIRMED
-  PAID
-  CANCELLED
-}
-
-enum ActorType {
-  USER
-  ADMIN
-  SYSTEM
-}
-
-enum ReservationStatus {
-  ACTIVE
-  CONSUMED
-  RELEASED
-}
-
-enum PaymentProvider {
-  BANK_TRANSFER
-  CASH_ON_DELIVERY
-}
-
-enum PaymentStatus {
-  PENDING
-  AWAITING_CONFIRMATION
-  SUCCESS
-  FAILED
-}
-
-enum WhatsAppPaymentMethod {
-  BANK_TRANSFER
-  CASH_ON_DELIVERY
-}
-
-enum DeliveryMethod {
-  DELIVERY
-  PICKUP
-}
-
 // =====================================
 // USER
 // =====================================
@@ -83,9 +22,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orders          Order[]
-  auditLogs       AuditLog[] @relation("AuditLogUser")
-  whatsappOrders  WhatsAppOrder[]   // ← added
+  orders    Order[]
+  auditLogs AuditLog[] @relation("AuditLogUser")
 }
 
 
@@ -118,8 +56,6 @@ model ProductVariant {
 
   product      Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
   reservations StockReservation[]
-  orderItems   OrderItem[]        // ← added
-  whatsappOrderItems WhatsAppOrderItem[] // ← added
 
   @@index([productId])
 }
@@ -144,6 +80,12 @@ model StockReservation {
 
   @@index([variantId])
   @@index([orderId])
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CONSUMED
+  RELEASED
 }
 
 // =====================================
@@ -173,6 +115,7 @@ model Order {
 
   currency     String @default("NGN")
 
+  // Payment summary (important)
   paymentMethod PaymentProvider
   paymentStatus PaymentStatus @default(PENDING)
 
@@ -181,10 +124,6 @@ model Order {
   items       OrderItem[]
   payments    Payment[]
   shipment    Shipment?
-
-  stockReservations StockReservation[]   // ← added
-  statusHistory     OrderStatusHistory[] // ← added
-  whatsappFinalOrders WhatsAppOrder[]    // ← added
 
   ipAddress String?
   userAgent String?
@@ -203,6 +142,10 @@ model OrderStatusHistory {
   orderId   String
   status    OrderStatus
   reason    String?
+
+  actorType ActorType
+  actorId   String?
+
   createdAt DateTime    @default(now())
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -237,7 +180,7 @@ model Payment {
 
   status    PaymentStatus   @default(PENDING)
 
-  reference String?         @unique
+  reference String?         @unique(map: "unique_payment_reference")
 
   paidByName String?
   paidAt     DateTime?
@@ -302,15 +245,15 @@ model WhatsAppOrder {
 
   items       WhatsAppOrderItem[]
 
-  finalOrderId String?
-  finalOrder   Order?            @relation(fields: [finalOrderId], references: [id])
+  finalOrderId String? @unique
+  finalOrder   Order?  @relation("FinalOrder", fields: [finalOrderId], references: [id])
 
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 
   @@index([phoneNumber, createdAt])
   @@index([status, createdAt])
-  @@index([status, lastMessageAt])
+  @@index([lastMessageAt])
 }
 
 model WhatsAppOrderItem {

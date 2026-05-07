@@ -124,54 +124,52 @@ async function main() {
   // ------------------------------------------------------
   // ORDER
   // ------------------------------------------------------
-  const order = await prisma.order.create({
-    data: {
-      phoneNumber: "+2348012345678",
-      addressLine1: "12 Adeola Odeku Street",
-      city: "Victoria Island",
-      state: "Lagos",
-      lga: "Eti-Osa",
-      subtotal: randomVariant.price,
-      deliveryFee: 2000,
-      discount: 0,
-      totalAmount: randomVariant.price + 2000,
-      paymentMethod: "BANK_TRANSFER",
-      paymentStatus: "PENDING",
-      status: "PENDING",
-      currency: "NGN",
-
-      items: {
-        create: [
-          {
-            variantId: randomVariant.id,
-            quantity: 1,
-            price: randomVariant.price,
-          },
-        ],
-      },
-
-      stockReservations: {
-        connect: { id: reservation.id },
-      },
-    },
-  });
-
-  console.log("✔ Order created");
+  await prisma.$transaction(
+    Array.from({ length: 300 }).map(() => {
+      const variant = pick(allVariants);
+      return prisma.stockReservation.create({
+        data: {
+          variantId: variant.id,
+          quantity: rand(1, 3),
+          status: ReservationStatus.ACTIVE,
+          expiresAt: new Date(Date.now() + rand(5, 30) * 60 * 1000),
+        },
+      });
+    })
+  );
 
   // ------------------------------------------------------
   // PAYMENT
   // ------------------------------------------------------
-  await prisma.payment.create({
-    data: {
-      orderId: order.id,
-      provider: "BANK_TRANSFER",
-      amount: order.totalAmount,
-      currency: "NGN",
-      status: "PENDING",
-    },
-  });
+  await prisma.$transaction(
+    Array.from({ length: 100 }).map((_, i) => {
+      const customer = pick(customers);
+      const session = pick(sessions);
 
-  console.log("✔ Payment created");
+      return prisma.order.create({
+        data: {
+          customerId: customer.id,
+          status: pick([
+            OrderStatus.PENDING,
+            OrderStatus.AWAITING_PAYMENT,
+            OrderStatus.PAID,
+          ]),
+          currency: "NGN",
+          phone: customer.phone!,
+          phoneNormalized: customer.phone!,
+          whatsAppSessionId: session.id,
+          totalAmount: 0,
+
+          statusHistory: {
+            create: {
+              status: OrderStatus.PENDING,
+              reason: "Order created in test dataset",
+            },
+          },
+        },
+      });
+    })
+  );
 
   // ------------------------------------------------------
   // SHIPMENT

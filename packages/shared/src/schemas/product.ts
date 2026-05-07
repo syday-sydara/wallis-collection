@@ -18,10 +18,17 @@ export const ProductSchema = z.object({
   name: z.string(),
   slug: z.string(),
   description: z.string().nullable(),
+
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
-  variants: z.array(ProductVariantSchema).optional(),
+
+  // Keep optional ONLY if your API sometimes omits it
+  images: z.array(z.string().url()).optional(),
+
+  // Variants should always be present
+  variants: z.array(ProductVariantSchema),
 });
 
 export type Product = z.infer<typeof ProductSchema>;
 export type ProductVariant = z.infer<typeof ProductVariantSchema>;
+export type ProductList = Product[];
