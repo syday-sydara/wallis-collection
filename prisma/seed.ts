@@ -141,7 +141,7 @@ async function main() {
   // ------------------------------------------------------
   // PAYMENT
   // ------------------------------------------------------
-  const orders = await prisma.$transaction(
+  await prisma.$transaction(
     Array.from({ length: 100 }).map((_, i) => {
       const customer = pick(customers);
       const session = pick(sessions);
