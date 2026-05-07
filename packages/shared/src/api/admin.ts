@@ -14,7 +14,6 @@ import {
   WhatsAppOrderListSchema,
   AuditLogSchema,
   AuditLogListSchema,
-  QueueStatsSchema,
   QueueStatsListSchema,
   DLQEntrySchema,
   DLQListSchema,
