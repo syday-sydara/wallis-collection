@@ -1,10 +1,15 @@
-// routes/admin/circuit-breakers/index.ts
 import { Router } from "express";
 import { CircuitBreakers } from "@/lib/circuit-breakers";
 import { Correlation } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
+import { adminAuth } from "@/lib/middleware/admin-auth";
 
 export const circuitBreakerAdmin = Router();
+
+// ------------------------------------------------------
+// Apply admin security middleware
+// ------------------------------------------------------
+circuitBreakerAdmin.use(adminAuth());
 
 // ------------------------------------------------------
 // List all circuit breakers
@@ -121,7 +126,7 @@ circuitBreakerAdmin.post("/:name/clear-override", (req, res) => {
 });
 
 // ------------------------------------------------------
-// Optional: Reset breaker state (wipe Redis)
+// Reset breaker state (wipe Redis)
 // ------------------------------------------------------
 circuitBreakerAdmin.post("/:name/reset", async (req, res) => {
   Correlation.withSpan(async () => {

@@ -107,4 +107,35 @@
   --queue-waiting: var(--color-queue-waiting);
   --queue-failed: var(--color-queue-failed);
   --queue-delayed: var(--color-queue-delayed);
+
+  /* Nigeria-First Semantic Extensions */
+
+/* Payments */
+--payment-transfer: #0ea5e9;
+--payment-pos: #7c3aed;
+--payment-retry: #f59e0b;
+--payment-reversed: #dc2626;
+
+/* Delivery */
+--delivery-dispatch: #2563eb;
+--delivery-transit: #0ea5e9;
+--delivery-rider: #3b82f6;
+--delivery-failed: #dc2626;
+
+/* WhatsApp */
+--whatsapp-inbound: #22c55e;
+--whatsapp-outbound: #2563eb;
+--whatsapp-unread: #f59e0b;
+--whatsapp-failed: #dc2626;
+
+/* Compact UI Density */
+--space-compact-1: 2px;
+--space-compact-2: 6px;
+--space-compact-3: 10px;
+
+/* Typography Semantics */
+--text-heading-bold: 700;
+--text-label-strong: 600;
+--text-body-readable: 17px;
+
 }
