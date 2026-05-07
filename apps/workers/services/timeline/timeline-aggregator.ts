@@ -46,12 +46,12 @@ export class TimelineAggregator {
       reservations,
       audits,
     ] = await Promise.all([
-      OrderTimelineRepo.fetch(identity),
-      PaymentTimelineRepo.fetch(identity),
-      WhatsAppTimelineRepo.fetch(identity),
-      SmsTimelineRepo.fetch(identity),
-      ReservationTimelineRepo.fetch(identity),
-      AuditTimelineRepo.fetch(identity),
+      OrderTimelineRepo?.fetch?.(identity) ?? Promise.resolve([]),
+      PaymentTimelineRepo?.fetch?.(identity) ?? Promise.resolve([]),
+      WhatsAppTimelineRepo?.fetch?.(identity) ?? Promise.resolve([]),
+      SmsTimelineRepo?.fetch?.(identity) ?? Promise.resolve([]),
+      ReservationTimelineRepo?.fetch?.(identity) ?? Promise.resolve([]),
+      AuditTimelineRepo?.fetch?.(identity) ?? Promise.resolve([]),
     ]);
 
     // ------------------------------------------------------
