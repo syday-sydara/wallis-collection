@@ -1,13 +1,9 @@
+// events/payloads.ts
 import type { Actor } from "../domain/order-state-machine";
-import { Events } from "./events";
-
-export type EventName = (typeof Events)[keyof typeof Events];
+import type { EventName } from "./events";
 
 export interface EventPayloads {
-  // -----------------------------
-  // ORDER
-  // -----------------------------
-  "order.created": {
+  "order.created.v1": {
     orderId: string;
     customerId?: string;
     sessionId?: string;
@@ -15,7 +11,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "order.confirmed": {
+  "order.confirmed.v1": {
     orderId: string;
     actor: Actor;
     sessionId?: string;
@@ -23,7 +19,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "order.processing": {
+  "order.processing.v1": {
     orderId: string;
     actor: Actor;
     sessionId?: string;
@@ -31,7 +27,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "order.shipped": {
+  "order.shipped.v1": {
     orderId: string;
     shipmentId: string;
     carrier?: string;
@@ -41,7 +37,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "order.delivered": {
+  "order.delivered.v1": {
     orderId: string;
     deliveredAt?: Date;
     sessionId?: string;
@@ -49,7 +45,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "order.failed_delivery": {
+  "order.failed_delivery.v1": {
     orderId: string;
     reason?: string;
     sessionId?: string;
@@ -57,7 +53,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "order.returned": {
+  "order.returned.v1": {
     orderId: string;
     reason?: string;
     sessionId?: string;
@@ -65,7 +61,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "order.cancelled": {
+  "order.cancelled.v1": {
     orderId: string;
     actor: Actor;
     reason?: string;
@@ -74,7 +70,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "order.status.updated": {
+  "order.status.updated.v1": {
     orderId: string;
     from: string;
     to: string;
@@ -84,10 +80,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  // -----------------------------
-  // PAYMENT
-  // -----------------------------
-  "payment.initiated": {
+  "payment.initiated.v1": {
     paymentId: string;
     orderId: string;
     sessionId?: string;
@@ -95,7 +88,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "payment.success": {
+  "payment.success.v1": {
     paymentId: string;
     orderId: string;
     providerReference?: string;
@@ -104,7 +97,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "payment.failed": {
+  "payment.failed.v1": {
     paymentId: string;
     orderId: string;
     reason?: string;
@@ -113,7 +106,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "payment.confirmed": {
+  "payment.confirmed.v1": {
     paymentId: string;
     orderId: string;
     verifiedBy: string;
@@ -122,7 +115,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "payment.refunded": {
+  "payment.refunded.v1": {
     paymentId: string;
     orderId: string;
     amount: number;
@@ -132,10 +125,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  // -----------------------------
-  // INVENTORY
-  // -----------------------------
-  "stock.reserved": {
+  "stock.reserved.v1": {
     reservationId: string;
     variantId: string;
     quantity: number;
@@ -145,7 +135,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "stock.released": {
+  "stock.released.v1": {
     reservationId: string;
     reason?: string;
     sessionId?: string;
@@ -153,7 +143,7 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "stock.consumed": {
+  "stock.consumed.v1": {
     reservationId: string;
     orderId: string;
     sessionId?: string;
@@ -161,66 +151,55 @@ export interface EventPayloads {
     timestamp: Date;
   };
 
-  "stock.expired": {
+  "stock.expired.v1": {
     reservationId: string;
     timestamp: Date;
   };
 
-  // -----------------------------
-  // WHATSAPP
-  // -----------------------------
-  "whatsapp.session.started": {
+  "whatsapp.session.started.v1": {
     sessionId: string;
     phone: string;
     timestamp: Date;
   };
 
-  "whatsapp.session.updated": {
+  "whatsapp.session.updated.v1": {
     sessionId: string;
     lastMessageAt: Date;
     timestamp: Date;
   };
 
-  "whatsapp.session.ended": {
+  "whatsapp.session.ended.v1": {
     sessionId: string;
     reason?: string;
     timestamp: Date;
   };
 
-  "whatsapp.message.received": {
+  "whatsapp.message.received.v1": {
     sessionId: string;
     messageId: string;
     message: string;
     timestamp: Date;
   };
 
-  "whatsapp.message.sent": {
+  "whatsapp.message.sent.v1": {
     sessionId: string;
     messageId: string;
     message: string;
     timestamp: Date;
   };
 
-  // -----------------------------
-  // AUDIT
-  // -----------------------------
-  "audit.created": {
+  "audit.created.v1": {
     logId: string;
     timestamp: Date;
   };
 
-  // -----------------------------
-  // SYSTEM
-  // -----------------------------
-  "system.heartbeat": {
+  "system.heartbeat.v1": {
     worker: string;
     timestamp: Date;
   };
 }
 
-// ---------------------------------------------
-// TYPE SAFETY CHECKS
-// ---------------------------------------------
+// Compile‑time consistency checks
 type _CheckAllEventsHavePayloads = {
   [E in EventName]: E extends keyof EventPayloads ? true : never;
 };
@@ -228,3 +207,6 @@ type _CheckAllEventsHavePayloads = {
 type _CheckNoExtraPayloads = {
   [E in keyof EventPayloads]: E extends EventName ? true : never;
 };
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _AssertEventsAreConsistent = _CheckAllEventsHavePayloads & _CheckNoExtraPayloads;

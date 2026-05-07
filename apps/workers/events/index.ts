@@ -1,12 +1,9 @@
 // events/index.ts
 
-// Core event map
 export { Events } from "./events";
+export type { EventName } from "./events";
+export type { EventPayloads } from "./payloads";
 
-// Types
-export type { EventName, EventPayloads } from "./payloads";
-
-// Envelope for all events
 export interface EventEnvelope<E extends EventName = EventName> {
   name: E;
   payload: EventPayloads[E];
@@ -15,12 +12,10 @@ export interface EventEnvelope<E extends EventName = EventName> {
   traceId?: string;
 }
 
-// Type‑safe event emitter interface
 export interface EventBus {
   emit<E extends EventName>(event: EventEnvelope<E>): Promise<void>;
 }
 
-// Helper to build a typed event envelope
 export function createEvent<E extends EventName>(
   name: E,
   payload: EventPayloads[E],
