@@ -1,10 +1,29 @@
 import { z } from "zod";
 
+export const DLQErrorSchema = z.object({
+  message: z.string(),
+  code: z.string().optional(),
+  stack: z.string().optional(),
+});
+
 export const DLQEntrySchema = z.object({
   id: z.string(),
-  failedAt: z.string().datetime(),
-  reason: z.string(),
-  payload: z.any(),
+
+  dlqVersion: z.number(),
+  timestamp: z.number(),
+  retryable: z.boolean(),
+
+  originalQueue: z.string(),
+  originalJobName: z.string(),
+  originalPayload: z.any(),
+
+  traceId: z.string().nullable().optional(),
+  dlqReason: z.string().optional(),
+
+  error: DLQErrorSchema,
+
+  attemptsMade: z.number(),
+  maxAttempts: z.number(),
 });
 
 export const DLQListSchema = z.array(DLQEntrySchema);

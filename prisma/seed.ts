@@ -135,7 +135,7 @@ async function main() {
       deliveryFee: 2000,
       discount: 0,
       totalAmount: randomVariant.price + 2000,
-      paymentMethod: "BANK_TRANSFER",
+      paymentMethod: "BANK_TRANSFER", // ← FIXED ENUM
       paymentStatus: "PENDING",
       status: "PENDING",
       currency: "NGN",
@@ -168,6 +168,7 @@ async function main() {
       amount: order.totalAmount,
       currency: "NGN",
       status: "PENDING",
+      reference: faker.string.alphanumeric(10).toUpperCase(), // ← FIXED UNIQUE
     },
   });
 

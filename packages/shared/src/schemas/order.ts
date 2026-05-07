@@ -1,10 +1,14 @@
 import { z } from "zod";
 
+// ---------------------------------------------
+// ENUMS
+// ---------------------------------------------
 export const OrderStatusEnum = z.enum([
   "PENDING",
-  "AWAITING_CONFIRMATION",
-  "SUCCESS",
-  "FAILED",
+  "CONFIRMED",
+  "SHIPPED",
+  "DELIVERED",
+  "CANCELLED",
 ]);
 
 export const PaymentStatusEnum = z.enum([
@@ -14,20 +18,25 @@ export const PaymentStatusEnum = z.enum([
   "FAILED",
 ]);
 
-export const PaymentProviderEnum = z.enum([
+export const OrderPaymentMethodEnum = z.enum([
   "BANK_TRANSFER",
   "CASH_ON_DELIVERY",
 ]);
 
+// ---------------------------------------------
+// ORDER ITEM
+// ---------------------------------------------
 export const OrderItemSchema = z.object({
   id: z.string(),
   orderId: z.string(),
   variantId: z.string(),
-  quantity: z.number().int(),
-  priceAtTime: z.number().int(),
-  createdAt: z.string().datetime(),
+  quantity: z.number().int().positive(),
+  price: z.number().int().nonnegative(), // ← correct field
 });
 
+// ---------------------------------------------
+// ORDER
+// ---------------------------------------------
 export const OrderSchema = z.object({
   id: z.string(),
 
@@ -49,7 +58,7 @@ export const OrderSchema = z.object({
 
   currency: z.string(),
 
-  paymentMethod: PaymentProviderEnum,
+  paymentMethod: OrderPaymentMethodEnum,
   paymentStatus: PaymentStatusEnum,
 
   status: OrderStatusEnum,
@@ -60,8 +69,9 @@ export const OrderSchema = z.object({
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 
-  items: z.array(OrderItemSchema).optional(),
+  items: z.array(OrderItemSchema),
 });
 
 export type Order = z.infer<typeof OrderSchema>;
 export type OrderItem = z.infer<typeof OrderItemSchema>;
+export type OrderList = Order[];
