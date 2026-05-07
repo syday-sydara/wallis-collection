@@ -164,8 +164,6 @@ export class CircuitBreaker {
   // ------------------------------------------------------
   private onSuccess() {
     Correlation.withSpan(() => {
-      const ctx = Correlation.get();
-
       this.options.onSuccess?.(this.name);
 
       metrics.increment("circuit_breaker_success_total", {
@@ -193,8 +191,6 @@ export class CircuitBreaker {
   // ------------------------------------------------------
   private onFailure(err: any) {
     Correlation.withSpan(() => {
-      const ctx = Correlation.get();
-
       this.options.onFailure?.(this.name, err);
 
       metrics.increment("circuit_breaker_failure_total", {
