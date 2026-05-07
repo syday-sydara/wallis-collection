@@ -124,7 +124,7 @@ async function main() {
   // ------------------------------------------------------
   // ORDER
   // ------------------------------------------------------
-  const reservations = await prisma.$transaction(
+  await prisma.$transaction(
     Array.from({ length: 300 }).map(() => {
       const variant = pick(allVariants);
       return prisma.stockReservation.create({
