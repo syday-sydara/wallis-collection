@@ -1,79 +1,83 @@
 // services/timeline/pagination.ts
-import type { TimelineEntry } from "../../domain/timeline";
 
+export interface PaginationInput {
+  cursor: string | null;
+  reverseCursor: string | null;
+  limit: number;
+}
+
+export interface PaginationEnvelope<T> {
+  items: T[];
+  nextCursor: string | null;
+  prevCursor: string | null;
+}
+
+/**
+ * Cursor-based pagination for timeline entries.
+ *
+ * Requirements:
+ * - Stable ordering (timestamp DESC)
+ * - Forward pagination (cursor)
+ * - Reverse pagination (reverseCursor)
+ * - Symmetric navigation
+ * - Deterministic cursors (ISO timestamps)
+ */
 export class TimelinePagination {
-  static paginate(
-    entries: TimelineEntry[],
-    options: {
-      cursor?: string;       // fetch older than this
-      reverseCursor?: string; // fetch newer than this
-      limit?: number;
-    } = {}
-  ) {
-    const { cursor, reverseCursor, limit = 50 } = options;
+  static paginate<T extends { timestamp: Date }>(
+    items: T[],
+    input: PaginationInput
+  ): PaginationEnvelope<T> {
+    const { cursor, reverseCursor, limit } = input;
 
     // ------------------------------------------------------
-    // Case 1: First page (no cursors)
-    // ------------------------------------------------------
-    if (!cursor && !reverseCursor) {
-      const slice = entries.slice(0, limit);
-
-      return {
-        items: slice,
-        nextCursor:
-          slice.length === limit
-            ? slice[slice.length - 1].timestamp.toISOString()
-            : null,
-        prevCursor: null,
-        hasMoreNext: slice.length === limit,
-        hasMorePrev: false,
-      };
-    }
-
-    // ------------------------------------------------------
-    // Case 2: Forward pagination (older items)
-    // ------------------------------------------------------
-    if (cursor) {
-      const cursorDate = new Date(cursor);
-      if (isNaN(cursorDate.getTime())) throw new Error("Invalid cursor");
-
-      const filtered = entries.filter(e => e.timestamp < cursorDate);
-      const slice = filtered.slice(0, limit);
-
-      return {
-        items: slice,
-        nextCursor:
-          slice.length === limit
-            ? slice[slice.length - 1].timestamp.toISOString()
-            : null,
-        prevCursor: cursor, // allows scrolling back up
-        hasMoreNext: slice.length === limit,
-        hasMorePrev: true,
-      };
-    }
-
-    // ------------------------------------------------------
-    // Case 3: Reverse pagination (newer items)
+    // 1. If reverseCursor is provided → paginate backwards
     // ------------------------------------------------------
     if (reverseCursor) {
-      const cursorDate = new Date(reverseCursor);
-      if (isNaN(cursorDate.getTime())) throw new Error("Invalid reverseCursor");
+      const startIndex = items.findIndex(
+        (i) => i.timestamp.toISOString() === reverseCursor
+      );
 
-      const filtered = entries.filter(e => e.timestamp > cursorDate);
-      const slice = filtered.slice(0, limit);
+      const sliceStart = Math.max(startIndex - limit, 0);
+      const sliceEnd = startIndex;
+
+      const page = items.slice(sliceStart, sliceEnd);
 
       return {
-        items: slice,
-        nextCursor: reverseCursor, // allows scrolling back down
-        prevCursor:
-          slice.length === limit
-            ? slice[slice.length - 1].timestamp.toISOString()
-            : null,
-        hasMoreNext: true,
-        hasMorePrev: slice.length === limit,
+        items: page,
+        nextCursor: page.length ? page[page.length - 1].timestamp.toISOString() : null,
+        prevCursor: sliceStart > 0 ? items[sliceStart - 1].timestamp.toISOString() : null,
       };
     }
 
-    throw new Error("Invalid pagination state");
+    // ------------------------------------------------------
+    // 2. Forward pagination (cursor)
+    // ------------------------------------------------------
+    if (cursor) {
+      const startIndex = items.findIndex(
+        (i) => i.timestamp.toISOString() === cursor
+      );
+
+      const sliceStart = startIndex + 1;
+      const sliceEnd = sliceStart + limit;
+
+      const page = items.slice(sliceStart, sliceEnd);
+
+      return {
+        items: page,
+        nextCursor: page.length ? page[page.length - 1].timestamp.toISOString() : null,
+        prevCursor: sliceStart > 0 ? items[sliceStart - 1].timestamp.toISOString() : null,
+      };
+    }
+
+    // ------------------------------------------------------
+    // 3. First page (no cursor)
+    // ------------------------------------------------------
+    const page = items.slice(0, limit);
+
+    return {
+      items: page,
+      nextCursor: page.length ? page[page.length - 1].timestamp.toISOString() : null,
+      prevCursor: null,
+    };
   }
 }

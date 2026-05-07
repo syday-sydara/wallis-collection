@@ -14,34 +14,45 @@ export class TimelineService {
     limit?: number;
   }) {
     // ------------------------------------------------------
-    // 1. Resolve identity
+    // 1. Resolve identity (customerId, phone, sessionId → identity envelope)
     // ------------------------------------------------------
     const identity = await TimelineIdentityResolver.resolve(input);
+
+    if (!identity) {
+      return {
+        items: [],
+        nextCursor: null,
+        prevCursor: null,
+      };
+    }
+
+    const pagination = {
+      cursor: input.cursor ?? null,
+      reverseCursor: input.reverseCursor ?? null,
+      limit: input.limit ?? 50,
+    };
 
     // ------------------------------------------------------
     // 2. Try cache (cursor-aware)
     // ------------------------------------------------------
-    const cached = await TimelineCache.get(identity, {
-      cursor: input.cursor,
-      reverseCursor: input.reverseCursor,
-    });
+    const cached = await TimelineCache.get(identity, pagination);
 
     if (cached) {
       return cached; // already a pagination envelope
     }
 
     // ------------------------------------------------------
-    // 3. Build timeline (already sorted)
+    // 3. Build timeline (sorted, enriched, correlated)
     // ------------------------------------------------------
-    const page = await TimelineAggregator.getTimeline(input);
+    const page = await TimelineAggregator.getTimeline({
+      identity,
+      ...pagination,
+    });
 
     // ------------------------------------------------------
     // 4. Cache the page
     // ------------------------------------------------------
-    await TimelineCache.set(identity, {
-      cursor: input.cursor,
-      reverseCursor: input.reverseCursor,
-    }, page);
+    await TimelineCache.set(identity, pagination, page);
 
     return page;
   }

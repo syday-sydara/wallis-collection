@@ -1,3 +1,5 @@
+// services/timeline/timeline-aggregator.ts
+
 import { TimelineIdentityResolver } from "./identity-resolver";
 import { TimelinePagination } from "./pagination";
 
@@ -18,9 +20,24 @@ import { ReservationEnricher } from "./enrichers/reservation.enricher";
 import { AuditEnricher } from "./enrichers/audit.enricher";
 
 export class TimelineAggregator {
-  static async getTimeline(input) {
-    const identity = await TimelineIdentityResolver.resolve(input);
+  static async getTimeline(input: {
+    identity: {
+      customerId?: string;
+      phone?: string;
+      sessionId?: string;
+    };
+    cursor?: string | null;
+    reverseCursor?: string | null;
+    limit: number;
+  }) {
+    // ------------------------------------------------------
+    // 1. Identity is already resolved by TimelineService
+    // ------------------------------------------------------
+    const identity = input.identity;
 
+    // ------------------------------------------------------
+    // 2. Fetch all domain events in parallel
+    // ------------------------------------------------------
     const [
       orders,
       payments,
@@ -29,7 +46,7 @@ export class TimelineAggregator {
       reservations,
       audits,
     ] = await Promise.all([
-      OrderTimelineRepo?.fetch?.(identity) ?? Promise.resolve([]),
+      OrderTimelineRepo.fetch(identity),
       PaymentTimelineRepo.fetch(identity),
       WhatsAppTimelineRepo.fetch(identity),
       SmsTimelineRepo.fetch(identity),
@@ -37,6 +54,9 @@ export class TimelineAggregator {
       AuditTimelineRepo.fetch(identity),
     ]);
 
+    // ------------------------------------------------------
+    // 3. Normalize + enrich each domain event
+    // ------------------------------------------------------
     const timeline = [
       ...orders.map(OrderEnricher.enrich),
       ...payments.map(PaymentEnricher.enrich),
@@ -46,12 +66,18 @@ export class TimelineAggregator {
       ...audits.map(AuditEnricher.enrich),
     ];
 
+    // ------------------------------------------------------
+    // 4. Sort descending (newest first)
+    // ------------------------------------------------------
     timeline.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
+    // ------------------------------------------------------
+    // 5. Cursor-based pagination
+    // ------------------------------------------------------
     return TimelinePagination.paginate(timeline, {
-      cursor: input.cursor,
-      reverseCursor: input.reverseCursor,
-      limit: input.limit ?? 50,
+      cursor: input.cursor ?? null,
+      reverseCursor: input.reverseCursor ?? null,
+      limit: input.limit,
     });
   }
 }

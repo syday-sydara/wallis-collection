@@ -13,9 +13,15 @@ export async function mountQueueDashboard(app: express.Express) {
   const serverAdapter = new ExpressAdapter();
   serverAdapter.setBasePath("/admin/queues");
 
-  const queueNames = Array.isArray(ALL_QUEUES) ? ALL_QUEUES : [];
+  // Ensure registry is valid
+  const queueNames: string[] = Array.isArray(ALL_QUEUES) ? ALL_QUEUES : [];
+
+  // Create stable Queue instances (BullMQ requires singletons)
   const queues = queueNames.map(
-    (name) => new Queue(name, { connection: redis })
+    (name) =>
+      new Queue(name, {
+        connection: redis,
+      })
   );
 
   const adapters = queues.map((q) => new BullMQAdapter(q));
