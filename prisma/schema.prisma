@@ -309,8 +309,8 @@ model WhatsAppOrder {
 
   items       WhatsAppOrderItem[]
 
-  finalOrderId String?
-  finalOrder   Order?            @relation("FinalOrder", fields: [finalOrderId], references: [id])
+  finalOrderId String? @unique
+  finalOrder   Order?  @relation("FinalOrder", fields: [finalOrderId], references: [id])
 
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt

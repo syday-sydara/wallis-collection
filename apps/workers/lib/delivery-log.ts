@@ -1,6 +1,7 @@
 // lib/delivery-log.ts
 import { prisma } from "./prisma";
 import { Correlation } from "./correlation";
+import { logger } from "./logger";
 
 export type DeliveryStatus =
   | "SENT"
@@ -19,6 +20,7 @@ interface LogInput {
   customerId?: string;
   phoneNormalized?: string;
   eventName?: string;
+  workflowId?: string;
 
   // Provider metadata
   messageId?: string;
@@ -43,36 +45,76 @@ export const DeliveryLog = {
     try {
       return await prisma.messageDeliveryLog.create({
         data: {
+          // ------------------------------------------------------
+          // Core delivery metadata
+          // ------------------------------------------------------
           channel: input.channel,
           status: input.status,
 
-          // Correlation context
+          // ------------------------------------------------------
+          // Full correlation context
+          // ------------------------------------------------------
           traceId: ctx.traceId,
           requestId: ctx.requestId,
           spanId: ctx.spanId,
+          parentSpanId: ctx.parentSpanId ?? null,
+          workflowId: input.workflowId ?? ctx.workflowId ?? null,
+
           sessionId: input.sessionId ?? ctx.sessionId ?? null,
           orderId: input.orderId ?? ctx.orderId ?? null,
           customerId: input.customerId ?? ctx.customerId ?? null,
 
+          // ------------------------------------------------------
           // Additional correlation metadata
+          // ------------------------------------------------------
           phoneNormalized: input.phoneNormalized ?? null,
           eventName: input.eventName ?? null,
 
+          // ------------------------------------------------------
           // Provider metadata
+          // ------------------------------------------------------
           messageId: input.messageId ?? null,
           providerMessageId: input.providerMessageId ?? null,
 
-          // Error metadata
-          error: input.error ?? null,
+          // ------------------------------------------------------
+          // Error metadata (safe JSON)
+          // ------------------------------------------------------
+          error: input.error
+            ? safeJson(input.error)
+            : null,
 
-          // Raw payload + metadata
-          payload: input.payload ?? null,
-          metadata: input.metadata ?? null,
+          // ------------------------------------------------------
+          // Raw payload + metadata (safe JSON)
+          // ------------------------------------------------------
+          payload: input.payload
+            ? safeJson(input.payload)
+            : null,
+
+          metadata: input.metadata
+            ? safeJson(input.metadata)
+            : null,
         },
       });
-    } catch (err) {
-      console.error("[DeliveryLog] Failed to write log", err);
-      return null; // logging must never break the pipeline
+    } catch (err: any) {
+      logger.error("[DeliveryLog] Failed to write log", {
+        error: err.message,
+        traceId: ctx.traceId,
+        spanId: ctx.spanId,
+      });
+
+      // Delivery logging must never break the pipeline
+      return null;
     }
   },
 };
+
+// ------------------------------------------------------
+// Safe JSON serializer (prevents circular structure crashes)
+// ------------------------------------------------------
+function safeJson(value: any) {
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return { error: "Unserializable payload" };
+  }
+}
