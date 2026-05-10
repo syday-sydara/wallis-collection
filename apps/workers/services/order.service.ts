@@ -1,12 +1,18 @@
 // services/order.service.ts
-import { prisma } from "../lib/prisma";
-import { normalizePhone } from "../utils/phone";
-import { WhatsAppSessionManager } from "./whatsapp-session-manager";
-import { OrderProducer } from "../producers/order.producer";
+import { prisma } from "@/lib/prisma";
+import { normalizePhone } from "@/utils/phone";
+import { WhatsAppSessionManager } from "@/services/whatsapp-session-manager";
+import { OrderProducer } from "@/producers/order.producer";
+import { Correlation } from "@/lib/correlation";
+import { logger } from "@/lib/logger";
 
 export class OrderService {
   /**
-   * Create order and auto‑attach WhatsApp session
+   * Create order and auto‑attach WhatsApp session.
+   * Guarantees:
+   * - strict phone normalization
+   * - consistent session attachment
+   * - typed order.created event
    */
   static async createOrder(input: {
     customerId?: string;
@@ -16,14 +22,18 @@ export class OrderService {
     currency: string;
     notes?: string;
   }) {
-    // ------------------------------------------------------
-    // 1. Normalize phone
-    // ------------------------------------------------------
-    const normalizedPhone = input.phone ? normalizePhone(input.phone) : null;
+    const ctx = Correlation.get();
 
-    // ------------------------------------------------------
+    // 1. Normalize phone (if provided)
+    const normalizedPhone = input.phone
+      ? normalizePhone(input.phone)
+      : null;
+
+    if (input.phone && !normalizedPhone) {
+      throw new Error("Invalid phone number");
+    }
+
     // 2. Resolve WhatsApp session
-    // ------------------------------------------------------
     let session = null;
 
     if (input.sessionId) {
@@ -34,17 +44,13 @@ export class OrderService {
       session = await WhatsAppSessionManager.getOrCreateSession(normalizedPhone);
     }
 
-    // ------------------------------------------------------
     // 3. Resolve customer
-    // ------------------------------------------------------
     const customerId =
       input.customerId ??
       session?.customerId ??
       null;
 
-    // ------------------------------------------------------
     // 4. Create order
-    // ------------------------------------------------------
     const order = await prisma.order.create({
       data: {
         customerId,
@@ -57,27 +63,36 @@ export class OrderService {
       },
     });
 
-    // ------------------------------------------------------
     // 5. Emit event
-    // ------------------------------------------------------
     await OrderProducer.orderCreated({
       orderId: order.id,
       customerId: order.customerId ?? undefined,
       sessionId: session?.id,
       customerPhone: normalizedPhone ?? undefined,
       timestamp: new Date(),
+      ...ctx,
+    });
+
+    logger.info("[ORDER] Created order", {
+      ...ctx,
+      orderId: order.id,
+      customerId: order.customerId,
+      sessionId: session?.id,
     });
 
     return order;
   }
 
   /**
-   * Confirm order and ensure WhatsApp session is attached
+   * Confirm order and ensure WhatsApp session is attached.
+   * Guarantees:
+   * - session attached if possible
+   * - typed order.confirmed event
    */
   static async confirmOrder(orderId: string, actor: string) {
-    // ------------------------------------------------------
+    const ctx = Correlation.get();
+
     // 1. Load order + session
-    // ------------------------------------------------------
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: { whatsAppSession: true },
@@ -85,20 +100,18 @@ export class OrderService {
 
     if (!order) throw new Error("Order not found");
 
-    const normalizedPhone = order.phone ? normalizePhone(order.phone) : null;
+    const normalizedPhone =
+      order.phoneNormalized ??
+      (order.phone ? normalizePhone(order.phone) : null);
 
-    // ------------------------------------------------------
     // 2. Ensure session exists
-    // ------------------------------------------------------
     let session = order.whatsAppSession;
 
     if (!session && normalizedPhone) {
       session = await WhatsAppSessionManager.getOrCreateSession(normalizedPhone);
     }
 
-    // ------------------------------------------------------
     // 3. Attach session to order if missing
-    // ------------------------------------------------------
     if (!order.whatsAppSessionId && session) {
       await prisma.order.update({
         where: { id: orderId },
@@ -106,15 +119,21 @@ export class OrderService {
       });
     }
 
-    // ------------------------------------------------------
     // 4. Emit event
-    // ------------------------------------------------------
     await OrderProducer.orderConfirmed({
       orderId,
       actor,
       sessionId: session?.id,
       customerPhone: normalizedPhone ?? undefined,
       timestamp: new Date(),
+      ...ctx,
+    });
+
+    logger.info("[ORDER] Confirmed order", {
+      ...ctx,
+      orderId,
+      actor,
+      sessionId: session?.id,
     });
 
     return order;

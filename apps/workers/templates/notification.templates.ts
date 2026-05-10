@@ -1,5 +1,5 @@
 // services/notification.templates.ts
-import type { EventName, EventPayloads } from "../events/payloads";
+import type { EventName, EventPayloads } from "@/events/payloads";
 
 export type NotificationMessage = {
   subject: string;
@@ -13,7 +13,19 @@ type TemplateFn<E extends EventName> = (
 ) => NotificationMessage;
 
 /**
- * Strongly typed template registry
+ * Shared helper to remove duplication.
+ */
+function buildMessage(
+  event: EventName,
+  subject: string,
+  text: string,
+  html: string
+): NotificationMessage {
+  return { event, subject, bodyText: text, bodyHtml: html };
+}
+
+/**
+ * Strongly typed template registry (de‑duplicated).
  */
 export const NotificationTemplates: {
   [E in EventName]?: TemplateFn<E>;
@@ -21,61 +33,68 @@ export const NotificationTemplates: {
   // -----------------------------
   // ORDER
   // -----------------------------
-  "order.confirmed": ({ orderId }) => ({
-    event: "order.confirmed",
-    subject: `Order #${orderId} Confirmed`,
-    bodyText: `Your order ${orderId} has been confirmed.`,
-    bodyHtml: `<p>Your order <strong>${orderId}</strong> has been confirmed.</p>`,
-  }),
+  "order.confirmed": ({ orderId }) =>
+    buildMessage(
+      "order.confirmed",
+      `Order #${orderId} Confirmed`,
+      `Your order ${orderId} has been confirmed.`,
+      `<p>Your order <strong>${orderId}</strong> has been confirmed.</p>`
+    ),
 
-  "order.shipped": ({ orderId, shipmentId, trackingNumber }) => ({
-    event: "order.shipped",
-    subject: `Order #${orderId} Shipped`,
-    bodyText: `Your order ${orderId} has shipped. Tracking: ${trackingNumber}`,
-    bodyHtml: `<p>Your order <strong>${orderId}</strong> has shipped.</p>
-               <p>Tracking: <strong>${trackingNumber}</strong></p>`,
-  }),
+  "order.shipped": ({ orderId, trackingNumber }) =>
+    buildMessage(
+      "order.shipped",
+      `Order #${orderId} Shipped`,
+      `Your order ${orderId} has shipped. Tracking: ${trackingNumber}`,
+      `<p>Your order <strong>${orderId}</strong> has shipped.</p>
+       <p>Tracking: <strong>${trackingNumber}</strong></p>`
+    ),
 
-  "order.delivered": ({ orderId }) => ({
-    event: "order.delivered",
-    subject: `Order #${orderId} Delivered`,
-    bodyText: `Your order ${orderId} has been delivered.`,
-    bodyHtml: `<p>Your order <strong>${orderId}</strong> has been delivered.</p>`,
-  }),
+  "order.delivered": ({ orderId }) =>
+    buildMessage(
+      "order.delivered",
+      `Order #${orderId} Delivered`,
+      `Your order ${orderId} has been delivered.`,
+      `<p>Your order <strong>${orderId}</strong> has been delivered.</p>`
+    ),
 
   // -----------------------------
   // PAYMENT
   // -----------------------------
-  "payment.success": ({ orderId, amount }) => ({
-    event: "payment.success",
-    subject: `Payment Received`,
-    bodyText: `Your payment for order ${orderId} was successful. Amount: ₦${amount}`,
-    bodyHtml: `<p>Your payment for order <strong>${orderId}</strong> was successful.</p>
-               <p>Amount: <strong>₦${amount}</strong></p>`,
-  }),
+  "payment.success": ({ orderId, amount }) =>
+    buildMessage(
+      "payment.success",
+      `Payment Received`,
+      `Your payment for order ${orderId} was successful. Amount: ₦${amount}`,
+      `<p>Your payment for order <strong>${orderId}</strong> was successful.</p>
+       <p>Amount: <strong>₦${amount}</strong></p>`
+    ),
 
-  "payment.failed": ({ orderId }) => ({
-    event: "payment.failed",
-    subject: `Payment Failed`,
-    bodyText: `Your payment for order ${orderId} failed. Please try again.`,
-    bodyHtml: `<p>Your payment for order <strong>${orderId}</strong> failed.</p>`,
-  }),
+  "payment.failed": ({ orderId }) =>
+    buildMessage(
+      "payment.failed",
+      `Payment Failed`,
+      `Your payment for order ${orderId} failed. Please try again.`,
+      `<p>Your payment for order <strong>${orderId}</strong> failed.</p>`
+    ),
 
   // -----------------------------
   // SHIPMENT
   // -----------------------------
-  "shipment.created": ({ orderId, shipmentId }) => ({
-    event: "shipment.created",
-    subject: `Shipment Created`,
-    bodyText: `A shipment has been created for order ${orderId}. Shipment ID: ${shipmentId}`,
-    bodyHtml: `<p>A shipment has been created for order <strong>${orderId}</strong>.</p>
-               <p>Shipment ID: <strong>${shipmentId}</strong></p>`,
-  }),
+  "shipment.created": ({ orderId, shipmentId }) =>
+    buildMessage(
+      "shipment.created",
+      `Shipment Created`,
+      `A shipment has been created for order ${orderId}. Shipment ID: ${shipmentId}`,
+      `<p>A shipment has been created for order <strong>${orderId}</strong>.</p>
+       <p>Shipment ID: <strong>${shipmentId}</strong></p>`
+    ),
 
-  "shipment.failed_delivery": ({ orderId }) => ({
-    event: "shipment.failed_delivery",
-    subject: `Delivery Attempt Failed`,
-    bodyText: `Delivery for order ${orderId} failed. We will contact you.`,
-    bodyHtml: `<p>Delivery for order <strong>${orderId}</strong> failed.</p>`,
-  }),
+  "shipment.failed_delivery": ({ orderId }) =>
+    buildMessage(
+      "shipment.failed_delivery",
+      `Delivery Attempt Failed`,
+      `Delivery for order ${orderId} failed. We will contact you.`,
+      `<p>Delivery for order <strong>${orderId}</strong> failed.</p>`
+    ),
 };

@@ -1,76 +1,97 @@
-// services/timeline/cache.ts
-import { redis } from "../../lib/redis";
+// services/whatsapp.service.ts
+import { whatsappTemplates } from "@/templates/whatsapp.templates";
+import { WhatsAppOutboundProducer } from "@/producers/whatsapp.producer";
+import { normalizePhone } from "@/utils/phone";
+import { prisma } from "@/lib/prisma";
+import { WhatsAppSessionManager } from "@/services/whatsapp-session-manager";
+import { Correlation } from "@/lib/correlation";
+import { logger } from "@/lib/logger";
 
-export class TimelineCache {
+export class WhatsAppService {
   /**
-   * Base identity key (customer or phone or session)
+   * High-level API:
+   * sendTemplate({ event, payload })
+   *
+   * Guarantees:
+   * - strict phone resolution
+   * - strict template resolution
+   * - unified variable resolution
+   * - unified message creation
+   * - unified outbound enqueue
    */
-  static identityKey(identity: {
-    customerId?: string | null;
-    phone?: string | null;
-    sessionId?: string | null;
+  static async sendTemplate({
+    event,
+    payload,
+  }: {
+    event: string;
+    payload: any;
   }) {
-    if (identity.customerId) return `timeline:${identity.customerId}`;
-    if (identity.phone) return `timeline:phone:${identity.phone}`;
-    if (identity.sessionId) return `timeline:session:${identity.sessionId}`;
-    return "timeline:unknown";
-  }
+    const ctx = Correlation.get();
 
-  /**
-   * Cursor-aware cache key
-   */
-  static pageKey(
-    identity: { customerId?: string; phone?: string; sessionId?: string },
-    cursor?: string | null,
-    reverseCursor?: string | null
-  ) {
-    const base = this.identityKey(identity);
-
-    if (cursor) return `${base}:cursor:${cursor}`;
-    if (reverseCursor) return `${base}:reverse:${reverseCursor}`;
-
-    return `${base}:first`;
-  }
-
-  /**
-   * Get cached page
-   */
-  static async get(
-    identity: { customerId?: string; phone?: string; sessionId?: string },
-    { cursor, reverseCursor }: { cursor?: string | null; reverseCursor?: string | null }
-  ) {
-    const key = this.pageKey(identity, cursor, reverseCursor);
-    const cached = await redis.get(key);
-    return cached ? JSON.parse(cached) : null;
-  }
-
-  /**
-   * Cache a page (pagination envelope)
-   */
-  static async set(
-    identity: { customerId?: string; phone?: string; sessionId?: string },
-    { cursor, reverseCursor }: { cursor?: string | null; reverseCursor?: string | null },
-    page: any
-  ) {
-    const key = this.pageKey(identity, cursor, reverseCursor);
-
-    // Nigeria-first TTL: 5 minutes (network jitter, WhatsApp delays)
-    await redis.set(key, JSON.stringify(page), "EX", 300);
-  }
-
-  /**
-   * Invalidate all cached pages for this identity
-   */
-  static async invalidate(identity: {
-    customerId?: string;
-    phone?: string;
-    sessionId?: string;
-  }) {
-    const base = this.identityKey(identity);
-    const keys = await redis.keys(`${base}*`);
-
-    if (keys.length > 0) {
-      await redis.del(...keys);
+    // 1. Resolve phone (deduplicated)
+    const phone = resolvePhone(payload);
+    if (!phone) {
+      logger.error("[WHATSAPP] Invalid phone", { ...ctx, payload });
+      return;
     }
+
+    // 2. Resolve or create session
+    const session = await WhatsAppSessionManager.getOrCreateSession(phone);
+
+    // 3. Resolve template
+    const tpl = whatsappTemplates[event];
+    if (!tpl) {
+      logger.error("[WHATSAPP] Unknown template", { ...ctx, event });
+      return;
+    }
+
+    // 4. Resolve variables
+    const variables = tpl.resolve(payload);
+
+    // 5. Create DB message record (deduplicated)
+    const message = await createOutboundMessage(session.id, tpl, payload);
+
+    // 6. Enqueue outbound job (deduplicated)
+    await WhatsAppOutboundProducer.send(tpl.name, phone, {
+      sessionId: session.id,
+      messageId: message.id,
+      variables,
+      rawPayload: payload,
+      ...ctx,
+    });
+
+    logger.info("[WHATSAPP] Outbound message enqueued", {
+      ...ctx,
+      template: tpl.name,
+      to: phone,
+      sessionId: session.id,
+      messageId: message.id,
+    });
+
+    return message;
   }
+}
+
+// ------------------------------------------------------
+// INTERNAL HELPERS (deduplicated logic)
+// ------------------------------------------------------
+
+function resolvePhone(payload: any): string | null {
+  return (
+    normalizePhone(payload.phoneNumber) ??
+    normalizePhone(payload.customerPhone) ??
+    normalizePhone(payload.whatsappPhone) ??
+    null
+  );
+}
+
+async function createOutboundMessage(sessionId: string, tpl: any, payload: any) {
+  return prisma.whatsAppMessage.create({
+    data: {
+      sessionId,
+      direction: "OUTBOUND",
+      body: tpl.preview ? tpl.preview(payload) : "",
+      status: "QUEUED",
+    },
+  });
 }

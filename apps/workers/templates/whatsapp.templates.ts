@@ -1,151 +1,123 @@
 // templates/whatsapp.templates.ts
 
-/**
- * WhatsAppTemplateDefinition
- * - name: WhatsApp Cloud API template name
- * - resolve: maps event payload → array of WhatsApp template variables
- */
 export interface WhatsAppTemplateDefinition {
   name: string;
   resolve: (payload: any) => string[];
 }
 
 /**
- * WhatsApp Templates
- *
- * IMPORTANT:
- * - Keys MUST match NotificationService → WhatsAppOutboundProducer.send(templateKey)
- * - Values MUST match actual WhatsApp Cloud API template names
- * - resolve() MUST return variables in the exact order defined in WhatsApp Manager
+ * Shared helper to remove duplication.
+ * Ensures:
+ * - consistent template shape
+ * - consistent variable ordering
+ * - consistent fallback handling
+ */
+function tpl(
+  name: string,
+  resolver: (payload: any) => (string | number | null | undefined)[]
+): WhatsAppTemplateDefinition {
+  return {
+    name,
+    resolve: (payload: any) =>
+      resolver(payload).map((v) => (v == null ? "" : String(v))),
+  };
+}
+
+/**
+ * Strongly typed WhatsApp template registry (de‑duplicated).
  */
 export const whatsappTemplates: Record<string, WhatsAppTemplateDefinition> = {
   // ---------------------------------------------------------
   // ORDER LIFECYCLE
   // ---------------------------------------------------------
+  "order.confirmed": tpl("order_confirmed", ({ orderId }) => [orderId]),
 
-  "order.confirmed": {
-    name: "order_confirmed", // WhatsApp template name
-    resolve: ({ orderId }) => [orderId],
-  },
+  "order.shipped": tpl("order_shipped", ({ orderId, trackingNumber }) => [
+    orderId,
+    trackingNumber ?? "No tracking number",
+  ]),
 
-  "order.shipped": {
-    name: "order_shipped",
-    resolve: ({ orderId, trackingNumber }) => [
-      orderId,
-      trackingNumber ?? "No tracking number",
-    ],
-  },
+  "order.delivered": tpl("order_delivered", ({ orderId }) => [orderId]),
 
-  "order.delivered": {
-    name: "order_delivered",
-    resolve: ({ orderId }) => [orderId],
-  },
+  "order.failed_delivery": tpl(
+    "order_failed_delivery",
+    ({ orderId, reason }) => [orderId, reason ?? "Delivery attempt failed"]
+  ),
 
-  "order.failed_delivery": {
-    name: "order_failed_delivery",
-    resolve: ({ orderId, reason }) => [
-      orderId,
-      reason ?? "Delivery attempt failed",
-    ],
-  },
+  "order.returned": tpl("order_returned", ({ orderId, reason }) => [
+    orderId,
+    reason ?? "Item returned",
+  ]),
 
-  "order.returned": {
-    name: "order_returned",
-    resolve: ({ orderId, reason }) => [
-      orderId,
-      reason ?? "Item returned",
-    ],
-  },
-
-  "order.cancelled": {
-    name: "order_cancelled",
-    resolve: ({ orderId, reason }) => [
-      orderId,
-      reason ?? "Order cancelled",
-    ],
-  },
+  "order.cancelled": tpl("order_cancelled", ({ orderId, reason }) => [
+    orderId,
+    reason ?? "Order cancelled",
+  ]),
 
   // ---------------------------------------------------------
   // PAYMENT
   // ---------------------------------------------------------
-
-  "payment.success": {
-    name: "payment_success",
-    resolve: ({ orderId, amount, currency }) => [
+  "payment.success": tpl(
+    "payment_success",
+    ({ orderId, amount, currency }) => [
       orderId,
-      `${amount}`,
+      amount,
       currency ?? "NGN",
-    ],
-  },
+    ]
+  ),
 
-  "payment.failed": {
-    name: "payment_failed",
-    resolve: ({ orderId, reason }) => [
-      orderId,
-      reason ?? "Payment could not be completed",
-    ],
-  },
+  "payment.failed": tpl("payment_failed", ({ orderId, reason }) => [
+    orderId,
+    reason ?? "Payment could not be completed",
+  ]),
 
-  "payment.refunded": {
-    name: "payment_refunded",
-    resolve: ({ orderId, amount, reason }) => [
+  "payment.refunded": tpl(
+    "payment_refunded",
+    ({ orderId, amount, reason }) => [
       orderId,
-      `${amount}`,
+      amount,
       reason ?? "Refund processed",
-    ],
-  },
+    ]
+  ),
 
   // ---------------------------------------------------------
   // SHIPMENT
   // ---------------------------------------------------------
-
-  "shipment.created": {
-    name: "shipment_created",
-    resolve: ({ orderId, trackingNumber }) => [
+  "shipment.created": tpl(
+    "shipment_created",
+    ({ orderId, trackingNumber }) => [
       orderId,
       trackingNumber ?? "No tracking number",
-    ],
-  },
+    ]
+  ),
 
-  "shipment.failed_delivery": {
-    name: "shipment_failed_delivery",
-    resolve: ({ orderId, reason }) => [
+  "shipment.failed_delivery": tpl(
+    "shipment_failed_delivery",
+    ({ orderId, reason }) => [
       orderId,
       reason ?? "Delivery attempt failed",
-    ],
-  },
+    ]
+  ),
 
   // ---------------------------------------------------------
-  // STOCK / INVENTORY (optional)
+  // STOCK / INVENTORY
   // ---------------------------------------------------------
+  "stock.reserved": tpl("stock_reserved", ({ reservationId, variantId }) => [
+    reservationId,
+    variantId,
+  ]),
 
-  "stock.reserved": {
-    name: "stock_reserved",
-    resolve: ({ reservationId, variantId }) => [
-      reservationId,
-      variantId,
-    ],
-  },
-
-  "stock.released": {
-    name: "stock_released",
-    resolve: ({ reservationId, reason }) => [
-      reservationId,
-      reason ?? "Stock released",
-    ],
-  },
+  "stock.released": tpl("stock_released", ({ reservationId, reason }) => [
+    reservationId,
+    reason ?? "Stock released",
+  ]),
 
   // ---------------------------------------------------------
-  // SYSTEM / SESSION (optional)
+  // SYSTEM / SESSION
   // ---------------------------------------------------------
+  "whatsapp.session.started": tpl("session_started", ({ sessionId }) => [
+    sessionId,
+  ]),
 
-  "whatsapp.session.started": {
-    name: "session_started",
-    resolve: ({ sessionId }) => [sessionId],
-  },
-
-  "whatsapp.message.sent": {
-    name: "message_sent",
-    resolve: ({ message }) => [message],
-  },
+  "whatsapp.message.sent": tpl("message_sent", ({ message }) => [message]),
 };

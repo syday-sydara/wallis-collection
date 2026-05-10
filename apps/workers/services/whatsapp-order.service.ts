@@ -1,67 +1,48 @@
 // services/whatsapp-order.service.ts
-import { prisma } from "../lib/prisma/prisma";
+import { prisma } from "@/lib/prisma";
 import { WhatsAppOrderStatus } from "@prisma/client";
-import { InventoryService } from "./inventory.service";
-import { OrderService } from "./order.service";
+import { InventoryService } from "@/services/inventory.service";
+import { OrderService } from "@/services/order.service";
+import { Correlation } from "@/lib/correlation";
+import { logger } from "@/lib/logger";
 
 export const WhatsAppOrderService = {
+  /**
+   * Convert a WhatsAppOrder → Order.
+   * Guarantees:
+   * - idempotency
+   * - strict state validation
+   * - unified stock reservation
+   * - unified order creation
+   * - no duplicated logic across services
+   */
   async convertToOrder(whatsappOrderId: string) {
+    const ctx = Correlation.get();
+
     return prisma.$transaction(async (tx) => {
+      // 1. Load WhatsApp order
       const wa = await tx.whatsAppOrder.findUnique({
         where: { id: whatsappOrderId },
         include: { items: true },
       });
 
-      if (!wa) {
-        throw new Error("WhatsApp order not found");
-      }
+      if (!wa) throw new Error("WhatsApp order not found");
 
-      // Idempotency: already converted
+      // 2. Idempotency
       if (wa.finalOrderId) {
-        return tx.order.findUnique({
-          where: { id: wa.finalOrderId },
-        });
+        return tx.order.findUnique({ where: { id: wa.finalOrderId } });
       }
 
-      // Validate address
-      if (!wa.addressLine1 || !wa.state) {
-        throw new Error("Missing address details");
-      }
+      // 3. Validate state + address
+      validateWhatsAppOrder(wa);
 
-      // Validate state
-      if (wa.status !== WhatsAppOrderStatus.PENDING) {
-        throw new Error("Invalid WhatsApp order state");
-      }
+      // 4. Reserve stock (deduplicated into a single helper)
+      await reserveAllItems(wa);
 
-      // Reserve stock for each item
-      // NOTE: This should ideally be a batch reservation
-      for (const item of wa.items) {
-        await InventoryService.reserveStock(
-          item.variantId,
-          item.quantity,
-          15 * 60 * 1000 // 15 minutes
-        );
-      }
+      // 5. Create final order (deduplicated mapping)
+      const order = await OrderService.createOrder(mapToOrderInput(wa));
 
-      // Create order
-      const order = await OrderService.createOrder({
-        userId: wa.userId ?? undefined,
-        phoneNumber: wa.phoneNumber,
-        addressLine1: wa.addressLine1,
-        addressLine2: wa.addressLine2 ?? undefined,
-        city: wa.city ?? undefined,
-        state: wa.state,
-        lga: wa.lga ?? undefined,
-        landmark: wa.landmark ?? undefined,
-        deliveryNote: wa.notes ?? undefined,
-        items: wa.items.map((i) => ({
-          variantId: i.variantId,
-          quantity: i.quantity,
-        })),
-        paymentMethod: mapPaymentMethod(wa.paymentMethod),
-      });
-
-      // Mark WhatsApp order as converted
+      // 6. Mark WhatsApp order as converted
       await tx.whatsAppOrder.update({
         where: { id: whatsappOrderId },
         data: {
@@ -70,7 +51,62 @@ export const WhatsAppOrderService = {
         },
       });
 
+      logger.info("[WA-ORDER] Converted WhatsApp order", {
+        ...ctx,
+        whatsappOrderId,
+        orderId: order.id,
+      });
+
       return order;
     });
   },
 };
+
+/**
+ * Validate WhatsApp order state + address.
+ */
+function validateWhatsAppOrder(wa: any) {
+  if (!wa.addressLine1 || !wa.state) {
+    throw new Error("Missing address details");
+  }
+
+  if (wa.status !== WhatsAppOrderStatus.PENDING) {
+    throw new Error("Invalid WhatsApp order state");
+  }
+}
+
+/**
+ * Reserve stock for all items (deduplicated).
+ */
+async function reserveAllItems(wa: any) {
+  for (const item of wa.items) {
+    await InventoryService.reserveStock(
+      item.variantId,
+      item.quantity,
+      15 * 60 * 1000
+    );
+  }
+}
+
+/**
+ * Map WhatsAppOrder → OrderService.createOrder input.
+ * Removes duplication of field mapping.
+ */
+function mapToOrderInput(wa: any) {
+  return {
+    customerId: wa.userId ?? undefined,
+    phone: wa.phoneNumber,
+    addressLine1: wa.addressLine1,
+    addressLine2: wa.addressLine2 ?? undefined,
+    city: wa.city ?? undefined,
+    state: wa.state,
+    lga: wa.lga ?? undefined,
+    landmark: wa.landmark ?? undefined,
+    notes: wa.notes ?? undefined,
+    items: wa.items.map((i: any) => ({
+      variantId: i.variantId,
+      quantity: i.quantity,
+    })),
+    paymentMethod: mapPaymentMethod(wa.paymentMethod),
+  };
+}

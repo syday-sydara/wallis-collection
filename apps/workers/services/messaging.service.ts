@@ -1,9 +1,10 @@
 // services/messaging.service.ts
-import { WhatsAppProvider } from "../providers/whatsapp.provider";
-import { SmsProvider } from "../providers/sms.provider";
-import { EmailProvider } from "../providers/email.provider";
-import { DeliveryLog } from "../lib/delivery-log";
-import { logger } from "../lib/logger";
+import { WhatsAppProvider } from "@/providers/whatsapp.provider";
+import { SmsProvider } from "@/providers/sms.provider";
+import { EmailProvider } from "@/providers/email.provider";
+import { DeliveryLog } from "@/lib/delivery-log";
+import { logger } from "@/lib/logger";
+import { Correlation } from "@/lib/correlation";
 
 interface MessageInput {
   to: string;
@@ -23,32 +24,48 @@ interface MessageInput {
 }
 
 export const Messaging = {
+  /**
+   * Nigeria‑first messaging fallback:
+   * 1. WhatsApp (primary)
+   * 2. SMS (fallback)
+   * 3. Email (final fallback)
+   *
+   * Guarantees:
+   * - correlation propagation
+   * - structured delivery logs
+   * - deterministic fallback chain
+   * - no silent failures
+   */
   async send(input: MessageInput) {
+    const ctx = Correlation.get();
+
     const {
       to,
       template,
       variables,
       text,
       subject = "Notification",
-      html = `<p>${text ?? ""}</p>`,
+      html = text ? `<p>${text}</p>` : "<p></p>",
       metadata,
     } = input;
 
     // ---------------------------------------------------------
-    // 1. WhatsApp
+    // 1. WhatsApp (primary)
     // ---------------------------------------------------------
     try {
       const result = await WhatsAppProvider.send({
         to,
         template: template!,
         variables: variables!,
-        text,        // fallback for SMS
-        subject,     // fallback for Email
+        text,
+        subject,
+        metadata,
       });
 
       return result;
     } catch (err: any) {
-      logger.warn("WhatsApp failed, falling back to SMS", {
+      logger.warn("[Messaging] WhatsApp failed → SMS fallback", {
+        ...ctx,
         to,
         error: err.message,
       });
@@ -58,23 +75,26 @@ export const Messaging = {
         status: "FALLBACK",
         error: err.message,
         payload: input,
-        metadata: { fallbackTo: "sms" },
+        metadata: { fallbackTo: "sms", ...metadata },
+        ...ctx,
       });
     }
 
     // ---------------------------------------------------------
-    // 2. SMS
+    // 2. SMS (fallback)
     // ---------------------------------------------------------
     try {
       const result = await SmsProvider.send({
         to,
-        text: text!,
-        subject, // needed for Email fallback
+        text: text ?? "Notification",
+        subject,
+        metadata,
       });
 
       return result;
     } catch (err: any) {
-      logger.warn("SMS failed, falling back to Email", {
+      logger.warn("[Messaging] SMS failed → Email fallback", {
+        ...ctx,
         to,
         error: err.message,
       });
@@ -84,7 +104,8 @@ export const Messaging = {
         status: "FALLBACK",
         error: err.message,
         payload: input,
-        metadata: { fallbackTo: "email" },
+        metadata: { fallbackTo: "email", ...metadata },
+        ...ctx,
       });
     }
 
@@ -100,7 +121,8 @@ export const Messaging = {
         metadata,
       });
     } catch (err: any) {
-      logger.error("All messaging channels failed", {
+      logger.error("[Messaging] All channels failed", {
+        ...ctx,
         to,
         error: err.message,
       });
@@ -110,6 +132,8 @@ export const Messaging = {
         status: "FAILED",
         error: err.message,
         payload: input,
+        metadata: { finalFailure: true, ...metadata },
+        ...ctx,
       });
 
       throw err;

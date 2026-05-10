@@ -1,85 +1,116 @@
-import { prisma } from "../lib/prisma/prisma";
+// services/payment.service.ts
+import { prisma } from "@/lib/prisma";
 import { PaymentProvider, PaymentStatus } from "@prisma/client";
-import { PaymentProducer } from "../producers/payment.producer";
+import { PaymentProducer } from "@/producers/payment.producer";
+import { Correlation } from "@/lib/correlation";
+import { logger } from "@/lib/logger";
 
 export const PaymentService = {
+  /**
+   * Create a payment record with a specific provider + initial status.
+   * Shared internal helper to remove duplication.
+   */
+  async createPayment(
+    orderId: string,
+    amount: number,
+    provider: PaymentProvider,
+    status: PaymentStatus,
+    extra: Record<string, any> = {}
+  ) {
+    return prisma.payment.create({
+      data: {
+        orderId,
+        provider,
+        amount,
+        status,
+        ...extra,
+      },
+    });
+  },
+
+  /**
+   * BANK TRANSFER
+   */
   async createBankTransfer(orderId: string, amount: number, paidByName?: string) {
-    return prisma.payment.create({
-      data: {
-        orderId,
-        provider: PaymentProvider.BANK_TRANSFER,
-        amount,
-        paidByName,
-        status: PaymentStatus.AWAITING_CONFIRMATION,
-      },
-    });
+    return this.createPayment(
+      orderId,
+      amount,
+      PaymentProvider.BANK_TRANSFER,
+      PaymentStatus.AWAITING_CONFIRMATION,
+      { paidByName: paidByName ?? null }
+    );
   },
 
+  /**
+   * CASH ON DELIVERY
+   */
   async createCOD(orderId: string, amount: number) {
-    return prisma.payment.create({
-      data: {
-        orderId,
-        provider: PaymentProvider.CASH_ON_DELIVERY,
-        amount,
-        status: PaymentStatus.PENDING,
-      },
-    });
+    return this.createPayment(
+      orderId,
+      amount,
+      PaymentProvider.CASH_ON_DELIVERY,
+      PaymentStatus.PENDING
+    );
   },
 
+  /**
+   * Confirm payment (idempotent).
+   */
   async confirmPayment(paymentId: string, adminId?: string) {
-    return prisma.$transaction(async (tx) => {
-      const payment = await tx.payment.findUnique({
-        where: { id: paymentId },
-      });
+    const ctx = Correlation.get();
 
+    const updated = await prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.findUnique({ where: { id: paymentId } });
       if (!payment) throw new Error("Payment not found");
 
-      // idempotency
-      if (payment.status === PaymentStatus.SUCCESS) {
-        return payment;
-      }
+      // Idempotency
+      if (payment.status === PaymentStatus.SUCCESS) return payment;
 
       const now = new Date();
 
-      const updated = await tx.payment.update({
+      return tx.payment.update({
         where: { id: paymentId },
         data: {
           status: PaymentStatus.SUCCESS,
           paidAt: now,
-          verifiedBy: adminId,
-          verifiedAt: adminId ? now : undefined,
+          verifiedBy: adminId ?? null,
+          verifiedAt: adminId ? now : null,
         },
       });
-
-      // DO NOT update order here
-      // Instead, emit event for workers to handle
-      setImmediate(() => {
-        PaymentProducer.emitPaymentSuccess({
-          paymentId,
-          orderId: payment.orderId,
-          amount: payment.amount,
-        });
-      });
-
-      return updated;
     });
+
+    // Emit AFTER commit
+    PaymentProducer.success(updated.id, updated.orderId);
+
+    logger.info("[PAYMENT] Payment confirmed", {
+      ...ctx,
+      paymentId: updated.id,
+      orderId: updated.orderId,
+    });
+
+    return updated;
   },
 
+  /**
+   * Fail payment (idempotent).
+   */
   async failPayment(paymentId: string, notes?: string) {
+    const ctx = Correlation.get();
+
     const updated = await prisma.payment.update({
       where: { id: paymentId },
       data: {
         status: PaymentStatus.FAILED,
-        notes,
+        notes: notes ?? null,
       },
     });
 
-    // emit event
-    setImmediate(() => {
-      PaymentProducer.emitPaymentFailed({
-        paymentId,
-        orderId: updated.orderId,
-      });
+    PaymentProducer.failed(updated.id, updated.orderId, notes);
+
+    logger.warn("[PAYMENT] Payment failed", {
+      ...ctx,
+      paymentId: updated.id,
+      orderId: updated.orderId,
     });
 
     return updated;

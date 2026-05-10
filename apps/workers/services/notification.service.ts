@@ -1,41 +1,76 @@
 // services/notification.service.ts
-import { EmailProvider } from "../providers/email.provider";
-import { SmsProvider } from "../providers/sms.provider";
-import { WhatsAppService } from "./whatsapp.service";
+import { prisma } from "@/lib/prisma";
+import { normalizePhone } from "@/utils/phone";
+import { Messaging } from "@/services/messaging.service";
+import { WhatsAppService } from "@/services/whatsapp.service";
 import {
   NotificationTemplates,
   NotificationMessage,
-} from "../templates/notification.templates";
-import { normalizePhone } from "../utils/phone";
-import { prisma } from "../lib/prisma";
+} from "@/templates/notification.templates";
+import { logger } from "@/lib/logger";
+import { Correlation } from "@/lib/correlation";
 
 export const NotificationService = {
   /**
    * Main entry point for all notifications.
    * Accepts eventName + eventPayload from NotificationWorker.
+   *
+   * Strategy:
+   * - Build typed notification message from template
+   * - Resolve identity (email / phone / sessionId)
+   * - If sessionId → WhatsApp session template
+   * - Else → Messaging fallback (WhatsApp → SMS → Email) using best identity
    */
   async send(event: string, payload: any) {
+    const ctx = Correlation.get();
     const templateFn = NotificationTemplates[event];
 
     if (!templateFn) {
-      console.warn("[NOTIFICATION] No template found for:", event);
+      logger.warn("[NOTIFICATION] No template found for event", {
+        ...ctx,
+        event,
+      });
       return;
     }
 
     const message: NotificationMessage = templateFn(payload);
 
-    // Resolve customer email if needed
     const email = await this.resolveEmail(payload);
+    const phone = this.resolvePhone(payload);
+    const sessionId = payload.sessionId as string | undefined;
 
-    await Promise.allSettled([
-      this.sendEmail(message, email),
-      this.sendSMS(message, payload),
-      this.sendWhatsApp(message, payload),
-    ]);
+    // 1. If we have a WhatsApp session, use session-based template
+    if (sessionId) {
+      await this.sendWhatsAppSession(message, payload, sessionId);
+      return;
+    }
+
+    // 2. Otherwise, use Messaging fallback with best identity
+    const target = email ?? phone;
+    if (!target) {
+      logger.warn("[NOTIFICATION] No reachable identity (email/phone) for notification", {
+        ...ctx,
+        event,
+        payload,
+      });
+      return;
+    }
+
+    await Messaging.send({
+      to: target,
+      text: message.bodyText,
+      subject: message.subject,
+      html: message.bodyHtml,
+      metadata: {
+        event,
+        customerId: payload.customerId,
+        orderId: payload.orderId,
+      },
+    });
   },
 
   // ------------------------------------------------------
-  // EMAIL
+  // Identity resolution
   // ------------------------------------------------------
   async resolveEmail(payload: any): Promise<string | null> {
     if (payload.email) return payload.email;
@@ -50,61 +85,44 @@ export const NotificationService = {
     return null;
   },
 
-  async sendEmail(message: NotificationMessage, email: string | null) {
-    if (!email) return;
-
-    try {
-      await EmailProvider.send({
-        to: email,
-        subject: message.subject,
-        html: message.bodyHtml,
-        text: message.bodyText,
-      });
-
-      console.log("[NOTIFICATION] Email sent →", email);
-    } catch (err) {
-      console.error("[NOTIFICATION] Email failed →", email, err);
+  resolvePhone(payload: any): string | null {
+    if (payload.customerPhone) {
+      return normalizePhone(payload.customerPhone);
     }
+    if (payload.phone) {
+      return normalizePhone(payload.phone);
+    }
+    return null;
   },
 
   // ------------------------------------------------------
-  // SMS (uses customerPhone)
+  // WhatsApp (session-based)
   // ------------------------------------------------------
-  async sendSMS(message: NotificationMessage, payload: any) {
-    const phone = normalizePhone(payload.customerPhone);
-    if (!phone) return;
-
-    try {
-      await SmsProvider.send({
-        to: phone,
-        text: message.bodyText,
-      });
-
-      console.log("[NOTIFICATION] SMS sent →", phone);
-    } catch (err) {
-      console.error("[NOTIFICATION] SMS failed →", phone, err);
-    }
-  },
-
-  // ------------------------------------------------------
-  // WHATSAPP (uses sessionId)
-  // ------------------------------------------------------
-  async sendWhatsApp(message: NotificationMessage, payload: any) {
-    if (!payload.sessionId) {
-      console.warn("[NOTIFICATION] WhatsApp skipped → no sessionId");
-      return;
-    }
+  async sendWhatsAppSession(
+    message: NotificationMessage,
+    payload: any,
+    sessionId: string
+  ) {
+    const ctx = Correlation.get();
 
     try {
       await WhatsAppService.sendTemplate({
-        sessionId: payload.sessionId,
+        sessionId,
         event: message.event,
         payload,
       });
 
-      console.log("[NOTIFICATION] WhatsApp enqueued → session:", payload.sessionId);
-    } catch (err) {
-      console.error("[NOTIFICATION] WhatsApp enqueue failed →", err);
+      logger.info("[NOTIFICATION] WhatsApp session notification enqueued", {
+        ...ctx,
+        sessionId,
+        event: message.event,
+      });
+    } catch (err: any) {
+      logger.error("[NOTIFICATION] WhatsApp session enqueue failed", {
+        ...ctx,
+        sessionId,
+        error: err.message,
+      });
     }
   },
 

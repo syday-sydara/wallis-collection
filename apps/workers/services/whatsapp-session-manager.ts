@@ -1,50 +1,34 @@
 // services/whatsapp-session-manager.ts
-import { prisma } from "../lib/prisma";
-import { normalizePhone } from "../utils/phone";
+import { prisma } from "@/lib/prisma";
+import { normalizePhone } from "@/utils/phone";
 
 export class WhatsAppSessionManager {
   /**
    * Get or create a WhatsApp session for a phone number.
-   * Ensures:
-   *  - phone is normalized
-   *  - session is unique (via phoneNormalized)
-   *  - session is linked to a customer
+   * Guarantees:
+   * - strict phone normalization
+   * - unique session per phoneNormalized
+   * - customer auto‑creation
    */
   static async getOrCreateSession(phone: string) {
     const normalized = normalizePhone(phone);
     if (!normalized) throw new Error("Invalid phone number");
 
-    // 1. Try to find existing session
-    let session = await prisma.whatsAppSession.findUnique({
+    // 1. Try existing session
+    const existing = await prisma.whatsAppSession.findUnique({
       where: { phoneNormalized: normalized },
     });
+    if (existing) return existing;
 
-    if (session) return session;
+    // 2. Resolve customer (deduplicated)
+    const customer = await this.resolveCustomer(normalized);
 
-    // 2. Find or create customer
-    const customer = await prisma.customer.upsert({
-      where: { phone: normalized },
-      update: {},
-      create: { phone: normalized },
-    });
-
-    // 3. Create new session
-    session = await prisma.whatsAppSession.create({
-      data: {
-        phone: normalized,
-        phoneNormalized: normalized,
-        customerId: customer.id,
-        lastInboundAt: null,
-        lastOutboundAt: null,
-      },
-    });
-
-    return session;
+    // 3. Create session (deduplicated)
+    return this.createSession(normalized, customer.id);
   }
 
   /**
-   * Attach a session to a customer if not already linked.
-   * Useful when a customer updates their profile or places an order.
+   * Attach a session to a customer.
    */
   static async attachSessionToCustomer(sessionId: string, customerId: string) {
     return prisma.whatsAppSession.update({
@@ -54,69 +38,80 @@ export class WhatsAppSessionManager {
   }
 
   /**
-   * Record an inbound message:
-   *  - creates WhatsAppMessage
-   *  - updates lastInboundAt
+   * Record inbound message.
    */
-  static async recordInboundMessage(
-    sessionId: string,
-    body: string,
-    rawPayload?: any
-  ) {
-    const message = await prisma.whatsAppMessage.create({
-      data: {
-        sessionId,
-        direction: "INBOUND",
-        body,
-        status: "RECEIVED",
-        rawPayload: rawPayload ?? {},
-      },
+  static async recordInboundMessage(sessionId: string, body: string, rawPayload?: any) {
+    return this.recordMessage(sessionId, "INBOUND", body, "RECEIVED", rawPayload, {
+      lastInboundAt: new Date(),
     });
-
-    await prisma.whatsAppSession.update({
-      where: { id: sessionId },
-      data: { lastInboundAt: new Date() },
-    });
-
-    return message;
   }
 
   /**
-   * Record an outbound message:
-   *  - creates WhatsAppMessage
-   *  - updates lastOutboundAt
-   *  - returns messageId for worker
+   * Record outbound message.
    */
-  static async recordOutboundMessage(
-    sessionId: string,
-    body: string,
-    rawPayload?: any
-  ) {
-    const message = await prisma.whatsAppMessage.create({
-      data: {
-        sessionId,
-        direction: "OUTBOUND",
-        body,
-        status: "QUEUED",
-        rawPayload: rawPayload ?? {},
-      },
+  static async recordOutboundMessage(sessionId: string, body: string, rawPayload?: any) {
+    return this.recordMessage(sessionId, "OUTBOUND", body, "QUEUED", rawPayload, {
+      lastOutboundAt: new Date(),
     });
-
-    await prisma.whatsAppSession.update({
-      where: { id: sessionId },
-      data: { lastOutboundAt: new Date() },
-    });
-
-    return message;
   }
 
   /**
-   * Update message delivery status (used by worker + webhook)
+   * Update message delivery status.
    */
   static async updateMessageStatus(messageId: string, status: string) {
     return prisma.whatsAppMessage.update({
       where: { id: messageId },
       data: { status },
     });
+  }
+
+  // ------------------------------------------------------
+  // INTERNAL HELPERS (deduplicated logic)
+  // ------------------------------------------------------
+
+  private static async resolveCustomer(normalized: string) {
+    return prisma.customer.upsert({
+      where: { phoneNormalized: normalized },
+      update: {},
+      create: { phone: normalized, phoneNormalized: normalized },
+    });
+  }
+
+  private static async createSession(normalized: string, customerId: string) {
+    return prisma.whatsAppSession.create({
+      data: {
+        phone: normalized,
+        phoneNormalized: normalized,
+        customerId,
+        lastInboundAt: null,
+        lastOutboundAt: null,
+      },
+    });
+  }
+
+  private static async recordMessage(
+    sessionId: string,
+    direction: "INBOUND" | "OUTBOUND",
+    body: string,
+    status: string,
+    rawPayload: any,
+    sessionUpdate: Record<string, any>
+  ) {
+    const message = await prisma.whatsAppMessage.create({
+      data: {
+        sessionId,
+        direction,
+        body,
+        status,
+        rawPayload: rawPayload ?? {},
+      },
+    });
+
+    await prisma.whatsAppSession.update({
+      where: { id: sessionId },
+      data: sessionUpdate,
+    });
+
+    return message;
   }
 }
