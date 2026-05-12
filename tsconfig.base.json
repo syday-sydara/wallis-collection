@@ -8,11 +8,13 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
 
-    "types": ["node"],
+    "types": ["node", "vitest/globals"],
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@tests/*": ["tests/*"]
     }
-  }
+  },
+  "include": ["src", "tests"]
 }
