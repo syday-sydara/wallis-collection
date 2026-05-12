@@ -1,1 +1,209 @@
-# Wallis API OpenAPI spec
+openapi: 3.1.0
+info:
+  title: Wallis API
+  version: 1.0.0
+
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/orders:
+    get:
+      summary: List orders
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccessOrdersList"
+
+    post:
+      summary: Create order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderInput"
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccessOrder"
+
+  /api/orders/{id}:
+    get:
+      summary: Get order by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccessOrder"
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+    patch:
+      summary: Update order
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderInput"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccessOrder"
+
+    delete:
+      summary: Delete order
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccessDelete"
+
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        customerName:
+          type: string
+        phoneNumber:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "processing", "completed", "cancelled"]
+        totalAmount:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateOrderInput:
+      type: object
+      required: ["customerName", "phoneNumber"]
+      properties:
+        customerName:
+          type: string
+        phoneNumber:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "processing", "completed", "cancelled"]
+        totalAmount:
+          type: number
+
+    UpdateOrderInput:
+      type: object
+      properties:
+        customerName:
+          type: string
+        phoneNumber:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "processing", "completed", "cancelled"]
+        totalAmount:
+          type: number
+
+    ApiSuccessOrder:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          $ref: "#/components/schemas/Order"
+
+    ApiSuccessOrdersList:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+
+    ApiSuccessDelete:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+
+    ApiError:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+            details:
+              type: object
