@@ -1,2 +1,2 @@
 // mapper index
-export {};
+export * from "./orders.mapper";

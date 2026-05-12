@@ -13,7 +13,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@wallis-collection/shared/*": ["packages/shared/src/*"]
+      "@wallis-collection/shared/*": ["src/*"]
     }
   }
 }
