@@ -1,6 +1,9 @@
 // queues/stock.reconciliation.queue.ts
 import { Queue } from "bullmq";
-import { connection } from "../config/redis";
+import { redis } from "@/queues/core/connection";
+import { logger } from "@/lib/logger";
+import { Correlation } from "@/lib/correlation";
+import { metrics } from "@/lib/metrics";
 
 // Shared constant — prevents name drift across producers/workers
 export const STOCK_RECONCILIATION_QUEUE_NAME = "stock.reconciliation";
@@ -17,11 +20,11 @@ export const STOCK_RECONCILIATION_QUEUE_NAME = "stock.reconciliation";
 export const stockReconciliationQueue = new Queue(
   STOCK_RECONCILIATION_QUEUE_NAME,
   {
-    connection,
-    prefix: "bull", // isolates BullMQ keys in Redis (Nigeria‑first reliability)
+    connection: redis,
+    prefix: "bull",
 
     defaultJobOptions: {
-      attempts: 3, // retry transient failures
+      attempts: 3,
       backoff: { type: "exponential", delay: 3000 },
       removeOnComplete: true,
       removeOnFail: false,
@@ -30,25 +33,50 @@ export const stockReconciliationQueue = new Queue(
 );
 
 // ---------------------------------------------------------
-// Queue-level observability
+// Queue-level observability (correlation-aware)
 // ---------------------------------------------------------
-
-stockReconciliationQueue.on("error", err => {
-  console.error("[STOCK RECONCILIATION QUEUE ERROR]", err);
+stockReconciliationQueue.on("error", (err) => {
+  const ctx = Correlation.get();
+  logger.error("[STOCK RECONCILIATION QUEUE ERROR]", {
+    ...ctx,
+    error: err.message,
+  });
+  metrics.increment("queue.stockReconciliation.error");
 });
 
-stockReconciliationQueue.on("waiting", jobId => {
-  console.log(`[STOCK RECONCILIATION QUEUE] Job waiting: ${jobId}`);
+stockReconciliationQueue.on("waiting", (jobId) => {
+  const ctx = Correlation.get();
+  logger.info("[STOCK RECONCILIATION QUEUE] Job waiting", {
+    ...ctx,
+    jobId,
+  });
+  metrics.increment("queue.stockReconciliation.waiting");
 });
 
-stockReconciliationQueue.on("active", job => {
-  console.log(`[STOCK RECONCILIATION QUEUE] Job active: ${job.id}`);
+stockReconciliationQueue.on("active", (job) => {
+  const ctx = Correlation.get();
+  logger.info("[STOCK RECONCILIATION QUEUE] Job active", {
+    ...ctx,
+    jobId: job.id,
+  });
+  metrics.increment("queue.stockReconciliation.active");
 });
 
-stockReconciliationQueue.on("completed", job => {
-  console.log(`[STOCK RECONCILIATION QUEUE] Job completed: ${job.id}`);
+stockReconciliationQueue.on("completed", (job) => {
+  const ctx = Correlation.get();
+  logger.info("[STOCK RECONCILIATION QUEUE] Job completed", {
+    ...ctx,
+    jobId: job.id,
+  });
+  metrics.increment("queue.stockReconciliation.completed");
 });
 
 stockReconciliationQueue.on("failed", (job, err) => {
-  console.error(`[STOCK RECONCILIATION QUEUE] Job failed ${job?.id}`, err);
+  const ctx = Correlation.get();
+  logger.error("[STOCK RECONCILIATION QUEUE] Job failed", {
+    ...ctx,
+    jobId: job?.id,
+    error: err.message,
+  });
+  metrics.increment("queue.stockReconciliation.failed");
 });

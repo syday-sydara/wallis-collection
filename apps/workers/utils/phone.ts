@@ -1,7 +1,7 @@
 // utils/phone.ts
 
 /**
- * Nigeria‑first phone normalization with validation.
+ * Nigeria‑first phone normalization with strict validation.
  *
  * Accepts:
  *  - 0803xxxxxxx
@@ -26,40 +26,51 @@ export function normalizePhone(phone: string | undefined | null): string | null 
   // Must contain only digits or leading +
   if (!/^\+?\d+$/.test(p)) return null;
 
-  // Already in +234 format
+  // +234803xxxxxxx
   if (p.startsWith("+234")) {
-    return validateLength(p.slice(1)) ? p : null;
+    const rest = p.slice(4);
+    return isValidNigeriaMobile(rest) ? p : null;
   }
 
-  // 234803xxxxxxx → +234803xxxxxxx
+  // 234803xxxxxxx
   if (p.startsWith("234")) {
     const rest = p.slice(3);
-    return validateLength(rest) ? `+${p}` : null;
+    return isValidNigeriaMobile(rest) ? `+${p}` : null;
   }
 
-  // 0803xxxxxxx → +234803xxxxxxx
+  // 0803xxxxxxx
   if (p.startsWith("0")) {
     const rest = p.slice(1);
-    return validateLength(rest) ? `+234${rest}` : null;
+    return isValidNigeriaMobile(rest) ? `+234${rest}` : null;
   }
 
-  // 803xxxxxxx → +234803xxxxxxx
+  // 803xxxxxxx
   if (/^\d{10}$/.test(p)) {
-    return `+234${p}`;
+    return isValidNigeriaMobile(p) ? `+234${p}` : null;
   }
 
-  // Fallback: ensure +
-  if (p.startsWith("+")) {
-    return validateLength(p.slice(1)) ? p : null;
-  }
+  // +803xxxxxxx (invalid)
+  if (p.startsWith("+")) return null;
 
-  // Last fallback
   return null;
 }
 
 /**
- * Nigerian numbers must be 10 digits after removing leading 0 or +234.
+ * Nigerian mobile numbers must:
+ *  - be exactly 10 digits
+ *  - start with 7, 8, or 9
+ *  - second digit must be 0–1 or 3–9 (valid operator prefixes)
  */
-function validateLength(num: string): boolean {
-  return /^\d{10}$/.test(num);
+function isValidNigeriaMobile(num: string): boolean {
+  if (!/^\d{10}$/.test(num)) return false;
+
+  const first = num[0];
+  const second = num[1];
+
+  if (!["7", "8", "9"].includes(first)) return false;
+
+  // Valid second digits: 0–1, 3–9
+  if (!/[0-1 3-9]/.test(second)) return false;
+
+  return true;
 }

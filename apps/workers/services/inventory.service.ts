@@ -1,20 +1,18 @@
 // services/inventory.service.ts
-import { prisma } from "../lib/prisma/prisma";
+import { prisma } from "@/lib/prisma";
 import { ReservationStatus } from "@prisma/client";
-import { OrderProducer } from "../producers/order.producer";
+import { InventoryProducer } from "@/producers/inventory.producer";
+import { ReservationExpiryProducer } from "@/producers/system.producer";
 
 export class InventoryService {
   /**
    * Reserve inventory for an order.
    *
-   * This is called by:
-   * - inventory.reserve.worker
-   * - order lifecycle flows
-   *
-   * Responsibilities:
-   * - Fetch order + items
-   * - Create stock reservations
-   * - Emit STOCK_RESERVED events
+   * Guarantees:
+   * - deterministic reservation creation
+   * - no duplicate reservations
+   * - reservation expiry scheduled
+   * - typed STOCK_RESERVED event emitted
    */
   static async reserveForOrder(orderId: string) {
     const order = await prisma.order.findUnique({
@@ -27,55 +25,47 @@ export class InventoryService {
     });
 
     if (!order) throw new Error(`Order not found: ${orderId}`);
-
-    if (order.items.length === 0) {
-      console.warn(`[INVENTORY] Order ${orderId} has no items`);
-      return;
-    }
+    if (order.items.length === 0) return;
 
     for (const item of order.items) {
       const { variantId, quantity } = item;
 
+      // Create reservation
       const reservation = await prisma.stockReservation.create({
         data: {
           orderId,
           variantId,
           quantity,
           status: ReservationStatus.ACTIVE,
-          expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15‑minute hold
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
         },
       });
 
-      // Emit event for downstream workers
-      await OrderProducer.stockReserved(
-        reservation.id,
-        variantId,
-        orderId
-      );
-
-      console.log("[INVENTORY] Reserved stock:", {
+      // Emit typed event
+      await InventoryProducer.reserved({
         reservationId: reservation.id,
-        orderId,
         variantId,
         quantity,
+        orderId,
       });
+
+      // Schedule expiry
+      await ReservationExpiryProducer.scheduleExpiry(reservation.id);
     }
   }
 
   /**
    * Consume a reservation and deduct stock.
    *
-   * This is called when:
-   * - Payment is confirmed
-   * - Order is finalized
-   *
    * Guarantees:
-   * - Row‑level locking
-   * - Idempotency
-   * - Stock consistency
+   * - row‑level locking
+   * - idempotency
+   * - stock consistency
+   * - typed STOCK_CONSUMED event
    */
   static async consumeReservation(reservationId: string, orderId: string) {
-    return prisma.$transaction(async tx => {
+    return prisma.$transaction(async (tx) => {
+      // Lock reservation row
       const [reservation] = await tx.$queryRaw<
         {
           id: string;
@@ -145,8 +135,11 @@ export class InventoryService {
         },
       });
 
-      // Emit event for downstream systems
-      await OrderProducer.stockConsumed(reservationId, orderId);
+      // Emit typed event
+      await InventoryProducer.consumed({
+        reservationId,
+        orderId,
+      });
 
       return updated;
     });

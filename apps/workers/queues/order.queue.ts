@@ -1,6 +1,9 @@
 // queues/order.queue.ts
 import { Queue } from "bullmq";
-import { connection } from "../config/redis";
+import { redis } from "@/queues/core/connection";
+import { logger } from "@/lib/logger";
+import { Correlation } from "@/lib/correlation";
+import { metrics } from "@/lib/metrics";
 
 // Shared constant — prevents name drift across producers/workers
 export const ORDER_QUEUE_NAME = "order";
@@ -9,17 +12,17 @@ export const ORDER_QUEUE_NAME = "order";
  * Order Queue
  *
  * Notes:
- * - Uses Redis connection WITHOUT keyPrefix (BullMQ requirement)
- * - Uses queue-level prefix "bull:" to isolate BullMQ keys
+ * - Uses shared Redis connection WITHOUT keyPrefix (BullMQ requirement)
+ * - Uses queue-level prefix "bull" to isolate BullMQ keys
  * - removeOnFail = false ensures failed order jobs remain visible
  * - Exponential backoff protects against transient provider failures
  */
 export const orderQueue = new Queue(ORDER_QUEUE_NAME, {
-  connection,
-  prefix: "bull", // isolates BullMQ keys in Redis (Nigeria‑first reliability)
+  connection: redis,
+  prefix: "bull",
 
   defaultJobOptions: {
-    attempts: 3, // retry transient failures
+    attempts: 3,
     backoff: { type: "exponential", delay: 2000 },
     removeOnComplete: true,
     removeOnFail: false,
@@ -33,25 +36,50 @@ export const orderQueue = new Queue(ORDER_QUEUE_NAME, {
 });
 
 // ---------------------------------------------------------
-// Queue-level observability (recommended improvement)
+// Queue-level observability (correlation-aware)
 // ---------------------------------------------------------
-
 orderQueue.on("error", (err) => {
-  console.error("[ORDER QUEUE ERROR]", err);
+  const ctx = Correlation.get();
+  logger.error("[ORDER QUEUE ERROR]", {
+    ...ctx,
+    error: err.message,
+  });
+  metrics.increment("queue.order.error");
 });
 
 orderQueue.on("waiting", (jobId) => {
-  console.log(`[ORDER QUEUE] Job waiting: ${jobId}`);
+  const ctx = Correlation.get();
+  logger.info("[ORDER QUEUE] Job waiting", {
+    ...ctx,
+    jobId,
+  });
+  metrics.increment("queue.order.waiting");
 });
 
 orderQueue.on("active", (job) => {
-  console.log(`[ORDER QUEUE] Job active: ${job.id}`);
+  const ctx = Correlation.get();
+  logger.info("[ORDER QUEUE] Job active", {
+    ...ctx,
+    jobId: job.id,
+  });
+  metrics.increment("queue.order.active");
 });
 
 orderQueue.on("completed", (job) => {
-  console.log(`[ORDER QUEUE] Job completed: ${job.id}`);
+  const ctx = Correlation.get();
+  logger.info("[ORDER QUEUE] Job completed", {
+    ...ctx,
+    jobId: job.id,
+  });
+  metrics.increment("queue.order.completed");
 });
 
 orderQueue.on("failed", (job, err) => {
-  console.error(`[ORDER QUEUE] Job failed: ${job?.id}`, err);
+  const ctx = Correlation.get();
+  logger.error("[ORDER QUEUE] Job failed", {
+    ...ctx,
+    jobId: job?.id,
+    error: err.message,
+  });
+  metrics.increment("queue.order.failed");
 });

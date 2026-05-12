@@ -1,6 +1,9 @@
 // queues/reservation.expiry.queue.ts
 import { Queue } from "bullmq";
-import { connection } from "../config/redis";
+import { redis } from "@/queues/core/connection";
+import { logger } from "@/lib/logger";
+import { Correlation } from "@/lib/correlation";
+import { metrics } from "@/lib/metrics";
 
 // Shared constant — prevents name drift across producers/workers
 export const RESERVATION_EXPIRY_QUEUE_NAME = "reservation.expiry";
@@ -15,11 +18,11 @@ export const RESERVATION_EXPIRY_QUEUE_NAME = "reservation.expiry";
  * - Exponential backoff protects against transient DB/Redis issues
  */
 export const reservationExpiryQueue = new Queue(RESERVATION_EXPIRY_QUEUE_NAME, {
-  connection,
-  prefix: "bull", // isolates BullMQ keys in Redis (Nigeria‑first reliability)
+  connection: redis,
+  prefix: "bull",
 
   defaultJobOptions: {
-    attempts: 5, // expiry is critical — retry more aggressively
+    attempts: 5,
     backoff: { type: "exponential", delay: 2000 },
     removeOnComplete: true,
     removeOnFail: false,
@@ -27,25 +30,50 @@ export const reservationExpiryQueue = new Queue(RESERVATION_EXPIRY_QUEUE_NAME, {
 });
 
 // ---------------------------------------------------------
-// Queue-level observability
+// Queue-level observability (correlation-aware)
 // ---------------------------------------------------------
-
-reservationExpiryQueue.on("error", err => {
-  console.error("[RESERVATION EXPIRY QUEUE ERROR]", err);
+reservationExpiryQueue.on("error", (err) => {
+  const ctx = Correlation.get();
+  logger.error("[RESERVATION EXPIRY QUEUE ERROR]", {
+    ...ctx,
+    error: err.message,
+  });
+  metrics.increment("queue.reservationExpiry.error");
 });
 
-reservationExpiryQueue.on("waiting", jobId => {
-  console.log(`[RESERVATION EXPIRY QUEUE] Job waiting: ${jobId}`);
+reservationExpiryQueue.on("waiting", (jobId) => {
+  const ctx = Correlation.get();
+  logger.info("[RESERVATION EXPIRY QUEUE] Job waiting", {
+    ...ctx,
+    jobId,
+  });
+  metrics.increment("queue.reservationExpiry.waiting");
 });
 
-reservationExpiryQueue.on("active", job => {
-  console.log(`[RESERVATION EXPIRY QUEUE] Job active: ${job.id}`);
+reservationExpiryQueue.on("active", (job) => {
+  const ctx = Correlation.get();
+  logger.info("[RESERVATION EXPIRY QUEUE] Job active", {
+    ...ctx,
+    jobId: job.id,
+  });
+  metrics.increment("queue.reservationExpiry.active");
 });
 
-reservationExpiryQueue.on("completed", job => {
-  console.log(`[RESERVATION EXPIRY QUEUE] Job completed: ${job.id}`);
+reservationExpiryQueue.on("completed", (job) => {
+  const ctx = Correlation.get();
+  logger.info("[RESERVATION EXPIRY QUEUE] Job completed", {
+    ...ctx,
+    jobId: job.id,
+  });
+  metrics.increment("queue.reservationExpiry.completed");
 });
 
 reservationExpiryQueue.on("failed", (job, err) => {
-  console.error(`[RESERVATION EXPIRY QUEUE] Job failed: ${job?.id}`, err);
+  const ctx = Correlation.get();
+  logger.error("[RESERVATION EXPIRY QUEUE] Job failed", {
+    ...ctx,
+    jobId: job?.id,
+    error: err.message,
+  });
+  metrics.increment("queue.reservationExpiry.failed");
 });
