@@ -1,5 +1,5 @@
 import request from "supertest";
-import { app } from "@/src/server";
+import { app } from "@/server";
 import { z } from "zod";
 import { ApiSuccessSchema } from "@/tests/schemas/api-envelope.schema";
 import { OrdersSchema } from "@/tests/schemas/orders.schema";
