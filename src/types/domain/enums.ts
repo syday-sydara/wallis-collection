@@ -2,9 +2,9 @@
 // Payment Status
 // -----------------------------
 export enum PaymentStatus {
-  Pending = "pending",
-  Verified = "verified",
-  Failed = "failed",
+  Pending = "PENDING",
+  Verified = "VERIFIED",
+  Failed = "FAILED",
 }
 
 export type PaymentStatusType = `${PaymentStatus}`;
@@ -26,10 +26,10 @@ export const PaymentStatusColor: Record<PaymentStatus, string> = {
 // Order Status
 // -----------------------------
 export enum OrderStatus {
-  Pending = "pending",
-  Processing = "processing",
-  Completed = "completed",
-  Cancelled = "cancelled",
+  Pending = "PENDING",
+  Processing = "PROCESSING",
+  Completed = "COMPLETED",
+  Cancelled = "CANCELLED",
 }
 
 export type OrderStatusType = `${OrderStatus}`;

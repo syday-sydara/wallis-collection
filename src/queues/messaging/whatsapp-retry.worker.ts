@@ -1,8 +1,8 @@
-import { logger } from "@/src/lib/logger";
-import { metrics } from "@/src/lib/metrics";
-import { correlationId } from "@/src/lib/correlation";
-import { WhatsAppProvider } from "@/src/providers/whatsapp.provider";
-import { WhatsAppRetryQueue } from "@/src/queues/messaging/whatsapp-retry.queue";
+import { logger } from "@/lib/logger";
+import { metrics } from "@/lib/metrics";
+import { correlationId } from "@/lib/correlation";
+import { WhatsAppProvider } from "@/providers/whatsapp.provider";
+import { WhatsAppRetryQueue } from "@/queues/messaging/whatsapp-retry.queue";
 
 export class WhatsAppRetryWorker {
   static async process(job: any) {

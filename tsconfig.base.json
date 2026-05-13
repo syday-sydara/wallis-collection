@@ -2,13 +2,14 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
+
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
 
-    "types": ["node", "vitest/globals"],
+    "types": ["node", "tailwindcss"],
 
     "baseUrl": ".",
     "paths": {
@@ -16,5 +17,9 @@
       "@tests/*": ["tests/*"]
     }
   },
-  "include": ["src", "tests"]
+  "include": [
+    "apps",
+    "packages",
+    "tailwind.config.ts"
+  ]
 }

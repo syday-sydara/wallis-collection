@@ -17,7 +17,7 @@ app.get("/api/health", (req, res) => {
 // FIXED: Async ES Module–compatible route loader
 // ------------------------------------------------------
 (async () => {
-  const routesDir = path.join(__dirname, "routes");
+  const routesDir = path.resolve(process.cwd(), "src/routes");
 
   if (!fs.existsSync(routesDir)) return;
 
@@ -27,16 +27,10 @@ app.get("/api/health", (req, res) => {
     const name = file.replace(/\.route\.(ts|js)$/, "");
     const filePath = path.join(routesDir, file);
 
-    // Dynamic import works with TS, ESM, Vitest, CJS, everything
     const module = await import(filePath);
-
-    if (!module.default) {
-      console.warn(`⚠️ Route file ${file} has no default export`);
-      continue;
-    }
-
     app.use(`/api/${name}`, module.default);
   }
 })();
+
 
 export { app };
