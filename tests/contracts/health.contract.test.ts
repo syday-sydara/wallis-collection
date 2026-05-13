@@ -1,5 +1,5 @@
 import request from "supertest";
-import { app } from "@/src/server";
+import { app } from "@/server";
 
 describe("Health API", () => {
   it("GET /api/health returns ok", async () => {

@@ -1,15 +1,24 @@
 export type OrderStatus =
-  | "pending"
-  | "processing"
-  | "completed"
-  | "cancelled";
+  | "PENDING"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "CANCELLED";
 
 export interface Order {
   id: string;
+
   customerName: string;
-  phoneNumber: string; // e.g. +2348012345678
+
+  // Nigerian phone number (E.164 format)
+  phoneNumber: string;
+
+  // Must match backend enum
   status: OrderStatus;
-  totalAmount: number; // stored in kobo or naira depending on your decision
-  createdAt: string;   // ISO string
-  updatedAt: string;   // ISO string
+
+  // Amount in kobo (recommended) or naira
+  totalAmount: number;
+
+  // ISO timestamps
+  createdAt: string;
+  updatedAt: string;
 }

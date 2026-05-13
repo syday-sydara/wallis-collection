@@ -13,16 +13,24 @@ app.get("/api/health", (req, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
 });
 
-// Auto-load all routes in src/routes
-const routesDir = path.join(__dirname, "routes");
+// ------------------------------------------------------
+// FIXED: Async ES Module–compatible route loader
+// ------------------------------------------------------
+(async () => {
+  const routesDir = path.resolve(process.cwd(), "src/routes");
 
-fs.readdirSync(routesDir).forEach((file) => {
-  if (!file.endsWith(".route.js") && !file.endsWith(".route.ts")) return;
+  if (!fs.existsSync(routesDir)) return;
 
-  const name = file.replace(".route.js", "").replace(".route.ts", "");
-  const route = require(path.join(routesDir, file)).default;
+  for (const file of fs.readdirSync(routesDir)) {
+    if (!file.endsWith(".route.ts") && !file.endsWith(".route.js")) continue;
 
-  app.use(`/api/${name}`, route);
-});
+    const name = file.replace(/\.route\.(ts|js)$/, "");
+    const filePath = path.join(routesDir, file);
+
+    const module = await import(filePath);
+    app.use(`/api/${name}`, module.default);
+  }
+})();
+
 
 export { app };

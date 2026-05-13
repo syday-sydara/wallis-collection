@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { withHandler } from "@/src/lib/with-handler";
-import { OrdersService } from "@/src/services/orders.service";
+import { withHandler } from "@/lib/with-handler";
+import { OrdersService } from "@/services/orders.service";
 
 const router = Router();
 

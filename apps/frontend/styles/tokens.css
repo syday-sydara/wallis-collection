@@ -19,13 +19,13 @@
   --color-border: #e5e7eb;
   --color-border-strong: #d1d5db;
 
-  /* Status */
+  /* Status (semantic) */
   --color-success: #16a34a;
   --color-warning: #f59e0b;
   --color-danger: #dc2626;
   --color-info: #0ea5e9;
 
-  /* Admin Observability */
+  /* Queue */
   --color-queue-active: #2563eb;
   --color-queue-waiting: #f59e0b;
   --color-queue-failed: #dc2626;
@@ -109,33 +109,26 @@
   --queue-delayed: var(--color-queue-delayed);
 
   /* Nigeria-First Semantic Extensions */
+  --payment-transfer: #0ea5e9;
+  --payment-pos: #7c3aed;
+  --payment-retry: #f59e0b;
+  --payment-reversed: #dc2626;
 
-/* Payments */
---payment-transfer: #0ea5e9;
---payment-pos: #7c3aed;
---payment-retry: #f59e0b;
---payment-reversed: #dc2626;
+  --delivery-dispatch: #2563eb;
+  --delivery-transit: #0ea5e9;
+  --delivery-rider-assigned: #3b82f6;
+  --delivery-failed: #dc2626;
 
-/* Delivery */
---delivery-dispatch: #2563eb;
---delivery-transit: #0ea5e9;
---delivery-rider: #3b82f6;
---delivery-failed: #dc2626;
+  --whatsapp-inbound: #22c55e;
+  --whatsapp-outbound: #2563eb;
+  --whatsapp-unread: #f59e0b;
+  --whatsapp-failed: #dc2626;
 
-/* WhatsApp */
---whatsapp-inbound: #22c55e;
---whatsapp-outbound: #2563eb;
---whatsapp-unread: #f59e0b;
---whatsapp-failed: #dc2626;
+  --space-compact-1: 2px;
+  --space-compact-2: 6px;
+  --space-compact-3: 10px;
 
-/* Compact UI Density */
---space-compact-1: 2px;
---space-compact-2: 6px;
---space-compact-3: 10px;
-
-/* Typography Semantics */
---text-heading-bold: 700;
---text-label-strong: 600;
---text-body-readable: 17px;
-
+  --text-heading-bold: 700;
+  --text-label-strong: 600;
+  --text-body-readable: 17px;
 }

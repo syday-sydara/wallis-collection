@@ -11,55 +11,110 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// =====================================
+// ------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------
+
+enum ReservationStatus {
+  ACTIVE
+  CONSUMED
+  RELEASED
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum PaymentProvider {
+  CASH
+  BANK_TRANSFER
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum ShipmentStatus {
+  PENDING
+  SHIPPED
+  DELIVERED
+}
+
+enum ActorType {
+  USER
+  SYSTEM
+  ADMIN
+}
+
+enum WhatsAppOrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum WhatsAppPaymentMethod {
+  CASH
+  BANK_TRANSFER
+}
+
+enum DeliveryMethod {
+  DELIVERY
+  PICKUP
+}
+
+// ------------------------------------------------------
 // USER
-// =====================================
+// ------------------------------------------------------
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String     @id @default(cuid())
+  email     String     @unique
   name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   orders    Order[]
   auditLogs AuditLog[] @relation("AuditLogUser")
 }
-
 
 // ------------------------------------------------------
 // PRODUCT CATALOG
 // ------------------------------------------------------
 
 model Product {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   name        String
-  slug        String   @unique
+  slug        String           @unique
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
-  variants ProductVariant[]
+  variants    ProductVariant[]
 }
 
 model ProductVariant {
-  id        String   @id @default(cuid())
-  productId String
-  sku       String   @unique
-  name      String
-  price     Int
-  currency  String
-  stockQty  Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String            @id @default(cuid())
+  productId  String
+  sku        String            @unique
+  name       String
+  price      Int
+  currency   String
+  stockQty   Int               @default(0)
+  isActive   Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 
-  product      Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product      Product          @relation(fields: [productId], references: [id], onDelete: Restrict)
   reservations StockReservation[]
 
   @@index([productId])
 }
-
 
 // ------------------------------------------------------
 // RESERVATION-DRIVEN INVENTORY
@@ -82,21 +137,15 @@ model StockReservation {
   @@index([orderId])
 }
 
-enum ReservationStatus {
-  ACTIVE
-  CONSUMED
-  RELEASED
-}
-
-// =====================================
+// ------------------------------------------------------
 // ORDER SYSTEM
-// =====================================
+// ------------------------------------------------------
 
 model Order {
-  id          String      @id @default(cuid())
+  id          String        @id @default(cuid())
 
   userId      String?
-  user        User?       @relation(fields: [userId], references: [id])
+  user        User?         @relation(fields: [userId], references: [id])
 
   phoneNumber String
 
@@ -109,16 +158,14 @@ model Order {
   deliveryNote String?
 
   subtotal     Int
-  deliveryFee  Int @default(0)
-  discount     Int @default(0)
+  deliveryFee  Int           @default(0)
+  discount     Int           @default(0)
   totalAmount  Int
 
-  currency     String @default("NGN")
+  currency     String        @default("NGN")
 
-  // Payment summary (important)
   paymentMethod PaymentProvider
   paymentStatus PaymentStatus @default(PENDING)
-
   status        OrderStatus   @default(PENDING)
 
   items       OrderItem[]
@@ -128,14 +175,13 @@ model Order {
   ipAddress String?
   userAgent String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
   @@index([phoneNumber, createdAt])
   @@index([status, createdAt])
   @@index([paymentStatus, createdAt])
 }
-
 
 model OrderStatusHistory {
   id        String      @id @default(cuid())
@@ -154,7 +200,7 @@ model OrderStatusHistory {
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
+  id        String         @id @default(cuid())
   orderId   String
   variantId String
   quantity  Int
@@ -169,18 +215,18 @@ model OrderItem {
 // ------------------------------------------------------
 
 model Payment {
-  id        String          @id @default(cuid())
+  id        String        @id @default(cuid())
 
   orderId   String
-  order     Order           @relation(fields: [orderId], references: [id])
+  order     Order         @relation(fields: [orderId], references: [id])
 
   provider  PaymentProvider
   amount    Int
-  currency  String          @default("NGN")
+  currency  String        @default("NGN")
 
-  status    PaymentStatus   @default(PENDING)
+  status    PaymentStatus @default(PENDING)
 
-  reference String?         @unique(map: "unique_payment_reference")
+  reference String?       @unique(map: "unique_payment_reference")
 
   paidByName String?
   paidAt     DateTime?
@@ -191,29 +237,29 @@ model Payment {
 
   notes      String?
 
-  createdAt  DateTime       @default(now())
+  createdAt  DateTime     @default(now())
 
   @@index([status, createdAt])
 }
 
-// =====================================
+// ------------------------------------------------------
 // SHIPPING / DELIVERY
-// =====================================
+// ------------------------------------------------------
 
 model Shipment {
-  id        String   @id @default(cuid())
-  orderId   String   @unique
-  order     Order    @relation(fields: [orderId], references: [id])
+  id        String         @id @default(cuid())
+  orderId   String         @unique
+  order     Order          @relation(fields: [orderId], references: [id])
 
-  provider  String?
+  provider       String?
   trackingNumber String?
 
-  status    ShipmentStatus @default(PENDING)
+  status         ShipmentStatus @default(PENDING)
 
-  shippedAt   DateTime?
-  deliveredAt DateTime?
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
 
-  createdAt DateTime @default(now())
+  createdAt      DateTime       @default(now())
 }
 
 // ------------------------------------------------------
@@ -237,19 +283,19 @@ model WhatsAppOrder {
   lga          String?
   landmark     String?
 
-  paymentMethod WhatsAppPaymentMethod?
-  deliveryMethod DeliveryMethod @default(DELIVERY)
+  paymentMethod  WhatsAppPaymentMethod?
+  deliveryMethod DeliveryMethod         @default(DELIVERY)
 
   notes         String?
   lastMessageAt DateTime?
 
-  items       WhatsAppOrderItem[]
+  items         WhatsAppOrderItem[]
 
   finalOrderId String? @unique
   finalOrder   Order?  @relation("FinalOrder", fields: [finalOrderId], references: [id])
 
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([phoneNumber, createdAt])
   @@index([status, createdAt])
@@ -257,17 +303,17 @@ model WhatsAppOrder {
 }
 
 model WhatsAppOrderItem {
-  id              String        @id @default(cuid())
+  id              String         @id @default(cuid())
   whatsappOrderId String
-  order           WhatsAppOrder @relation(fields: [whatsappOrderId], references: [id])
+  order           WhatsAppOrder  @relation(fields: [whatsappOrderId], references: [id])
 
   variantId       String
   variant         ProductVariant @relation(fields: [variantId], references: [id])
 
-  quantity        Int           @default(1)
+  quantity        Int            @default(1)
   priceAtTime     Int
 
-  createdAt       DateTime      @default(now())
+  createdAt       DateTime       @default(now())
 }
 
 // ------------------------------------------------------

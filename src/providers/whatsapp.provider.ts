@@ -1,6 +1,6 @@
-import { logger } from "@/src/lib/logger";
-import { metrics } from "@/src/lib/metrics";
-import { correlationId } from "@/src/lib/correlation";
+import { logger } from "@/lib/logger";
+import { metrics } from "@/lib/metrics";
+import { correlationId } from "@/lib/correlation";
 
 export class WhatsAppProvider {
   static async sendMessage(phone: string, message: string) {

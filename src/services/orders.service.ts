@@ -1,5 +1,5 @@
-import { prisma } from "@/src/lib/prisma";
-import { OrdersMapper, OrdersReverseMapper } from "@/src/mappers/";
+import { prisma } from "@/lib/prisma";
+import { OrdersMapper, OrdersReverseMapper } from "@/mappers/";
 
 export class OrdersService {
   static async list() {

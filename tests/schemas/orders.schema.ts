@@ -1,31 +1,49 @@
 import { z } from "zod";
 
 export const OrderStatusEnum = z.enum([
-  "pending",
-  "processing",
-  "completed",
-  "cancelled",
+  "PENDING",
+  "PROCESSING",
+  "COMPLETED",
+  "CANCELLED",
+]);
+
+export const PaymentStatusEnum = z.enum([
+  "PENDING",
+  "VERIFIED",
+  "FAILED",
 ]);
 
 export const OrdersSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(), // cuid, not uuid
 
-  customerName: z.string().min(2, "Customer name is too short"),
+  userId: z.string().nullable(),
 
-  // Nigerian phone number validation (+234 or 0XXXXXXXXXX)
   phoneNumber: z
     .string()
-    .regex(
-      /^(\+234|0)[0-9]{10}$/,
-      "Invalid Nigerian phone number format"
-    ),
+    .regex(/^(\+234|0)[0-9]{10}$/, "Invalid Nigerian phone number format"),
 
+  addressLine1: z.string(),
+  addressLine2: z.string().nullable(),
+  city: z.string().nullable(),
+  state: z.string(),
+  lga: z.string().nullable(),
+  landmark: z.string().nullable(),
+  deliveryNote: z.string().nullable(),
+
+  subtotal: z.number(),
+  deliveryFee: z.number(),
+  discount: z.number(),
+  totalAmount: z.number(),
+
+  currency: z.string(),
+
+  paymentMethod: z.string(),
+  paymentStatus: PaymentStatusEnum,
   status: OrderStatusEnum,
 
-  // Naira amount (must be >= 0)
-  totalAmount: z.number().nonnegative(),
+  ipAddress: z.string().nullable(),
+  userAgent: z.string().nullable(),
 
-  // ISO timestamps
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

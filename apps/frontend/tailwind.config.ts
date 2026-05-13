@@ -1,5 +1,5 @@
 import type { Config } from "tailwindcss";
-import tokenPlugin from "./tailwind.token-plugin";
+import tokenPlugin from "../../src/tokens/token-plugin";
 import { tokens } from "./tailwind.tokens";
 
 const config: Config = {
@@ -11,46 +11,46 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        brand: "var(--colors-brand)",
-        brandLight: "var(--colors-brandLight)",
-        brandDark: "var(--colors-brandDark)",
+        brand: "var(--color-brand)",
+        brandLight: "var(--color-brand-light)",
+        brandDark: "var(--color-brand-dark)",
 
         text: {
-          primary: "var(--colors-text-primary)",
-          secondary: "var(--colors-text-secondary)",
-          muted: "var(--colors-text-muted)",
-          inverse: "var(--colors-text-inverse)",
+          primary: "var(--color-text-primary)",
+          secondary: "var(--color-text-secondary)",
+          muted: "var(--color-text-muted)",
+          inverse: "var(--color-text-inverse)",
         },
 
         surface: {
-          base: "var(--colors-surface-base)",
-          muted: "var(--colors-surface-muted)",
-          subtle: "var(--colors-surface-subtle)",
+          base: "var(--color-bg)",
+          muted: "var(--color-bg-muted)",
+          subtle: "var(--color-bg-subtle)",
         },
 
         border: {
-          base: "var(--colors-border-base)",
-          strong: "var(--colors-border-strong)",
+          base: "var(--color-border)",
+          strong: "var(--color-border-strong)",
         },
 
         status: {
-          paid: "var(--colors-status-paid)",
-          pending: "var(--colors-status-pending)",
-          failed: "var(--colors-status-failed)",
-          processing: "var(--colors-status-processing)",
+          paid: "var(--status-paid)",
+          pending: "var(--status-pending)",
+          failed: "var(--status-failed)",
+          processing: "var(--status-processing)",
         },
 
         inventory: {
-          instock: "var(--colors-inventory-instock)",
-          low: "var(--colors-inventory-low)",
-          out: "var(--colors-inventory-out)",
+          instock: "var(--inventory-instock)",
+          low: "var(--inventory-low)",
+          out: "var(--inventory-out)",
         },
 
         queue: {
-          active: "var(--colors-queue-active)",
-          waiting: "var(--colors-queue-waiting)",
-          failed: "var(--colors-queue-failed)",
-          delayed: "var(--colors-queue-delayed)",
+          active: "var(--queue-active)",
+          waiting: "var(--queue-waiting)",
+          failed: "var(--queue-failed)",
+          delayed: "var(--queue-delayed)",
         },
       },
 

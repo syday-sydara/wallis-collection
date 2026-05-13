@@ -1,8 +1,8 @@
 import request from "supertest";
-import { app } from "@/src/server";
+import { app } from "@/server";
 import { z } from "zod";
-import { ApiSuccessSchema } from "@/tests/schemas/api-envelope.schema";
-import { OrdersSchema } from "@/tests/schemas/orders.schema";
+import { ApiSuccessSchema } from "@tests/schemas/api-envelope.schema";
+import { OrdersSchema } from "@tests/schemas/orders.schema";
 
 const OrdersListSchema = z.array(OrdersSchema);
 
@@ -12,7 +12,6 @@ describe("Orders Contract Tests", () => {
 
     const envelope = ApiSuccessSchema.parse(res.body);
 
-    // Ensure data is an array of valid orders
     OrdersListSchema.parse(envelope.data);
   });
 });
