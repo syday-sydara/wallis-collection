@@ -1,27 +1,37 @@
-export interface Payment {
+export interface ProductVariant {
   id: string;
-  orderId: string;
+  sku: string;
 
-  // Only the methods you support today
-  method: "bank_transfer" | "cash";
+  // Current stock level
+  stockQty: number;
 
-  // Payment lifecycle
-  status: "pending" | "verified" | "failed";
+  // Variant‑specific price override (null = use product.basePrice)
+  price?: number | null;
 
-  // When the payment was manually verified
-  verifiedAt?: string;
+  // Optional: size, color, weight, etc.
+  attributes?: Record<string, string> | null;
 
-  // Who verified it (admin user)
-  verifiedBy?: string;
+  // Timestamps
+  createdAt: string;
+  updatedAt: string;
+}
 
-  // Amount paid (important for reconciliation)
-  amount: number;
+export interface Product {
+  id: string;
+  name: string;
+  category: string;
 
-  // Optional: bank transfer reference or narration
-  reference?: string;
+  // Base price if variant doesn't override
+  basePrice: number;
 
-  // Optional: notes for cash payments or manual comments
-  notes?: string;
+  // Optional: product description
+  description?: string | null;
+
+  // Optional: product images
+  images?: string[] | null;
+
+  // Variants
+  variants: ProductVariant[];
 
   // Timestamps
   createdAt: string;

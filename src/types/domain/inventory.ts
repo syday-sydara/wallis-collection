@@ -5,14 +5,14 @@ export interface InventoryItem {
   stockQty: number;
 
   // Optional: minimum stock before triggering alerts
-  reorderLevel?: number;
+  reorderLevel?: number | null;
 
-  // Optional: warehouse or location (useful if you expand later)
-  location?: string;
+  // Optional: warehouse or location (future multi‑warehouse support)
+  location?: string | null;
 
   // Optional: notes for adjustments or manual corrections
-  notes?: string;
+  notes?: string | null;
 
-  // Timestamps
+  // ISO timestamp
   updatedAt: string;
 }
